@@ -116,22 +116,6 @@ def get_clusters(wifis, lookups):
     return cluster_wifis(networks)
 
 
-def pick_best_cluster(clusters):
-    """
-    Out of the list of possible clusters, pick the best one based
-    on the sum of the individual network scores.
-
-    In case of a tie, we use the cluster with the better median
-    signal strength.
-    """
-
-    def sort_cluster(cluster):
-        return (cluster['score'].sum(),
-                numpy.median(cluster['signal']))
-
-    return sorted(clusters, key=sort_cluster, reverse=True)[0]
-
-
 def aggregate_cluster_position(cluster, result_type):
     """
     Given a single cluster, return the aggregate position of the user
@@ -151,7 +135,6 @@ def aggregate_cluster_position(cluster, result_type):
     # Reverse sort by signal, to pick the best sample of networks.
     cluster.sort(order='signal')
     cluster = numpy.flipud(cluster)
-    score = float(cluster['score'].sum())
 
     sample = cluster[:min(len(cluster), MAX_WIFIS_IN_CLUSTER)]
     circles = numpy.array(
@@ -160,6 +143,7 @@ def aggregate_cluster_position(cluster, result_type):
         dtype=numpy.double)
     lat, lon, accuracy = aggregate_position(circles, WIFI_MIN_ACCURACY)
     accuracy = min(accuracy, WIFI_MAX_ACCURACY)
+    score = float(cluster['score'].sum())
     return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score)
 
 
@@ -219,8 +203,7 @@ class WifiPositionMixin(object):
 
         wifis = query_wifis(query, self.raven_client)
         clusters = get_clusters(wifis, query.wifi)
-        if clusters:
-            cluster = pick_best_cluster(clusters)
+        for cluster in clusters:
             results.add(aggregate_cluster_position(cluster, self.result_type))
 
         return results

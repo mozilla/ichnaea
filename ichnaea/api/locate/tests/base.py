@@ -160,6 +160,11 @@ class BaseSourceTest(ConnectionTestCase):
                     'lon': kw.get('lon', model.lon),
                     'accuracy': accuracy,
                 })
+
+            # don't test ordering of results
+            expected = sorted(expected, key=operator.itemgetter('lat', 'lon'))
+            results = sorted(results, key=operator.attrgetter('lat', 'lon'))
+
         elif type_ is Region:
             check_func = self.assertEqual
             for model in models:
@@ -167,7 +172,7 @@ class BaseSourceTest(ConnectionTestCase):
                     'region_code': model.code,
                     'region_name': model.name,
                 })
-            # don't test ordering of region results
+            # don't test ordering of results
             expected = sorted(expected, key=operator.itemgetter('region_code'))
             results = sorted(results, key=operator.attrgetter('region_code'))
 

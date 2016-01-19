@@ -103,11 +103,24 @@ class TestWifi(BaseSourceTest):
         results = self.source.search(query)
         self.check_model_results(results, [wifi], lat=wifi.lat + 0.0001)
 
-    def test_cluster_size_over_better_signal(self):
+    def test_not_closeby(self):
+        wifi = WifiShardFactory()
+        wifis = [
+            WifiShardFactory(lat=wifi.lat + 0.00001, lon=wifi.lon),
+            WifiShardFactory(lat=wifi.lat + 1.0, lon=wifi.lon),
+            WifiShardFactory(lat=wifi.lat + 1.00001, lon=wifi.lon),
+        ]
+        self.session.flush()
+
+        query = self.model_query(wifis=[wifi, wifis[1]])
+        results = self.source.search(query)
+        self.check_model_results(results, None)
+
+    def test_multiple_clusters(self):
         wifi11 = WifiShardFactory()
-        wifi12 = WifiShardFactory(lat=wifi11.lat + 0.0002, lon=wifi11.lon)
+        wifi12 = WifiShardFactory(lat=wifi11.lat, lon=wifi11.lon)
         wifi21 = WifiShardFactory(lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0)
-        wifi22 = WifiShardFactory(lat=wifi21.lat + 0.0002, lon=wifi21.lon)
+        wifi22 = WifiShardFactory(lat=wifi21.lat, lon=wifi21.lon)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
@@ -116,7 +129,7 @@ class TestWifi(BaseSourceTest):
         query.wifi[2].signal = -100
         query.wifi[3].signal = -54
         results = self.source.search(query)
-        self.check_model_results(results, [wifi21], lat=wifi21.lat + 0.0001)
+        self.check_model_results(results, [wifi11, wifi21])
 
     def test_cluster_score_over_size(self):
         now = util.utcnow()
@@ -131,23 +144,25 @@ class TestWifi(BaseSourceTest):
             lat=wifi11.lat + 0.0003, lon=wifi11.lon,
             samples=30, created=yesterday, modified=now)
         wifi13 = WifiShardFactory(
-            lat=wifi11.lat + 0.0006, lon=wifi11.lon,
+            lat=wifi11.lat - 0.0003, lon=wifi11.lon,
             samples=10, created=yesterday, modified=now)
         wifi21 = WifiShardFactory(
             lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0,
             samples=40, created=four_months, modified=three_months)
         wifi22 = WifiShardFactory(
-            lat=wifi21.lat + 0.0002, lon=wifi21.lon,
+            lat=wifi21.lat, lon=wifi21.lon,
             samples=50, created=three_months, modified=last_week)
         self.session.flush()
 
         query = self.model_query(
             wifis=[wifi11, wifi12, wifi13, wifi21, wifi22])
         results = self.source.search(query)
-        self.check_model_results(results, [wifi21], lat=wifi21.lat + 0.0001)
+        self.check_model_results(results, [wifi11, wifi21])
+        best_result = results.best(query.expected_accuracy)
+        self.assertAlmostEqual(best_result.lat, wifi21.lat, 7)
+        self.assertAlmostEqual(best_result.lon, wifi21.lon, 7)
         self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score,
-            wifi21.score(now) + wifi22.score(now), 4)
+            best_result.score, wifi21.score(now) + wifi22.score(now), 4)
 
     def test_top_results_in_noisy_cluster(self):
         now = util.utcnow()
@@ -174,16 +189,3 @@ class TestWifi(BaseSourceTest):
         self.check_model_results(results, [wifi1], lat=lat, lon=lon)
         self.assertAlmostEqual(
             results.best(query.expected_accuracy).score, score, 4)
-
-    def test_wifi_not_closeby(self):
-        wifi = WifiShardFactory()
-        wifis = [
-            WifiShardFactory(lat=wifi.lat + 0.00001, lon=wifi.lon),
-            WifiShardFactory(lat=wifi.lat + 1.0, lon=wifi.lon),
-            WifiShardFactory(lat=wifi.lat + 1.00001, lon=wifi.lon),
-        ]
-        self.session.flush()
-
-        query = self.model_query(wifis=[wifi, wifis[1]])
-        results = self.source.search(query)
-        self.check_model_results(results, None)
