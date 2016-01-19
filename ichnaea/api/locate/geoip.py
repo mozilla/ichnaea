@@ -15,12 +15,14 @@ class GeoIPSource(Source):
     source = DataSource.geoip
     geoip_accuracy_field = 'radius'
 
+    def should_search(self, query, results):
+        should = super(GeoIPSource, self).should_search(query, results)
+        if should and query.ip:
+            return True
+        return False
+
     def search(self, query):
         results = self.result_type().new_list()
-        source_used = False
-
-        if query.ip:
-            source_used = True
 
         # The GeoIP record is already available on the query object,
         # there's no need to do a lookup again.
@@ -35,10 +37,7 @@ class GeoIPSource(Source):
                 score=geoip['score'],
             ))
 
-        if source_used:
-            query.emit_source_stats(
-                self.source, results.best(query.expected_accuracy))
-
+        query.emit_source_stats(self.source, results)
         return results
 
 

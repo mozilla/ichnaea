@@ -278,10 +278,7 @@ class CellPositionSource(CellPositionMixin, PositionSource):
 
     def search(self, query):
         results = self.search_cell(query)
-
-        query.emit_source_stats(
-            self.source, results.best(query.expected_accuracy))
-
+        query.emit_source_stats(self.source, results)
         return results
 
 

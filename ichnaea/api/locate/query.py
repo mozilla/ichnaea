@@ -252,16 +252,6 @@ class Query(object):
         # return the best possible (smallest) accuracy
         return min(accuracies)
 
-    def result_status(self, result):
-        """
-        Returns either hit or miss, depending on whether the result
-        matched the expected query accuracy.
-        """
-        if result.data_accuracy <= self.expected_accuracy:
-            # equal or better / smaller accuracy
-            return 'hit'
-        return 'miss'
-
     def internal_query(self):
         """Returns a dictionary of this query in our internal format."""
         result = {}
@@ -331,7 +321,12 @@ class Query(object):
         allow_fallback = str(bool(self.api_key and
                                   self.api_key.should_allow('fallback') or
                                   False)).lower()
-        status = self.result_status(result)
+
+        status = 'miss'
+        if result.data_accuracy <= self.expected_accuracy:
+            # equal or better / smaller accuracy
+            status = 'hit'
+
         tags = [
             'fallback_allowed:%s' % allow_fallback,
             'accuracy:%s' % self.expected_accuracy.name,
@@ -341,12 +336,19 @@ class Query(object):
             tags.append('source:%s' % result.source.name)
         self._emit_region_stat('result', tags)
 
-    def emit_source_stats(self, source, result):
+    def emit_source_stats(self, source, results):
         """Emit stats about how well the source satisfied the query."""
         if not self.collect_metrics():
             return
 
-        status = self.result_status(result)
+        # If any one of the results was good enough, consider it a hit.
+        status = 'miss'
+        for result in results:
+            if result.data_accuracy <= self.expected_accuracy:
+                # equal or better / smaller accuracy
+                status = 'hit'
+                break
+
         tags = [
             'source:%s' % source.name,
             'accuracy:%s' % self.expected_accuracy.name,

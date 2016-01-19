@@ -33,7 +33,6 @@ class InternalRegionSource(CellRegionMixin,
 
     def search(self, query):
         results = self.result_type().new_list()
-        source_used = False
 
         for should, search in (
             # start with cell search, we don't need precise results
@@ -41,16 +40,12 @@ class InternalRegionSource(CellRegionMixin,
                 (self.should_search_wifi, self.search_wifi)):
 
             if should(query, results):
-                source_used = True
                 results.add(search(query))
                 if results.satisfies(query):
                     # If we have a good enough result, stop.
                     break
 
-        if source_used:
-            query.emit_source_stats(
-                self.source, results.best(query.expected_accuracy))
-
+        query.emit_source_stats(self.source, results)
         return results
 
 
@@ -72,7 +67,6 @@ class InternalPositionSource(CellPositionMixin,
 
     def search(self, query):
         results = self.result_type().new_list()
-        source_used = False
 
         for should, search in (
             # start with wifi search, we want precise results
@@ -80,14 +74,10 @@ class InternalPositionSource(CellPositionMixin,
                 (self.should_search_cell, self.search_cell)):
 
             if should(query, results):
-                source_used = True
                 results.add(search(query))
                 if results.satisfies(query):
                     # If we have a good enough result, stop.
                     break
 
-        if source_used:
-            query.emit_source_stats(
-                self.source, results.best(query.expected_accuracy))
-
+        query.emit_source_stats(self.source, results)
         return results

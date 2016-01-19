@@ -426,7 +426,5 @@ class FallbackPositionSource(PositionSource):
                 fallback=result_data.fallback,
             ))
 
-        query.emit_source_stats(
-            self.source, results.best(query.expected_accuracy))
-
+        query.emit_source_stats(self.source, results)
         return results

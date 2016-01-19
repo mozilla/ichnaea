@@ -457,13 +457,13 @@ class TestResultStats(QueryTest):
 
 class TestSourceStats(QueryTest, ConnectionTestCase):
 
-    def _make_result(self, accuracy=None):
+    def _make_results(self, accuracy=None):
         return Position(
             lat=self.london['latitude'],
             lon=self.london['longitude'],
-            accuracy=accuracy)
+            accuracy=accuracy).as_list()
 
-    def _make_query(self, source, result, api_key=None, api_type='locate',
+    def _make_query(self, source, results, api_key=None, api_type='locate',
                     cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or self.api_key,
@@ -473,13 +473,13 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
             geoip_db=self.geoip_db,
             stats_client=self.stats_client,
             **kw)
-        query.emit_source_stats(source, result)
+        query.emit_source_stats(source, results)
         return query
 
     def test_high_hit(self):
         wifis = WifiShardFactory.build_batch(2)
-        self._make_query(
-            DataSource.internal, self._make_result(accuracy=100.0), wifi=wifis)
+        results = self._make_results(accuracy=100.0)
+        self._make_query(DataSource.internal, results, wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
                 ['key:key', 'region:none', 'source:internal',
@@ -488,10 +488,20 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
 
     def test_high_miss(self):
         wifis = WifiShardFactory.build_batch(2)
-        self._make_query(
-            DataSource.ocid, self._make_result(accuracy=10000.0), wifi=wifis)
+        results = self._make_results(accuracy=10000.0)
+        self._make_query(DataSource.ocid, results, wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
                 ['key:key', 'region:none', 'source:ocid',
+                 'accuracy:high', 'status:miss']),
+        ])
+
+    def test_no_results(self):
+        wifis = WifiShardFactory.build_batch(2)
+        results = Position().new_list()
+        self._make_query(DataSource.internal, results, wifi=wifis)
+        self.check_stats(counter=[
+            ('locate.source',
+                ['key:key', 'region:none', 'source:internal',
                  'accuracy:high', 'status:miss']),
         ])
