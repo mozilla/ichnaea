@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
     CommonLocateErrorTest,
@@ -9,6 +11,7 @@ from ichnaea.tests.factories import (
     CellShardFactory,
     WifiShardFactory,
 )
+from ichnaea import util
 
 
 class RegionBase(BaseLocateTest, AppTestCase):
@@ -172,6 +175,21 @@ class TestView(RegionBase, CommonLocateTest):
         self.check_response(res, wifi1)
         self.check_db_calls(rw=0, ro=2)
 
+    def test_wifi_over_cell(self):
+        now = util.utcnow()
+        three_months = now - timedelta(days=90)
+        wifi1 = WifiShardFactory(
+            samples=1000, created=three_months, modified=now, region='US')
+        wifi2 = WifiShardFactory(
+            samples=1000, created=three_months, modified=now, region='US')
+        cell = CellShardFactory(radio=Radio.gsm, samples=10)
+        self.session.flush()
+
+        query = self.model_query(cells=[cell], wifis=[wifi1, wifi2])
+        res = self._call(body=query, ip=self.test_ip)
+        # wifi says US with a high score, cell and geoip say UK
+        self.check_model_response(res, wifi1, region='US')
+
     def test_get(self):
         super(TestView, self).test_get()
         self.check_db_calls(rw=0, ro=0)
@@ -184,9 +202,7 @@ class TestError(RegionBase, CommonLocateErrorTest):
         return {
             'country_code': 'GB',
             'country_name': 'United Kingdom',
-            # actually a mcc based response
-            # 'fallback': 'ipf',
         }
 
     def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=1)
+        super(TestError, self).test_database_error(db_errors=2)

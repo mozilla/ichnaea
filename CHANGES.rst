@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Choose best region result based on highest combined score.
+
 - #371: Extend region API to use wifi data.
 
 - #371: Extend region API to use cell area data.

@@ -3,6 +3,8 @@ Classes representing an abstract query result or
 a concrete position or region result.
 """
 
+from collections import defaultdict
+
 from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
@@ -190,3 +192,29 @@ class RegionResultList(ResultList):
     """A collection of region results."""
 
     result_type = Region  #:
+
+    def best(self, expected_accuracy):
+        """Return the best result in the collection."""
+        # group by region code
+        grouped = defaultdict(list)
+        for result in self:
+            if not result.empty():
+                grouped[result.region_code].append(result)
+
+        regions = []
+        for code, values in grouped.items():
+            # Pick the first found value, this determines the source
+            # and possible fallback flag on the end result.
+            region = values[0]
+            regions.append((
+                sum([value.score for value in values]),
+                region.accuracy,
+                region))
+
+        if not regions:
+            return self.result_type()
+
+        # pick the region with the highest combined score,
+        # break tie by region with the largest radius
+        sorted_regions = sorted(regions, reverse=True)
+        return sorted_regions[0][2]

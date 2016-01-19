@@ -3,8 +3,6 @@ Abstract searcher and concrete position and region searchers each using
 multiple sources to satisfy a given query.
 """
 
-from collections import defaultdict
-
 from ichnaea.api.locate.cell import OCIDPositionSource
 from ichnaea.api.locate.fallback import FallbackPositionSource
 from ichnaea.api.locate.geoip import (
@@ -165,24 +163,4 @@ class RegionSearcher(Searcher):
         }
 
     def _best_result(self, results, query):
-        if len(results) < 2:
-            return results.best(query.expected_accuracy)
-
-        # group by region code
-        grouped = defaultdict(list)
-        for result in results:
-            if not result.empty():
-                grouped[result.region_code].append(result)
-
-        regions = []
-        for code, values in grouped.items():
-            region = values[0]
-            regions.append((
-                sum([value.score for value in values]),
-                region.accuracy,
-                region))
-
-        # pick the region with the highest combined score,
-        # break tie by region with the largest radius
-        sorted_regions = sorted(regions, reverse=True)
-        return sorted_regions[0][2]
+        return results.best(query.expected_accuracy)

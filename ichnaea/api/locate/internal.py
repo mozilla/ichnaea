@@ -23,8 +23,8 @@ class InternalRegionSource(CellRegionMixin,
     source = DataSource.internal  #:
 
     def should_search(self, query, results):
-        if not RegionSource.should_search(
-                self, query, results):  # pragma: no cover
+        if not super(InternalRegionSource, self).should_search(
+                query, results):  # pragma: no cover
             return False
         if not (self.should_search_cell(query, results) or
                 self.should_search_wifi(query, results)):
@@ -35,15 +35,11 @@ class InternalRegionSource(CellRegionMixin,
         results = self.result_type().new_list()
 
         for should, search in (
-            # start with cell search, we don't need precise results
-                (self.should_search_cell, self.search_cell),
-                (self.should_search_wifi, self.search_wifi)):
+                (self.should_search_wifi, self.search_wifi),
+                (self.should_search_cell, self.search_cell)):
 
             if should(query, results):
                 results.add(search(query))
-                if results.satisfies(query):
-                    # If we have a good enough result, stop.
-                    break
 
         query.emit_source_stats(self.source, results)
         return results
@@ -57,8 +53,8 @@ class InternalPositionSource(CellPositionMixin,
     source = DataSource.internal  #:
 
     def should_search(self, query, results):
-        if not PositionSource.should_search(
-                self, query, results):  # pragma: no cover
+        if not super(InternalPositionSource, self).should_search(
+                query, results):  # pragma: no cover
             return False
         if not (self.should_search_cell(query, results) or
                 self.should_search_wifi(query, results)):
@@ -69,15 +65,11 @@ class InternalPositionSource(CellPositionMixin,
         results = self.result_type().new_list()
 
         for should, search in (
-            # start with wifi search, we want precise results
                 (self.should_search_wifi, self.search_wifi),
                 (self.should_search_cell, self.search_cell)):
 
             if should(query, results):
                 results.add(search(query))
-                if results.satisfies(query):
-                    # If we have a good enough result, stop.
-                    break
 
         query.emit_source_stats(self.source, results)
         return results
