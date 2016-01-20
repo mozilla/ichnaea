@@ -56,11 +56,11 @@ class TestPosition(TestCase):
 
     def test_as_list(self):
         self.assertEqual(type(Position().as_list()), PositionResultList)
-        self.assertTrue(Position().as_list().best(DataAccuracy.low).empty())
+        self.assertTrue(Position().as_list().best().empty())
 
     def test_new_list(self):
         self.assertEqual(type(Position().new_list()), PositionResultList)
-        self.assertTrue(Position().new_list().best(DataAccuracy.low).empty())
+        self.assertTrue(Position().new_list().best().empty())
 
     def test_satisfies(self):
         wifis = WifiShardFactory.build_batch(2)
@@ -120,11 +120,11 @@ class TestRegion(TestCase):
 
     def test_as_list(self):
         self.assertEqual(type(Region().as_list()), RegionResultList)
-        self.assertTrue(Region().as_list().best(DataAccuracy.low).empty())
+        self.assertTrue(Region().as_list().best().empty())
 
     def test_new_list(self):
         self.assertEqual(type(Region().new_list()), RegionResultList)
-        self.assertTrue(Region().new_list().best(DataAccuracy.low).empty())
+        self.assertTrue(Region().new_list().best().empty())
 
     def test_satisfies(self):
         region = Region(
@@ -192,15 +192,63 @@ class TestResultList(TestCase):
 
 class TestPositionResultList(TestCase):
 
-    def test_best_result(self):
-        best_result = PositionResultList().best(DataAccuracy.low)
+    def test_best_empty(self):
+        best_result = PositionResultList().best()
         self.assertTrue(best_result.empty())
         self.assertEqual(type(best_result), Position)
+
+    def test_best(self):
+        gb1 = Position(lat=51.5, lon=-0.1, accuracy=100000.0, score=0.6)
+        gb2 = Position(lat=51.5002, lon=-0.1, accuracy=10000.0, score=1.5)
+        gb3 = Position(lat=51.7, lon=-0.1, accuracy=1000.0, score=5.0)
+        bt1 = Position(lat=27.5002, lon=90.5, accuracy=1000.0, score=0.5)
+        bt2 = Position(lat=27.5, lon=90.5, accuracy=2000.0, score=2.0)
+        bt3 = Position(lat=27.7, lon=90.7, accuracy=500.0, score=5.0)
+
+        # expected accuracy acts as a filter
+        self.assertAlmostEqual(PositionResultList(
+            [gb1, gb2, bt1]).best().lat, 51.5002, 4)
+        self.assertAlmostEqual(PositionResultList(
+            [gb1, gb2, bt1]).best(DataAccuracy.high).lat, 27.5002, 4)
+
+        # the individually highest score result wins
+        self.assertAlmostEqual(PositionResultList(
+            [gb1, bt2]).best().lat, 27.5, 4)
+        self.assertAlmostEqual(PositionResultList(
+            [gb1, gb2, bt2]).best().lat, 27.5, 4)
+        self.assertAlmostEqual(PositionResultList(
+            [gb1, gb3, bt2]).best().lat, 51.7, 4)
+        self.assertAlmostEqual(PositionResultList(
+            [gb1, gb2, bt2, bt3]).best().lat, 27.7, 4)
+
+        # break tie by accuracy
+        self.assertAlmostEqual(PositionResultList(
+            [gb3, bt3]).best().lat, 27.7, 4)
 
 
 class TestRegionResultList(TestCase):
 
-    def test_best_result(self):
-        best_result = RegionResultList().best(DataAccuracy.low)
+    def test_best_empty(self):
+        best_result = RegionResultList().best()
         self.assertTrue(best_result.empty())
         self.assertEqual(type(best_result), Region)
+
+    def test_best(self):
+        us1 = Region(region_code='US', region_name='us',
+                     accuracy=200000.0, score=3.0)
+        us2 = Region(region_code='US', region_name='us',
+                     accuracy=200000.0, score=3.0)
+        gb1 = Region(region_code='GB', region_name='gb',
+                     accuracy=100000.0, score=5.0)
+        gb2 = Region(region_code='GB', region_name='gb',
+                     accuracy=100000.0, score=3.0)
+
+        # highest combined score wins
+        self.assertEqual(RegionResultList(
+            [us1, gb1]).best().region_code, 'GB')
+        self.assertEqual(RegionResultList(
+            [us1, gb1, us2]).best().region_code, 'US')
+
+        # break tie by accuracy
+        self.assertEqual(RegionResultList(
+            [us1, gb2]).best().region_code, 'US')

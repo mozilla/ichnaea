@@ -37,8 +37,7 @@ class TestRegionSource(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_results(results, regions)
-        best_result = results.best(query.expected_accuracy)
-        self.assertEqual(best_result.region_code, 'GB')
+        self.assertEqual(results.best().region_code, 'GB')
         for result in results:
             score = 0.25
             if result.region_code == 'GB':
@@ -60,7 +59,7 @@ class TestRegionSource(BaseSourceTest):
         query = self.model_query(cells=[cell, cell2])
         results = self.source.search(query)
         self.assertTrue(len(results) > 2)
-        best_result = results.best(query.expected_accuracy)
+        best_result = results.best()
         self.assertEqual(best_result.region_code, region.code)
         self.assertAlmostEqual(best_result.score, 1.25 + cell.score(now), 4)
 
@@ -82,7 +81,7 @@ class TestRegionSource(BaseSourceTest):
         query = self.model_query(wifis=[wifi1, wifi2, wifi3])
         results = self.source.search(query)
         self.check_model_results(results, [region])
-        best_result = results.best(query.expected_accuracy)
+        best_result = results.best()
         self.assertEqual(best_result.region_code, region.code)
         self.assertAlmostEqual(
             best_result.score, wifi1.score(now) + wifi2.score(now), 4)

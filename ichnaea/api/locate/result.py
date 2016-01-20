@@ -145,7 +145,7 @@ class ResultList(object):
                 return True
         return False
 
-    def best(self, expected_accuracy):
+    def best(self, expected_accuracy=None):
         """Return the best result in the collection."""
         raise NotImplementedError()
 
@@ -155,8 +155,11 @@ class PositionResultList(ResultList):
 
     result_type = Position  #:
 
-    def best(self, expected_accuracy):
+    def best(self, expected_accuracy=None):
         """Return the best result in the collection."""
+        if expected_accuracy is None:
+            expected_accuracy = DataAccuracy.none
+
         accurate_results = OrderedDict(matches=[], misses=[], empty=[])
         # Group the results by whether or not they match the expected
         # accuracy of the query.
@@ -185,7 +188,7 @@ class PositionResultList(ResultList):
         def best_result(result):
             # sort descending, take higher score and
             # break tie by using the smaller accuracy/radius
-            return (result.score, (result.accuracy or 0.0) * -1)
+            return (result.score, (result.accuracy or 0.0) * -1.0)
 
         sorted_results = sorted(
             most_accurate_results, key=best_result, reverse=True)
@@ -197,7 +200,7 @@ class RegionResultList(ResultList):
 
     result_type = Region  #:
 
-    def best(self, expected_accuracy):
+    def best(self, expected_accuracy=None):
         """Return the best result in the collection."""
         # group by region code
         grouped = defaultdict(list)
