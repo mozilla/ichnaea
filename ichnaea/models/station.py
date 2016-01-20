@@ -165,6 +165,15 @@ class ScoreMixin(object):
         # 10.0 for 1024 samples or more
         return min(max(math.log(max(samples, 1), 2), 0.5), 10.0)
 
+    def score_created_position(self):
+        # The creation date stays intact after a station moved to a new
+        # position. For scoring purposes we only want to consider how
+        # long the station has been at its current position.
+        created = self.created.date()
+        if not self.block_last:
+            return created
+        return max(created, self.block_last)
+
     def score(self, now):
         """
         Returns a score as a floating point number.
@@ -185,7 +194,8 @@ class ScoreMixin(object):
         # 0.1 (data was only seen on a single day)
         # 0.2 (data was seen on two different days)
         # 1.0 (data was first and last seen at least 10 days apart)
-        collected_over = max((self.modified - self.created).days, 1)
+        collected_over = max(
+            (self.modified.date() - self.score_created_position()).days, 1)
         collection_weight = min(collected_over / 10.0, 1.0)
 
         return age_weight * collection_weight * self.score_sample_weight()

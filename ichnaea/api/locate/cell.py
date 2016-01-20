@@ -156,7 +156,7 @@ def query_cells(query, lookups, model, raven_client):
     # load all fields used in score calculation and those we
     # need for the position
     load_fields = ('lat', 'lon', 'radius', 'region',
-                   'created', 'modified', 'samples')
+                   'created', 'modified', 'samples', 'block_last')
 
     today = util.utcnow().date()
     temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION

@@ -154,7 +154,7 @@ def query_wifis(query, raven_client):
         # load all fields used in score calculation and those we
         # need for the position or region
         load_fields = ('lat', 'lon', 'radius', 'region',
-                       'created', 'modified', 'samples')
+                       'created', 'modified', 'samples', 'block_last')
         shards = defaultdict(list)
         for mac in macs:
             shards[WifiShard.shard_model(mac)].append(mac)

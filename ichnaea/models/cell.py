@@ -336,6 +336,9 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin,
         # from all cells in the area
         return min(math.sqrt(max(samples, 1)), 10.0)
 
+    def score_created_position(self):
+        return self.created.date()
+
     @declared_attr
     def __table_args__(cls):  # NOQA
         prefix = cls.__tablename__
