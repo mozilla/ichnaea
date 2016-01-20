@@ -16,13 +16,13 @@ Migrations
 Changes
 ~~~~~~~
 
-- Choose best region result based on highest combined score.
+- #151: Choose best region result based on highest combined score.
 
 - #371: Extend region API to use wifi data.
 
 - #371: Extend region API to use cell area data.
 
-- Choose best region result based on highest score.
+- #151: Choose best region result based on highest score.
 
 - Remove migrations and tests for 1.2 to 1.3 upgrade.
 
@@ -83,7 +83,7 @@ Changes
 
 - #467: Implement geodude compatibility API.
 
-- Choose best WiFi cluster based on a data quality score.
+- #151: Choose best WiFi cluster based on a data quality score.
 
 - Use up to top 10 WiFi networks in WiFi location.
 
