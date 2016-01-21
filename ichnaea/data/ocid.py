@@ -65,13 +65,13 @@ LIMIT :l
 OFFSET :o
 '''
 
-    limit = 10000
-    offset = 0
     with util.gzip_open(path, 'w', compresslevel=5) as gzip_wrapper:
         with gzip_wrapper as gzip_file:
             gzip_file.write(header_row)
             for table in tables:
                 table_stmt = text(stmt % (table, where))
+                offset = 0
+                limit = 10000
                 while True:
                     rows = session.execute(
                         table_stmt.bindparams(o=offset, l=limit)).fetchall()
