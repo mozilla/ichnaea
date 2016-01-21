@@ -1,16 +1,16 @@
 alembic==0.8.4
 amqp==1.4.9
 anyjson==0.3.3
-argparse==1.3.0 ; python_version < '2.7'
+argparse==1.4.0 ; python_version < '2.7'
 billiard==3.3.0.22
-boto==2.38.0
+boto==2.39.0
 celery==3.1.19
 certifi==2015.11.20.1
-cffi==1.4.2
+cffi==1.5.0
 Chameleon==2.24
 colander==1.0
 configparser==3.5.0b2
-contextlib2==0.4.0 ; python_version < '3.2'
+contextlib2==0.5.1 ; python_version < '3.2'
 cryptography==1.2.1
 datadog==0.10.0
 decorator==4.0.6
@@ -26,7 +26,7 @@ hiredis==0.2.0
 idna==2.0
 importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
-ipaddress==1.0.14 ; python_version < '3.0'
+ipaddress==1.0.16 ; python_version < '3.0'
 iso8601==0.1.11
 kombu==3.0.33
 linecache2==1.0.0 ; python_version < '3.0'
@@ -52,7 +52,7 @@ repoze.lru==0.6
 requests==2.9.1
 Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0
 Rtree==0.8.2 ; python_version >= '2.7'
-scandir==1.1 ; python_version < '3.5'
+scandir==1.2 ; python_version < '3.5'
 scipy==0.16.1
 setproctitle==1.1.9
 Shapely==1.5.13
