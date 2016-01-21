@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #151: Choose best position result based on highest combined score.
+
 - #481: Fix broken cell export.
 
 - #151: Choose best region result based on highest combined score.

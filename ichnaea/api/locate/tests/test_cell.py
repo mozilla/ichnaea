@@ -40,8 +40,7 @@ class TestCellPosition(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_results(results, [cell])
-        self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score, cell.score(now), 4)
+        self.assertAlmostEqual(results.best().score, cell.score(now), 4)
 
     def test_cell_wrong_cid(self):
         cell = CellShardFactory()
@@ -68,8 +67,7 @@ class TestCellPosition(BaseSourceTest):
             lat=cell.lat + 0.5, lon=cell.lon + 0.5,
             accuracy=CELL_MAX_ACCURACY)
         self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score,
-            cell.score(now) + cell2.score(now), 4)
+            results.best().score, cell.score(now) + cell2.score(now), 4)
 
     def test_incomplete_keys(self):
         cells = CellAreaFactory.build_batch(4)
@@ -93,8 +91,7 @@ class TestCellPosition(BaseSourceTest):
         query = self.model_query(cells=[area, area2])
         results = self.source.search(query)
         self.check_model_results(results, [area])
-        self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score, area.score(now), 4)
+        self.assertAlmostEqual(results.best().score, area.score(now), 4)
 
     def test_minimum_radius(self):
         areas = CellAreaFactory.create_batch(2)
@@ -132,8 +129,7 @@ class TestOCIDPositionSource(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_results(results, [cell])
-        self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score, cell.score(now), 4)
+        self.assertAlmostEqual(results.best().score, cell.score(now), 4)
 
     def test_cell_area(self):
         now = util.utcnow()
@@ -142,5 +138,4 @@ class TestOCIDPositionSource(BaseSourceTest):
         query = self.model_query(cells=[area])
         results = self.source.search(query)
         self.check_model_results(results, [area])
-        self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score, area.score(now), 4)
+        self.assertAlmostEqual(results.best().score, area.score(now), 4)

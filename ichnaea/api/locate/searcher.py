@@ -88,7 +88,7 @@ class Searcher(object):
             if source.should_search(query, results):
                 results.add(source.search(query))
 
-        return results.best(query.expected_accuracy)
+        return results.best()
 
     def format_result(self, result):
         """

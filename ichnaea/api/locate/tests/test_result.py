@@ -197,6 +197,17 @@ class TestPositionResultList(TestCase):
         self.assertTrue(best_result.empty())
         self.assertEqual(type(best_result), Position)
 
+        results = PositionResultList([Position(), Position()])
+        self.assertTrue(results.best().empty())
+
+        # empty results are ignored
+        results = PositionResultList([
+            Position(),
+            Position(lat=51.5, lon=-0.1, accuracy=100000.0, score=0.6),
+            Position(),
+        ])
+        self.assertAlmostEqual(results.best().lat, 51.5, 4)
+
     def test_best(self):
         gb1 = Position(lat=51.5, lon=-0.1, accuracy=100000.0, score=0.6)
         gb2 = Position(lat=51.5002, lon=-0.1, accuracy=10000.0, score=1.5)
@@ -204,26 +215,29 @@ class TestPositionResultList(TestCase):
         bt1 = Position(lat=27.5002, lon=90.5, accuracy=1000.0, score=0.5)
         bt2 = Position(lat=27.5, lon=90.5, accuracy=2000.0, score=2.0)
         bt3 = Position(lat=27.7, lon=90.7, accuracy=500.0, score=5.0)
+        bt4 = Position(lat=27.9, lon=90.7, accuracy=300.0, score=5.0)
 
-        # expected accuracy acts as a filter
+        # single result works
         self.assertAlmostEqual(PositionResultList(
-            [gb1, gb2, bt1]).best().lat, 51.5002, 4)
-        self.assertAlmostEqual(PositionResultList(
-            [gb1, gb2, bt1]).best(DataAccuracy.high).lat, 27.5002, 4)
+            [gb1]).best().lat, 51.5, 4)
 
-        # the individually highest score result wins
+        # the lowest accuracy result from the best cluster wins
+        self.assertAlmostEqual(PositionResultList(
+            [bt1, bt2]).best().lat, 27.5002, 4)
         self.assertAlmostEqual(PositionResultList(
             [gb1, bt2]).best().lat, 27.5, 4)
         self.assertAlmostEqual(PositionResultList(
-            [gb1, gb2, bt2]).best().lat, 27.5, 4)
+            [gb1, gb2, bt2]).best().lat, 51.5002, 4)
         self.assertAlmostEqual(PositionResultList(
-            [gb1, gb3, bt2]).best().lat, 51.7, 4)
+            [gb1, gb3, bt1, bt2]).best().lat, 51.7, 4)
         self.assertAlmostEqual(PositionResultList(
             [gb1, gb2, bt2, bt3]).best().lat, 27.7, 4)
 
         # break tie by accuracy
         self.assertAlmostEqual(PositionResultList(
             [gb3, bt3]).best().lat, 27.7, 4)
+        self.assertAlmostEqual(PositionResultList(
+            [bt3, bt4]).best().lat, 27.9, 4)
 
 
 class TestRegionResultList(TestCase):

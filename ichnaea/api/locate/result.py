@@ -4,14 +4,11 @@ a concrete position or region result.
 """
 
 from collections import defaultdict
+import operator
 
 from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
-
-try:
-    from collections import OrderedDict
-except ImportError:  # pragma: no cover
-    from ordereddict import OrderedDict
+from ichnaea.geocalc import distance
 
 
 class Result(object):
@@ -145,7 +142,7 @@ class ResultList(object):
                 return True
         return False
 
-    def best(self, expected_accuracy=None):
+    def best(self):
         """Return the best result in the collection."""
         raise NotImplementedError()
 
@@ -155,43 +152,51 @@ class PositionResultList(ResultList):
 
     result_type = Position  #:
 
-    def best(self, expected_accuracy=None):
+    def best(self):
         """Return the best result in the collection."""
-        if expected_accuracy is None:
-            expected_accuracy = DataAccuracy.none
-
-        accurate_results = OrderedDict(matches=[], misses=[], empty=[])
-        # Group the results by whether or not they match the expected
-        # accuracy of the query.
-        for result in self:
-            if result.empty():
-                accurate_results['empty'].append(result)
-            elif result.data_accuracy <= expected_accuracy:
-                accurate_results['matches'].append(result)
-            else:
-                accurate_results['misses'].append(result)
-
-        if accurate_results['matches']:
-            most_accurate_results = accurate_results['matches']
-        elif accurate_results['misses']:
-            most_accurate_results = accurate_results['misses']
-        elif accurate_results['empty']:
-            # only empty results, they are all equal
-            return accurate_results['empty'][0]
-        else:
-            # totally empty result list, return new empty result
+        if len(self) == 0:
             return self.result_type()
+        not_empty = [res for res in self if not res.empty()]
+        if len(self) == 1 or len(not_empty) == 0:
+            return self[0]
+        if len(not_empty) == 1:
+            return not_empty[0]
 
-        if len(most_accurate_results) == 1:
-            return most_accurate_results[0]
+        results = sorted(self, key=operator.attrgetter('accuracy'))
+
+        clusters = {}
+        for i, result1 in enumerate(results):
+            clusters[i] = [result1]
+            # allow a 50% buffer zone around each result
+            radius1 = result1.accuracy * 1.5
+            for j, result2 in enumerate(results):
+                if j > i:
+                    # only calculate the upper triangle
+                    radius2 = result2.accuracy * 1.5
+                    max_radius = max(radius1, radius2)
+                    apart = distance(result1.lat, result1.lon,
+                                     result2.lat, result2.lon)
+                    if apart <= max_radius:
+                        clusters[i].append(result2)
+
+        def sum_score(values):
+            # Sort by highest cumulative score,
+            # break tie by highest individual score
+            return (sum([v.score for v in values]),
+                    max([v.score for v in values]))
+
+        clusters = sorted(clusters.values(), key=sum_score, reverse=True)
+        best_cluster = clusters[0]
+
+        if len(best_cluster) == 1:
+            return best_cluster[0]
 
         def best_result(result):
-            # sort descending, take higher score and
-            # break tie by using the smaller accuracy/radius
-            return (result.score, (result.accuracy or 0.0) * -1.0)
+            # sort descending, take smallest accuracy/radius,
+            # break tie by higher score
+            return ((result.accuracy or 0.0), result.score * -1.0)
 
-        sorted_results = sorted(
-            most_accurate_results, key=best_result, reverse=True)
+        sorted_results = sorted(best_cluster, key=best_result)
         return sorted_results[0]
 
 
@@ -200,7 +205,7 @@ class RegionResultList(ResultList):
 
     result_type = Region  #:
 
-    def best(self, expected_accuracy=None):
+    def best(self):
         """Return the best result in the collection."""
         # group by region code
         grouped = defaultdict(list)

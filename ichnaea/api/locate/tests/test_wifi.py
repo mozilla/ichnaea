@@ -26,7 +26,7 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(wifis=[wifi, wifi2])
         results = self.source.search(query)
         self.check_model_results(results, [wifi], lon=wifi.lon + 0.000005)
-        self.assertTrue(results.best(query.expected_accuracy).score > 1.0)
+        self.assertTrue(results.best().score > 1.0)
 
     def test_wifi_no_position(self):
         wifi = WifiShardFactory()
@@ -158,7 +158,7 @@ class TestWifi(BaseSourceTest):
             wifis=[wifi11, wifi12, wifi13, wifi21, wifi22])
         results = self.source.search(query)
         self.check_model_results(results, [wifi11, wifi21])
-        best_result = results.best(query.expected_accuracy)
+        best_result = results.best()
         self.assertAlmostEqual(best_result.lat, wifi21.lat, 7)
         self.assertAlmostEqual(best_result.lon, wifi21.lon, 7)
         self.assertAlmostEqual(
@@ -187,5 +187,4 @@ class TestWifi(BaseSourceTest):
             entry.signal = -70 - i
         results = self.source.search(query)
         self.check_model_results(results, [wifi1], lat=lat, lon=lon)
-        self.assertAlmostEqual(
-            results.best(query.expected_accuracy).score, score, 4)
+        self.assertAlmostEqual(results.best().score, score, 4)

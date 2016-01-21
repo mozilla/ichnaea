@@ -376,8 +376,7 @@ class TestSource(BaseSourceTest):
             )
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
-            self.assertAlmostEqual(
-                results.best(query.expected_accuracy).score, 5.0, 4)
+            self.assertAlmostEqual(results.best().score, 5.0, 4)
 
             request_json = mock_request.request_history[0].json()
 
@@ -639,8 +638,7 @@ class TestSource(BaseSourceTest):
             query.cell[0].signal = -77
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
-            self.assertAlmostEqual(
-                results.best(query.expected_accuracy).score, 5.0, 4)
+            self.assertAlmostEqual(results.best().score, 5.0, 4)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
@@ -654,8 +652,7 @@ class TestSource(BaseSourceTest):
             query.cell[0].signal = -82
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
-            self.assertAlmostEqual(
-                results.best(query.expected_accuracy).score, 5.0, 4)
+            self.assertAlmostEqual(results.best().score, 5.0, 4)
 
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
