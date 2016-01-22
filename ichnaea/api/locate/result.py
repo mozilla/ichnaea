@@ -93,6 +93,10 @@ class ResultList(object):
             self.__class__.__name__,
             ', '.join([repr(res) for res in self]))
 
+    def best_cluster(self):
+        """Return the best cluster from this collection."""
+        raise NotImplementedError()
+
     def best(self):
         """Return the best result in the collection."""
         raise NotImplementedError()
@@ -180,30 +184,40 @@ class RegionResultList(ResultList):
 
     result_type = Region  #:
 
+    def best_cluster(self):
+        """Return the best cluster from this collection."""
+        if len(self) <= 1:
+            return self
+
+        # Group by region code
+        clusters = defaultdict(list)
+        for result in self:
+            clusters[result.region_code].append(result)
+
+        def sum_score(values):
+            # Sort by highest cumulative score,
+            # break tie by region with the largest radius.
+            return (sum([v.score for v in values]),
+                    max([v.accuracy for v in values]))
+
+        clusters = sorted(clusters.values(), key=sum_score, reverse=True)
+        return clusters[0]
+
     def best(self):
         """Return the best result in the collection."""
-        # group by region code
-        grouped = defaultdict(list)
-        for result in self:
-            grouped[result.region_code].append(result)
-
-        regions = []
-        for code, values in grouped.items():
-            # Pick the first found value, this determines the source
-            # and possible fallback flag on the end result.
-            region = values[0]
-            regions.append((
-                sum([value.score for value in values]),
-                region.accuracy,
-                region))
-
-        if not regions:
+        best_cluster = self.best_cluster()
+        if len(best_cluster) == 0:
             return None
+        if len(best_cluster) == 1:
+            return best_cluster[0]
 
-        # pick the region with the highest combined score,
-        # break tie by region with the largest radius
-        sorted_regions = sorted(regions, reverse=True)
-        return sorted_regions[0][2]
+        def best_result(result):
+            # sort ascending, take smallest source first,
+            # break tie by higher score
+            return ((result.source.value), result.score * -1.0)
+
+        sorted_results = sorted(best_cluster, key=best_result)
+        return sorted_results[0]
 
     def satisfies(self, query):
         """

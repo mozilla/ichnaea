@@ -1,4 +1,7 @@
-from ichnaea.api.locate.constants import DataAccuracy
+from ichnaea.api.locate.constants import (
+    DataAccuracy,
+    DataSource,
+)
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Position,
@@ -76,7 +79,8 @@ class TestRegion(TestCase):
 class TestResultList(TestCase):
 
     def _make_result(self):
-        return Position(lat=1.0, lon=1.0, accuracy=10.0, score=0.5)
+        return Position(lat=1.0, lon=1.0, accuracy=10.0,
+                        score=0.5, source=DataSource.internal)
 
     def test_init(self):
         results = ResultList(self._make_result())
@@ -199,13 +203,13 @@ class TestRegionResultList(TestCase):
 
     def test_best(self):
         us1 = Region(region_code='US', region_name='us',
-                     accuracy=200000.0, score=3.0)
+                     accuracy=200000.0, score=3.0, source=DataSource.geoip)
         us2 = Region(region_code='US', region_name='us',
-                     accuracy=200000.0, score=3.0)
+                     accuracy=200000.0, score=3.0, source=DataSource.geoip)
         gb1 = Region(region_code='GB', region_name='gb',
-                     accuracy=100000.0, score=5.0)
+                     accuracy=100000.0, score=5.0, source=DataSource.geoip)
         gb2 = Region(region_code='GB', region_name='gb',
-                     accuracy=100000.0, score=3.0)
+                     accuracy=100000.0, score=3.0, source=DataSource.geoip)
 
         # highest combined score wins
         self.assertEqual(RegionResultList(
