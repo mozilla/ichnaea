@@ -60,8 +60,7 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
                 raise colander.Invalid(node, 'Report %s is required.' % field)
 
         if not GEOCODER.any_region(cstruct['lat'], cstruct['lon']):
-            raise colander.Invalid(node, (
-                'Lat/lon must be inside a region.'))
+            raise colander.Invalid(node, 'Lat/lon must be inside a region.')
 
 
 class Report(HashKey, CreationMixin, ValidationMixin):
@@ -104,6 +103,11 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
             if (cstruct[field] is None or
                     cstruct[field] is colander.null):
                 raise colander.Invalid(node, 'Cell %s is required.' % field)
+
+        accuracy = cstruct.get('accuracy', None)
+        if (accuracy is not None and
+                accuracy > constants.MAX_ACCURACY_CELL):
+            raise colander.Invalid(node, 'Invalid accuracy.')
 
 
 class CellReport(HashKey, CreationMixin, ValidationMixin):
@@ -199,6 +203,11 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
         if (cstruct['key'] is None or
                 cstruct['key'] is colander.null):  # pragma: no cover
             raise colander.Invalid(node, 'Wifi mac address is required.')
+
+        accuracy = cstruct.get('accuracy', None)
+        if (accuracy is not None and
+                accuracy > constants.MAX_ACCURACY_WIFI):
+            raise colander.Invalid(node, 'Invalid accuracy.')
 
 
 class WifiReport(HashKey, CreationMixin, ValidationMixin):

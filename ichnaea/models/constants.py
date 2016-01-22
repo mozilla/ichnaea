@@ -13,6 +13,8 @@ from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
 REQUIRED = object()
 
 MAX_ACCURACY = 1000000.0  #: Accuracy is arbitrarily bounded to (0, 1000km).
+MAX_ACCURACY_CELL = 200.0  #: Maximum accepted accuracy for cells.
+MAX_ACCURACY_WIFI = 100.0  #: Maximum accepted accuracy for WiFis.
 MIN_ALTITUDE = -10911.0  #: Challenger Deep, Mariana Trench.
 MAX_ALTITUDE = 100000.0  #: Karman Line, edge of space.
 #: Combination of max/min altitude.

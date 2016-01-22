@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Restrict observations to maximum accepted accuracy values.
+
 - Allow queries to the fallback source if the combined score is too low.
 
 - #151: Choose best position result based on highest combined score.

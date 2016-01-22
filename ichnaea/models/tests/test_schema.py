@@ -64,7 +64,7 @@ class TestCell(ValidationTest):
 
     def get_sample(self, **kwargs):
         obs = {
-            'accuracy': 120.0,
+            'accuracy': constants.MAX_ACCURACY_CELL,
             'altitude': 220.0,
             'altitude_accuracy': 10.0,
             'lat': PARIS_LAT,
@@ -187,7 +187,7 @@ class TestCell(ValidationTest):
             self.check_normalized_cell(obs, cell, None)
 
     def test_valid_accuracy(self):
-        valid_accuracies = [0.0, 1.6, 100.1, 10000.0]
+        valid_accuracies = [0.0, 1.6, 10.1, constants.MAX_ACCURACY_CELL]
         for accuracy in valid_accuracies:
             obs, cell = self.get_sample(accuracy=accuracy)
             self.check_normalized_cell(obs, cell, {'accuracy': accuracy})
@@ -225,10 +225,13 @@ class TestCell(ValidationTest):
             self.check_normalized_cell(obs, cell, {'signal': signal})
 
     def test_invalid_accuracy(self):
-        invalid_accuracies = [-10.0, -1.2, 5000000.0]
+        invalid_accuracies = [-10.0, -1.2]
         for accuracy in invalid_accuracies:
             obs, cell = self.get_sample(accuracy=accuracy)
             self.check_normalized_cell(obs, cell, {'accuracy': None})
+
+        obs, cell = self.get_sample(accuracy=constants.MAX_ACCURACY_CELL + 0.1)
+        self.check_normalized_cell(obs, cell, None)
 
     def test_invalid_altitude(self):
         invalid_altitudes = [-20000.0, 200000.0]
@@ -325,7 +328,7 @@ class TestWifi(ValidationTest):
 
     def get_sample(self, **kwargs):
         obs = {
-            'accuracy': 120.6,
+            'accuracy': constants.MAX_ACCURACY_WIFI,
             'altitude': 220.1,
             'altitude_accuracy': 10.0,
             'lat': 49.25,
@@ -386,6 +389,21 @@ class TestWifi(ValidationTest):
         for key in invalid_keys:
             obs, wifi = self.get_sample(key=key)
             self.check_normalized_wifi(obs, wifi, None)
+
+    def test_valid_accuracy(self):
+        valid_accuracies = [0.0, 1.6, 10.1, constants.MAX_ACCURACY_WIFI]
+        for accuracy in valid_accuracies:
+            obs, wifi = self.get_sample(accuracy=accuracy)
+            self.check_normalized_wifi(obs, wifi, {'accuracy': accuracy})
+
+    def test_invalid_accuracy(self):
+        invalid_accuracies = [-10.0, -1.2]
+        for accuracy in invalid_accuracies:
+            obs, wifi = self.get_sample(accuracy=accuracy)
+            self.check_normalized_wifi(obs, wifi, {'accuracy': None})
+
+        obs, wifi = self.get_sample(accuracy=constants.MAX_ACCURACY_WIFI + 0.1)
+        self.check_normalized_wifi(obs, wifi, None)
 
     def test_valid_frequency_channel(self):
         valid_frequency_channels = [
