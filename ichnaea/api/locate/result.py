@@ -48,10 +48,6 @@ class Result(object):
             return DataAccuracy.none
         return DataAccuracy.from_number(self.accuracy)
 
-    def new_list(self):
-        """Return a new empty result list."""
-        raise NotImplementedError()
-
 
 class Position(Result):
     """The position returned by a position query."""
@@ -60,10 +56,6 @@ class Position(Result):
                     'accuracy', 'score',
                     'fallback', 'source')  #:
 
-    def new_list(self):
-        """Return a new empty result list."""
-        return PositionResultList()
-
 
 class Region(Result):
     """The region returned by a region query."""
@@ -71,10 +63,6 @@ class Region(Result):
     _repr_fields = ('region_code', 'region_name',
                     'accuracy', 'score',
                     'fallback', 'source')  #:
-
-    def new_list(self):
-        """Return a new empty result list."""
-        return RegionResultList()
 
 
 class ResultList(object):

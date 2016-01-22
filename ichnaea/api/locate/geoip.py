@@ -22,7 +22,7 @@ class GeoIPSource(Source):
         return False
 
     def search(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
 
         # The GeoIP record is already available on the query object,
         # there's no need to do a lookup again.

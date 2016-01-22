@@ -23,7 +23,7 @@ class TestRegionSource(RegionSource):
 class TestEmptySource(RegionSource):
 
     def search(self, query):
-        return self.result_type().new_list()
+        return self.result_list()
 
 
 class TestPositionSource(PositionSource):

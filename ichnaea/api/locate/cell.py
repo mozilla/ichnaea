@@ -15,7 +15,9 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.result import (
     Position,
+    PositionResultList,
     Region,
+    RegionResultList,
 )
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
@@ -208,6 +210,7 @@ class CellPositionMixin(object):
 
     cell_model = CellShard
     area_model = CellArea
+    result_list = PositionResultList
     result_type = Position
 
     def should_search_cell(self, query, results):
@@ -216,7 +219,7 @@ class CellPositionMixin(object):
         return True
 
     def search_cell(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
 
         if query.cell:
             cells = query_cells(
@@ -246,6 +249,7 @@ class CellRegionMixin(object):
     """
 
     area_model = CellArea
+    result_list = RegionResultList
     result_type = Region
 
     def should_search_cell(self, query, results):
@@ -254,7 +258,7 @@ class CellRegionMixin(object):
         return True
 
     def search_cell(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
         now = util.utcnow()
 
         ambiguous_cells = []

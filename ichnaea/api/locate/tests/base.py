@@ -131,7 +131,7 @@ class BaseSourceTest(ConnectionTestCase):
 
     def check_should_search(self, query, should, results=None):
         if results is None:
-            results = self.source.result_type().new_list()
+            results = self.source.result_list()
         self.assertIs(self.source.should_search(query, results), should)
 
     def check_model_results(self, results, models, **kw):

@@ -44,7 +44,7 @@ class SourceTest(object):
 
     def test_should_search(self):
         query = self._make_query()
-        results = self.source.result_type().new_list()
+        results = self.source.result_list()
         self.assertTrue(self.source.should_search(query, results))
 
 
@@ -55,7 +55,7 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
         source = DataSource.fallback
 
         def search(self, query):
-            return self.result_type().new_list()
+            return self.result_list()
 
     def test_empty(self):
         query = self._make_query()
@@ -71,7 +71,7 @@ class TestRegionSource(SourceTest, ConnectionTestCase):
         source = DataSource.geoip
 
         def search(self, query):
-            return self.result_type().new_list()
+            return self.result_list()
 
     def test_empty(self):
         query = self._make_query()

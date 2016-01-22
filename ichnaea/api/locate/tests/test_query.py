@@ -513,7 +513,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
 
     def test_no_results(self):
         wifis = WifiShardFactory.build_batch(2)
-        results = Position().new_list()
+        results = PositionResultList()
         self._make_query(DataSource.internal, results, wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',

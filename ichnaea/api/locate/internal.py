@@ -31,7 +31,7 @@ class BaseInternalSource(object):
         return True
 
     def search(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
 
         for should, search in (
                 (self.should_search_wifi, self.search_wifi),

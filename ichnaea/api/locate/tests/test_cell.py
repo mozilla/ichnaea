@@ -22,7 +22,7 @@ class TestCellPosition(BaseSourceTest):
 
     def test_check_empty(self):
         query = self.model_query()
-        results = self.source.result_type().new_list()
+        results = self.source.result_list()
         self.assertFalse(self.source.should_search(query, results))
 
     def test_empty(self):
@@ -78,7 +78,7 @@ class TestCellPosition(BaseSourceTest):
 
         with self.db_call_checker() as check_db_calls:
             query = self.model_query(cells=cells)
-            results = self.source.result_type().new_list()
+            results = self.source.result_list()
             self.assertFalse(self.source.should_search(query, results))
             check_db_calls(rw=0, ro=0)
 
@@ -112,7 +112,7 @@ class TestOCIDPositionSource(BaseSourceTest):
 
     def test_check_empty(self):
         query = self.model_query()
-        results = self.source.result_type().new_list()
+        results = self.source.result_list()
         self.assertFalse(self.source.should_search(query, results))
 
     def test_empty(self):

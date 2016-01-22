@@ -4,7 +4,9 @@ from functools import partial
 
 from ichnaea.api.locate.result import (
     Position,
+    PositionResultList,
     Region,
+    RegionResultList,
 )
 
 
@@ -16,6 +18,7 @@ class Source(object):
     """
 
     fallback_field = None  #:
+    result_list = None  #:
     result_type = None  #:
     source = None  #:
 
@@ -65,6 +68,7 @@ class PositionSource(Source):
     a latitude, a longitude and an accuracy in meters in it.
     """
 
+    result_list = PositionResultList  #:
     result_type = Position  #:
 
 
@@ -74,4 +78,5 @@ class RegionSource(Source):
     a region name and code in it.
     """
 
+    result_list = RegionResultList  #:
     result_type = Region  #:

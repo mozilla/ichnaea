@@ -403,7 +403,7 @@ class FallbackPositionSource(PositionSource):
         )
 
     def search(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
 
         result_data = None
         cached_result = self.cache.get(query)

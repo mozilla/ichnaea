@@ -36,9 +36,6 @@ class TestPosition(TestCase):
         self.assertTrue('100.0' in rep, rep)
         self.assertAlmostEqual(position.score, 2.0, 4)
 
-    def test_new_list(self):
-        self.assertEqual(type(Position().new_list()), PositionResultList)
-
     def test_data_accuracy(self):
         def _position(accuracy=None):
             return Position(lat=1.0, lon=1.0, accuracy=accuracy)
@@ -65,9 +62,6 @@ class TestRegion(TestCase):
         self.assertTrue('DE' in rep, rep)
         self.assertTrue('Germany' in rep, rep)
         self.assertAlmostEqual(region.score, 2.0, 4)
-
-    def test_new_list(self):
-        self.assertEqual(type(Region().new_list()), RegionResultList)
 
     def test_data_accuracy(self):
         self.assertEqual(Region().data_accuracy, DataAccuracy.none)

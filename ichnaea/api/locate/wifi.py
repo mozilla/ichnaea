@@ -18,7 +18,9 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.result import (
     Position,
+    PositionResultList,
     Region,
+    RegionResultList,
 )
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.constants import (
@@ -187,13 +189,14 @@ class WifiPositionMixin(object):
     """
 
     raven_client = None
+    result_list = PositionResultList
     result_type = Position
 
     def should_search_wifi(self, query, results):
         return bool(query.wifi)
 
     def search_wifi(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
 
         wifis = query_wifis(query, self.raven_client)
         for cluster in cluster_wifis(wifis, query.wifi):
@@ -208,13 +211,14 @@ class WifiRegionMixin(object):
     """
 
     raven_client = None
+    result_list = RegionResultList
     result_type = Region
 
     def should_search_wifi(self, query, results):
         return bool(query.wifi)
 
     def search_wifi(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
 
         now = util.utcnow()
         regions = defaultdict(int)

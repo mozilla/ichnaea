@@ -64,7 +64,7 @@ class TestWifi(BaseSourceTest):
 
     def test_check_empty(self):
         query = self.model_query()
-        results = self.source.result_type().new_list()
+        results = self.source.result_list()
         self.assertFalse(self.source.should_search(query, results))
 
     def test_empty(self):

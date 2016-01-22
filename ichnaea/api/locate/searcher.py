@@ -15,7 +15,9 @@ from ichnaea.api.locate.internal import (
 )
 from ichnaea.api.locate.result import (
     Position,
+    PositionResultList,
     Region,
+    RegionResultList,
 )
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
@@ -64,6 +66,7 @@ class Searcher(object):
     in the order they are specified and use the best possible result.
     """
 
+    result_list = None  #: :class:`ichnaea.api.locate.result.ResultList`
     result_type = None  #: :class:`ichnaea.api.locate.result.Result`
     sources = ()  #:
     source_classes = ()  #:
@@ -83,7 +86,7 @@ class Searcher(object):
             self.sources.append((name, source_instance))
 
     def _search(self, query):
-        results = self.result_type().new_list()
+        results = self.result_list()
         for name, source in self.sources:
             if source.should_search(query, results):
                 results.add(source.search(query))
@@ -121,13 +124,14 @@ class PositionSearcher(Searcher):
     a longitude and an accuracy in meters.
     """
 
-    result_type = Position
+    result_list = PositionResultList  #:
+    result_type = Position  #:
     source_classes = (
         ('internal', InternalPositionSource),
         ('ocid', OCIDPositionSource),
         ('geoip', GeoIPPositionSource),
         ('fallback', FallbackPositionSource),
-    )
+    )  #:
 
     def format_result(self, result):
         return {
@@ -143,11 +147,12 @@ class RegionSearcher(Searcher):
     A RegionSearcher will return a region name and code.
     """
 
-    result_type = Region
+    result_list = RegionResultList  #:
+    result_type = Region  #:
     source_classes = (
         ('internal', InternalRegionSource),
         ('geoip', GeoIPRegionSource),
-    )
+    )  #:
 
     def format_result(self, result):
         return {
