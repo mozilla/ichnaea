@@ -5,6 +5,7 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
     Position,
+    PositionResultList,
     Region,
 )
 from ichnaea.tests.base import ConnectionTestCase
@@ -369,10 +370,21 @@ class TestResultStats(QueryTest):
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_none(self):
+    def test_no_ip(self):
         self._make_query(
             self._make_result(), ip=self.london_ip, fallback={'ipf': False})
         self.check_stats(total=0)
+
+        self._make_query(None, ip=self.london_ip, fallback={'ipf': False})
+        self.check_stats(total=0)
+
+    def test_none(self):
+        self._make_query(None, ip=self.london_ip)
+        self.check_stats(counter=[
+            ('locate.result',
+                ['key:key', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:low', 'status:miss']),
+        ])
 
     def test_low_miss(self):
         self._make_query(self._make_result(), ip=self.london_ip)
@@ -460,11 +472,11 @@ class TestResultStats(QueryTest):
 class TestSourceStats(QueryTest, ConnectionTestCase):
 
     def _make_results(self, accuracy=None):
-        return Position(
+        return PositionResultList(Position(
             lat=self.london['latitude'],
             lon=self.london['longitude'],
             accuracy=accuracy,
-            score=0.5).as_list()
+            score=0.5))
 
     def _make_query(self, source, results, api_key=None, api_type='locate',
                     cell=(), wifi=(), **kw):

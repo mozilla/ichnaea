@@ -177,7 +177,6 @@ class BaseSourceTest(ConnectionTestCase):
             results = sorted(results, key=operator.attrgetter('region_code'))
 
         for expect, result in zip(expected, results):
-            self.assertFalse(result.empty())
             self.assertEqual(type(result), type_)
             for key, value in expect.items():
                 check_func(getattr(result, key), value)

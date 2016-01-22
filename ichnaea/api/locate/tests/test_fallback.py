@@ -15,7 +15,10 @@ from ichnaea.api.locate.fallback import (
     RESULT_SCHEMA,
 )
 from ichnaea.api.locate.query import Query
-from ichnaea.api.locate.result import Position
+from ichnaea.api.locate.result import (
+    Position,
+    PositionResultList,
+)
 from ichnaea.api.locate.tests.base import (
     BaseSourceTest,
     DummyModel,
@@ -517,21 +520,21 @@ class TestSource(BaseSourceTest):
     def test_check_geoip_result(self):
         london = self.london_model
         wifis = WifiShardFactory.build_batch(2)
-        results = Position(
+        results = PositionResultList(Position(
             source=DataSource.geoip,
             lat=london.lat,
             lon=london.lon,
             accuracy=float(london.radius),
-            score=0.6).as_list()
+            score=0.6))
 
         query = self.model_query(wifis=wifis, ip=london.ip)
         self.check_should_search(query, True, results=results)
 
     def test_check_already_good_result(self):
         wifis = WifiShardFactory.build_batch(2)
-        results = Position(
+        results = PositionResultList(Position(
             source=DataSource.internal,
-            lat=1.0, lon=1.0, accuracy=100.0, score=1.0).as_list()
+            lat=1.0, lon=1.0, accuracy=100.0, score=1.0))
 
         query = self.model_query(wifis=wifis)
         self.check_should_search(query, False, results=results)

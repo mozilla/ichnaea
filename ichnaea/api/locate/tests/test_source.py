@@ -1,8 +1,8 @@
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
-    Position,
-    Region,
+    PositionResultList,
+    RegionResultList,
 )
 from ichnaea.api.locate.source import (
     PositionSource,
@@ -48,26 +48,6 @@ class SourceTest(object):
         self.assertTrue(self.source.should_search(query, results))
 
 
-class TestRegionSource(SourceTest, ConnectionTestCase):
-
-    class TestSource(RegionSource):
-        fallback_field = 'ipf'
-        source = DataSource.geoip
-
-        def search(self, query):
-            return self.result_type().as_list()
-
-    def test_empty(self):
-        query = self._make_query()
-        results = self.source.search(query)
-        self.assertEqual(len(results), 1)
-        result = results[0]
-        self.assertTrue(result.empty())
-        self.assertTrue(isinstance(result, Region))
-        self.assertEqual(result.fallback, 'ipf')
-        self.assertEqual(result.source, DataSource.geoip)
-
-
 class TestPositionSource(SourceTest, ConnectionTestCase):
 
     class TestSource(PositionSource):
@@ -75,14 +55,26 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
         source = DataSource.fallback
 
         def search(self, query):
-            return self.result_type().as_list()
+            return self.result_type().new_list()
 
     def test_empty(self):
         query = self._make_query()
         results = self.source.search(query)
-        self.assertEqual(len(results), 1)
-        result = results[0]
-        self.assertTrue(isinstance(result, Position))
-        self.assertTrue(result.empty())
-        self.assertEqual(result.fallback, 'fallback')
-        self.assertEqual(result.source, DataSource.fallback)
+        self.assertEqual(len(results), 0)
+        self.assertEqual(type(results), PositionResultList)
+
+
+class TestRegionSource(SourceTest, ConnectionTestCase):
+
+    class TestSource(RegionSource):
+        fallback_field = 'ipf'
+        source = DataSource.geoip
+
+        def search(self, query):
+            return self.result_type().new_list()
+
+    def test_empty(self):
+        query = self._make_query()
+        results = self.source.search(query)
+        self.assertEqual(len(results), 0)
+        self.assertEqual(type(results), RegionResultList)

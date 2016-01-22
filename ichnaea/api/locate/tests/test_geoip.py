@@ -17,8 +17,7 @@ class SourceTest(object):
     def test_unknown(self):
         query = self.make_query(ip='127.0.0.1')
         results = self.source.search(query)
-        self.assertFalse(len(results))
-        self.assertTrue(results.best().empty())
+        self.assertEqual(len(results), 0)
 
     def test_city(self):
         query = self.make_query(ip=self.london_model.ip)

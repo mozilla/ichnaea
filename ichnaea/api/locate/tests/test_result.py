@@ -24,9 +24,6 @@ class TestResult(TestCase):
     def test_data_accuracy(self):
         self.assertEqual(Result().data_accuracy, DataAccuracy.none)
 
-    def test_empty(self):
-        self.assertTrue(Result().empty())
-
 
 class TestPosition(TestCase):
 
@@ -39,22 +36,8 @@ class TestPosition(TestCase):
         self.assertTrue('100.0' in rep, rep)
         self.assertAlmostEqual(position.score, 2.0, 4)
 
-    def test_empty(self):
-        self.assertTrue(Position(lat=1.0, lon=1.0, accuracy=None).empty())
-        self.assertTrue(Position(lat=1.0, lon=None, accuracy=1.0).empty())
-        self.assertTrue(Position(lat=None, lon=1.0, accuracy=1.0).empty())
-
-    def test_not_empty(self):
-        self.assertFalse(Position(lat=1.0, lon=1.0, accuracy=1.0).empty())
-        self.assertFalse(Position(lat=0.0, lon=0.0, accuracy=0.0).empty())
-
-    def test_as_list(self):
-        self.assertEqual(type(Position().as_list()), PositionResultList)
-        self.assertTrue(Position().as_list().best().empty())
-
     def test_new_list(self):
         self.assertEqual(type(Position().new_list()), PositionResultList)
-        self.assertTrue(Position().new_list().best().empty())
 
     def test_data_accuracy(self):
         def _position(accuracy=None):
@@ -75,36 +58,16 @@ class TestPosition(TestCase):
 class TestRegion(TestCase):
 
     def test_repr(self):
-        region = Region(region_code='DE', region_name='Germany', score=2.0)
+        region = Region(region_code='DE', region_name='Germany',
+                        accuracy=100.0, score=2.0)
         rep = repr(region)
         self.assertTrue(rep.startswith('Region'), rep)
         self.assertTrue('DE' in rep, rep)
         self.assertTrue('Germany' in rep, rep)
         self.assertAlmostEqual(region.score, 2.0, 4)
 
-    def test_empty(self):
-        region = Region(
-            region_code='DE', region_name='Germany', accuracy=None)
-        self.assertTrue(region.empty())
-        region = Region(
-            region_code='DE', region_name=None, accuracy=100000.0)
-        self.assertTrue(region.empty())
-        region = Region(
-            region_code=None, region_name='Germany', accuracy=100000.0)
-        self.assertTrue(region.empty())
-
-    def test_not_empty(self):
-        region = Region(
-            region_code='DE', region_name='Germany', accuracy=100000.0)
-        self.assertFalse(region.empty())
-
-    def test_as_list(self):
-        self.assertEqual(type(Region().as_list()), RegionResultList)
-        self.assertTrue(Region().as_list().best().empty())
-
     def test_new_list(self):
         self.assertEqual(type(Region().new_list()), RegionResultList)
-        self.assertTrue(Region().new_list().best().empty())
 
     def test_data_accuracy(self):
         self.assertEqual(Region().data_accuracy, DataAccuracy.none)
@@ -118,42 +81,47 @@ class TestRegion(TestCase):
 
 class TestResultList(TestCase):
 
+    def _make_result(self):
+        return Position(lat=1.0, lon=1.0, accuracy=10.0, score=0.5)
+
     def test_init(self):
-        results = ResultList(Result())
+        results = ResultList(self._make_result())
         self.assertEqual(len(results), 1)
 
     def test_repr(self):
-        results = ResultList([Position(lat=1.0), Position(lat=2.0)])
+        results = ResultList([self._make_result(), self._make_result()])
         rep = repr(results)
-        self.assertTrue(rep.startswith('ResultList'), rep)
+        self.assertTrue(rep.startswith('ResultList:'), rep)
         self.assertTrue('Position<' in rep, rep)
         self.assertTrue('lat:1.0' in rep, rep)
-        self.assertTrue('lat:2.0' in rep, rep)
+        self.assertTrue('lon:1.0' in rep, rep)
+        self.assertTrue('accuracy:10.0' in rep, rep)
+        self.assertTrue('score:0.5' in rep, rep)
 
     def test_add(self):
         results = ResultList()
-        results.add(Result())
+        results.add(self._make_result())
         self.assertEqual(len(results), 1)
 
     def test_add_many(self):
-        results = ResultList(Result())
-        results.add((Result(), Result()))
+        results = ResultList(self._make_result())
+        results.add((self._make_result(), self._make_result()))
         self.assertEqual(len(results), 3)
 
     def test_len(self):
         results = ResultList()
-        results.add(Result())
-        results.add(Result())
+        results.add(self._make_result())
+        results.add(self._make_result())
         self.assertEqual(len(results), 2)
 
     def test_getitem(self):
-        result = Result()
+        result = self._make_result()
         results = ResultList()
         results.add(result)
         self.assertEqual(results[0], result)
 
     def test_iterable(self):
-        result = Result()
+        result = self._make_result()
         results = ResultList()
         results.add(result)
         results.add(result)
@@ -163,21 +131,12 @@ class TestResultList(TestCase):
 
 class TestPositionResultList(TestCase):
 
+    def test_repr(self):
+        results = PositionResultList()
+        self.assertTrue(repr(results).startswith('PositionResultList:'))
+
     def test_best_empty(self):
-        best_result = PositionResultList().best()
-        self.assertTrue(best_result.empty())
-        self.assertEqual(type(best_result), Position)
-
-        results = PositionResultList([Position(), Position()])
-        self.assertTrue(results.best().empty())
-
-        # empty results are ignored
-        results = PositionResultList([
-            Position(),
-            Position(lat=51.5, lon=-0.1, accuracy=100000.0, score=0.6),
-            Position(),
-        ])
-        self.assertAlmostEqual(results.best().lat, 51.5, 4)
+        self.assertTrue(PositionResultList().best() is None)
 
     def test_best(self):
         gb1 = Position(lat=51.5, lon=-0.1, accuracy=100000.0, score=0.6)
@@ -219,6 +178,13 @@ class TestPositionResultList(TestCase):
         query = Query(api_type='locate', wifi=wifi_query)
         self.assertTrue(positions.satisfies(query))
 
+    def test_satisfies_empty(self):
+        wifis = WifiShardFactory.build_batch(2)
+        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
+        positions = PositionResultList()
+        query = Query(api_type='locate', wifi=wifi_query)
+        self.assertFalse(positions.satisfies(query))
+
     def test_satisfies_fail(self):
         wifis = WifiShardFactory.build_batch(2)
         wifi_query = [{'mac': wifi.mac} for wifi in wifis]
@@ -230,10 +196,12 @@ class TestPositionResultList(TestCase):
 
 class TestRegionResultList(TestCase):
 
+    def test_repr(self):
+        results = RegionResultList()
+        self.assertTrue(repr(results).startswith('RegionResultList:'))
+
     def test_best_empty(self):
-        best_result = RegionResultList().best()
-        self.assertTrue(best_result.empty())
-        self.assertEqual(type(best_result), Region)
+        self.assertTrue(RegionResultList().best() is None)
 
     def test_best(self):
         us1 = Region(region_code='US', region_name='us',
@@ -261,5 +229,5 @@ class TestRegionResultList(TestCase):
         self.assertTrue(regions.satisfies(Query()))
 
     def test_satisfies_fail(self):
-        regions = RegionResultList(Region())
+        regions = RegionResultList()
         self.assertFalse(regions.satisfies(Query()))

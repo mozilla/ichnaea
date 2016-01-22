@@ -16,20 +16,21 @@ class TestRegionSource(RegionSource):
 
     def search(self, query):
         return self.result_type(
-            region_name='Germany', region_code='DE', accuracy=100000.0)
+            region_name='Germany', region_code='DE',
+            accuracy=100000.0, score=0.5)
 
 
 class TestEmptySource(RegionSource):
 
     def search(self, query):
-        return self.result_type()
+        return self.result_type().new_list()
 
 
 class TestPositionSource(PositionSource):
     fallback_field = 'ipf'
 
     def search(self, query):
-        return self.result_type(lat=1.0, lon=1.0, accuracy=1000.0)
+        return self.result_type(lat=1.0, lon=1.0, accuracy=1000.0, score=0.5)
 
 
 class SearcherTest(ConnectionTestCase):

@@ -34,7 +34,7 @@ class Source(object):
 
     def should_search(self, query, results):
         """
-        Given a query and a possible result found by another source,
+        Given a query and possible results found by other sources,
         check if this source should attempt to perform a search.
 
         :param query: A query.
@@ -51,7 +51,7 @@ class Source(object):
         return True
 
     def search(self, query):
-        """Provide a type specific possibly empty query result.
+        """Provide a type specific possibly empty result list.
 
         :param query: A query.
         :type query: :class:`~ichnaea.api.locate.query.Query`

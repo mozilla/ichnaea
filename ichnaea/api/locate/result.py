@@ -12,9 +12,9 @@ from ichnaea.geocalc import distance
 
 
 class Result(object):
-    """An empty query result."""
+    """An abstract query result."""
 
-    _required = ()  #: The list of required attributes.
+    _repr_fields = ()  #: The list of important attributes.
 
     def __init__(self, accuracy=None, region_code=None, region_name=None,
                  fallback=None, lat=None, lon=None, source=None, score=0.0):
@@ -29,7 +29,7 @@ class Result(object):
 
     def __repr__(self):
         values = []
-        for field in self._required:
+        for field in self._repr_fields:
             values.append('%s:%s' % (field, getattr(self, field, '')))
         return '{klass}<{values}>'.format(
             klass=self.__class__.__name__,
@@ -44,22 +44,9 @@ class Result(object):
     @property
     def data_accuracy(self):
         """Return the accuracy class of this result."""
-        if self.empty():
+        if self.accuracy is None:
             return DataAccuracy.none
         return DataAccuracy.from_number(self.accuracy)
-
-    def empty(self):
-        """Does this result include any data?"""
-        if not self._required:
-            return True
-        all_fields = []
-        for field in self._required:
-            all_fields.append(getattr(self, field, None))
-        return None in all_fields
-
-    def as_list(self):
-        """Return a new result list including this result."""
-        raise NotImplementedError()
 
     def new_list(self):
         """Return a new empty result list."""
@@ -69,11 +56,9 @@ class Result(object):
 class Position(Result):
     """The position returned by a position query."""
 
-    _required = ('lat', 'lon', 'accuracy', 'score')  #:
-
-    def as_list(self):
-        """Return a new position result list including this result."""
-        return PositionResultList(self)
+    _repr_fields = ('lat', 'lon',
+                    'accuracy', 'score',
+                    'fallback', 'source')  #:
 
     def new_list(self):
         """Return a new empty result list."""
@@ -83,11 +68,9 @@ class Position(Result):
 class Region(Result):
     """The region returned by a region query."""
 
-    _required = ('region_code', 'region_name', 'accuracy', 'score')  #:
-
-    def as_list(self):
-        """Return a new region result list including this result."""
-        return RegionResultList(self)
+    _repr_fields = ('region_code', 'region_name',
+                    'accuracy', 'score',
+                    'fallback', 'source')  #:
 
     def new_list(self):
         """Return a new empty result list."""
@@ -95,7 +78,7 @@ class Region(Result):
 
 
 class ResultList(object):
-    """A collection of query results."""
+    """An abstract collection of query results."""
 
     result_type = None  #:
 
@@ -118,7 +101,9 @@ class ResultList(object):
         return len(self._results)
 
     def __repr__(self):
-        return 'ResultList: %s' % ', '.join([repr(res) for res in self])
+        return '%s: %s' % (
+            self.__class__.__name__,
+            ', '.join([repr(res) for res in self]))
 
     def best(self):
         """Return the best result in the collection."""
@@ -139,15 +124,8 @@ class PositionResultList(ResultList):
 
     def best_cluster(self):
         """Return the best cluster from this collection."""
-        if len(self) == 0:
-            return self.result_type().as_list()
-        if len(self) == 1:
+        if len(self) <= 1:
             return self
-        not_empty = [res for res in self if not res.empty()]
-        if len(not_empty) == 0:
-            return self[0].as_list()
-        if len(not_empty) == 1:
-            return not_empty
 
         results = sorted(self, key=operator.attrgetter('accuracy'))
 
@@ -178,6 +156,8 @@ class PositionResultList(ResultList):
     def best(self):
         """Return the best result in the collection."""
         best_cluster = self.best_cluster()
+        if len(best_cluster) == 0:
+            return None
         if len(best_cluster) == 1:
             return best_cluster[0]
 
@@ -195,6 +175,9 @@ class PositionResultList(ResultList):
         satisfy the query?
         """
         cluster = self.best_cluster()
+        if len(cluster) == 0:
+            return False
+
         cluster_score = sum([res.score for res in cluster])
         cluster_accuracy = min([res.data_accuracy for res in cluster])
 
@@ -214,8 +197,7 @@ class RegionResultList(ResultList):
         # group by region code
         grouped = defaultdict(list)
         for result in self:
-            if not result.empty():
-                grouped[result.region_code].append(result)
+            grouped[result.region_code].append(result)
 
         regions = []
         for code, values in grouped.items():
@@ -228,7 +210,7 @@ class RegionResultList(ResultList):
                 region))
 
         if not regions:
-            return self.result_type()
+            return None
 
         # pick the region with the highest combined score,
         # break tie by region with the largest radius
@@ -240,7 +222,6 @@ class RegionResultList(ResultList):
         Is the best cluster result from this collection good enough to
         satisfy the query?
         """
-        for result in self:
-            if not result.empty():
-                return True
+        if len(self) > 0:
+            return True
         return False

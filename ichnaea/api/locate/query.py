@@ -322,8 +322,15 @@ class Query(object):
                                   self.api_key.should_allow('fallback') or
                                   False)).lower()
 
+        if result is None:
+            data_accuracy = DataAccuracy.none
+            source = None
+        else:
+            data_accuracy = result.data_accuracy
+            source = result.source
+
         status = 'miss'
-        if result.data_accuracy <= self.expected_accuracy:
+        if data_accuracy <= self.expected_accuracy:
             # equal or better / smaller accuracy
             status = 'hit'
 
@@ -332,8 +339,8 @@ class Query(object):
             'accuracy:%s' % self.expected_accuracy.name,
             'status:%s' % status,
         ]
-        if status == 'hit' and result.source:
-            tags.append('source:%s' % result.source.name)
+        if status == 'hit' and source:
+            tags.append('source:%s' % source.name)
         self._emit_region_stat('result', tags)
 
     def emit_source_stats(self, source, results):

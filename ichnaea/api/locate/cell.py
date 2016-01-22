@@ -282,7 +282,8 @@ class CellRegionMixin(object):
         if ambiguous_cells:
             # Only do a database query if the mcc is ambiguous.
             # Use the area models for area and cell entries,
-            # as we are only interested in the region here.
+            # as we are only interested in the region here,
+            # which won't differ between individual cells inside and area.
             areas = query_areas(
                 query, ambiguous_cells, self.area_model, self.raven_client)
             for area in areas:
