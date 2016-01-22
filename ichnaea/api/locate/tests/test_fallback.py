@@ -521,7 +521,8 @@ class TestSource(BaseSourceTest):
             source=DataSource.geoip,
             lat=london.lat,
             lon=london.lon,
-            accuracy=float(london.radius)).as_list()
+            accuracy=float(london.radius),
+            score=0.6).as_list()
 
         query = self.model_query(wifis=wifis, ip=london.ip)
         self.check_should_search(query, True, results=results)
@@ -530,7 +531,7 @@ class TestSource(BaseSourceTest):
         wifis = WifiShardFactory.build_batch(2)
         results = Position(
             source=DataSource.internal,
-            lat=1.0, lon=1.0, accuracy=1.0).as_list()
+            lat=1.0, lon=1.0, accuracy=100.0, score=1.0).as_list()
 
         query = self.model_query(wifis=wifis)
         self.check_should_search(query, False, results=results)

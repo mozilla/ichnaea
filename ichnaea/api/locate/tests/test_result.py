@@ -27,12 +27,6 @@ class TestResult(TestCase):
     def test_empty(self):
         self.assertTrue(Result().empty())
 
-    def test_score(self):
-        self.assertAlmostEqual(Result().score, 0.0, 4)
-
-    def test_satisfies(self):
-        self.assertFalse(Result().satisfies(Query()))
-
 
 class TestPosition(TestCase):
 
@@ -61,20 +55,6 @@ class TestPosition(TestCase):
     def test_new_list(self):
         self.assertEqual(type(Position().new_list()), PositionResultList)
         self.assertTrue(Position().new_list().best().empty())
-
-    def test_satisfies(self):
-        wifis = WifiShardFactory.build_batch(2)
-        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
-        position = Position(lat=1.0, lon=1.0, accuracy=100.0)
-        query = Query(api_type='locate', wifi=wifi_query)
-        self.assertTrue(position.satisfies(query))
-
-    def test_satisfies_fail(self):
-        wifis = WifiShardFactory.build_batch(2)
-        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
-        position = Position(lat=1.0, lon=1.0, accuracy=2500.0)
-        query = Query(api_type='locate', wifi=wifi_query)
-        self.assertFalse(position.satisfies(query))
 
     def test_data_accuracy(self):
         def _position(accuracy=None):
@@ -125,15 +105,6 @@ class TestRegion(TestCase):
     def test_new_list(self):
         self.assertEqual(type(Region().new_list()), RegionResultList)
         self.assertTrue(Region().new_list().best().empty())
-
-    def test_satisfies(self):
-        region = Region(
-            region_code='DE', region_name='Germany', accuracy=100000.0)
-        self.assertTrue(region.satisfies(Query()))
-
-    def test_satisfies_fail(self):
-        region = Region()
-        self.assertFalse(region.satisfies(Query()))
 
     def test_data_accuracy(self):
         self.assertEqual(Region().data_accuracy, DataAccuracy.none)
@@ -239,6 +210,23 @@ class TestPositionResultList(TestCase):
         self.assertAlmostEqual(PositionResultList(
             [bt3, bt4]).best().lat, 27.9, 4)
 
+    def test_satisfies(self):
+        wifis = WifiShardFactory.build_batch(2)
+        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
+        positions = PositionResultList([
+            Position(lat=1.0, lon=1.0, accuracy=100.0, score=0.5),
+            Position(lat=1.0, lon=1.0, accuracy=10000.0, score=0.6)])
+        query = Query(api_type='locate', wifi=wifi_query)
+        self.assertTrue(positions.satisfies(query))
+
+    def test_satisfies_fail(self):
+        wifis = WifiShardFactory.build_batch(2)
+        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
+        positions = PositionResultList(
+            Position(lat=1.0, lon=1.0, accuracy=2500.0, score=2.0))
+        query = Query(api_type='locate', wifi=wifi_query)
+        self.assertFalse(positions.satisfies(query))
+
 
 class TestRegionResultList(TestCase):
 
@@ -266,3 +254,12 @@ class TestRegionResultList(TestCase):
         # break tie by accuracy
         self.assertEqual(RegionResultList(
             [us1, gb2]).best().region_code, 'US')
+
+    def test_satisfies(self):
+        regions = RegionResultList(Region(
+            region_code='DE', region_name='Germany', accuracy=100000.0))
+        self.assertTrue(regions.satisfies(Query()))
+
+    def test_satisfies_fail(self):
+        regions = RegionResultList(Region())
+        self.assertFalse(regions.satisfies(Query()))

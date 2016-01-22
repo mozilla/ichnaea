@@ -65,10 +65,6 @@ class Result(object):
         """Return a new empty result list."""
         raise NotImplementedError()
 
-    def satisfies(self, query):
-        """Does this result match the expected query accuracy?"""
-        return False
-
 
 class Position(Result):
     """The position returned by a position query."""
@@ -83,11 +79,6 @@ class Position(Result):
         """Return a new empty result list."""
         return PositionResultList()
 
-    def satisfies(self, query):
-        if self.data_accuracy <= query.expected_accuracy:
-            return True
-        return False
-
 
 class Region(Result):
     """The region returned by a region query."""
@@ -101,9 +92,6 @@ class Region(Result):
     def new_list(self):
         """Return a new empty result list."""
         return RegionResultList()
-
-    def satisfies(self, query):
-        return not self.empty()
 
 
 class ResultList(object):
@@ -132,18 +120,15 @@ class ResultList(object):
     def __repr__(self):
         return 'ResultList: %s' % ', '.join([repr(res) for res in self])
 
-    def satisfies(self, query):
-        """
-        Is one of the results in the collection good enough to satisfy
-        the expected query data accuracy?
-        """
-        for result in self:
-            if result.satisfies(query):
-                return True
-        return False
-
     def best(self):
         """Return the best result in the collection."""
+        raise NotImplementedError()
+
+    def satisfies(self, query):
+        """
+        Is the best cluster result from this collection good enough to
+        satisfy the query?
+        """
         raise NotImplementedError()
 
 
@@ -152,15 +137,17 @@ class PositionResultList(ResultList):
 
     result_type = Position  #:
 
-    def best(self):
-        """Return the best result in the collection."""
+    def best_cluster(self):
+        """Return the best cluster from this collection."""
         if len(self) == 0:
-            return self.result_type()
+            return self.result_type().as_list()
+        if len(self) == 1:
+            return self
         not_empty = [res for res in self if not res.empty()]
-        if len(self) == 1 or len(not_empty) == 0:
-            return self[0]
+        if len(not_empty) == 0:
+            return self[0].as_list()
         if len(not_empty) == 1:
-            return not_empty[0]
+            return not_empty
 
         results = sorted(self, key=operator.attrgetter('accuracy'))
 
@@ -186,8 +173,11 @@ class PositionResultList(ResultList):
                     max([v.score for v in values]))
 
         clusters = sorted(clusters.values(), key=sum_score, reverse=True)
-        best_cluster = clusters[0]
+        return clusters[0]
 
+    def best(self):
+        """Return the best result in the collection."""
+        best_cluster = self.best_cluster()
         if len(best_cluster) == 1:
             return best_cluster[0]
 
@@ -198,6 +188,20 @@ class PositionResultList(ResultList):
 
         sorted_results = sorted(best_cluster, key=best_result)
         return sorted_results[0]
+
+    def satisfies(self, query):
+        """
+        Is the best cluster result from this collection good enough to
+        satisfy the query?
+        """
+        cluster = self.best_cluster()
+        cluster_score = sum([res.score for res in cluster])
+        cluster_accuracy = min([res.data_accuracy for res in cluster])
+
+        if (cluster_score >= 1.0 and
+                cluster_accuracy <= query.expected_accuracy):
+            return True
+        return False
 
 
 class RegionResultList(ResultList):
@@ -230,3 +234,13 @@ class RegionResultList(ResultList):
         # break tie by region with the largest radius
         sorted_regions = sorted(regions, reverse=True)
         return sorted_regions[0][2]
+
+    def satisfies(self, query):
+        """
+        Is the best cluster result from this collection good enough to
+        satisfy the query?
+        """
+        for result in self:
+            if not result.empty():
+                return True
+        return False

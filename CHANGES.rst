@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Allow queries to the fallback source if the combined score is too low.
+
 - #151: Choose best position result based on highest combined score.
 
 - #481: Fix broken cell export.

@@ -125,8 +125,8 @@ class PositionSearcher(Searcher):
     source_classes = (
         ('internal', InternalPositionSource),
         ('ocid', OCIDPositionSource),
-        ('fallback', FallbackPositionSource),
         ('geoip', GeoIPPositionSource),
+        ('fallback', FallbackPositionSource),
     )
 
     def format_result(self, result):

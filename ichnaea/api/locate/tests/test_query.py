@@ -331,13 +331,15 @@ class TestResultStats(QueryTest):
         return Position(
             lat=self.london['latitude'],
             lon=self.london['longitude'],
-            accuracy=accuracy)
+            accuracy=accuracy,
+            score=0.5)
 
     def _make_region_result(self, accuracy=100000.0):
         return Region(
             region_code='GB',
             region_name='United Kingdom',
-            accuracy=accuracy)
+            accuracy=accuracy,
+            score=0.5)
 
     def _make_query(self, result, api_key=None, api_type='locate',
                     cell=(), wifi=(), **kw):
@@ -461,7 +463,8 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         return Position(
             lat=self.london['latitude'],
             lon=self.london['longitude'],
-            accuracy=accuracy).as_list()
+            accuracy=accuracy,
+            score=0.5).as_list()
 
     def _make_query(self, source, results, api_key=None, api_type='locate',
                     cell=(), wifi=(), **kw):
