@@ -57,21 +57,21 @@ def celerybeat_schedule(app_config):
 
         'schedule-export-reports': {
             'task': 'ichnaea.data.tasks.schedule_export_reports',
-            'schedule': timedelta(seconds=8),
-            'options': {'expires': 15},
+            'schedule': timedelta(seconds=6),
+            'options': {'expires': 10},
         },
 
         'update-cellarea': {
             'task': 'ichnaea.data.tasks.update_cellarea',
-            'schedule': timedelta(seconds=8),
+            'schedule': timedelta(seconds=14),
             'args': (100, ),
-            'options': {'expires': 15},
+            'options': {'expires': 20},
         },
         'update-cellarea-ocid': {
             'task': 'ichnaea.data.tasks.update_cellarea_ocid',
-            'schedule': timedelta(seconds=9),
+            'schedule': timedelta(seconds=15),
             'args': (100, ),
-            'options': {'expires': 15},
+            'options': {'expires': 20},
         },
 
         'update-score': {
@@ -87,9 +87,9 @@ def celerybeat_schedule(app_config):
         schedule.update({
             'update-cell-' + shard_id: {
                 'task': 'ichnaea.data.tasks.update_cell',
-                'schedule': timedelta(seconds=7),
+                'schedule': timedelta(seconds=11),
                 'args': (500, shard_id),
-                'options': {'expires': 10},
+                'options': {'expires': 15},
             }
         })
 
@@ -107,9 +107,9 @@ def celerybeat_schedule(app_config):
         schedule.update({
             'update-wifi-' + shard_id: {
                 'task': 'ichnaea.data.tasks.update_wifi',
-                'schedule': timedelta(seconds=6),
+                'schedule': timedelta(seconds=10),
                 'args': (500, shard_id),
-                'options': {'expires': 10},
+                'options': {'expires': 15},
             }
         })
 

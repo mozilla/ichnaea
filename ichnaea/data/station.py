@@ -328,7 +328,7 @@ class StationUpdater(DataTask):
         if self.data_queue.enough_data(batch=batch):  # pragma: no cover
             self.task.apply_async(
                 kwargs={'batch': batch, 'shard_id': self.shard_id},
-                countdown=2,
+                countdown=5,
                 expires=10)
 
 

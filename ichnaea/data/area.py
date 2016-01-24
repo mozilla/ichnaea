@@ -38,7 +38,7 @@ class CellAreaUpdater(DataTask):
         if self.queue.enough_data(batch=batch):  # pragma: no cover
             self.task.apply_async(
                 kwargs={'batch': batch},
-                countdown=2,
+                countdown=5,
                 expires=10)
 
     def region(self, ctr_lat, ctr_lon, mcc, cells):
