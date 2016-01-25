@@ -8,6 +8,7 @@ from ichnaea.api.locate.result import (
     PositionResultList,
     Region,
 )
+from ichnaea.models import Radio
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -97,7 +98,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.ip, None)
 
     def test_cell(self):
-        cell = CellShardFactory.build()
+        cell = CellShardFactory.build(radio=Radio.lte)
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query)
 

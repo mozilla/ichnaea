@@ -5,6 +5,7 @@ Contains SQLAlchemy database models and colander validation schemata.
 from ichnaea.models.base import _Model
 
 # import all models, to make sure they are all registered
+from ichnaea.models.constants import Radio  # NOQA
 from ichnaea.models.api import ApiKey  # NOQA
 from ichnaea.models.cell import (  # NOQA
     CellArea,
@@ -15,7 +16,6 @@ from ichnaea.models.cell import (  # NOQA
     decode_cellid,
     encode_cellarea,
     encode_cellid,
-    Radio,
 )
 from ichnaea.models.content import (  # NOQA
     DataMap,

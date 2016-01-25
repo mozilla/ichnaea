@@ -48,9 +48,9 @@ you need to specify the IP of the running docker machine, on Linux use
 
 Put the value into the hosts file, for example:
 
-.. code-block:: ini
+.. code-block:: bash
 
-    192.168.99.100  ichnaea.dev
+    192.168.99.100 ichnaea.dev
 
 
 Code

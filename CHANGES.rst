@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add stricter validation of asu, signal and ta values.
+
 - Restrict observations to maximum accepted accuracy values.
 
 - Allow queries to the fallback source if the combined score is too low.

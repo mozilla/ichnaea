@@ -86,7 +86,7 @@ psc
     The physical cell id as an integer in the range of 0 to 503 (optional).
 
 The WiFi record has been extended with one extra optional field
-`frequency`.  Either `frequency` or `channel` maybe submitted to the
+`frequency`.  Either `frequency` or `channel` may be submitted to the
 geosubmit API as they are functionally equivalent.
 
 frequency

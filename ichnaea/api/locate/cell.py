@@ -55,7 +55,8 @@ def cluster_cells(cells, lookups):
     # Create a dict of cell ids mapped to their signal strength.
     signals = {}
     for lookup in lookups:
-        signals[lookup.cellid] = lookup.signal or MIN_CELL_SIGNAL
+        signals[lookup.cellid] = (lookup.signal or
+                                  MIN_CELL_SIGNAL[lookup.radio])
 
     areas = defaultdict(list)
     for cell in cells:
@@ -81,7 +82,8 @@ def cluster_areas(areas, lookups):
     # Create a dict of area ids mapped to their signal strength.
     signals = {}
     for lookup in lookups:
-        signals[lookup.areaid] = lookup.signal or MIN_CELL_SIGNAL
+        signals[lookup.areaid] = (lookup.signal or
+                                  MIN_CELL_SIGNAL[lookup.radio])
 
     clusters = []
     for area in areas:

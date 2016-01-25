@@ -200,6 +200,9 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
     class Meta:
         model = CellObservation.create
 
+    accuracy = 10.0
+    signal = -81
+
 
 class RegionStatFactory(BaseSQLFactory):
 
@@ -234,6 +237,8 @@ class WifiObservationFactory(BaseMemoryFactory):
     lat = GB_LAT
     lon = GB_LON
     range = WIFI_MIN_ACCURACY / 2.0
+    accuracy = 10.0
+    signal = -50
 
     class Meta:
         model = WifiObservation.create

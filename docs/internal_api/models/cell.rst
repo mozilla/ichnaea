@@ -61,6 +61,7 @@ signal
 
 asu
     The arbitrary strength unit. An integer in the range of 0 to 31 (optional).
+    Unknown values can be marked with a value of 99.
     The formula: ``RSSI [dBm] = (2x ASU) – 113``.
 
 ta
@@ -116,6 +117,7 @@ signal
 
 asu
     The arbitrary strength unit. An integer in the range of -5 to 91 (optional).
+    Unknown values can be marked with a value of 255.
     The formula: ``RSCP [dBm] = ASU - 116``.
 
 A special case exists for WCDMA cells, to send data about neighboring cells.
@@ -164,10 +166,10 @@ psc
 
 signal
     The received signal strength (RSRP) in dBm, typically in the range of
-    -45 to -137 (optional).
+    -43 to -140 (optional).
 
 asu
-    The arbitrary strength unit. An integer in the range of 0 to 95 (optional).
+    The arbitrary strength unit. An integer in the range of 0 to 97 (optional).
     The formula: ``RSRP [dBm] = ASU – 140``.
 
 ta

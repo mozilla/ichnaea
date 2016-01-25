@@ -80,6 +80,7 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
                      constants.MAX_WIFI_CHANNEL)):
                 # shallow copy
                 data = dict(data)
+
                 # if no explicit channel was given, calculate
                 freq = data.get('frequency', None)
                 if freq is None:
@@ -88,11 +89,11 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
                 if 2411 < freq < 2473:
                     # 2.4 GHz band
                     data['channel'] = (freq - 2407) // 5
-
+                elif freq == 2484:
+                    data['channel'] = 14
                 elif 5169 < freq < 5826:
                     # 5 GHz band
                     data['channel'] = (freq - 5000) // 5
-
                 else:
                     data['channel'] = None
 

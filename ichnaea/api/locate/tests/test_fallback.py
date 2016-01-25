@@ -25,6 +25,7 @@ from ichnaea.api.locate.tests.base import (
 )
 from ichnaea.api.locate.tests.test_query import QueryTest
 from ichnaea import floatjson
+from ichnaea.models import Radio
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -136,7 +137,7 @@ class TestOutboundSchema(TestCase):
         self.assertEqual(data, {'fallbacks': {'lacf': True}})
 
     def test_cell(self):
-        cell = CellShardFactory.build()
+        cell = CellShardFactory.build(radio=Radio.lte)
         query = Query(cell=[
             {'radio': cell.radio, 'mcc': cell.mcc, 'mnc': cell.mnc,
              'lac': cell.lac, 'cid': cell.cid, 'signal': -70, 'ta': 15,

@@ -2,12 +2,25 @@
 Contains model and schemata specific constants.
 """
 
+from enum import IntEnum
 import re
 
 import mobile_codes
 from six import string_types
 
 from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
+
+
+class Radio(IntEnum):
+    """An integer enum representing a radio type."""
+    __order__ = 'gsm cdma wcdma umts lte'
+
+    gsm = 0  #: 0
+    cdma = 1  #: 1
+    wcdma = 2  #: 2
+    umts = 2  #: 2
+    lte = 3  #: 3
+
 
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
@@ -41,7 +54,7 @@ MIN_WIFI_CHANNEL = 0  #: Minimum accepted WiFi channel.
 MAX_WIFI_CHANNEL = 166  #: Maximum accepted WiFi channel.
 
 MIN_WIFI_SIGNAL = -100  #: Minimum accepted WiFi signal strength value.
-MAX_WIFI_SIGNAL = -1  #: Maximum accepted WiFi signal strength value.
+MAX_WIFI_SIGNAL = -10  #: Maximum accepted WiFi signal strength value.
 
 MIN_MCC = 1  #: Minimum accepted network code.
 MAX_MCC = 999  #: Maximum accepted network code.
@@ -70,9 +83,33 @@ MIN_CID = 1  #: Minimum accepted cell id.
 MAX_CID = 2 ** 28 - 1  #: Maximum accepted cell id.
 MAX_CID_GSM = 2 ** 16 - 1  #: Maximum accepted GSM cell id.
 
-MIN_PSC = 0  #: Minimum accepted psc.
-MAX_PSC = 511  #: Maximum accepted psc.
+MIN_PSC = 0  #: Minimum accepted psc/pci.
+MAX_PSC = 511  #: Maximum accepted psc/pci.
 MAX_PSC_LTE = 503  #: Maximum accepted physical cell id.
 
-MIN_CELL_SIGNAL = -150  #: Minimum accepted cell signal strength value.
-MAX_CELL_SIGNAL = -1  #: Maximum accepted cell signal strength value.
+MIN_CELL_TA = 0  #: Minimum accepted timing advance.
+MAX_CELL_TA = 63  #: Maximum accepted timing advance.
+
+MIN_CELL_ASU = {
+    Radio.gsm: 0,
+    Radio.wcdma: -5,
+    Radio.lte: 0,
+}  #: Minimum arbitrary strength unit per radio type.
+
+MAX_CELL_ASU = {
+    Radio.gsm: 31,
+    Radio.wcdma: 91,
+    Radio.lte: 97,
+}    #: Maximum arbitrary strength unit per radio type.
+
+MIN_CELL_SIGNAL = {
+    Radio.gsm: -113,
+    Radio.wcdma: -121,
+    Radio.lte: -140,
+}  #: Minimum accepted cell signal strength value per radio type.
+
+MAX_CELL_SIGNAL = {
+    Radio.gsm: -51,
+    Radio.wcdma: -25,
+    Radio.lte: -43,
+}  #: Maximum accepted cell signal strength value per radio type.
