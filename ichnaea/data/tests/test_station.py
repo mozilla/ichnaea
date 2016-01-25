@@ -11,6 +11,7 @@ from ichnaea.data.tasks import (
 )
 from ichnaea.models import (
     CellShard,
+    Radio,
     StatCounter,
     StatKey,
     WifiShard,
@@ -249,6 +250,36 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.006)
         self.assertEqual(cell.radius, 468)
         self.assertEqual(cell.samples, 5)
+
+    def test_weighted_update(self):
+        cell = CellShardFactory(radio=Radio.gsm, samples=1)
+        cell_lat = cell.lat
+        cell_lon = cell.lon
+        cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
+                        lac=cell.lac, cid=cell.cid)
+
+        obs_factory = CellObservationFactory
+        obs = [
+            obs_factory(lat=cell.lat, lon=cell.lon - 0.002,
+                        accuracy=20.0, **cell_key),
+            obs_factory(lat=cell.lat, lon=cell.lon - 0.004,
+                        accuracy=40.0, **cell_key),
+        ]
+
+        self.session.commit()
+        self._queue_and_update(obs)
+        shard = CellShard.shard_model(cell.cellid)
+        cells = self.session.query(shard).all()
+        self.assertEqual(len(cells), 1)
+        cell = cells[0]
+        self.assertAlmostEqual(cell.lat, cell_lat)
+        self.assertAlmostEqual(cell.max_lat, cell_lat)
+        self.assertAlmostEqual(cell.min_lat, cell_lat)
+        self.assertAlmostEqual(cell.lon, cell_lon - 0.0015469, 7)
+        self.assertAlmostEqual(cell.max_lon, cell_lon)
+        self.assertAlmostEqual(cell.min_lon, cell_lon - 0.004)
+        self.assertEqual(cell.radius, 170)
+        self.assertEqual(cell.samples, 3)
 
 
 class TestWifi(StationTest):
@@ -544,3 +575,32 @@ class TestWifi(StationTest):
         wifi2 = self.session.query(wifi2.__class__).get(wifi2.mac)
         self.assertEqual(wifi1.block_count, 0)
         self.assertEqual(wifi2.region, 'CH')
+
+    def test_weighted_update(self):
+        wifi = WifiShardFactory(samples=2)
+        wifi_lat = wifi.lat
+        wifi_lon = wifi.lon
+        wifi_key = dict(key=wifi.mac)
+
+        obs_factory = WifiObservationFactory
+        obs = [
+            obs_factory(lat=wifi.lat, lon=wifi.lon - 0.002,
+                        accuracy=20.0, signal=-30, **wifi_key),
+            obs_factory(lat=wifi.lat, lon=wifi.lon - 0.004,
+                        accuracy=40.0, signal=-60, **wifi_key),
+        ]
+
+        self.session.commit()
+        self._queue_and_update(obs)
+        shard = WifiShard.shard_model(wifi.mac)
+        wifis = self.session.query(shard).all()
+        self.assertEqual(len(wifis), 1)
+        wifi = wifis[0]
+        self.assertAlmostEqual(wifi.lat, wifi_lat)
+        self.assertAlmostEqual(wifi.max_lat, wifi_lat)
+        self.assertAlmostEqual(wifi.min_lat, wifi_lat)
+        self.assertAlmostEqual(wifi.lon, wifi_lon - 0.0018928, 7)
+        self.assertAlmostEqual(wifi.max_lon, wifi_lon)
+        self.assertAlmostEqual(wifi.min_lon, wifi_lon - 0.004)
+        self.assertEqual(wifi.radius, 146)
+        self.assertEqual(wifi.samples, 4)

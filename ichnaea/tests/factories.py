@@ -238,7 +238,8 @@ class WifiObservationFactory(BaseMemoryFactory):
     lon = GB_LON
     range = WIFI_MIN_ACCURACY / 2.0
     accuracy = 10.0
-    signal = -50
+    signal = -80
+    snr = 30
 
     class Meta:
         model = WifiObservation.create

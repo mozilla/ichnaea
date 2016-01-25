@@ -139,6 +139,24 @@ cpdef tuple centroid(ndarray[double_t, ndim=2] points):
     return (avg_lat, avg_lon)
 
 
+cpdef tuple centroid_weighted(ndarray[double_t, ndim=2] points,
+                              ndarray[double_t, ndim=1] weights):
+    """
+    Compute the weighted centroid from a 2-d array of points and
+    a 1-d array of weights.
+
+    Returns a two-tuple of (lat, lon).
+    """
+    cdef ndarray[double_t, ndim=1] center
+    cdef double lat, lon
+
+    center = numpy.average(points, axis=0, weights=weights)
+
+    lat = center[0]
+    lon = center[1]
+    return (lat, lon)
+
+
 cpdef int circle_radius(double lat, double lon,
                         double max_lat, double max_lon,
                         double min_lat, double min_lon):

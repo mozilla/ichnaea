@@ -13,6 +13,10 @@ from ichnaea.tests.base import (
     GB_LON,
     GB_MCC,
 )
+from ichnaea.tests.factories import (
+    CellObservationFactory,
+    WifiObservationFactory
+)
 
 
 class TestCellObservation(DBTestCase):
@@ -53,6 +57,19 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
 
+    def test_weight(self):
+        obs_factory = CellObservationFactory.build
+        self.assertAlmostEqual(
+            obs_factory(accuracy=None, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=0.0, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=10.0, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=160.0, signal=-80).weight, 0.25, 2)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=200.0, signal=-80).weight, 0.22, 2)
+
 
 class TestWifiObservation(DBTestCase):
 
@@ -86,3 +103,30 @@ class TestWifiObservation(DBTestCase):
         self.assertEqual(result.mac, mac)
         self.assertEqual(result.lat, GB_LAT)
         self.assertEqual(result.lon, GB_LON)
+
+    def test_weight(self):
+        obs_factory = WifiObservationFactory.build
+        self.assertAlmostEqual(
+            obs_factory(accuracy=None, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=0.0, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=10.0, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=40.0, signal=-80).weight, 0.5)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=100.0, signal=-80).weight, 0.316, 3)
+
+        self.assertAlmostEqual(
+            obs_factory(accuracy=10.0, signal=-100).weight, 0.482, 3)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=10.0, signal=-30).weight, 16.0, 2)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=10.0, signal=-10).weight, 123.46, 2)
+
+        self.assertAlmostEqual(
+            obs_factory(accuracy=40.0, signal=-30).weight, 8.0, 2)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=100.0, signal=-30).weight, 5.06, 2)
+        self.assertAlmostEqual(
+            obs_factory(accuracy=100.0, signal=-10).weight, 39.04, 2)

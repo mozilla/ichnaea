@@ -4,7 +4,7 @@ import numpy
 
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
-    centroid,
+    centroid_weighted,
     circle_radius,
     distance,
 )
@@ -95,13 +95,21 @@ class StationUpdater(DataTask):
         created = self.utcnow
         values = self._base_station_values(station_key, observations)
 
-        obs_length = len(observations)
         obs_positions = numpy.array(
             [(obs.lat, obs.lon) for obs in observations],
             dtype=numpy.double)
-        obs_new_lat, obs_new_lon = centroid(obs_positions)
-        obs_max_lat, obs_max_lon = numpy.nanmax(obs_positions, axis=0)
-        obs_min_lat, obs_min_lon = numpy.nanmin(obs_positions, axis=0)
+        obs_length = len(observations)
+
+        obs_weights = numpy.array(
+            [obs.weight for obs in observations],
+            dtype=numpy.double)
+        obs_weight = float(obs_weights.sum())
+
+        obs_new_lat, obs_new_lon = centroid_weighted(
+            obs_positions, obs_weights)
+
+        obs_max_lat, obs_max_lon = obs_positions.max(axis=0)
+        obs_min_lat, obs_min_lon = obs_positions.min(axis=0)
         obs_box_dist = distance(obs_min_lat, obs_min_lon,
                                 obs_max_lat, obs_max_lon)
 
@@ -198,12 +206,12 @@ class StationUpdater(DataTask):
                 else:
                     old_weight = min((shard_station.samples or 0),
                                      self.MAX_OLD_OBSERVATIONS)
-                new_lat = ((obs_new_lat * obs_length +
+                new_lat = ((obs_new_lat * obs_weight +
                             (shard_station.lat or 0.0) * old_weight) /
-                           (obs_length + old_weight))
-                new_lon = ((obs_new_lon * obs_length +
+                           (obs_weight + old_weight))
+                new_lon = ((obs_new_lon * obs_weight +
                             (shard_station.lon or 0.0) * old_weight) /
-                           (obs_length + old_weight))
+                           (obs_weight + old_weight))
                 samples = (shard_station.samples or 0) + obs_length
                 radius = circle_radius(
                     new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)

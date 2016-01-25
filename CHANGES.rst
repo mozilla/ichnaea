@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Weight observations by their accuracy and signal strength values.
+
 - Add stricter validation of asu, signal and ta values.
 
 - Restrict observations to maximum accepted accuracy values.

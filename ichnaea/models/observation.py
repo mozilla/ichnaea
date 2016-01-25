@@ -1,3 +1,4 @@
+import math
 import operator
 
 import colander
@@ -92,6 +93,14 @@ class Report(HashKey, CreationMixin, ValidationMixin):
         for report in reports:
             values.update(report.__dict__)
         return cls(**values)
+
+    @property
+    def accuracy_weight(self):
+        # Default to 10.0 meters for unknown accuracy
+        accuracy = self.accuracy is not None and self.accuracy or 10.0
+        # Don't differentiate values below 10 meters
+        # Maps 10: 1, 20: 0.7, 40: 0.5, 80: 0.35, 100: 0.32, 200: 0.22
+        return math.sqrt(10 / max(accuracy, 10.0))
 
 
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
@@ -192,6 +201,12 @@ class CellObservation(CellReport, Report):
     _valid_schema = ValidCellObservationSchema()
     _fields = CellReport._fields + Report._fields
 
+    @property
+    def weight(self):
+        # TODO: Define signal weights for each radio type
+        signal_weight = 1.0
+        return signal_weight * self.accuracy_weight
+
 
 class ValidWifiReportSchema(ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
@@ -257,3 +272,11 @@ class WifiObservation(WifiReport, Report):
 
     _valid_schema = ValidWifiObservationSchema()
     _fields = WifiReport._fields + Report._fields
+
+    @property
+    def weight(self):
+        # Default to -80 dBm for unknown signal strength
+        signal = self.signal is not None and self.signal or -80
+        # Maps -100: ~0.5, -80: 1.0, -60: 2.4, -30: 16, -10: ~123
+        signal_weight = ((1.0 / (signal - 20.0) ** 2) * 10000) ** 2
+        return signal_weight * self.accuracy_weight
