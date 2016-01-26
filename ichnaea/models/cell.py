@@ -6,6 +6,7 @@ import colander
 from sqlalchemy import (
     BINARY,
     Column,
+    Date,
     Index,
     PrimaryKeyConstraint,
     String,
@@ -29,6 +30,7 @@ from ichnaea.models.sa_types import (
     TinyIntEnum,
 )
 from ichnaea.models.schema import (
+    DateFromString,
     DefaultNode,
     ValidatorNode,
 )
@@ -339,6 +341,7 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
     region = colander.SchemaNode(colander.String(), missing=None)
     avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
     num_cells = colander.SchemaNode(colander.Integer(), missing=0)
+    last_seen = colander.SchemaNode(DateFromString(), missing=None)
 
 
 class CellAreaMixin(PositionMixin, TimeTrackingMixin,
@@ -346,17 +349,18 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin,
 
     _valid_schema = ValidCellAreaSchema()
 
-    areaid = Column(CellAreaColumn(7))
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
-    mcc = Column(SmallInteger, autoincrement=False, nullable=False)
-    mnc = Column(SmallInteger, autoincrement=False, nullable=False)
+    areaid = Column(CellAreaColumn(7))  #:
+    radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)  #:
+    mcc = Column(SmallInteger, autoincrement=False, nullable=False)  #:
+    mnc = Column(SmallInteger, autoincrement=False, nullable=False)  #:
     lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, nullable=False)
+                 autoincrement=False, nullable=False)  #:
 
-    radius = Column(Integer)
-    region = Column(String(2))
-    avg_cell_radius = Column(Integer(unsigned=True))
-    num_cells = Column(Integer(unsigned=True))
+    radius = Column(Integer)  #:
+    region = Column(String(2))  #:
+    avg_cell_radius = Column(Integer(unsigned=True))  #:
+    num_cells = Column(Integer(unsigned=True))  #:
+    last_seen = Column(Date)  #:
 
     def score_sample_weight(self):
         # treat areas for which we get the exact same

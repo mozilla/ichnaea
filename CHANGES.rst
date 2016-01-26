@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 0987336d9d63: Add weight and last_seen columns to station tables.
+
 - 44e1b53944ee: Remove old cell tables.
 
 Changes

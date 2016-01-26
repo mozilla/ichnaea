@@ -101,7 +101,8 @@ class TestWifiShard(DBTestCase):
             mac='111101123456', created=now, modified=now,
             lat=GB_LAT, max_lat=GB_LAT, min_lat=GB_LAT,
             lon=GB_LON, max_lon=GB_LON, min_lon=GB_LON,
-            radius=200, region='GB', samples=10, source=StationSource.gnss,
+            radius=200, region='GB', samples=10,
+            source=StationSource.gnss, weight=1.5, last_seen=today,
             block_first=today, block_last=today, block_count=1,
             _raise_invalid=True,
         ))
@@ -121,6 +122,8 @@ class TestWifiShard(DBTestCase):
         self.assertEqual(wifi.region, 'GB')
         self.assertEqual(wifi.samples, 10)
         self.assertEqual(wifi.source, StationSource.gnss)
+        self.assertEqual(wifi.weight, 1.5)
+        self.assertEqual(wifi.last_seen, today)
         self.assertEqual(wifi.block_first, today)
         self.assertEqual(wifi.block_last, today)
         self.assertEqual(wifi.block_count, 1)

@@ -149,8 +149,10 @@ class CellShardFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
     radius = CELL_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    weight = 1.0
     created = util.utcnow()
     modified = util.utcnow()
+    last_seen = util.utcnow().date()
 
     class Meta:
         model = CellShard.create
@@ -161,8 +163,10 @@ class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
     radius = CELL_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    weight = 1.0
     created = util.utcnow()
     modified = util.utcnow()
+    last_seen = util.utcnow().date()
 
     class Meta:
         model = CellOCID.create
@@ -176,6 +180,7 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
     num_cells = 1
     created = util.utcnow()
     modified = util.utcnow()
+    last_seen = util.utcnow().date()
 
     class Meta:
         model = CellArea.create
@@ -190,6 +195,7 @@ class CellAreaOCIDFactory(CellAreaPositionFactory,
     num_cells = 1
     created = util.utcnow()
     modified = util.utcnow()
+    last_seen = util.utcnow().date()
 
     class Meta:
         model = CellAreaOCID.create
@@ -233,8 +239,10 @@ class WifiShardFactory(BaseSQLFactory):
     radius = WIFI_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    weight = 1.0
     created = util.utcnow()
     modified = util.utcnow()
+    last_seen = util.utcnow().date()
 
     class Meta:
         model = WifiShard.create

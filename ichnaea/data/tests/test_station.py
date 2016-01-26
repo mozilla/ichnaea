@@ -88,7 +88,8 @@ class TestCell(StationTest):
         cell = cells[0]
         cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                         lac=cell.lac, cid=cell.cid)
-        cell.samples = 0
+        cell.samples = None
+        cell.weight = None
         obs.extend([
             obs_factory(lat=cell.lat + 0.01,
                         lon=cell.lon + 0.01, **cell_key),
@@ -104,6 +105,7 @@ class TestCell(StationTest):
         cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                         lac=cell.lac, cid=cell.cid)
         cell.samples = 1
+        cell.weight = 1.0
         cell.lat += 0.1
         obs.extend([
             obs_factory(lat=cell.lat + 1.0,
@@ -117,6 +119,7 @@ class TestCell(StationTest):
         cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                         lac=cell.lac, cid=cell.cid)
         cell.samples = 1
+        cell.weight = 1.0
         obs.extend([
             obs_factory(lat=cell.lat + 3.0,
                         lon=cell.lon, **cell_key),
@@ -129,6 +132,7 @@ class TestCell(StationTest):
         cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                         lac=cell.lac, cid=cell.cid)
         cell.samples = 1
+        cell.weight = 1.0
         cell.lon *= -1.0
         obs.extend([
             obs_factory(lat=cell.lat + 1.0,
@@ -173,7 +177,7 @@ class TestCell(StationTest):
             if obs is not None:
                 observations.append(obs)
 
-        cell1 = CellShardFactory(samples=3)
+        cell1 = CellShardFactory(samples=3, weight=3.0)
         lat1, lon1 = (cell1.lat, cell1.lon)
         key1 = dict(radio=cell1.radio, lac=cell1.lac, cid=cell1.cid)
         obs_factory(lat=lat1, lon=lon1, created=now, **key1)
@@ -183,13 +187,14 @@ class TestCell(StationTest):
         obs_factory(created=now, **invalid_key)
         obs_factory(created=now, **invalid_key)
 
-        cell2 = CellShardFactory(lat=lat1 + 1.0, lon=lon1 + 1.0, samples=3)
+        cell2 = CellShardFactory(
+            lat=lat1 + 1.0, lon=lon1 + 1.0, samples=3, weight=3.0)
         lat2, lon2 = (cell2.lat, cell2.lon)
         key2 = dict(radio=cell2.radio, lac=cell2.lac, cid=cell2.cid)
         obs_factory(lat=lat2 + 0.001, lon=lon2 + 0.002, created=now, **key2)
         obs_factory(lat=lat2 + 0.003, lon=lon2 + 0.006, created=now, **key2)
 
-        cell3 = CellShardFactory(samples=100000)
+        cell3 = CellShardFactory(samples=100000, weight=100000.0)
         lat3, lon3 = (cell3.lat, cell3.lon)
         key3 = dict(radio=cell3.radio, lac=cell3.lac, cid=cell3.cid)
         for i in range(10):
@@ -213,13 +218,13 @@ class TestCell(StationTest):
         shard = CellShard.shard_model(cell3.cellid)
         found = (self.session.query(shard)
                              .filter(shard.cellid == cell3.cellid)).one()
-        expected_lat = ((lat3 * 1000) + (lat3 + 0.5) * 10) / 1010
-        expected_lon = ((lon3 * 1000) + (lon3 + 0.5) * 10) / 1010
+        expected_lat = ((lat3 * 10000) + (lat3 + 0.5) * 10) / 10010
+        expected_lon = ((lon3 * 10000) + (lon3 + 0.5) * 10) / 10010
         self.assertAlmostEqual(found.lat, expected_lat, 7)
         self.assertAlmostEqual(found.lon, expected_lon, 7)
 
     def test_max_min_radius_update(self):
-        cell = CellShardFactory(radius=150, samples=3)
+        cell = CellShardFactory(radius=150, samples=3, weight=3.0)
         cell_lat = cell.lat
         cell_lon = cell.lon
         cell.max_lat = cell.lat + 0.001
@@ -250,9 +255,10 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.006)
         self.assertEqual(cell.radius, 468)
         self.assertEqual(cell.samples, 5)
+        self.assertAlmostEqual(cell.weight, 5.0, 2)
 
     def test_weighted_update(self):
-        cell = CellShardFactory(radio=Radio.gsm, samples=1)
+        cell = CellShardFactory(radio=Radio.gsm, samples=1, weight=2.0)
         cell_lat = cell.lat
         cell_lon = cell.lon
         cell_key = dict(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
@@ -275,11 +281,12 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.lat, cell_lat)
         self.assertAlmostEqual(cell.max_lat, cell_lat)
         self.assertAlmostEqual(cell.min_lat, cell_lat)
-        self.assertAlmostEqual(cell.lon, cell_lon - 0.001829, 7)
+        self.assertAlmostEqual(cell.lon, cell_lon - 0.0016358, 7)
         self.assertAlmostEqual(cell.max_lon, cell_lon)
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.004)
-        self.assertEqual(cell.radius, 150)
+        self.assertEqual(cell.radius, 164)
         self.assertEqual(cell.samples, 3)
+        self.assertAlmostEqual(cell.weight, 9.47, 2)
 
 
 class TestWifi(StationTest):
@@ -312,6 +319,7 @@ class TestWifi(StationTest):
         self.assertEqual(wifi.radius, 0)
         self.assertEqual(wifi.region, 'GB')
         self.assertEqual(wifi.samples, 1)
+        self.assertAlmostEqual(wifi.weight, 1.0, 2)
         self.assertEqual(wifi.created.date(), utcnow.date())
         self.assertEqual(wifi.modified.date(), utcnow.date())
         self.assertEqual(wifi.block_first, None)
@@ -323,7 +331,7 @@ class TestWifi(StationTest):
         obs = []
         obs_factory = WifiObservationFactory
         # first wifi
-        wifi1 = WifiShardFactory(lat=None, lon=None, samples=3)
+        wifi1 = WifiShardFactory(lat=None, lon=None, samples=3, weight=3.0)
         new_pos = WifiShardFactory.build()
         mac1, lat1, lon1 = (wifi1.mac, new_pos.lat, new_pos.lon)
         obs.extend([
@@ -339,7 +347,7 @@ class TestWifi(StationTest):
             lat=lat1 + 1.0, lon=lon1 + 1.0,
             max_lat=lat1 + 1.0, min_lat=lat1 + 0.999,
             max_lon=lon1 + 1.0, min_lon=None,
-            radius=20, samples=2,
+            radius=20, samples=2, weight=2.0,
             created=utcnow - timedelta(10),
             modified=utcnow - timedelta(10))
         mac2, lat2, lon2 = (wifi2.mac, wifi2.lat, wifi2.lon)
@@ -364,6 +372,7 @@ class TestWifi(StationTest):
         self.assertEqual(found.radius, 304)
         self.assertEqual(found.region, 'GB')
         self.assertEqual(found.samples, 6)
+        self.assertAlmostEqual(found.weight, 6.0, 2)
 
         shard = WifiShard.shard_model(mac2)
         found = self.session.query(shard).filter(shard.mac == mac2).one()
@@ -378,6 +387,7 @@ class TestWifi(StationTest):
         self.assertEqual(found.radius, 260)
         self.assertEqual(found.region, 'GB')
         self.assertEqual(found.samples, 4)
+        self.assertAlmostEqual(found.weight, 4.0, 2)
 
     def test_temp_blocked(self):
         utcnow = util.utcnow()
@@ -402,6 +412,7 @@ class TestWifi(StationTest):
         self.assertTrue(wifis[0].lat is not None)
         self.assertTrue(wifis[0].lon is not None)
         self.assertEqual(wifis[0].samples, 2)
+        self.assertAlmostEqual(wifis[0].weight, 2.0, 2)
 
         shard = WifiShard.shard_model(bad_wifi.mac)
         wifis = (self.session.query(shard)
@@ -423,7 +434,8 @@ class TestWifi(StationTest):
             mac=obs.mac,
             lat=None,
             lon=None,
-            samples=0,
+            samples=None,
+            weight=None,
             created=last_week,
             modified=last_week,
             block_first=last_week.date(),
@@ -445,6 +457,7 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(wifi.lon, obs.lon)
         self.assertEqual(wifi.region, 'GB')
         self.assertEqual(wifi.samples, 1)
+        self.assertAlmostEqual(wifi.weight, 1.0, 2)
         self.check_statcounter(StatKey.unique_wifi, 0)
 
     def test_blocklist_moving_wifis(self):
@@ -473,10 +486,12 @@ class TestWifi(StationTest):
         ])
         wifi.lat = None
         wifi.lon = None
-        wifi.samples = 0
+        wifi.samples = None
+        wifi.weight = None
         # a wifi with a prior known position
         wifi = wifis[1]
         wifi.samples = 1
+        wifi.weight = 1.0
         wifi.lat += 1.0
         wifi.lon += 1.0
         obs.extend([
@@ -489,6 +504,7 @@ class TestWifi(StationTest):
         # a wifi with a very different prior position
         wifi = wifis[2]
         wifi.samples = 1
+        wifi.weight = 1.0
         obs.extend([
             obs_factory(lat=wifi.lat + 2.0,
                         lon=wifi.lon, key=wifi.mac),
@@ -577,7 +593,7 @@ class TestWifi(StationTest):
         self.assertEqual(wifi2.region, 'CH')
 
     def test_weighted_update(self):
-        wifi = WifiShardFactory(samples=2)
+        wifi = WifiShardFactory(samples=2, weight=3.0)
         wifi_lat = wifi.lat
         wifi_lon = wifi.lon
         wifi_key = dict(key=wifi.mac)
@@ -599,8 +615,9 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(wifi.lat, wifi_lat)
         self.assertAlmostEqual(wifi.max_lat, wifi_lat)
         self.assertAlmostEqual(wifi.min_lat, wifi_lat)
-        self.assertAlmostEqual(wifi.lon, wifi_lon - 0.0018928, 7)
+        self.assertAlmostEqual(wifi.lon, wifi_lon - 0.0017709, 7)
         self.assertAlmostEqual(wifi.max_lon, wifi_lon)
         self.assertAlmostEqual(wifi.min_lon, wifi_lon - 0.004)
-        self.assertEqual(wifi.radius, 146)
+        self.assertEqual(wifi.radius, 154)
         self.assertEqual(wifi.samples, 4)
+        self.assertAlmostEqual(wifi.weight, 15.53, 2)

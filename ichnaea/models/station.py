@@ -210,7 +210,9 @@ class ValidStationSchema(ValidBboxSchema,
     region = colander.SchemaNode(colander.String(), missing=None)
     samples = colander.SchemaNode(colander.Integer(), missing=0)
     source = StationSourceNode(StationSourceType(), missing=None)
+    weight = colander.SchemaNode(colander.Float(), missing=None)
 
+    last_seen = colander.SchemaNode(DateFromString(), missing=None)
     block_first = colander.SchemaNode(DateFromString(), missing=None)
     block_last = colander.SchemaNode(DateFromString(), missing=None)
     block_count = colander.SchemaNode(colander.Integer(), missing=0)
@@ -227,7 +229,9 @@ class StationMixin(BboxMixin,
     region = Column(String(2))  #:
     samples = Column(Integer(unsigned=True))  #:
     source = Column(TinyIntEnum(StationSource))  #:
+    weight = Column(Double(asdecimal=False))  #:
 
+    last_seen = Column(Date)  #:
     block_first = Column(Date)  #:
     block_last = Column(Date)  #:
     block_count = Column(TinyInteger(unsigned=True))  #:

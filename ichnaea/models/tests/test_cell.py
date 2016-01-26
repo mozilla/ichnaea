@@ -114,7 +114,8 @@ class TestCellShard(DBTestCase):
             lat=GB_LAT, lon=GB_LON,
             max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
             max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
-            radius=11, region='GB', samples=15, source=StationSource.gnss,
+            radius=11, region='GB', samples=15,
+            source=StationSource.gnss, weight=1.5, last_seen=now.date(),
             block_first=now.date(), block_last=now.date(), block_count=1))
         self.session.flush()
 
@@ -136,6 +137,8 @@ class TestCellShard(DBTestCase):
         self.assertEqual(result.region, 'GB')
         self.assertEqual(result.samples, 15)
         self.assertEqual(result.source, StationSource.gnss)
+        self.assertEqual(result.weight, 1.5)
+        self.assertEqual(result.last_seen, now.date())
         self.assertEqual(result.block_first, now.date())
         self.assertEqual(result.block_last, now.date())
         self.assertEqual(result.block_count, 1)
@@ -244,7 +247,8 @@ class TestCellOCID(DBTestCase):
             lat=GB_LAT, lon=GB_LON,
             max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
             max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
-            radius=11, region='GB', samples=15, source=StationSource.gnss,
+            radius=11, region='GB', samples=15,
+            source=StationSource.gnss, weight=1.5, last_seen=now.date(),
             block_first=now.date(), block_last=now.date(), block_count=1))
         self.session.flush()
 
@@ -266,6 +270,8 @@ class TestCellOCID(DBTestCase):
         self.assertEqual(result.region, 'GB')
         self.assertEqual(result.samples, 15)
         self.assertEqual(result.source, StationSource.gnss)
+        self.assertEqual(result.weight, 1.5)
+        self.assertEqual(result.last_seen, now.date())
         self.assertEqual(result.block_first, now.date())
         self.assertEqual(result.block_last, now.date())
         self.assertEqual(result.block_count, 1)

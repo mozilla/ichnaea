@@ -24,7 +24,7 @@ from ichnaea import util
 
 class StationUpdater(DataTask):
 
-    MAX_OLD_OBSERVATIONS = 1000
+    MAX_OLD_WEIGHT = 10000.0
     max_dist_meters = None
     station_type = None
     stat_obs_key = None
@@ -136,6 +136,7 @@ class StationUpdater(DataTask):
                     'region': shard_station.region,
                     'samples': None,
                     'source': None,
+                    'weight': None,
                     'block_first': shard_station.block_first or self.today,
                     'block_last': self.today,
                     'block_count': block_count + 1,
@@ -159,6 +160,7 @@ class StationUpdater(DataTask):
                 'region': GEOCODER.region(obs_new_lat, obs_new_lon),
                 'samples': obs_length,
                 'source': None,
+                'weight': obs_weight,
             })
             return ('new', values)
         else:
@@ -194,6 +196,7 @@ class StationUpdater(DataTask):
                     'region': shard_station.region,
                     'samples': None,
                     'source': None,
+                    'weight': None,
                     'block_first': shard_station.block_first or self.today,
                     'block_last': self.today,
                     'block_count': block_count + 1,
@@ -204,15 +207,22 @@ class StationUpdater(DataTask):
                 if shard_station.lat is None or shard_station.lon is None:
                     old_weight = 0
                 else:
-                    old_weight = min((shard_station.samples or 0),
-                                     self.MAX_OLD_OBSERVATIONS)
+                    old_weight = min((shard_station.weight or 0.0),
+                                     self.MAX_OLD_WEIGHT)
+
                 new_lat = ((obs_new_lat * obs_weight +
                             (shard_station.lat or 0.0) * old_weight) /
                            (obs_weight + old_weight))
                 new_lon = ((obs_new_lon * obs_weight +
                             (shard_station.lon or 0.0) * old_weight) /
                            (obs_weight + old_weight))
-                samples = (shard_station.samples or 0) + obs_length
+
+                # put in maximum value to avoid overflow of DB column
+                samples = min((shard_station.samples or 0) + obs_length,
+                              4294967295)
+                weight = min((shard_station.weight or 0.0) + obs_weight,
+                             1000000000.0)
+
                 radius = circle_radius(
                     new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
                 region = shard_station.region
@@ -233,6 +243,7 @@ class StationUpdater(DataTask):
                     'region': region,
                     'samples': samples,
                     'source': None,
+                    'weight': weight,
                     # use the exact same keys as in the moving case
                     'block_first': shard_station.block_first,
                     'block_last': shard_station.block_last,
