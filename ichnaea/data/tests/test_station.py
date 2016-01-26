@@ -261,8 +261,8 @@ class TestCell(StationTest):
         obs_factory = CellObservationFactory
         obs = [
             obs_factory(lat=cell.lat, lon=cell.lon - 0.002,
-                        accuracy=20.0, **cell_key),
-            obs_factory(lat=cell.lat, lon=cell.lon - 0.004,
+                        accuracy=20.0, signal=-51, **cell_key),
+            obs_factory(lat=cell.lat, signal=-111, lon=cell.lon - 0.004,
                         accuracy=40.0, **cell_key),
         ]
 
@@ -275,10 +275,10 @@ class TestCell(StationTest):
         self.assertAlmostEqual(cell.lat, cell_lat)
         self.assertAlmostEqual(cell.max_lat, cell_lat)
         self.assertAlmostEqual(cell.min_lat, cell_lat)
-        self.assertAlmostEqual(cell.lon, cell_lon - 0.0015469, 7)
+        self.assertAlmostEqual(cell.lon, cell_lon - 0.001829, 7)
         self.assertAlmostEqual(cell.max_lon, cell_lon)
         self.assertAlmostEqual(cell.min_lon, cell_lon - 0.004)
-        self.assertEqual(cell.radius, 170)
+        self.assertEqual(cell.radius, 150)
         self.assertEqual(cell.samples, 3)
 
 

@@ -203,8 +203,22 @@ class CellObservation(CellReport, Report):
 
     @property
     def weight(self):
-        # TODO: Define signal weights for each radio type
+        offsets = {
+            # GSM median signal is -95
+            # Map -113: 0.52, -95: 1.0, -79: 2.0, -51: 10.2
+            Radio.gsm: (-95, -5.0),
+            # WCDMA median signal is -100
+            # Map -121: 0.47, -100: 1.0, -80: 2.4, -50: 16, -25: 256
+            Radio.wcdma: (-100, 0.0),
+            # LTE median signal is -105
+            # Map -140: 0.3, -105: 1.0, -89: 2.0, -55: 16.0, -43: 48.0
+            Radio.lte: (-105, 5.0),
+        }
+        default, offset = offsets.get(self.radio, (None, 0.0))
+        signal = self.signal if self.signal is not None else default
         signal_weight = 1.0
+        if signal is not None:
+            signal_weight = ((1.0 / (signal + offset) ** 2) * 10000) ** 2
         return signal_weight * self.accuracy_weight
 
 
@@ -276,7 +290,7 @@ class WifiObservation(WifiReport, Report):
     @property
     def weight(self):
         # Default to -80 dBm for unknown signal strength
-        signal = self.signal is not None and self.signal or -80
+        signal = self.signal if self.signal is not None else -80
         # Maps -100: ~0.5, -80: 1.0, -60: 2.4, -30: 16, -10: ~123
         signal_weight = ((1.0 / (signal - 20.0) ** 2) * 10000) ** 2
         return signal_weight * self.accuracy_weight

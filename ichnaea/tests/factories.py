@@ -201,7 +201,16 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
         model = CellObservation.create
 
     accuracy = 10.0
-    signal = -81
+
+    @factory.lazy_attribute
+    def signal(self):
+        if self.radio is Radio.gsm:
+            return -95
+        if self.radio is Radio.wcdma:
+            return -100
+        if self.radio is Radio.lte:
+            return -105
+        return None
 
 
 class RegionStatFactory(BaseSQLFactory):
