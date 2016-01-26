@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from ichnaea.data.tasks import (
     update_cellarea,
     update_cellarea_ocid,
@@ -15,6 +17,7 @@ from ichnaea.tests.factories import (
     CellOCIDFactory,
     CellShardFactory,
 )
+from ichnaea import util
 
 
 class BaseTest(object):
@@ -41,8 +44,9 @@ class BaseTest(object):
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.radius, 0)
         self.assertEqual(area.region, 'GB')
-        self.assertEqual(area.num_cells, 1)
         self.assertEqual(area.avg_cell_radius, cell.radius)
+        self.assertEqual(area.num_cells, 1)
+        self.assertEqual(area.last_seen, cell.last_seen)
 
     def test_remove(self):
         area = self.area_factory()
@@ -54,9 +58,15 @@ class BaseTest(object):
         self.assertEqual(self.session.query(self.area_model).count(), 0)
 
     def test_update(self):
-        area = self.area_factory(num_cells=2, radius=500, avg_cell_radius=100)
+        today = util.utcnow().date()
+        yesterday = today - timedelta(days=1)
+        area = self.area_factory(
+            num_cells=2, radius=500, avg_cell_radius=100, last_seen=yesterday)
         cell = self.cell_factory(
-            lat=area.lat, lon=area.lon, radius=200,
+            lat=area.lat, lon=area.lon, radius=200, last_seen=today,
+            radio=area.radio, mcc=area.mcc, mnc=area.mnc, lac=area.lac)
+        self.cell_factory(
+            lat=area.lat, lon=area.lon, radius=300, last_seen=yesterday,
             radio=area.radio, mcc=area.mcc, mnc=area.mnc, lac=area.lac)
         self.session.commit()
 
@@ -69,8 +79,9 @@ class BaseTest(object):
         self.assertAlmostEqual(area.lon, cell.lon)
         self.assertEqual(area.radius, 0)
         self.assertEqual(area.region, 'GB')
-        self.assertEqual(area.num_cells, 1)
-        self.assertEqual(area.avg_cell_radius, 200)
+        self.assertEqual(area.avg_cell_radius, 250)
+        self.assertEqual(area.num_cells, 2)
+        self.assertEqual(area.last_seen, today)
 
     def test_update_incomplete_cell(self):
         area = self.area_factory(radius=500)

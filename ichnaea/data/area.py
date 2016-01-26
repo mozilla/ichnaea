@@ -71,7 +71,7 @@ class CellAreaUpdater(DataTask):
     def update_area(self, areaid):
         # Select all cells in this area and derive a bounding box for them
         radio, mcc, mnc, lac = decode_cellarea(areaid)
-        load_fields = ('lat', 'lon', 'radius', 'region',
+        load_fields = ('lat', 'lon', 'radius', 'region', 'last_seen',
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
         shard = self.cell_model.shard_model(radio)
@@ -120,6 +120,12 @@ class CellAreaUpdater(DataTask):
             num_cells = len(cells)
             region = self.region(ctr_lat, ctr_lon, mcc, cells)
 
+            last_seen = None
+            cell_last_seen = set([cell.last_seen for cell in cells
+                                  if cell.last_seen is not None])
+            if cell_last_seen:
+                last_seen = max(cell_last_seen)
+
             if area is None:
                 stmt = self.area_model.__table__.insert(
                     mysql_on_duplicate='num_cells = num_cells'  # no-op
@@ -137,6 +143,7 @@ class CellAreaUpdater(DataTask):
                     region=region,
                     avg_cell_radius=avg_cell_radius,
                     num_cells=num_cells,
+                    last_seen=last_seen,
                 )
                 self.session.execute(stmt)
             else:
@@ -147,6 +154,7 @@ class CellAreaUpdater(DataTask):
                 area.region = region
                 area.avg_cell_radius = avg_cell_radius
                 area.num_cells = num_cells
+                area.last_seen = last_seen
 
 
 class CellAreaOCIDUpdater(CellAreaUpdater):
