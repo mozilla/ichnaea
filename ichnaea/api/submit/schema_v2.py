@@ -10,7 +10,6 @@ from ichnaea.api.schema import (
     OptionalSequenceSchema,
 )
 from ichnaea.api.submit.schema import (
-    BluetoothBeaconsSchema,
     CellTowerSchema,
     PositionSchema,
     ReportSchema,
@@ -33,7 +32,6 @@ class SubmitV2Schema(OptionalMappingSchema):
         @colander.instantiate()
         class SequenceItem(ReportSchema):
 
-            bluetoothBeacons = BluetoothBeaconsSchema(missing=())
             cellTowers = CellTowersV2Schema(missing=())
             position = PositionSchema(missing=None)
 

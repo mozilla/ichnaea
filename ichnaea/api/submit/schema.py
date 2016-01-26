@@ -107,6 +107,7 @@ class ReportSchema(OptionalMappingSchema):
     radioType = OptionalStringNode()
     timestamp = OptionalNode(UnixTimeFromInteger())
 
+    bluetoothBeacons = BluetoothBeaconsSchema(missing=())
     wifiAccessPoints = WifiAccessPointsSchema(missing=())
 
     def deserialize(self, data):

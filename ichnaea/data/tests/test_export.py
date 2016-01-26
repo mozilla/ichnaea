@@ -15,6 +15,7 @@ from ichnaea.data.tasks import (
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -56,7 +57,7 @@ class BaseExportTest(CeleryTestCase):
             report['position']['longitude'] = lon or pos.lon
             report['position']['accuracy'] = 17.0 + i
 
-            blues = WifiShardFactory.build_batch(blue_factor,
+            blues = BlueShardFactory.build_batch(blue_factor,
                                                  lat=pos.lat, lon=pos.lon)
             for blue in blues:
                 blue_data = {

@@ -110,6 +110,14 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
         uploader_type(self, None, export_queue_name, queue_key)(data)
 
 
+@celery_app.task(base=BaseTask, bind=True, queue='celery_blue')
+def update_blue(self, batch=1000, shard_id=None):
+    with self.redis_pipeline() as pipe:
+        with self.db_session() as session:
+            station.BlueUpdater(
+                self, session, pipe, shard_id=shard_id)(batch=batch)
+
+
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def update_cell(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:

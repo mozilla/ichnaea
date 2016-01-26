@@ -26,6 +26,7 @@ class Radio(IntEnum):
 REQUIRED = object()
 
 MAX_ACCURACY = 1000000.0  #: Accuracy is arbitrarily bounded to (0, 1000km).
+MAX_ACCURACY_BLUE = 100.0  #: Maximum accepted accuracy for Bluetooth.
 MAX_ACCURACY_CELL = 200.0  #: Maximum accepted accuracy for cells.
 MAX_ACCURACY_WIFI = 100.0  #: Maximum accepted accuracy for WiFis.
 MIN_ALTITUDE = -10911.0  #: Challenger Deep, Mariana Trench.
@@ -36,6 +37,7 @@ MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
 MAX_HEADING = 360.0  #: Full 360 degrees.
 MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second.
 
+BLUE_MAX_RADIUS = 100  #: Max radius of a single Bluetooth network.
 CELLAREA_MAX_RADIUS = 20000000  #: Max radius of a cell area.
 CELL_MAX_RADIUS = 100000  #: Max radius of a single cell network.
 WIFI_MAX_RADIUS = 5000  #: Max radius of a single WiFi network.
@@ -55,6 +57,9 @@ MAX_WIFI_CHANNEL = 166  #: Maximum accepted WiFi channel.
 
 MIN_WIFI_SIGNAL = -100  #: Minimum accepted WiFi signal strength value.
 MAX_WIFI_SIGNAL = -10  #: Maximum accepted WiFi signal strength value.
+
+MIN_BLUE_SIGNAL = -127  #: Minimum accepted Bluetooth signal strength value.
+MAX_BLUE_SIGNAL = 0  #: Maximum accepted Bluetooth signal strength value.
 
 MIN_MCC = 1  #: Minimum accepted network code.
 MAX_MCC = 999  #: Maximum accepted network code.

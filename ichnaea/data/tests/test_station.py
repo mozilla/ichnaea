@@ -6,10 +6,12 @@ from ichnaea.constants import (
     TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.data.tasks import (
+    update_blue,
     update_cell,
     update_wifi,
 )
 from ichnaea.models import (
+    BlueShard,
     CellShard,
     Radio,
     StatCounter,
@@ -18,6 +20,7 @@ from ichnaea.models import (
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
+    BlueObservationFactory,
     CellObservationFactory,
     CellShardFactory,
     WifiObservationFactory,
@@ -34,6 +37,44 @@ class StationTest(CeleryTestCase):
     def check_statcounter(self, stat_key, value):
         stat_counter = StatCounter(stat_key, util.utcnow())
         self.assertEqual(stat_counter.get(self.redis_client), value)
+
+
+class TestBlue(StationTest):
+
+    def _queue_and_update(self, obs):
+        sharded_obs = defaultdict(list)
+        for ob in obs:
+            sharded_obs[BlueShard.shard_id(ob.mac)].append(ob)
+
+        for shard_id, values in sharded_obs.items():
+            queue = self.celery_app.data_queues['update_blue_' + shard_id]
+            queue.enqueue(values)
+            update_blue.delay(shard_id=shard_id).get()
+
+    def test_new(self):
+        utcnow = util.utcnow()
+        obs = BlueObservationFactory.build()
+        self._queue_and_update([obs])
+
+        shard = BlueShard.shard_model(obs.mac)
+        blues = self.session.query(shard).all()
+        self.assertEqual(len(blues), 1)
+        blue = blues[0]
+        self.assertAlmostEqual(blue.lat, obs.lat)
+        self.assertAlmostEqual(blue.max_lat, obs.lat)
+        self.assertAlmostEqual(blue.min_lat, obs.lat)
+        self.assertAlmostEqual(blue.lon, obs.lon)
+        self.assertAlmostEqual(blue.max_lon, obs.lon)
+        self.assertAlmostEqual(blue.min_lon, obs.lon)
+        self.assertEqual(blue.radius, 0)
+        self.assertEqual(blue.region, 'GB')
+        self.assertEqual(blue.samples, 1)
+        self.assertAlmostEqual(blue.weight, 1.0, 2)
+        self.assertEqual(blue.created.date(), utcnow.date())
+        self.assertEqual(blue.modified.date(), utcnow.date())
+        self.assertEqual(blue.block_first, None)
+        self.assertEqual(blue.block_last, None)
+        self.assertEqual(blue.block_count, None)
 
 
 class TestCell(StationTest):

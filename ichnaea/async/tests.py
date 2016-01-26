@@ -59,6 +59,8 @@ class TestBeat(CeleryTestCase):
             self.assertTrue(name in tasks)
         for name in ('cell-import-external', 'monitor-ocid-import'):
             self.assertTrue(name in tasks)
+        for i in range(16):
+            self.assertTrue('update-blue-%x' % i in tasks)
         for name in ('gsm', 'wcdma', 'lte'):
             self.assertTrue('update-cell-' + name in tasks)
         for name in ('ne', 'nw', 'se', 'sw'):

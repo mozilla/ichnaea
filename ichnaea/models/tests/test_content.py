@@ -126,7 +126,7 @@ class TestRegionStat(DBTestCase):
 
     def test_fields(self):
         self.session.add(RegionStat(
-            region='GB', gsm=1, wcdma=2, lte=3, wifi=4))
+            region='GB', gsm=1, wcdma=2, lte=3, blue=4, wifi=5))
         self.session.flush()
 
         result = self.session.query(RegionStat).first()
@@ -134,7 +134,8 @@ class TestRegionStat(DBTestCase):
         self.assertEqual(result.gsm, 1)
         self.assertEqual(result.wcdma, 2)
         self.assertEqual(result.lte, 3)
-        self.assertEqual(result.wifi, 4)
+        self.assertEqual(result.blue, 4)
+        self.assertEqual(result.wifi, 5)
 
 
 class TestScore(DBTestCase):

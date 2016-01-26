@@ -4,6 +4,7 @@ from ichnaea.models import Radio
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -32,6 +33,36 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         if radio:
             query['cellTowers'][0]['radioType'] = cell.radio.name
         return (cell, query)
+
+    def test_blue(self):
+        blue = BlueShardFactory.build()
+        self._post([{
+            'latitude': blue.lat,
+            'longitude': blue.lon,
+            'bluetoothBeacons': [{
+                'macAddress': blue.mac,
+                'age': 3,
+                'signalStrength': -90,
+                'name': 'my-beacon',
+                'xtra_field': 3,
+            }]},
+        ])
+
+        self._assert_queue_size(1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertEqual(item['metadata']['api_key'], None)
+        report = item['report']
+        self.assertTrue('timestamp' in report)
+        position = report['position']
+        self.assertEqual(position['latitude'], blue.lat)
+        self.assertEqual(position['longitude'], blue.lon)
+        blues = item['report']['bluetoothBeacons']
+        self.assertEqual(len(blues), 1)
+        self.assertEqual(blues[0]['macAddress'], blue.mac)
+        self.assertEqual(blues[0]['age'], 3),
+        self.assertEqual(blues[0]['signalStrength'], -90),
+        self.assertEqual(blues[0]['name'], 'my-beacon'),
+        self.assertFalse('xtra_field' in blues[0])
 
     def test_cell(self):
         now_ms = int(time.time() * 1000)

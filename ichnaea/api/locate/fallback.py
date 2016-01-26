@@ -28,7 +28,7 @@ from ichnaea.models.cell import (
     encode_cellid,
     Radio,
 )
-from ichnaea.models.wifi import (
+from ichnaea.models import (
     encode_mac,
 )
 

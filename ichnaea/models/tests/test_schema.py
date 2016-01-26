@@ -1,5 +1,6 @@
 from ichnaea.models import (
     Radio,
+    BlueObservation,
     CellObservation,
     WifiObservation,
 )
@@ -45,6 +46,47 @@ class ValidationTest(TestCase):
                         expected=v,
                         actual=result[k]))
         return result
+
+
+class TestBlue(ValidationTest):
+
+    def check_normalized_blue(self, obs, blue, expect):
+        return self.check_normalized(
+            BlueObservation.validate,
+            obs, blue, expect)
+
+    def get_sample(self, **kwargs):
+        obs = {
+            'accuracy': constants.MAX_ACCURACY_BLUE,
+            'altitude': 220.1,
+            'altitude_accuracy': 10.0,
+            'lat': 49.25,
+            'lon': 123.10,
+            'time': self.time,
+        }
+        blue = {
+            'key': '12:34:56:78:90:12',
+            'signal': -85,
+        }
+        for (k, v) in kwargs.items():
+            if k in obs:
+                obs[k] = v
+            else:
+                blue[k] = v
+        return (obs, blue)
+
+    def test_valid_accuracy(self):
+        for accuracy in [0.0, 1.6, 10.1, constants.MAX_ACCURACY_BLUE]:
+            obs, blue = self.get_sample(accuracy=accuracy)
+            self.check_normalized_blue(obs, blue, {'accuracy': accuracy})
+
+    def test_invalid_accuracy(self):
+        for accuracy in [-10.0, -1.2]:
+            obs, blue = self.get_sample(accuracy=accuracy)
+            self.check_normalized_blue(obs, blue, {'accuracy': None})
+
+        obs, blue = self.get_sample(accuracy=constants.MAX_ACCURACY_BLUE + 0.1)
+        self.check_normalized_blue(obs, blue, None)
 
 
 class TestCell(ValidationTest):

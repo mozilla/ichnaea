@@ -16,6 +16,7 @@ from ichnaea.models import (
     StatKey,
 )
 from ichnaea.models.constants import (
+    BLUE_MAX_RADIUS,
     CELL_MAX_RADIUS,
     WIFI_MAX_RADIUS,
 )
@@ -349,6 +350,25 @@ class StationUpdater(DataTask):
                 kwargs={'batch': batch, 'shard_id': self.shard_id},
                 countdown=5,
                 expires=10)
+
+
+class BlueUpdater(StationUpdater):
+
+    max_dist_meters = BLUE_MAX_RADIUS
+    queue_prefix = 'update_blue_'
+    station_type = 'blue'
+    stat_obs_key = StatKey.blue
+    stat_station_key = StatKey.unique_blue
+
+    def _base_station_values(self, station_key, observations):
+        return {
+            'mac': station_key,
+            'modified': self.utcnow,
+        }
+
+    def _query_shard(self, shard, keys):
+        return (self.session.query(shard)
+                            .filter(shard.mac.in_(keys))).all()
 
 
 class CellUpdater(StationUpdater):

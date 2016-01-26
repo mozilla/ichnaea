@@ -8,6 +8,7 @@ from datetime import timedelta
 from celery.schedules import crontab
 
 from ichnaea.models import (
+    BlueShard,
     CellShard,
     DataMap,
     WifiShard,
@@ -82,6 +83,16 @@ def celerybeat_schedule(app_config):
         },
 
     }
+
+    for shard_id in BlueShard.shards().keys():
+        schedule.update({
+            'update-blue-' + shard_id: {
+                'task': 'ichnaea.data.tasks.update_blue',
+                'schedule': timedelta(seconds=18),
+                'args': (500, shard_id),
+                'options': {'expires': 20},
+            }
+        })
 
     for shard_id in CellShard.shards().keys():
         schedule.update({

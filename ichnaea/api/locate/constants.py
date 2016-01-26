@@ -35,6 +35,9 @@ the aggregate result.
 # :class:`~ichnaea.api.locate.constants.DataAccuracy`
 # and adjustments in one need to be reflected in the other.
 
+BLUE_MIN_ACCURACY = 10.0  #: Minimum accuracy returned for Bluetooth queries.
+BLUE_MAX_ACCURACY = 100.0  #: Minimum accuracy returned for Bluetooth queries.
+
 WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
 WIFI_MAX_ACCURACY = 1000.0  # Maximum accuracy returned for Wifi queries.
 

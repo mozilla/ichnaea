@@ -82,9 +82,9 @@ Geosubmit requests are submitted using a POST request with a JSON body:
 Field Definition
 ----------------
 
-Requests always need to contain a batch of reports. Each report
-must contain at least one entry in the `bluetoothBeacons`, `cellTowers` or
-`wifiAccessPoints` arrays.
+Requests always need to contain a batch of :term:`reports`. Each
+:term:`report` must contain at least one entry in the `bluetoothBeacons`
+or `cellTowers` array or two entries in the `wifiAccessPoints` array.
 
 Almost all of the fields are optional. For Bluetooth and WiFi records only
 the `macAddress` field is required.

@@ -57,6 +57,8 @@ class StatKey(IntEnum):
     # deleted_cell = 5
     # deleted_wifi = 6
     unique_cell_ocid = 7
+    blue = 8
+    unique_blue = 9
 
 
 def decode_datamap_grid(value, scale=False, codec=None):
@@ -215,6 +217,7 @@ class RegionStat(_Model):
     gsm = Column(Integer(unsigned=True))  #:
     wcdma = Column(Integer(unsigned=True))  #:
     lte = Column(Integer(unsigned=True))  #:
+    blue = Column(BigInteger(unsigned=True))  #:
     wifi = Column(BigInteger(unsigned=True))  #:
 
 

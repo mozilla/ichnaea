@@ -3,6 +3,7 @@ from ichnaea.internaljson import (
     internal_loads,
 )
 from ichnaea.models import (
+    BlueObservation,
     CellObservation,
     Radio,
     WifiObservation,
@@ -14,9 +15,46 @@ from ichnaea.tests.base import (
     GB_MCC,
 )
 from ichnaea.tests.factories import (
+    BlueObservationFactory,
     CellObservationFactory,
     WifiObservationFactory
 )
+
+
+class TestBlueObservation(DBTestCase):
+
+    def test_fields(self):
+        mac = '3680873e9b83'
+        obs = BlueObservation.create(
+            key=mac, lat=GB_LAT, lon=GB_LON, signal=-45)
+
+        self.assertEqual(obs.lat, GB_LAT)
+        self.assertEqual(obs.lon, GB_LON)
+        self.assertEqual(obs.mac, mac)
+        self.assertEqual(obs.signal, -45)
+        self.assertEqual(obs.shard_id, '8')
+
+    def test_internaljson(self):
+        obs = BlueObservationFactory.build(accuracy=None)
+        result = internal_loads(internal_dumps(obs))
+        self.assertTrue(type(result), BlueObservation)
+        self.assertTrue(result.accuracy is None)
+        self.assertEqual(result.mac, obs.mac)
+        self.assertEqual(result.lat, obs.lat)
+        self.assertEqual(result.lon, obs.lon)
+
+    def test_weight(self):
+        obs_factory = BlueObservationFactory.build
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=0.0, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=10.0, signal=-80).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=40.0, signal=-80).weight, 0.5)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=100.0, signal=-80).weight, 0.316, 3)
 
 
 class TestCellObservation(DBTestCase):

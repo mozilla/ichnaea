@@ -4,6 +4,7 @@ from ichnaea.models import Radio
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -34,6 +35,45 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         if radio:
             query['cellTowers'][0]['radioType'] = cell.radio.name
         return (cell, query)
+
+    def test_bluetooth(self):
+        blue = BlueShardFactory.build()
+        self._post([{
+            'position': {
+                'latitude': blue.lat,
+                'longitude': blue.lon,
+            },
+            'bluetoothBeacons': [{
+                'macAddress': blue.mac,
+                'name': 'my-beacon',
+                'age': 3,
+                'signalStrength': -90,
+                'xtra_field': 4,
+            }, {
+                'name': 'beacon-2',
+                'signalStrength': -92,
+            }],
+            'wifiAccessPoints': [{
+                'signalStrength': -52,
+            }]},
+        ])
+
+        self._assert_queue_size(1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        report = item['report']
+        self.assertTrue('timestamp' in report)
+        position = report['position']
+        self.assertEqual(position['latitude'], blue.lat)
+        self.assertEqual(position['longitude'], blue.lon)
+        blues = report['bluetoothBeacons']
+        self.assertEqual(len(blues), 1)
+        self.assertEqual(blues[0]['macAddress'], blue.mac)
+        self.assertEqual(blues[0]['age'], 3),
+        self.assertEqual(blues[0]['name'], 'my-beacon'),
+        self.assertEqual(blues[0]['signalStrength'], -90),
+        self.assertFalse('xtra_field' in blues[0])
+        wifis = report['wifiAccessPoints']
+        self.assertEqual(len(wifis), 0)
 
     def test_cell(self):
         now_ms = int(time.time() * 1000)
@@ -157,45 +197,6 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(wifis[0]['signalToNoiseRatio'], 5),
         self.assertEqual(wifis[0]['ssid'], 'my-wifi'),
         self.assertFalse('xtra_field' in wifis[0])
-
-    def test_bluetooth(self):
-        wifi = WifiShardFactory.build()
-        self._post([{
-            'position': {
-                'latitude': wifi.lat,
-                'longitude': wifi.lon,
-            },
-            'bluetoothBeacons': [{
-                'macAddress': wifi.mac,
-                'name': 'my-beacon',
-                'age': 3,
-                'signalStrength': -90,
-                'xtra_field': 4,
-            }, {
-                'name': 'beacon-2',
-                'signalStrength': -92,
-            }],
-            'wifiAccessPoints': [{
-                'signalStrength': -52,
-            }]},
-        ])
-
-        self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
-        report = item['report']
-        self.assertTrue('timestamp' in report)
-        position = report['position']
-        self.assertEqual(position['latitude'], wifi.lat)
-        self.assertEqual(position['longitude'], wifi.lon)
-        blues = report['bluetoothBeacons']
-        self.assertEqual(len(blues), 1)
-        self.assertEqual(blues[0]['macAddress'], wifi.mac)
-        self.assertEqual(blues[0]['age'], 3),
-        self.assertEqual(blues[0]['name'], 'my-beacon'),
-        self.assertEqual(blues[0]['signalStrength'], -90),
-        self.assertFalse('xtra_field' in blues[0])
-        wifis = report['wifiAccessPoints']
-        self.assertEqual(len(wifis), 0)
 
     def test_batches(self):
         batch = 110

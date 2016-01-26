@@ -31,6 +31,13 @@ class InternalTransform(object):
         'source',
     ]
 
+    blue_id = ('bluetoothBeacons', 'blue')
+    blue_map = [
+        ('macAddress', 'key'),
+        'age',
+        ('signalStrength', 'signal'),
+    ]
+
     cell_id = ('cellTowers', 'cell')
     cell_map = [
         ('radioType', 'radio'),
@@ -116,10 +123,11 @@ class InternalTransform(object):
         if timestamp:
             report['timestamp'] = timestamp
 
+        blues = self._parse_list(item, report, self.blue_id, self.blue_map)
         cells = self._parse_cells(item, report, self.cell_id, self.cell_map)
         wifis = self._parse_list(item, report, self.wifi_id, self.wifi_map)
 
-        if cells or wifis:
+        if blues or cells or wifis:
             return report
         return {}
 

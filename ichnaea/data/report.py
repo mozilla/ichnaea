@@ -2,6 +2,9 @@ from collections import defaultdict
 
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
+    BlueObservation,
+    BlueReport,
+    BlueShard,
     CellObservation,
     CellReport,
     CellShard,
@@ -61,7 +64,10 @@ class ReportQueue(DataTask):
         if len(station_keys) == 0:
             return 0
 
-        if name == 'cell':
+        if name == 'blue':
+            model = BlueShard
+            key_id = 'mac'
+        elif name == 'cell':
             model = CellShard
             key_id = 'cellid'
         elif name == 'wifi':
@@ -86,38 +92,51 @@ class ReportQueue(DataTask):
     def process_reports(self, reports, userid=None):
         malformed_reports = 0
         positions = set()
-        observations = {'cell': [], 'wifi': []}
+        observations = {'blue': [], 'cell': [], 'wifi': []}
         obs_count = {
+            'blue': {'upload': 0, 'drop': 0},
             'cell': {'upload': 0, 'drop': 0},
             'wifi': {'upload': 0, 'drop': 0},
         }
-        new_station_count = {'cell': 0, 'wifi': 0}
+        new_station_count = {'blue': 0, 'cell': 0, 'wifi': 0}
 
         for report in reports:
-            cell, wifi, malformed_obs = self.process_report(report)
+            blue, cell, wifi, malformed_obs = self.process_report(report)
+            if blue:
+                observations['blue'].extend(blue)
+                obs_count['blue']['upload'] += len(blue)
             if cell:
                 observations['cell'].extend(cell)
                 obs_count['cell']['upload'] += len(cell)
             if wifi:
                 observations['wifi'].extend(wifi)
                 obs_count['wifi']['upload'] += len(wifi)
-            if (cell or wifi):
+            if (blue or cell or wifi):
                 positions.add((report['lat'], report['lon']))
             else:
                 malformed_reports += 1
-            for name in ('cell', 'wifi'):
+            for name in ('blue', 'cell', 'wifi'):
                 obs_count[name]['drop'] += malformed_obs[name]
 
         # group by unique station key
-        for name in ('cell', 'wifi'):
+        for name in ('blue', 'cell', 'wifi'):
             station_keys = set()
             for obs in observations[name]:
-                if name == 'cell':
-                    station_keys.add(obs.cellid)
-                elif name == 'wifi':
+                if name in ('blue', 'wifi'):
                     station_keys.add(obs.mac)
+                elif name == 'cell':
+                    station_keys.add(obs.cellid)
             # determine scores for stations
             new_station_count[name] += self.new_stations(name, station_keys)
+
+        if observations['blue']:
+            sharded_obs = defaultdict(list)
+            for ob in observations['blue']:
+                shard_id = BlueShard.shard_id(ob.mac)
+                sharded_obs[shard_id].append(ob)
+            for shard_id, values in sharded_obs.items():
+                blue_queue = self.data_queues['update_blue_' + shard_id]
+                blue_queue.enqueue(list(values), pipe=self.pipe)
 
         if observations['cell']:
             sharded_obs = defaultdict(list)
@@ -146,14 +165,15 @@ class ReportQueue(DataTask):
         )
 
     def process_report(self, data):
-        malformed = {'cell': 0, 'wifi': 0}
-        observations = {'cell': {}, 'wifi': {}}
+        malformed = {'blue': 0, 'cell': 0, 'wifi': 0}
+        observations = {'blue': {}, 'cell': {}, 'wifi': {}}
 
         report = Report.create(**data)
         if report is None:
-            return (None, None, malformed)
+            return (None, None, None, malformed)
 
         for name, report_cls, obs_cls in (
+                ('blue', BlueReport, BlueObservation),
                 ('cell', CellReport, CellObservation),
                 ('wifi', WifiReport, WifiObservation)):
             observations[name] = {}
@@ -179,6 +199,7 @@ class ReportQueue(DataTask):
                     observations[name][item_key] = item_obs
 
         return (
+            observations['blue'].values(),
             observations['cell'].values(),
             observations['wifi'].values(),
             malformed,

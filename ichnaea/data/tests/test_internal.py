@@ -1,12 +1,14 @@
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
 from ichnaea.data.tasks import (
+    update_blue,
     update_cell,
     update_wifi,
     schedule_export_reports,
 )
 from ichnaea.data.tests.test_export import BaseExportTest
 from ichnaea.models import (
+    BlueShard,
     CellShard,
     ScoreKey,
     User,
@@ -33,6 +35,9 @@ class TestUploader(BaseExportTest):
 
     def _update_all(self):
         schedule_export_reports.delay().get()
+
+        for shard_id in BlueShard.shards().keys():
+            update_blue.delay(shard_id=shard_id).get()
 
         for shard_id in CellShard.shards().keys():
             update_cell.delay(shard_id=shard_id).get()
@@ -69,6 +74,47 @@ class TestUploader(BaseExportTest):
             self.assertEqual(sum([int(msg.split(':')[1].split('|')[0])
                                   for msg in insert_msgs]),
                              total)
+
+    def test_blue(self):
+        reports = self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
+        self._update_all()
+
+        position = reports[0]['position']
+        wifi_data = reports[0]['bluetoothBeacons'][0]
+        mac = wifi_data['macAddress']
+        shard = BlueShard.shard_model(mac)
+        blues = self.session.query(shard).all()
+        self.assertEqual(len(blues), 1)
+        blue = blues[0]
+        self.assertEqual(blue.lat, position['latitude'])
+        self.assertEqual(blue.lon, position['longitude'])
+        self.assertEqual(blue.mac, wifi_data['macAddress'])
+        self.assertEqual(blue.samples, 1)
+
+    def test_blue_duplicated(self):
+        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
+        # duplicate the Bluetooth entry inside the report
+        queue = self.celery_app.export_queues['internal']
+        items = queue.dequeue(queue.queue_key())
+        report = items[0]['report']
+        blue = report['bluetoothBeacons'][0]
+        mac = blue['macAddress']
+        report['bluetoothBeacons'].append(blue.copy())
+        report['bluetoothBeacons'].append(blue.copy())
+        report['bluetoothBeacons'][1]['signalStrength'] += 2
+        report['bluetoothBeacons'][2]['signalStrength'] -= 2
+        queue.enqueue(items, queue.queue_key())
+        self._update_all()
+
+        shard = BlueShard.shard_model(mac)
+        blues = self.session.query(shard).all()
+        self.assertEqual(len(blues), 1)
+        self.assertEqual(blues[0].samples, 1)
+
+    def test_bluetooth_invalid(self):
+        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0,
+                         blue_key='abcd')
+        self._update_all()
 
     def test_cell(self):
         reports = self.add_reports(cell_factor=1, wifi_factor=0)
@@ -170,15 +216,6 @@ class TestUploader(BaseExportTest):
                 ['type:wifi', 'reason:malformed', 'key:test']),
         ])
 
-    def test_bluetooth(self):
-        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
-        schedule_export_reports.delay().get()
-
-    def test_bluetooth_invalid(self):
-        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0,
-                         blue_key='abcd')
-        schedule_export_reports.delay().get()
-
     def test_position_invalid(self):
         self.add_reports(1, cell_factor=0, wifi_factor=1,
                          wifi_key='000000123456', lat=-90.1)
@@ -194,6 +231,10 @@ class TestUploader(BaseExportTest):
             ('data.observation.insert', 1, 1, ['type:wifi']),
             ('data.observation.upload', 1, 1, ['type:wifi', 'key:test']),
         ])
+
+    def test_no_observations(self):
+        self.add_reports(1, cell_factor=0, wifi_factor=0)
+        self._update_all()
 
     def test_datamap(self):
         self.add_reports(1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)

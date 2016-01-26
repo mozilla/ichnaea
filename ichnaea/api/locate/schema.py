@@ -19,10 +19,8 @@ from ichnaea.models.cell import (
     ValidCellSignalSchema,
 )
 from ichnaea.models.hashkey import HashKey
-from ichnaea.models.schema import (
-    DefaultNode,
-    MacNode,
-)
+from ichnaea.models.mac import MacNode
+from ichnaea.models.schema import DefaultNode
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
 )

@@ -31,6 +31,14 @@ Geosubmit requests are submitted using a POST request with a JSON body:
         "timestamp": 1405602028568,
         "heading": 45.0,
         "speed": 3.6,
+        "bluetoothBeacons": [
+            {
+                "macAddress": "ff:74:27:89:5a:77",
+                "age": 2000,
+                "name": "beacon",
+                "signalStrength": -110
+            }
+        ],
         "cellTowers": [
             {
                 "radioType": "gsm",
@@ -68,9 +76,27 @@ Requests always need to contain a batch of :term:`reports`. Each
 :term:`report` must contain at least one entry in the `cellTowers` array or
 two entries in the `wifiAccessPoints` array.
 
-Most of the fields are optional. For WiFi records only the `macAddress` field
-is required. For cell records, the `radioType`, `mobileCountryCode`,
-`mobileNetworkCode`, `locationAreaCode` and `cellId` fields are required.
+Most of the fields are optional. For Bluetooth and WiFi records only the
+`macAddress` field is required. For cell records the `radioType`,
+`mobileCountryCode`, `mobileNetworkCode`, `locationAreaCode` and
+`cellId` fields are required.
+
+
+The Bluetooth array is an extension and can contain four different fields
+for each Bluetooth network:
+
+macAddress
+    The address of the Bluetooth Low Energy (BLE) beacon.
+
+name
+    The name of the BLE beacon.
+
+age
+    The number of milliseconds since this Bluetooth beacon was last seen.
+
+signalStrength
+    The measured signal strength of the BLE beacon in dBm.
+
 
 The cell record has been extended over the geolocate schema to include
 three more optional fields:
@@ -84,6 +110,7 @@ asu
 
 psc
     The physical cell id as an integer in the range of 0 to 503 (optional).
+
 
 The WiFi record has been extended with one extra optional field
 `frequency`.  Either `frequency` or `channel` may be submitted to the

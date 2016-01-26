@@ -11,6 +11,10 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 4b11500c9014: Add Bluetooth region stat.
+
+- b247526b9501: Add sharded Bluetooth tables.
+
 - 0987336d9d63: Add weight and last_seen columns to station tables.
 
 - 44e1b53944ee: Remove old cell tables.

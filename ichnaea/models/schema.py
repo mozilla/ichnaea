@@ -2,11 +2,6 @@ from datetime import date, datetime
 
 import colander
 
-from ichnaea.models.constants import (
-    INVALID_MAC_REGEX,
-    VALID_MAC_REGEX,
-)
-
 
 class DateFromString(colander.Date):
     """
@@ -56,26 +51,3 @@ class DefaultNode(ValidatorNode):
             if self.missing is colander.required:
                 raise
             return self.missing
-
-
-class MacNode(ValidatorNode):
-    """A node containing a valid mac address, ex: 01005e901000.
-    """
-
-    def preparer(self, cstruct):
-        # Remove ':' '-' ',' from a wifi BSSID
-        if cstruct and (':' in cstruct or '-' in cstruct or '.' in cstruct):
-            cstruct = (cstruct.replace(':', '')
-                              .replace('-', '')
-                              .replace('.', ''))
-        return cstruct and cstruct.lower() or colander.null
-
-    def validator(self, node, cstruct):
-        super(MacNode, self).validator(node, cstruct)
-
-        valid = (len(cstruct) == 12 and
-                 INVALID_MAC_REGEX.match(cstruct) and
-                 VALID_MAC_REGEX.match(cstruct))
-
-        if not valid:
-            raise colander.Invalid(node, 'Invalid mac address.')

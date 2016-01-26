@@ -1,52 +1,17 @@
-import base64
-
 import colander
-from sqlalchemy import (
-    Column,
-    Index,
-    PrimaryKeyConstraint,
-)
-from sqlalchemy.ext.declarative import declared_attr
 
 from ichnaea.models import constants
 from ichnaea.models.base import _Model
-from ichnaea.models.sa_types import MacColumn
+from ichnaea.models.mac import (
+    MacStationMixin,
+    ValidMacStationSchema,
+)
 from ichnaea.models.schema import (
     DefaultNode,
-    MacNode,
     ValidatorNode,
-)
-from ichnaea.models.station import (
-    StationMixin,
-    ValidStationSchema,
 )
 
 WIFI_SHARDS = {}
-
-
-def decode_mac(value, codec=None):
-    """
-    Decode a 6 byte sequence representing a 48 bit MAC address into a
-    hexadecimal, lowercased ASCII string of 12 bytes.
-
-    If ``codec='base64'``, decode the value from a base64 sequence first.
-    """
-    if codec == 'base64':
-        value = base64.b64decode(value)
-    return base64.b16encode(value).decode('ascii').lower()
-
-
-def encode_mac(value, codec=None):
-    """
-    Given a 12 byte hexadecimal string, return a compact 6 byte
-    sequence representing the MAC address.
-
-    If ``codec='base64'``, return the value as a base64 encoded sequence.
-    """
-    value = base64.b16decode(value.upper())
-    if codec == 'base64':
-        value = base64.b64encode(value)
-    return value
 
 
 class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
@@ -100,84 +65,15 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
         return super(ValidWifiSignalSchema, self).deserialize(data)
 
 
-class ValidWifiShardSchema(ValidStationSchema):
+class ValidWifiShardSchema(ValidMacStationSchema):
     """A schema which validates the fields in a WiFi shard."""
 
-    mac = MacNode(colander.String())
 
-
-class WifiShard(StationMixin):
+class WifiShard(MacStationMixin):
     """WiFi shard."""
 
+    _shards = WIFI_SHARDS
     _valid_schema = ValidWifiShardSchema()
-
-    mac = Column(MacColumn(6))  #:
-
-    @declared_attr
-    def __table_args__(cls):  # NOQA
-        _indices = (
-            PrimaryKeyConstraint('mac'),
-            Index('%s_region_idx' % cls.__tablename__, 'region'),
-            Index('%s_created_idx' % cls.__tablename__, 'created'),
-            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
-            Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
-        )
-        return _indices + (cls._settings, )
-
-    @classmethod
-    def create(cls, _raise_invalid=False, **kw):
-        """
-        Returns an instance of the correct shard model class, if the
-        passed in keyword arguments pass schema validation,
-        otherwise returns None.
-        """
-        validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
-            return None
-        shard = cls.shard_model(validated['mac'])
-        return shard(**validated)
-
-    @classmethod
-    def shard_id(cls, mac):
-        """
-        Given a BSSID/MAC return the correct shard id for this data.
-        """
-        if not mac:
-            return None
-        if type(mac) == bytes and len(mac) == 6:
-            # mac is encoded as bytes
-            mac = decode_mac(mac)
-        return mac.lower()[4]
-
-    @classmethod
-    def shard_model(cls, mac):
-        """
-        Given a BSSID/MAC return the correct DB model class for this
-        shard of data.
-
-        The shard id is based on the fifth hex character of the vendor
-        prefix of the BSSID. This tends to be evenly distributed, but
-        still keeps data from the same vendor inside the same table.
-
-        It also allows us to later extend the sharding by taking in
-        parts of the sixth hex char without having to do a complete
-        re-sharding of everything, but merely breaking up each shard
-        further.
-        """
-        if not mac:
-            return None
-        global WIFI_SHARDS
-        return WIFI_SHARDS.get(cls.shard_id(mac), None)
-
-    @classmethod
-    def shards(cls):
-        """Return a dict of shard id to model classes."""
-        global WIFI_SHARDS
-        return WIFI_SHARDS
-
-    @property
-    def unique_key(self):
-        return self.mac
 
 
 class WifiShard0(WifiShard, _Model):

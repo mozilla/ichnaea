@@ -7,12 +7,15 @@ from factory.base import Factory
 from factory import fuzzy
 
 from ichnaea.api.locate.constants import (
+    BLUE_MIN_ACCURACY,
     CELL_MIN_ACCURACY,
     CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.models import (
     ApiKey,
+    BlueObservation,
+    BlueShard,
     CellArea,
     CellAreaOCID,
     CellObservation,
@@ -69,14 +72,14 @@ class FuzzyUUID(fuzzy.BaseFuzzyAttribute):
         return uuid.uuid4().hex
 
 
-class FuzzyWifiKey(fuzzy.BaseFuzzyAttribute):
+class FuzzyMacKey(fuzzy.BaseFuzzyAttribute):
 
     def fuzz(self):
         num = fuzzy.random.randint(100000, 999999)
         return 'a82066{num:06d}'.format(num=num)
 
 
-class FuzzyWifiMac(fuzzy.BaseFuzzyAttribute):
+class FuzzyMac(fuzzy.BaseFuzzyAttribute):
 
     def fuzz(self):
         num = fuzzy.random.randint(10000000, 99999999)
@@ -118,6 +121,37 @@ class BboxFactory(Factory):
     @factory.lazy_attribute
     def max_lon(self):
         return self.lon
+
+
+class BlueShardFactory(BaseSQLFactory):
+
+    mac = FuzzyMac()
+    lat = GB_LAT
+    lon = GB_LON
+    radius = BLUE_MIN_ACCURACY / 2.0
+    region = 'GB'
+    samples = 1
+    weight = 1.0
+    created = util.utcnow()
+    modified = util.utcnow()
+    last_seen = util.utcnow().date()
+
+    class Meta:
+        model = BlueShard.create
+
+
+class BlueObservationFactory(BaseMemoryFactory):
+
+    key = FuzzyMacKey()
+    lat = GB_LAT
+    lon = GB_LON
+    range = BLUE_MIN_ACCURACY / 2.0
+    accuracy = 10.0
+    signal = -80
+    snr = 30
+
+    class Meta:
+        model = BlueObservation.create
 
 
 class CellAreaKeyFactory(Factory):
@@ -233,7 +267,7 @@ class RegionStatFactory(BaseSQLFactory):
 
 class WifiShardFactory(BaseSQLFactory):
 
-    mac = FuzzyWifiMac()
+    mac = FuzzyMac()
     lat = GB_LAT
     lon = GB_LON
     radius = WIFI_MIN_ACCURACY / 2.0
@@ -250,7 +284,7 @@ class WifiShardFactory(BaseSQLFactory):
 
 class WifiObservationFactory(BaseMemoryFactory):
 
-    key = FuzzyWifiKey()
+    key = FuzzyMacKey()
     lat = GB_LAT
     lon = GB_LON
     range = WIFI_MIN_ACCURACY / 2.0

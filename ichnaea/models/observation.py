@@ -8,6 +8,10 @@ from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
 )
+from ichnaea.models.blue import (
+    BlueShard,
+    ValidBlueSignalSchema,
+)
 from ichnaea.models.cell import (
     CellShard,
     encode_cellid,
@@ -17,9 +21,9 @@ from ichnaea.models.cell import (
 )
 from ichnaea.models import constants
 from ichnaea.models.hashkey import HashKey
+from ichnaea.models.mac import MacNode
 from ichnaea.models.schema import (
     DefaultNode,
-    MacNode,
     ValidatorNode,
 )
 from ichnaea.models.wifi import (
@@ -101,6 +105,75 @@ class Report(HashKey, CreationMixin, ValidationMixin):
         # Don't differentiate values below 10 meters
         # Maps 10: 1, 20: 0.7, 40: 0.5, 80: 0.35, 100: 0.32, 200: 0.22
         return math.sqrt(10 / max(accuracy, 10.0))
+
+
+class ValidBlueReportSchema(ValidBlueSignalSchema):
+    """A schema which validates the Bluetooth specific fields in a report."""
+
+    key = MacNode(colander.String())
+
+    def validator(self, node, cstruct):
+        super(ValidBlueReportSchema, self).validator(node, cstruct)
+        if (cstruct['key'] is None or
+                cstruct['key'] is colander.null):  # pragma: no cover
+            raise colander.Invalid(node, 'Bluetooth mac address is required.')
+
+        accuracy = cstruct.get('accuracy', None)
+        if (accuracy is not None and
+                accuracy > constants.MAX_ACCURACY_BLUE):
+            raise colander.Invalid(node, 'Invalid accuracy.')
+
+
+class BlueReport(HashKey, CreationMixin, ValidationMixin):
+    """A class for Bluetooth report data."""
+
+    _valid_schema = ValidBlueReportSchema()
+    _fields = (
+        'key',
+        'signal',
+    )
+
+    def better(self, other):
+        """Is self better than the other?"""
+        old_value = getattr(self, 'signal', None)
+        new_value = getattr(other, 'signal', None)
+        if (None not in (old_value, new_value) and
+                old_value > new_value):
+            return True
+        return False
+
+    @property
+    def unique_key(self):
+        return self.mac
+
+    @property
+    def shard_id(self):
+        return BlueShard.shard_id(self.mac)
+
+    @property
+    def shard_model(self):
+        return BlueShard.shard_model(self.mac)
+
+    @property
+    def mac(self):
+        # BBB: alias
+        return self.key
+
+
+class ValidBlueObservationSchema(ValidBlueReportSchema, ValidReportSchema):
+    """A schema which validates the fields in a Bluetooth observation."""
+
+
+class BlueObservation(BlueReport, Report):
+    """A class for Bluetooth observation data."""
+
+    _valid_schema = ValidBlueObservationSchema()
+    _fields = BlueReport._fields + Report._fields
+
+    @property
+    def weight(self):
+        signal_weight = 1.0
+        return signal_weight * self.accuracy_weight
 
 
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):

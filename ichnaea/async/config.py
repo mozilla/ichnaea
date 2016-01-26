@@ -18,6 +18,7 @@ from ichnaea.log import (
     configure_stats,
 )
 from ichnaea.models import (
+    BlueShard,
     CellShard,
     DataMap,
     WifiShard,
@@ -28,6 +29,7 @@ from ichnaea.queue import (
 )
 
 CELERY_QUEUES = (
+    Queue('celery_blue', routing_key='celery_blue'),
     Queue('celery_cell', routing_key='celery_cell'),
     Queue('celery_default', routing_key='celery_default'),
     Queue('celery_export', routing_key='celery_export'),
@@ -95,6 +97,10 @@ def configure_data(redis_client):
         'update_score': DataQueue('update_score', redis_client,
                                   queue_key='update_score'),
     }
+    for shard_id in BlueShard.shards().keys():
+        name = 'update_blue_' + shard_id
+        data_queues[name] = DataQueue(
+            name, redis_client, queue_key=name)
     for shard_id in DataMap.shards().keys():
         name = 'update_datamap_' + shard_id
         data_queues[name] = DataQueue(name, redis_client, queue_key=name)

@@ -4,6 +4,7 @@ from sqlalchemy import func
 
 from ichnaea.data.base import DataTask
 from ichnaea.models import (
+    BlueShard,
     CellArea,
     RegionStat,
     Stat,
@@ -67,22 +68,23 @@ class StatRegion(DataTask):
                              .filter(CellArea.region.isnot(None))
                              .group_by(CellArea.region, CellArea.radio)).all()
 
-        default = {'gsm': 0, 'wcdma': 0, 'lte': 0, 'wifi': 0}
+        default = {'gsm': 0, 'wcdma': 0, 'lte': 0, 'blue': 0, 'wifi': 0}
         stats = {}
         for region, radio, num in cells:
             if region not in stats:
                 stats[region] = default.copy()
             stats[region][radio.name] = int(num)
 
-        for shard in WifiShard.shards().values():
-            wifis = (self.session.query(shard.region, func.count())
-                                 .filter(shard.region.isnot(None))
-                                 .group_by(shard.region)).all()
+        for name, shard_model in (('blue', BlueShard), ('wifi', WifiShard)):
+            for shard in shard_model.shards().values():
+                stations = (self.session.query(shard.region, func.count())
+                                        .filter(shard.region.isnot(None))
+                                        .group_by(shard.region)).all()
 
-            for region, num in wifis:
-                if region not in stats:
-                    stats[region] = default.copy()
-                stats[region]['wifi'] += int(num)
+                for region, num in stations:
+                    if region not in stats:
+                        stats[region] = default.copy()
+                    stats[region][name] += int(num)
 
         if not stats:
             return
@@ -94,6 +96,7 @@ class StatRegion(DataTask):
                 region_stats[region].gsm = values['gsm']
                 region_stats[region].wcdma = values['wcdma']
                 region_stats[region].lte = values['lte']
+                region_stats[region].blue = values['blue']
                 region_stats[region].wifi = values['wifi']
             else:
                 self.session.add(RegionStat(
@@ -101,6 +104,7 @@ class StatRegion(DataTask):
                     gsm=values['gsm'],
                     wcdma=values['wcdma'],
                     lte=values['lte'],
+                    blue=values['blue'],
                     wifi=values['wifi'],
                 ))
 
