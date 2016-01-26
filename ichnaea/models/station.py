@@ -194,8 +194,12 @@ class ScoreMixin(object):
         # 0.1 (data was only seen on a single day)
         # 0.2 (data was seen on two different days)
         # 1.0 (data was first and last seen at least 10 days apart)
+        last_seen = self.modified.date()
+        if self.last_seen is not None:
+            last_seen = max(last_seen, self.last_seen)
+
         collected_over = max(
-            (self.modified.date() - self.score_created_position()).days, 1)
+            (last_seen - self.score_created_position()).days, 1)
         collection_weight = min(collected_over / 10.0, 1.0)
 
         return age_weight * collection_weight * self.score_sample_weight()

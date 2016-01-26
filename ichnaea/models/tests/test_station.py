@@ -8,12 +8,13 @@ from ichnaea import util
 class DummyModel(ScoreMixin):
 
     def __init__(self, created, modified, radius, samples,
-                 block_last=None):
+                 block_last=None, last_seen=None):
         self.created = created
         self.modified = modified
         self.radius = radius
         self.samples = samples
         self.block_last = block_last
+        self.last_seen = last_seen
 
 
 class TestScoreMixin(TestCase):
@@ -49,9 +50,14 @@ class TestScoreMixin(TestCase):
         self.assertAlmostEqual(DummyModel(
             now - timedelta(days=70),
             now - timedelta(days=60),
-            10, 64).score(now), 3.46, 2)
+            10, 64,
+            (now - timedelta(days=65)).date()).score(now), 1.73, 2)
+
+    def test_last_seen(self):
+        now = util.utcnow()
         self.assertAlmostEqual(DummyModel(
             now - timedelta(days=70),
             now - timedelta(days=60),
             10, 64,
-            (now - timedelta(days=65)).date()).score(now), 1.73, 2)
+            (now - timedelta(days=65)).date(),
+            (now - timedelta(days=58)).date()).score(now), 2.42, 2)
