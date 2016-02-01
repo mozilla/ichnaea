@@ -11,7 +11,7 @@ Chameleon==2.24
 colander==1.2
 configparser==3.5.0b2
 contextlib2==0.5.1 ; python_version < '3.2'
-cryptography==1.2.1
+cryptography==1.2.2
 datadog==0.10.0
 decorator==4.0.6
 enum34==1.0.4 ; python_version < '3.0'
@@ -46,7 +46,7 @@ pyramid==1.6.0
 pyramid-chameleon==0.3
 python-editor==0.5
 pytz==2015.7
-raven==5.10.1
+raven==5.10.2
 redis==2.10.5
 repoze.lru==0.6
 requests==2.9.1
