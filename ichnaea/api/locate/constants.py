@@ -7,6 +7,24 @@ EARTH_CIRCUMFERENCE = 40000000.0
 Approximate circumference of the Earth in meters.
 """
 
+MAX_BLUE_CLUSTER_METERS = 100.0
+"""
+Maximum distance between Bluetooth networks to be considered close enough
+to be from one consistent observation.
+"""
+
+MIN_BLUES_IN_QUERY = 2
+"""
+Minimum number of Bluetooth networks in a query to allow returning results
+based on Bluetooth information.
+"""
+
+MAX_BLUES_IN_CLUSTER = 10
+"""
+Maximum number of Bluetooth networks used from one combined cluster to form
+the aggregate result.
+"""
+
 MAX_WIFI_CLUSTER_METERS = 1000.0
 """
 Maximum distance between WiFi networks to be considered close enough
@@ -17,12 +35,6 @@ MIN_WIFIS_IN_QUERY = 2
 """
 Minimum number of WiFi networks in a query to allow returning results
 based on WiFi information.
-"""
-
-MIN_WIFIS_IN_CLUSTER = 2
-"""
-Minimum number of WiFi networks in a close-by cluster to allow returning
-results based on the cluster.
 """
 
 MAX_WIFIS_IN_CLUSTER = 10
@@ -70,7 +82,7 @@ class DataAccuracy(Enum):
     in one need to be reflected in the other.
     """
 
-    high = 1000.0  #: High accuracy, probably WiFi based.
+    high = 1000.0  #: High accuracy, probably Bluetooth or WiFi based.
     medium = 50000.0  #: Medium accuracy, probably cell based.
     low = EARTH_CIRCUMFERENCE  #: Low accuracy, large cell, cell area or GeoIP.
     none = float('inf')  # No accuracy at all.

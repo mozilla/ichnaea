@@ -6,11 +6,13 @@
 .. toctree::
    :maxdepth: 1
 
+   blue
    cell
    constants
    fallback
    geoip
    internal
+   mac
    query
    result
    schema

@@ -11,6 +11,7 @@ from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
 )
+from ichnaea.models.blue import ValidBlueSignalSchema
 from ichnaea.models.cell import (
     encode_cellarea,
     encode_cellid,
@@ -21,9 +22,7 @@ from ichnaea.models.cell import (
 from ichnaea.models.hashkey import HashKey
 from ichnaea.models.mac import MacNode
 from ichnaea.models.schema import DefaultNode
-from ichnaea.models.wifi import (
-    ValidWifiSignalSchema,
-)
+from ichnaea.models.wifi import ValidWifiSignalSchema
 
 
 class BaseLookup(HashKey, CreationMixin, ValidationMixin):
@@ -35,6 +34,33 @@ class BaseLookup(HashKey, CreationMixin, ValidationMixin):
     def better(self, other):
         """Is self better than the other?"""
         raise NotImplementedError()
+
+
+class ValidBlueLookupSchema(ValidBlueSignalSchema):
+    """A schema which validates the fields in a Bluetooth lookup."""
+
+    mac = MacNode(colander.String())
+    name = DefaultNode(colander.String(), missing=None)
+
+
+class BlueLookup(BaseLookup):
+    """A model class representing a Bluetooth lookup."""
+
+    _valid_schema = ValidBlueLookupSchema()
+    _fields = (
+        'mac',
+        'signal',
+        'name',
+    )
+
+    def better(self, other):
+        """Is self better than the other?"""
+        old_value = getattr(self, 'signal', None)
+        new_value = getattr(other, 'signal', None)
+        if (None not in (old_value, new_value) and
+                old_value > new_value):
+            return True
+        return False
 
 
 class BaseCellLookup(BaseLookup):
@@ -116,14 +142,14 @@ class CellLookup(BaseCellLookup):
 
 
 class ValidWifiLookupSchema(ValidWifiSignalSchema):
-    """A schema which validates the fields in a wifi lookup."""
+    """A schema which validates the fields in a WiFi lookup."""
 
     mac = MacNode(colander.String())
     ssid = DefaultNode(colander.String(), missing=None)
 
 
 class WifiLookup(BaseLookup):
-    """A model class representing a cell lookup."""
+    """A model class representing a WiFi lookup."""
 
     _valid_schema = ValidWifiLookupSchema()
     _fields = (

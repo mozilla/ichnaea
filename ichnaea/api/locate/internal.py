@@ -1,5 +1,9 @@
 """Implementation of a search source based on our internal data."""
 
+from ichnaea.api.locate.blue import (
+    BluePositionMixin,
+    BlueRegionMixin,
+)
 from ichnaea.api.locate.cell import (
     CellPositionMixin,
     CellRegionMixin,
@@ -25,7 +29,8 @@ class BaseInternalSource(object):
         if not super(BaseInternalSource, self).should_search(
                 query, results):  # pragma: no cover
             return False
-        if not (self.should_search_cell(query, results) or
+        if not (self.should_search_blue(query, results) or
+                self.should_search_cell(query, results) or
                 self.should_search_wifi(query, results)):
             return False
         return True
@@ -34,6 +39,8 @@ class BaseInternalSource(object):
         results = self.result_list()
 
         for should, search in (
+            # Search by most precise to least precise data type.
+                (self.should_search_blue, self.search_blue),
                 (self.should_search_wifi, self.search_wifi),
                 (self.should_search_cell, self.search_cell)):
 
@@ -45,6 +52,7 @@ class BaseInternalSource(object):
 
 
 class InternalPositionSource(BaseInternalSource,
+                             BluePositionMixin,
                              CellPositionMixin,
                              WifiPositionMixin,
                              PositionSource):
@@ -52,6 +60,7 @@ class InternalPositionSource(BaseInternalSource,
 
 
 class InternalRegionSource(BaseInternalSource,
+                           BlueRegionMixin,
                            CellRegionMixin,
                            WifiRegionMixin,
                            RegionSource):

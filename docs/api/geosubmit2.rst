@@ -41,7 +41,7 @@ Geosubmit requests are submitted using a POST request with a JSON body:
         },
         "bluetoothBeacons": [
             {
-                "macAddress": "ff:74:27:89:5a:77",
+                "macAddress": "ff:23:45:67:89:ab",
                 "age": 2000,
                 "name": "beacon",
                 "signalStrength": -110
@@ -148,13 +148,13 @@ Bluetooth Beacon Fields
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 macAddress
-    The address of the BLE beacon.
+    The address of the Bluetooth Low Energy (BLE) beacon.
 
 name
     The name of the BLE beacon.
 
 age
-    The number of milliseconds since this Bluetooth beacon was last seen.
+    The number of milliseconds since this BLE beacon was last seen.
 
 signalStrength
     The measured signal strength of the BLE beacon in dBm.

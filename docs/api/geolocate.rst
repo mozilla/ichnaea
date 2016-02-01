@@ -6,8 +6,8 @@ Geolocate
 
 Purpose
     Determine the current location based on data provided about nearby
-    cell or WiFi networks and based on the IP address used to access
-    the service.
+    Bluetooth, cell or WiFi networks and based on the IP address used
+    to access the service.
 
 
 Request
@@ -61,6 +61,14 @@ A complete example including all possible fields:
         "considerIp": true,
         "homeMobileCountryCode": 208,
         "homeMobileNetworkCode": 1,
+        "bluetoothBeacons": [
+            {
+                "macAddress": "ff:23:45:67:89:ab",
+                "age": 2000,
+                "name": "beacon",
+                "signalStrength": -110
+            }
+        ],
         "cellTowers": [{
             "radioType": "wcdma",
             "mobileCountryCode": 208,
@@ -92,10 +100,10 @@ A complete example including all possible fields:
 Field Definition
 ----------------
 
-All of the fields are optional. Though in order to get a WiFi based position
-estimate at least two WiFi networks need to be provided and for each the
-`macAddress` needs to be known. The minimum of two networks is a mandatory
-privacy restriction for WiFi based location services.
+All of the fields are optional. Though in order to get a Bluetooth or WiFi
+based position estimate at least two networks need to be provided and for
+each the `macAddress` needs to be known. The minimum of two networks is a
+mandatory privacy restriction for Bluetooth and WiFi based location services.
 
 Cell based position estimates require each cell record to contain at least
 the five `radioType`, `mobileCountryCode`, `mobileNetworkCode`,
@@ -129,6 +137,22 @@ radioType
     Same as the radioType entry in each cell record. If all the cell
     entries have the same radioType, it can be provided at the top level
     instead.
+
+
+Bluetooth Beacon Fields
+~~~~~~~~~~~~~~~~~~~~~~~
+
+macAddress
+    The address of the Bluetooth Low Energy (BLE) beacon.
+
+name
+    The name of the BLE beacon.
+
+age
+    The number of milliseconds since this BLE beacon was last seen.
+
+signalStrength
+    The measured signal strength of the BLE beacon in dBm.
 
 
 Cell Tower Fields
@@ -224,6 +248,8 @@ Deviations From GLS API
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 As mentioned in the specific fields, our API has a couple of extensions.
+
+* The entire Bluetooth section is a custom addition.
 
 * Cell entries allow to specify the `radioType` per cell network
   instead of globally. This allows for example doing queries with data

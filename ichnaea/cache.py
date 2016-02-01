@@ -60,6 +60,7 @@ class RedisClient(redis.StrictRedis):
 
     cache_keys = {
         'downloads': b'cache:downloads',
+        'fallback_blue': b'cache:fallback:blue:',
         'fallback_cell': b'cache:fallback:cell:',
         'fallback_wifi': b'cache:fallback:wifi:',
         'leaders': b'cache:leaders',

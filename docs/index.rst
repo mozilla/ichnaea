@@ -3,7 +3,7 @@ Ichnaea
 =======
 
 ``Ichnaea`` is a service to provide geolocation coordinates
-from other sources of data (cell or WiFi networks, GeoIP, etc.).
+from other sources of data (Bluetooth, cell or WiFi networks, GeoIP, etc.).
 It is using both :term:`Cell-ID` and Wi-Fi based positioning (:term:`WPS`)
 approaches.
 

@@ -93,12 +93,13 @@ in it:
     for this query. Since almost all queries contain a client IP address
     we usually skip this tag.
 
+``#blue:none``, ``#blue:one``, ``#blue:many``,
 ``#cell:none``, ``#cell:one``, ``#cell:many``,
 ``#wifi:none``, ``#wifi:one``, ``#wifi:many`` : tags
 
-    If the query contained any cell or wifi networks, one cell and one
-    wifi tag get added. The tags depend on the number of valid
-    :term:`stations` for each of the two.
+    If the query contained any Bluetooth, cell or WiFi networks,
+    one blue, cell and wifi tag get added. The tags depend on the
+    number of valid :term:`stations` for each of the three.
 
 
 API Result Metrics
@@ -112,7 +113,7 @@ region rules under the prefix / tag combination:
 
 The result metrics measure if we satisfied the incoming API query in
 the best possible fashion. Incoming queries can generally contain
-an IP address, cell networks, WiFi networks or any combination thereof.
+an IP address, Bluetooth, cell, WiFi networks or any combination thereof.
 If the query contained only cell networks, we do not expect to get a
 high accuracy result, as there is too little data in the query to do so.
 
@@ -120,10 +121,11 @@ We express this by classifying each incoming query into one of four
 categories:
 
 High Accuracy (``#accuracy:high``)
-    A query containing at least two WiFi networks.
+    A query containing at least two Bluetooth or WiFi networks.
 
 Medium Accuracy (``#accuracy:medium``)
-    A query containing no WiFi networks but at least one cell network.
+    A query containing neither Bluetooth nor WiFi networks but at
+    least one cell network.
 
 Low Accuracy (``#accuracy:low``)
     A query containing no networks but only the IP address of the client.
@@ -269,51 +271,59 @@ Along the way several counters measure the steps involved:
     Count incoming :term:`reports` that were discarded due to some internal
     consistency, range or validity-condition error.
 
+``data.observation.upload#type:blue``,
+``data.observation.upload#type:blue,key:<api_shortname>``,
 ``data.observation.upload#type:cell``,
 ``data.observation.upload#type:cell,key:<api_shortname>``,
 ``data.observation.upload#type:wifi``,
 ``data.observation.upload#type:wifi,key:<api_shortname>`` : counters
 
-    Count the number of cell or wifi :term:`observations` entering the data
-    processing pipeline; before normalization and blocklist processing
-    have been applied. In other words this metric counts "total cell or
-    wifi :term:`observations` inside each submitted batch", as each batch is
-    decomposed into individual :term:`observations`.
+    Count the number of Bluetooth, cell or WiFi :term:`observations` entering
+    the data processing pipeline; before normalization and blocklist processing
+    have been applied. In other words this metric counts "total Bluetooth,
+    cell or WiFi :term:`observations` inside each submitted batch", as each
+    batch is composed of individual :term:`observations`.
 
     The metrics are either emitted per tracked API key, or for everything
     else without a key tag.
 
+``data.observation.drop#type:blue,reason:malformed``,
+``data.observation.drop#type:blue,reason:malformed,key:<api_shortname>``,
 ``data.observation.drop#type:cell,reason:malformed``,
 ``data.observation.drop#type:cell,reason:malformed,key:<api_shortname>``,
 ``data.observation.drop#type:wifi,reason:malformed``
 ``data.observation.drop#type:wifi,reason:malformed,key:<api_shortname>`` : counters
 
-    Count incoming cell or wifi :term:`observations` that were discarded before
-    integration due to some internal consistency, range or
+    Count incoming Bluetooth, cell or WiFi :term:`observations` that were
+    discarded before integration due to some internal consistency, range or
     validity-condition error encountered while attempting to normalize the
     :term:`observation`.
 
+``data.observation.drop#type:blue,reason:blocklisted``,
 ``data.observation.drop#type:cell,reason:blocklisted``,
 ``data.observation.drop#type:wifi,reason:blocklisted`` : counters
 
-    Count incoming cell or wifi :term:`observations` that were discarded before
-    integration due to the presence of a blocklist record for the
-    :term:`station` (see next metric).
+    Count incoming Bluetooth, cell or WiFi :term:`observations` that were
+    discarded before integration due to the presence of a blocklist record
+    for the :term:`station` (see next metric).
 
+``data.observation.insert#type:blue``,
 ``data.observation.insert#type:cell``,
 ``data.observation.insert#type:wifi`` : counters
 
-    Count cell or wifi :term:`observations` that are successfully normalized,
-    integrated and not discarded due to consistency errors.
+    Count Bluetooth, cell or WiFi :term:`observations` that are successfully
+    normalized, integrated and not discarded due to consistency errors.
 
+``data.station.blocklist#type:blue,action:add,reason:moving``,
 ``data.station.blocklist#type:cell,action:add,reason:moving``,
 ``data.station.blocklist#type:wifi,action:add,reason:moving`` : counters
 
-    Count any cell or wifi that is blocklisted due to the acceptance of
-    multiple :term:`observations` at sufficiently different locations. In
-    these cases, we decide that the :term:`station` is "moving" (such as a
-    picocell or mobile hotspot on a public transit vehicle) and blocklist
-    it, to avoid estimating query positions using the :term:`station`.
+    Count any Bluetooth, cell or WiFi network that is blocklisted due to
+    the acceptance of multiple :term:`observations` at sufficiently different
+    locations. In these cases, we decide that the :term:`station` is "moving"
+    (such as a picocell or mobile hotspot on a public transit vehicle) and
+    blocklist it, to avoid estimating query positions using the
+    :term:`station`.
 
 
 Data Pipeline Export Metrics
@@ -346,6 +356,7 @@ Internal Monitoring
     enabled on it. This gauge measures how many requests have been done
     for each such API key and path combination for the current day.
 
+``queue#queue:celery_blue``,
 ``queue#queue:celery_cell``,
 ``queue#queue:celery_default``,
 ``queue#queue:celery_export``,
@@ -359,6 +370,8 @@ Internal Monitoring
     These gauges measure the number of tasks in each of the Redis queues.
     They are sampled at an approximate per-minute interval.
 
+``queue#queue:update_blue_0``,
+``queue#queue:update_blue_f``,
 ``queue#queue:update_cell_gsm``,
 ``queue#queue:update_cell_wcdma``,
 ``queue#queue:update_cell_lte``,

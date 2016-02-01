@@ -6,8 +6,8 @@ Region
 
 Purpose
     Determine the current region based on data provided about nearby
-    cell or WiFi networks and based on the IP address used to access
-    the service.
+    Bluetooth, cell or WiFi networks and based on the IP address used
+    to access the service.
 
 The responses use region codes and names from the
 `GENC dataset <http://www.gwg.nga.mil/ccwg.php>`_, which is for the

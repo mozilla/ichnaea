@@ -2,9 +2,13 @@ from datetime import timedelta
 
 import numpy
 
-from ichnaea.api.locate.constants import MAX_WIFIS_IN_CLUSTER
+from ichnaea.api.locate.constants import (
+    DataSource,
+    MAX_WIFIS_IN_CLUSTER,
+)
+from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.api.locate.wifi import WifiPositionSource
+from ichnaea.api.locate.wifi import WifiPositionMixin
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
 )
@@ -12,9 +16,21 @@ from ichnaea.tests.factories import WifiShardFactory
 from ichnaea import util
 
 
+class WifiTestPositionSource(WifiPositionMixin, PositionSource):
+
+    fallback_field = None  #:
+    source = DataSource.internal
+
+    def should_search(self, query, results):
+        return self.should_search_wifi(query, results)
+
+    def search(self, query):
+        return self.search_wifi(query)
+
+
 class TestWifi(BaseSourceTest):
 
-    TestSource = WifiPositionSource
+    TestSource = WifiTestPositionSource
 
     def test_wifi(self):
         wifi = WifiShardFactory(radius=50, samples=50)

@@ -13,6 +13,7 @@ from ichnaea.tests.base import (
     TestCase,
 )
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -24,7 +25,8 @@ class TestSchema(TestCase):
 
     def test_empty(self):
         data = self.schema.deserialize({})
-        self.assertEqual(data, {'cell': (), 'fallbacks': None, 'wifi': ()})
+        self.assertEqual(
+            data, {'blue': (), 'cell': (), 'fallbacks': None, 'wifi': ()})
 
     def test_empty_cell_entry(self):
         data = self.schema.deserialize({'cell': [{}]})
@@ -73,8 +75,14 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
         if fallback is not None:
             self.assertEqual(data['fallback'], fallback)
 
-    def model_query(self, cells=(), wifis=()):
+    def model_query(self, blues=(), cells=(), wifis=()):
         query = {}
+        if blues:
+            query['blue'] = []
+            for blue in blues:
+                query['blue'].append({
+                    'key': blue.mac,
+                })
         if cells:
             query['cell'] = []
             for cell in cells:
@@ -99,6 +107,35 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
 
 class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
+
+    def test_blue(self):
+        blue = BlueShardFactory()
+        offset = 0.00001
+        blues = [
+            blue,
+            BlueShardFactory(lat=blue.lat + offset),
+            BlueShardFactory(lat=blue.lat + offset * 2),
+            BlueShardFactory(lat=None, lon=None),
+        ]
+        self.session.flush()
+
+        query = self.model_query(blues=blues)
+        blue_query = query['blue']
+        blue_query[0]['signal'] = -77
+        blue_query[1]['name'] = 'my-beacon'
+
+        res = self._call(body=query)
+        self.check_model_response(res, blue, lat=blue.lat + offset)
+
+        self.check_stats(counter=[
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.result',
+                ['key:test', 'region:none', 'fallback_allowed:false',
+                 'accuracy:high', 'status:hit', 'source:internal']),
+            (self.metric_type + '.source',
+                ['key:test', 'region:none', 'source:internal',
+                 'accuracy:high', 'status:hit']),
+        ])
 
     def test_cell(self):
         cell = CellShardFactory()

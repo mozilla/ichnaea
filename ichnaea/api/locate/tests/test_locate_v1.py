@@ -25,6 +25,7 @@ class TestSchema(TestCase):
     def test_empty(self):
         data = self.schema.deserialize({})
         self.assertEqual(data, {
+            'blue': (),
             'carrier': None,
             'cell': (),
             'considerIp': True,

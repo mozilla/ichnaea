@@ -8,8 +8,8 @@ Search (Deprecated)
 
 Purpose
     Determine the current location based on data provided about nearby
-    cell or WiFi networks and based on the IP address used to access
-    the service.
+    Bluetooth, cell or WiFi networks and based on the IP address used
+    to access the service.
 
 
 Request
@@ -19,8 +19,7 @@ Search requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/search?key=<API_KEY>
 
-A search record can contain a list of cell records and a list of WiFi
-records.
+A search record can contain a list of Bluetooth, cell and WiFi records.
 
 A example of a well formed JSON search request :
 
@@ -28,6 +27,16 @@ A example of a well formed JSON search request :
 
     {
         "radio": "gsm",
+        "blue": [
+            {
+                "key": "ff:23:45:67:89:ab",
+                "signal": -110
+            },
+            {
+                "key": "ff:23:45:67:89:cd",
+                "signal": -105
+            }
+        ],
         "cell": [
             {
                 "radio": "umts",
@@ -58,6 +67,23 @@ A example of a well formed JSON search request :
 
 Field Definition
 ----------------
+
+Bluetooth Fields
+~~~~~~~~~~~~~~~~
+
+For `blue` entries, the `key` field is required.
+
+key **(required)**
+    The `key` is the mac address of the Bluetooth network. So for example
+    a valid key would look similar to `ff:23:45:67:89:ab`.
+
+signal
+    The received signal strength (RSSI) in dBm, typically in the range of
+    -10 to -127.
+
+name
+    The name of the Bluetooth network.
+
 
 Cell Fields
 ~~~~~~~~~~~
@@ -143,12 +169,13 @@ An example of a valid WiFi record is below:
 Mapping records into a search request
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The mapping can contain zero or more WiFi records and zero or more
-cell records. If either list of records is empty, it can be omitted entirely.
+The mapping can contain zero or more Bluetooth records, zero or more WiFi
+records and zero or more cell records. If any list of records is empty,
+it can be omitted entirely.
 
-For WiFi lookups you need to provide at least two WiFi keys of
-nearby WiFi networks. This is an industry standard that is meant to
-prevent you from looking up the position of a single WiFi over time.
+For Bluetooth and WiFi lookups at least two keys of nearby networks need
+to be provided. This is an industry standard that is meant to prevent you
+from looking up the position of a single network over time.
 
 
 Response

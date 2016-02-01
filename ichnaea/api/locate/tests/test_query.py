@@ -12,6 +12,7 @@ from ichnaea.models import Radio
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
+    BlueShardFactory,
     CellAreaFactory,
     CellShardFactory,
     WifiShardFactory,
@@ -26,6 +27,15 @@ class QueryTest(ConnectionTestCase):
         cls.api_key = ApiKeyFactory.build(shortname='key')
         cls.london = cls.geoip_data['London']
         cls.london_ip = cls.london['ip']
+
+    def blue_model_query(self, blues):
+        query = []
+        for blue in blues:
+            query.append({
+                'mac': blue.mac,
+                'signal': -85,
+            })
+        return query
 
     def cell_model_query(self, cells):
         query = []
@@ -63,6 +73,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.fallback.ipf, True)
         self.assertEqual(query.fallback.lacf, True)
         self.assertEqual(query.ip, None)
+        self.assertEqual(query.blue, [])
         self.assertEqual(query.cell, [])
         self.assertEqual(query.cell_area, [])
         self.assertEqual(query.wifi, [])
@@ -96,6 +107,57 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.region, None)
         self.assertEqual(query.geoip, None)
         self.assertEqual(query.ip, None)
+
+    def test_blue(self):
+        blues = BlueShardFactory.build_batch(2)
+        macs = [blue.mac for blue in blues]
+        query = Query(blue=self.blue_model_query(blues))
+
+        self.assertEqual(len(query.blue), 2)
+        self.assertEqual(query.expected_accuracy, DataAccuracy.high)
+
+        for blue in query.blue:
+            self.assertEqual(blue.signal, -85)
+            self.assertTrue(blue.mac in macs)
+
+    def test_blue_single(self):
+        blue = BlueShardFactory.build()
+        blue_query = {'mac': blue.mac}
+        query = Query(blue=[blue_query])
+        self.assertEqual(len(query.blue), 0)
+
+    def test_blue_duplicates(self):
+        blue = BlueShardFactory.build()
+        query = Query(blue=[
+            {'mac': blue.mac, 'signal': -90},
+            {'mac': blue.mac, 'signal': -82},
+            {'mac': blue.mac, 'signal': -85},
+        ])
+        self.assertEqual(len(query.blue), 0)
+
+    def test_blue_better(self):
+        blues = BlueShardFactory.build_batch(2)
+        query = Query(blue=[
+            {'mac': blues[0].mac, 'signal': -90, 'name': 'my-beacon'},
+            {'mac': blues[0].mac, 'signal': -82},
+            {'mac': blues[0].mac, 'signal': -85},
+            {'mac': blues[1].mac, 'signal': -70},
+        ])
+        self.assertEqual(len(query.blue), 2)
+        self.assertEqual(
+            set([blue.signal for blue in query.blue]), set([-70, -82]))
+
+    def test_blue_malformed(self):
+        blue = BlueShardFactory.build()
+        blue_query = {'mac': blue.mac}
+        query = Query(blue=[blue_query, {'mac': 'foo'}])
+        self.assertEqual(len(query.blue), 0)
+
+    def test_blue_region(self):
+        blues = BlueShardFactory.build_batch(2)
+        query = Query(
+            blue=self.blue_model_query(blues), api_type='region')
+        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
 
     def test_cell(self):
         cell = CellShardFactory.build(radio=Radio.lte)
@@ -272,10 +334,11 @@ class TestQuery(QueryTest, ConnectionTestCase):
 class TestQueryStats(QueryTest):
 
     def _make_query(self, api_key=None, api_type='locate',
-                    cell=(), wifi=(), **kw):
+                    blue=(), cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or self.api_key,
             api_type=api_type,
+            blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
             geoip_db=self.geoip_db,
@@ -296,34 +359,40 @@ class TestQueryStats(QueryTest):
         self.check_stats(counter=[
             ('locate.query',
                 ['key:%s' % api_key.valid_key,
-                 'region:none', 'geoip:false', 'cell:one', 'wifi:none']),
+                 'region:none', 'geoip:false',
+                 'blue:none', 'cell:one', 'wifi:none']),
         ])
 
     def test_empty(self):
         self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.query',
-                ['key:key', 'region:GB', 'cell:none', 'wifi:none']),
+                ['key:key', 'region:GB',
+                 'blue:none', 'cell:none', 'wifi:none']),
         ])
 
     def test_one(self):
+        blues = BlueShardFactory.build_batch(1)
         cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(1)
 
-        self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
+        self._make_query(blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'region:GB', 'cell:one', 'wifi:one']),
+                ['key:key', 'region:GB',
+                 'blue:one', 'cell:one', 'wifi:one']),
         ])
 
     def test_many(self):
+        blues = BlueShardFactory.build_batch(2)
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(3)
 
-        self._make_query(cell=cells, wifi=wifis, ip=self.london_ip)
+        self._make_query(blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'region:GB', 'cell:many', 'wifi:many']),
+                ['key:key', 'region:GB',
+                 'blue:many', 'cell:many', 'wifi:many']),
         ])
 
 
@@ -344,10 +413,11 @@ class TestResultStats(QueryTest):
             score=0.5)
 
     def _make_query(self, result, api_key=None, api_type='locate',
-                    cell=(), wifi=(), **kw):
+                    blue=(), cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or self.api_key,
             api_type=api_type,
+            blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
             geoip_db=self.geoip_db,
@@ -480,10 +550,11 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
             score=0.5))
 
     def _make_query(self, source, results, api_key=None, api_type='locate',
-                    cell=(), wifi=(), **kw):
+                    blue=(), cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or self.api_key,
             api_type=api_type,
+            blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
             geoip_db=self.geoip_db,

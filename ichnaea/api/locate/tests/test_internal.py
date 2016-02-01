@@ -2,6 +2,7 @@ from ichnaea.api.locate.internal import InternalRegionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.geocode import GEOCODER
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellAreaFactory,
     WifiShardFactory,
 )
@@ -12,6 +13,35 @@ class TestRegionSource(BaseSourceTest):
 
     TestSource = InternalRegionSource
     api_type = 'region'
+
+    def test_blue(self):
+        now = util.utcnow()
+        region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
+        blue1 = BlueShardFactory(samples=10)
+        blue2 = BlueShardFactory(samples=20)
+        blue3 = BlueShardFactory.build(region='DE', samples=100)
+        self.session.flush()
+
+        query = self.model_query(blues=[blue1, blue2, blue3])
+        results = self.source.search(query)
+        self.check_model_results(results, [region])
+        best_result = results.best()
+        self.assertEqual(best_result.region_code, region.code)
+        self.assertAlmostEqual(
+            best_result.score, blue1.score(now) + blue2.score(now), 4)
+        self.check_stats(counter=[
+            (self.api_type + '.source',
+                ['key:test', 'region:none', 'source:internal',
+                 'accuracy:low', 'status:hit']),
+        ])
+
+    def test_blue_miss(self):
+        blues = BlueShardFactory.build_batch(2, samples=10)
+        self.session.flush()
+
+        query = self.model_query(blues=blues)
+        results = self.source.search(query)
+        self.check_model_results(results, None)
 
     def test_from_mcc(self):
         region = GEOCODER.regions_for_mcc(235, metadata=True)[0]

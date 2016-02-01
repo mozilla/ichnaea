@@ -22,6 +22,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Accept and use Bluetooth networks in public HTTP APIs.
+
 - Weight observations by their accuracy and signal strength values.
 
 - Add stricter validation of asu, signal and ta values.

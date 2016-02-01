@@ -29,6 +29,7 @@ from ichnaea.models import Radio
 from ichnaea.tests.base import TestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -136,6 +137,24 @@ class TestOutboundSchema(TestCase):
         data = self.schema.deserialize(query.internal_query())
         self.assertEqual(data, {'fallbacks': {'lacf': True}})
 
+    def test_blue(self):
+        blues = BlueShardFactory.build_batch(2)
+        query = Query(blue=[
+            {'mac': blue.mac, 'signal': -90, 'name': 'my'} for blue in blues])
+        data = self.schema.deserialize(query.internal_query())
+        self.assertEqual(data, {
+            'bluetoothBeacons': [{
+                'macAddress': blues[0].mac,
+                'signalStrength': -90,
+                'name': 'my',
+            }, {
+                'macAddress': blues[1].mac,
+                'signalStrength': -90,
+                'name': 'my',
+            }],
+            'fallbacks': {'lacf': True},
+        })
+
     def test_cell(self):
         cell = CellShardFactory.build(radio=Radio.lte)
         query = Query(cell=[
@@ -189,6 +208,25 @@ class TestCache(QueryTest):
         self.assertEqual(
             cache.set(query, ExternalResult(None, None, None, None)), None)
         self.assertEqual(cache.get(query), None)
+
+    def test_get_blue(self):
+        blues = BlueShardFactory.build_batch(2)
+        query = Query(blue=self.blue_model_query(blues))
+        self.assertEqual(self.cache.get(query), None)
+        self.check_stats(counter=[
+            ('locate.fallback.cache', 1, 1, ['status:miss']),
+        ])
+
+    def test_set_blue(self):
+        blues = BlueShardFactory.build_batch(2)
+        blue = blues[0]
+        query = Query(blue=self.blue_model_query(blues))
+        result = ExternalResult(blue.lat, blue.lon, blue.radius, None)
+        self.cache.set(query, result)
+        self.assertEqual(self.cache.get(query), result)
+        self.check_stats(counter=[
+            ('locate.fallback.cache', 1, 1, ['status:hit']),
+        ])
 
     def test_get_cell(self):
         cells = CellShardFactory.build_batch(1)
@@ -286,14 +324,24 @@ class TestCache(QueryTest):
         ])
 
     def test_get_mixed(self):
+        blues = BlueShardFactory.build_batch(2)
         cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(2)
-        query = Query(
-            cell=self.cell_model_query(cells),
-            wifi=self.wifi_model_query(wifis))
+
+        query = Query(cell=self.cell_model_query(cells),
+                      wifi=self.wifi_model_query(wifis))
         self.assertEqual(self.cache.get(query), None)
+
+        query = Query(blue=self.blue_model_query(blues),
+                      cell=self.cell_model_query(cells))
+        self.assertEqual(self.cache.get(query), None)
+
+        query = Query(blue=self.blue_model_query(blues),
+                      wifi=self.wifi_model_query(wifis))
+        self.assertEqual(self.cache.get(query), None)
+
         self.check_stats(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:bypassed']),
+            ('locate.fallback.cache', 3, 1, ['status:bypassed']),
         ])
 
 
@@ -485,6 +533,12 @@ class TestSource(BaseSourceTest):
         wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(cells=cells, wifis=wifis, api_key=api_key)
+        self.check_should_search(query, False)
+
+    def test_check_one_blue(self):
+        blue = BlueShardFactory.build()
+
+        query = self.model_query(blues=[blue])
         self.check_should_search(query, False)
 
     def test_check_one_wifi(self):

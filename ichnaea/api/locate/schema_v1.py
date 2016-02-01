@@ -20,6 +20,19 @@ from ichnaea.api.locate.schema import (
 RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
+class BluetoothBeaconsSchema(InternalSequenceSchema):
+
+    @colander.instantiate()
+    class SequenceItem(InternalMappingSchema):
+
+        macAddress = InternalSchemaNode(
+            colander.String(), missing=None, internal_name='mac')
+        age = InternalSchemaNode(colander.Integer(), missing=None)
+        signalStrength = InternalSchemaNode(
+            colander.Integer(), missing=None, internal_name='signal')
+        name = InternalSchemaNode(colander.String(), missing=None)
+
+
 class CellTowersSchema(InternalSequenceSchema):
 
     @colander.instantiate()
@@ -82,6 +95,7 @@ class LocateV1Schema(BaseLocateSchema):
         colander.String(), validator=colander.OneOf(RADIO_STRINGS),
         missing=colander.drop, internal_name='radio')
 
+    bluetoothBeacons = BluetoothBeaconsSchema(missing=(), internal_name='blue')
     cellTowers = CellTowersSchema(missing=(), internal_name='cell')
     wifiAccessPoints = WifiAccessPointsSchema(missing=(), internal_name='wifi')
     fallbacks = FallbackSchema(missing=None)

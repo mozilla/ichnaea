@@ -7,7 +7,7 @@ Geosubmit (Deprecated)
     Please use the :ref:`api_geosubmit_latest` API instead.
 
 Purpose
-    Submit data about nearby cell and WiFi networks.
+    Submit data about nearby Bluetooth, cell and WiFi networks.
 
 
 Request

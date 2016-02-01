@@ -12,6 +12,8 @@ from ichnaea.api.exceptions import (
     ParseError,
 )
 from ichnaea.api.locate.constants import (
+    BLUE_MIN_ACCURACY,
+    BLUE_MAX_ACCURACY,
     CELL_MIN_ACCURACY,
     CELL_MAX_ACCURACY,
     CELLAREA_MIN_ACCURACY,
@@ -26,6 +28,7 @@ from ichnaea.api.locate.result import (
 )
 from ichnaea.models import (
     ApiKey,
+    BlueShard,
     CellArea,
     CellAreaOCID,
     CellOCID,
@@ -36,6 +39,7 @@ from ichnaea.models import (
 from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
+    BlueShardFactory,
     CellAreaFactory,
     CellShardFactory,
     WifiShardFactory,
@@ -105,7 +109,12 @@ class BaseSourceTest(ConnectionTestCase):
             stats_client=self.stats_client,
             **kw)
 
-    def model_query(self, cells=(), wifis=(), **kw):
+    def model_query(self, blues=(), cells=(), wifis=(), **kw):
+        query_blue = []
+        if blues:
+            for blue in blues:
+                query_blue.append({'mac': blue.mac})
+
         query_cell = []
         if cells:
             for cell in cells:
@@ -125,6 +134,7 @@ class BaseSourceTest(ConnectionTestCase):
                 query_wifi.append({'mac': wifi.mac})
 
         return self.make_query(
+            blue=query_blue,
             cell=query_cell,
             wifi=query_wifi,
             **kw)
@@ -146,7 +156,10 @@ class BaseSourceTest(ConnectionTestCase):
             check_func = self.assertAlmostEqual
             for model in models:
                 accuracy = kw.get('accuracy', model.radius)
-                if isinstance(model, (CellOCID, CellShard)):
+                if isinstance(model, BlueShard):
+                    accuracy = min(max(accuracy, BLUE_MIN_ACCURACY),
+                                   BLUE_MAX_ACCURACY)
+                elif isinstance(model, (CellOCID, CellShard)):
                     accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
                                    CELL_MAX_ACCURACY)
                 elif isinstance(model, (CellArea, CellAreaOCID)):
@@ -254,7 +267,10 @@ class BaseLocateTest(object):
                 model_name = name
                 if name == 'accuracy':
                     model_value = getattr(model, 'radius')
-                    if isinstance(model, (CellOCID, CellShard)):
+                    if isinstance(model, BlueShard):
+                        model_value = min(max(model_value, BLUE_MIN_ACCURACY),
+                                          BLUE_MAX_ACCURACY)
+                    elif isinstance(model, (CellOCID, CellShard)):
                         model_value = min(max(model_value, CELL_MIN_ACCURACY),
                                           CELL_MAX_ACCURACY)
                     elif isinstance(model, (CellArea, CellAreaOCID)):
@@ -276,8 +292,14 @@ class BaseLocateTest(object):
 
         return expected
 
-    def model_query(self, cells=(), wifis=()):
+    def model_query(self, blues=(), cells=(), wifis=()):
         query = {}
+        if blues:
+            query['bluetoothBeacons'] = []
+            for blue in blues:
+                query['bluetoothBeacons'].append({
+                    'macAddress': blue.mac,
+                })
         if cells:
             query['cellTowers'] = []
             for cell in cells:
@@ -351,7 +373,8 @@ class CommonLocateTest(BaseLocateTest):
         if self.apikey_metrics:
             self.check_stats(counter=[
                 (self.metric_type + '.query',
-                    ['key:test', 'region:GB', 'cell:none', 'wifi:none']),
+                    ['key:test', 'region:GB',
+                     'blue:none', 'cell:none', 'wifi:none']),
                 (self.metric_type + '.result',
                     ['key:test', 'region:GB', 'fallback_allowed:false',
                      'accuracy:low', 'status:hit', 'source:geoip']),
@@ -434,6 +457,29 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(api_key=api_key, ip=self.test_ip, status=400)
         self.check_response(res, 'invalid_key')
 
+    def test_blue_not_found(self):
+        blues = BlueShardFactory.build_batch(2)
+
+        query = self.model_query(blues=blues)
+
+        res = self._call(body=query, status=self.not_found.code)
+        self.check_response(res, 'not_found')
+        self.check_stats(counter=[
+            ('request', [self.metric_path, 'method:post',
+                         'status:%s' % self.not_found.code]),
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.query',
+                ['key:test', 'region:none',
+                 'geoip:false', 'blue:many', 'cell:none', 'wifi:none']),
+            (self.metric_type + '.result', 'fallback_allowed:false',
+                ['key:test', 'region:none', 'accuracy:high', 'status:miss']),
+            (self.metric_type + '.source',
+                ['key:test', 'region:none', 'source:internal',
+                 'accuracy:high', 'status:miss']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
+
     def test_cell_not_found(self):
         cell = CellShardFactory.build()
 
@@ -446,7 +492,7 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
                 ['key:test', 'region:none',
-                 'geoip:false', 'cell:one', 'wifi:none']),
+                 'geoip:false', 'blue:none', 'cell:one', 'wifi:none']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:miss']),
@@ -488,7 +534,7 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
                 ['key:test', 'region:none',
-                 'geoip:false', 'cell:none', 'wifi:none']),
+                 'geoip:false', 'blue:none', 'cell:none', 'wifi:none']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:low', 'status:hit', 'source:internal']),
@@ -511,7 +557,7 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
                 ['key:test', 'region:none',
-                 'geoip:false', 'cell:none', 'wifi:none']),
+                 'geoip:false', 'blue:none', 'cell:none', 'wifi:none']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:low', 'status:hit', 'source:internal']),
@@ -565,7 +611,7 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
                 ['key:test', 'region:none',
-                 'geoip:false', 'cell:none', 'wifi:many']),
+                 'geoip:false', 'blue:none', 'cell:none', 'wifi:many']),
             (self.metric_type + '.result', 'fallback_allowed:false',
                 ['key:test', 'region:none', 'accuracy:high', 'status:miss']),
             (self.metric_type + '.source',
@@ -626,7 +672,7 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.query',
                 ['key:test', 'region:none',
-                 'geoip:false', 'cell:many', 'wifi:many']),
+                 'geoip:false', 'blue:none', 'cell:many', 'wifi:many']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:true',
                  'accuracy:high', 'status:hit', 'source:fallback']),

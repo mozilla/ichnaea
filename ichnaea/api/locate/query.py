@@ -4,9 +4,11 @@ import six
 
 from ichnaea.api.locate.constants import (
     DataAccuracy,
+    MIN_BLUES_IN_QUERY,
     MIN_WIFIS_IN_QUERY,
 )
 from ichnaea.api.locate.schema import (
+    BlueLookup,
     CellAreaLookup,
     CellLookup,
     FallbackLookup,
@@ -37,7 +39,7 @@ class Query(object):
     _ip = None
     _region = None
 
-    def __init__(self, fallback=None, ip=None, cell=None, wifi=None,
+    def __init__(self, fallback=None, ip=None, blue=None, cell=None, wifi=None,
                  api_key=None, api_type=None, session=None,
                  http_session=None, geoip_db=None, stats_client=None):
         """
@@ -48,6 +50,9 @@ class Query(object):
 
         :param ip: An IP address, e.g. 127.0.0.1.
         :type ip: str
+
+        :param blue: A list of bluetooth query dicts.
+        :type blue: list
 
         :param cell: A list of cell query dicts.
         :type cell: list
@@ -78,6 +83,7 @@ class Query(object):
 
         self.fallback = fallback
         self.ip = ip
+        self.blue = blue
         self.cell = cell
         self.wifi = wifi
         self.api_key = api_key
@@ -143,6 +149,41 @@ class Query(object):
         Can return None, if no region could be determined.
         """
         return self._region
+
+    @property
+    def blue(self):
+        """
+        The validated list of
+        :class:`~ichnaea.api.locate.schema.BlueLookup` instances.
+
+        If the same Bluetooth network is supplied multiple times, this
+        chooses only the best entry for each unique network.
+
+        If fewer than :data:`~ichnaea.api.locate.constants.MIN_BLUSS_IN_QUERY`
+        unique valid Bluetooth networks are found, returns an empty list.
+        """
+        return self._blue
+
+    @blue.setter
+    def blue(self, values):
+        if not values:
+            values = []
+        values = list(values)
+        self._blue_unvalidated = values
+
+        filtered = OrderedDict()
+        for value in values:
+            valid_blue = BlueLookup.create(**value)
+            if valid_blue:
+                existing = filtered.get(valid_blue.mac)
+                if existing is not None and existing.better(valid_blue):
+                    pass
+                else:
+                    filtered[valid_blue.mac] = valid_blue
+
+        if len(filtered) < MIN_BLUES_IN_QUERY:
+            filtered = {}
+        self._blue = list(filtered.values())
 
     @property
     def cell(self):
@@ -237,12 +278,12 @@ class Query(object):
         accuracies = [DataAccuracy.none]
 
         if self.api_type == 'region':
-            if self.cell or self.wifi:
+            if self.blue or self.cell or self.wifi:
                 accuracies.append(DataAccuracy.low)
         else:
             if self.cell:
                 accuracies.append(DataAccuracy.medium)
-            if self.wifi:
+            if self.blue or self.wifi:
                 accuracies.append(DataAccuracy.high)
 
         if ((self.cell_area and self.fallback.lacf) or
@@ -255,6 +296,13 @@ class Query(object):
     def internal_query(self):
         """Returns a dictionary of this query in our internal format."""
         result = {}
+        if self.blue:
+            result['blue'] = []
+            for blue in self.blue:
+                blue_data = {}
+                for field in blue._fields:
+                    blue_data[field] = getattr(blue, field)
+                result['blue'].append(blue_data)
         if self.cell:
             result['cell'] = []
             for cell in self.cell:
@@ -301,6 +349,7 @@ class Query(object):
         if not self.collect_metrics():
             return
 
+        blues = len(self._blue_unvalidated)
         cells = len(self.cell)
         wifis = len(self._wifi_unvalidated)
         tags = []
@@ -308,7 +357,9 @@ class Query(object):
         if not self.ip:
             tags.append('geoip:false')
 
-        for name, length in (('cell', cells), ('wifi', wifis)):
+        for name, length in (('blue', blues),
+                             ('cell', cells),
+                             ('wifi', wifis)):
             num = METRIC_MAPPING[min(length, 2)]
             tags.append('{name}:{num}'.format(name=name, num=num))
         self._emit_region_stat('query', tags)

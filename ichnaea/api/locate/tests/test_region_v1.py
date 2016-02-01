@@ -8,6 +8,7 @@ from ichnaea.api.locate.tests.base import (
 from ichnaea.models import Radio
 from ichnaea.tests.base import AppTestCase
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -103,6 +104,16 @@ class TestView(RegionBase, CommonLocateTest):
         res = self._call(body={'wifiAccessPoints': []}, ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_db_calls(rw=0, ro=0)
+
+    def test_blue(self):
+        blue1 = BlueShardFactory(mac='000000123456', samples=10)
+        blue2 = BlueShardFactory(mac='000000abcdef', samples=10)
+        self.session.flush()
+
+        query = self.model_query(blues=[blue1, blue2])
+        res = self._call(body=query, ip='127.0.0.1')
+        self.check_response(res, blue1)
+        self.check_db_calls(rw=0, ro=2)
 
     def test_cell(self):
         # cell with unique mcc to region mapping

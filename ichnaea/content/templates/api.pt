@@ -27,7 +27,8 @@
         <a href="https://mozilla.github.io/ichnaea/">
             development documentation</a> for the details.
         On most other operating systems, you cannot access the required
-        cell and WiFi network information required to call the service API.
+        Bluetooth, cell and WiFi network information required to call
+        the service API.
     </p>
 
     <p class="text-justified">

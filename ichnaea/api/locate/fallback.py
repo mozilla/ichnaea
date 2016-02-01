@@ -97,6 +97,19 @@ class OutboundSchema(OptionalMappingSchema):
         lacf = OptionalNode(colander.Boolean())
 
     @colander.instantiate(missing=colander.drop,
+                          internal_name='bluetoothBeacons')  # NOQA
+    class blue(OptionalSequenceSchema):
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            mac = OptionalNode(
+                colander.String(), internal_name='macAddress')
+            signal = OptionalNode(
+                colander.Integer(), internal_name='signalStrength')
+            name = OptionalNode(colander.String())
+
+    @colander.instantiate(missing=colander.drop,
                           internal_name='cellTowers')  # NOQA
     class cell(OptionalSequenceSchema):
 
@@ -150,6 +163,7 @@ class FallbackCache(object):
         self.redis_client = redis_client
         self.stats_client = stats_client
         self.cache_expire = cache_expire
+        self.cache_key_blue = redis_client.cache_keys['fallback_blue']
         self.cache_key_cell = redis_client.cache_keys['fallback_cell']
         self.cache_key_wifi = redis_client.cache_keys['fallback_wifi']
 
@@ -160,23 +174,38 @@ class FallbackCache(object):
         """
         Returns True if the query should be cached, otherwise False.
 
+        A blue-only query with up to 20 Bluetooth networks will be cached.
+
         A cell-only query with a single cell will be cached.
 
-        A wifi-only query with up to 20 wifi networks will be cached.
+        A wifi-only query with up to 20 WiFi networks will be cached.
+
         The 20 networks limit protects the cache memory from being
         exhausted.
 
-        Queries with multiple cells or mixed cell and wifi networks
+        Queries with multiple cells or mixed blue, cell and wifi networks
         won't get cached.
         """
-        return ((not query.wifi and len(query.cell) == 1) or
-                (not query.cell and query.wifi and len(query.wifi) < 20))
+        return ((not query.blue and not query.wifi and
+                 len(query.cell) == 1) or
+                (not query.blue and not query.cell and
+                 query.wifi and len(query.wifi) < 20) or
+                (not query.cell and not query.wifi and
+                 query.blue and len(query.blue) < 20))
 
     def _cache_keys(self, query):
         # Dependent on should_cache conditions.
+        if query.blue:
+            return self._cache_keys_blue(query.blue)
         if query.cell:
             return self._cache_keys_cell(query.cell)
         return self._cache_keys_wifi(query.wifi)
+
+    def _cache_keys_blue(self, blue_query):
+        keys = []
+        for blue in blue_query:
+            keys.append(self.cache_key_blue + encode_mac(blue.mac))
+        return keys
 
     def _cache_keys_cell(self, cell_query):
         keys = []
@@ -398,7 +427,7 @@ class FallbackPositionSource(PositionSource):
     def should_search(self, query, results):
         return (
             query.api_key.should_allow('fallback') and
-            (bool(query.cell) or bool(query.wifi)) and
+            (bool(query.blue) or bool(query.cell) or bool(query.wifi)) and
             not results.satisfies(query)
         )
 
