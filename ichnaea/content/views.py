@@ -327,15 +327,17 @@ class ContentViews(Layout):
             }
             metrics = global_stats(session)
             metric_names = [
-                (StatKey.unique_cell.name, 'MLS Cells'),
-                (StatKey.unique_cell_ocid.name, 'OpenCellID Cells'),
-                (StatKey.cell.name, 'MLS Cell Observations'),
+                (StatKey.unique_blue.name, 'Bluetooth Networks'),
+                (StatKey.blue.name, 'Bluetooth Observations'),
                 (StatKey.unique_wifi.name, 'Wifi Networks'),
                 (StatKey.wifi.name, 'Wifi Observations'),
+                (StatKey.unique_cell.name, 'MLS Cells'),
+                (StatKey.cell.name, 'MLS Cell Observations'),
+                (StatKey.unique_cell_ocid.name, 'OpenCellID Cells'),
             ]
-            for mid, name in metric_names[:3]:
+            for mid, name in metric_names[:4]:
                 data['metrics1'].append({'name': name, 'value': metrics[mid]})
-            for mid, name in metric_names[3:]:
+            for mid, name in metric_names[4:]:
                 data['metrics2'].append({'name': name, 'value': metrics[mid]})
             redis_client.set(cache_key, internal_dumps(data), ex=3600)
 

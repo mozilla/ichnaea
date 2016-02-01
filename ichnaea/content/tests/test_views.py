@@ -299,8 +299,10 @@ class TestFunctionalContentViews(AppTestCase):
         day = util.utcnow().date() - timedelta(1)
         session = self.session
         stats = [
+            Stat(key=StatKey.blue, time=day, value=2200000),
             Stat(key=StatKey.cell, time=day, value=2000000),
             Stat(key=StatKey.wifi, time=day, value=2000000),
+            Stat(key=StatKey.unique_blue, time=day, value=1500000),
             Stat(key=StatKey.unique_cell, time=day, value=1000000),
             Stat(key=StatKey.unique_cell_ocid, time=day, value=1500000),
             Stat(key=StatKey.unique_wifi, time=day, value=2000000),
@@ -315,14 +317,16 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
             result['metrics1'], [
-                {'name': 'MLS Cells', 'value': '1.00'},
-                {'name': 'OpenCellID Cells', 'value': '1.50'},
-                {'name': 'MLS Cell Observations', 'value': '2.00'},
+                {'name': 'Bluetooth Networks', 'value': '1.50'},
+                {'name': 'Bluetooth Observations', 'value': '2.20'},
+                {'name': 'Wifi Networks', 'value': '2.00'},
+                {'name': 'Wifi Observations', 'value': '2.00'},
             ])
         self.assertEqual(
             result['metrics2'], [
-                {'name': 'Wifi Networks', 'value': '2.00'},
-                {'name': 'Wifi Observations', 'value': '2.00'},
+                {'name': 'MLS Cells', 'value': '1.00'},
+                {'name': 'MLS Cell Observations', 'value': '2.00'},
+                {'name': 'OpenCellID Cells', 'value': '1.50'},
             ])
 
         # call the view again, without a working db session, so

@@ -37,8 +37,10 @@ class TestStats(DBTestCase):
         session = self.session
         day = util.utcnow().date() - timedelta(1)
         stats = [
+            Stat(key=StatKey.blue, time=day, value=2200000),
             Stat(key=StatKey.cell, time=day, value=6100000),
             Stat(key=StatKey.wifi, time=day, value=3212000),
+            Stat(key=StatKey.unique_blue, time=day, value=1100000),
             Stat(key=StatKey.unique_cell, time=day, value=3289900),
             Stat(key=StatKey.unique_cell_ocid, time=day, value=1523000),
             Stat(key=StatKey.unique_wifi, time=day, value=2009000),
@@ -49,6 +51,7 @@ class TestStats(DBTestCase):
         result = global_stats(session)
         self.assertDictEqual(
             result, {
+                'blue': '2.20', 'unique_blue': '1.10',
                 'cell': '6.10', 'unique_cell': '3.28',
                 'wifi': '3.21', 'unique_wifi': '2.00',
                 'unique_cell_ocid': '1.52',
@@ -70,6 +73,7 @@ class TestStats(DBTestCase):
         result = global_stats(session)
         self.assertDictEqual(
             result, {
+                'blue': '0.00', 'unique_blue': '0.00',
                 'cell': '6.00', 'unique_cell': '4.00',
                 'wifi': '3.00', 'unique_wifi': '0.00',
                 'unique_cell_ocid': '0.00',

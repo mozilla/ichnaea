@@ -40,8 +40,10 @@ def global_stats(session):
     today = util.utcnow().date()
     yesterday = today - timedelta(1)
     stat_keys = (
+        StatKey.blue,
         StatKey.cell,
         StatKey.wifi,
+        StatKey.unique_blue,
         StatKey.unique_cell,
         StatKey.unique_cell_ocid,
         StatKey.unique_wifi,
