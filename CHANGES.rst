@@ -22,6 +22,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #476: Emit basic request metrics for region API.
+
 - Remove internal API key human readable metric names.
 
 - Accept and use Bluetooth networks in public HTTP APIs.

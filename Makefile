@@ -163,7 +163,7 @@ build_req: $(PYTHON) pip build_datamaps build_maxmind build_pngquant
 	$(INSTALL) -r requirements/dev.txt
 
 build_dev: $(PYTHON) build_cython
-	$(PYTHON) setup.py develop
+	$(INSTALL) -e .
 
 build: build_req build_dev mysql
 
@@ -281,9 +281,6 @@ $(BIN)/sphinx-build:
 
 docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
-
-region_json:
-	$(BIN)/location_region_json
 
 pypi_release:
 	rm -rf $(HERE)/dist

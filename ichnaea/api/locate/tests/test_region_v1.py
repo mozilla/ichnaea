@@ -79,7 +79,7 @@ class TestView(RegionBase, CommonLocateTest):
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', 0, [self.metric_path, 'key:test']),
+            (self.metric_type + '.request', 1, [self.metric_path, 'key:test']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
@@ -87,18 +87,11 @@ class TestView(RegionBase, CommonLocateTest):
     def test_no_api_key(self):
         super(TestView, self).test_no_api_key(status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(counter=[
-            (self.metric_type + '.request', 0, ['key:none']),
-        ])
 
     def test_invalid_api_key(self):
         super(TestView, self).test_invalid_api_key(
             status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
-        self.check_stats(counter=[
-            (self.metric_type + '.request', 0,
-                [self.metric_path, 'key:invalid']),
-        ])
 
     def test_incomplete_request(self):
         res = self._call(body={'wifiAccessPoints': []}, ip=self.test_ip)

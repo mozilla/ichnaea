@@ -385,11 +385,10 @@ class CommonLocateTest(BaseLocateTest):
     def test_error_no_json(self):
         res = self._call('\xae', method='post', status=400)
         self.check_response(res, 'parse_error')
-        if self.apikey_metrics:
-            self.check_stats(counter=[
-                (self.metric_type + '.request',
-                    [self.metric_path, 'key:test']),
-            ])
+        self.check_stats(counter=[
+            (self.metric_type + '.request',
+                [self.metric_path, 'key:test']),
+        ])
 
     def test_error_no_mapping(self):
         res = self._call([1], status=400)
@@ -402,21 +401,19 @@ class CommonLocateTest(BaseLocateTest):
     def test_no_api_key(self, status=400, response='invalid_key'):
         res = self._call(api_key=None, ip=self.test_ip, status=status)
         self.check_response(res, response)
-        if self.apikey_metrics:
-            self.check_stats(counter=[
-                (self.metric_type + '.request',
-                    [self.metric_path, 'key:none']),
-            ])
+        self.check_stats(counter=[
+            (self.metric_type + '.request',
+                [self.metric_path, 'key:none']),
+        ])
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_invalid_api_key(self, status=400, response='invalid_key'):
         res = self._call(api_key='invalid', ip=self.test_ip, status=status)
         self.check_response(res, response)
-        if self.apikey_metrics:
-            self.check_stats(counter=[
-                (self.metric_type + '.request',
-                    [self.metric_path, 'key:invalid']),
-            ])
+        self.check_stats(counter=[
+            (self.metric_type + '.request',
+                [self.metric_path, 'key:invalid']),
+        ])
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_gzip(self):

@@ -54,6 +54,9 @@ class BaseAPIView(BaseView):
                 pipe.execute()
 
     def log_count(self, valid_key, should_log):
+        if valid_key is None:
+            valid_key = 'none'
+
         self.stats_client.incr(
             self.view_type + '.request',
             tags=['path:' + self.metric_path,
@@ -67,11 +70,11 @@ class BaseAPIView(BaseView):
 
     def check(self):
         api_key = None
-        api_key_text = self.request.GET.get('key', None)
+        api_key_text = self.parse_apikey()
         skip_check = False
 
         if api_key_text is None:
-            self.log_count('none', False)
+            self.log_count(None, False)
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 
@@ -117,6 +120,13 @@ class BaseAPIView(BaseView):
                                     allow_locate=True)
         return self.view(api_key)
 
+    def parse_apikey(self):
+        api_key_text = self.request.GET.get('key', None)
+        if api_key_text and (0 < len(api_key_text) < 41):
+            # check length against DB column length
+            return api_key_text
+        return None
+
     def preprocess_request(self):
         errors = []
 
@@ -154,4 +164,7 @@ class BaseAPIView(BaseView):
             api_key = ApiKey(
                 valid_key=None, allow_fallback=False, allow_locate=True,
                 log_locate=False, log_region=False, log_submit=False)
+            # Only use the unchecked API key in the request for simple
+            # logging purposes.
+            self.log_count(self.parse_apikey(), False)
             return self.view(api_key)
