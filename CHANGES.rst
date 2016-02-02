@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Avoid fancy syntax in build requirements.
 
 20160202101600
 **************
