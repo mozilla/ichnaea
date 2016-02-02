@@ -99,10 +99,6 @@ class ApiKeyFactory(BaseSQLFactory):
     allow_fallback = False
     allow_locate = True
 
-    @factory.lazy_attribute
-    def shortname(self):
-        return self.valid_key
-
 
 class BboxFactory(Factory):
 

@@ -29,18 +29,16 @@ and `submit`, independent of the specific version of that API.
 
 These metrics can help in deciding when to remove a deprecated API.
 
-``locate.request#path:v1.search,key:<apikey_shortname>``,
-``locate.request#path:v1.geolocate,key:<apikey_shortname>``,
-``region.request#path:v1.country,key:<apikey_shortname>``,
-``submit.request#path:v1.submit,key:<apikey_shortname>``,
-``submit.request#path:v1.geosubmit,key:<apikey_shortname>``,
-``submit.request#path:v2.geosubmit,key:<apikey_shortname>`` : counters
+``locate.request#path:v1.search,key:<apikey>``,
+``locate.request#path:v1.geolocate,key:<apikey>``,
+``region.request#path:v1.country,key:<apikey>``,
+``submit.request#path:v1.submit,key:<apikey>``,
+``submit.request#path:v1.geosubmit,key:<apikey>``,
+``submit.request#path:v2.geosubmit,key:<apikey>`` : counters
 
     These metrics count how many times a specific API was called by a
     specific API key expressed via the API keys short name. The API key
-    short name is a human readable alias that can be configured for each
-    API key. If no alias is configured, this will use the actual API key,
-    often a UUID.
+    is the actual API key, often a UUID.
 
     Two special short names exist for tracking invalid (``invalid``)
     and no (``none``) provided API keys.
@@ -54,7 +52,7 @@ about the number of unique users based on the users IP addresses.
 
 These metrics are gathered under the metric prefix:
 
-``<api_type>.user#key<api_shortname>`` : gauge
+``<api_type>.user#key<apikey>`` : gauge
 
 They have an additional tag to determine the time interval for which
 the unique users are aggregated for:
@@ -74,7 +72,7 @@ API Query Metrics
 For each incoming API query we log metrics about the data contained in
 the query with the metric name and tags:
 
-``<api_type>.query#key<api_shortname>,region:<region_code>`` : counter
+``<api_type>.query#key<apikey>,region:<region_code>`` : counter
 
 `api_type` describes the type of API being used, independent of the
 version number of the API. So `v1/country` gets logged as `region`
@@ -109,7 +107,7 @@ Similar to the API query metrics we also collect metrics about each
 result of an API query. This follows the same per API type and per
 region rules under the prefix / tag combination:
 
-``<api_type>.result#key:<api_shortname>,region:<region_code>``
+``<api_type>.result#key:<apikey>,region:<region_code>``
 
 The result metrics measure if we satisfied the incoming API query in
 the best possible fashion. Incoming queries can generally contain
@@ -197,7 +195,7 @@ API Source Metrics
 
 In addition to the final API result, we also collect metrics about each
 individual data source we use to answer queries under the
-``<api_type>.source#key:<api_shortname>,region:<region_code>`` metric.
+``<api_type>.source#key:<apikey>,region:<region_code>`` metric.
 
 Each request may use one or multiple of these sources to deliver a result.
 We log the same metrics as mentioned above for the result.
@@ -246,7 +244,7 @@ into aggregate :term:`station` estimates held in the main database tables.
 Along the way several counters measure the steps involved:
 
 ``data.batch.upload``,
-``data.batch.upload#key:<api_shortname>`` : counters
+``data.batch.upload#key:<apikey>`` : counters
 
     Counts the number of "batches" of :term:`reports` accepted to the data
     processing pipeline by an API endpoint. A batch generally
@@ -259,24 +257,24 @@ Along the way several counters measure the steps involved:
     else without a key tag.
 
 ``data.report.upload``,
-``data.report.upload#key:<api_shortname>`` : counters
+``data.report.upload#key:<apikey>`` : counters
 
     Counts the number of :term:`reports` accepted into the data processing
     pipeline. The metric is either emitted per tracked API key, or for
     everything else without a key tag.
 
 ``data.report.drop#reason:malformed``,
-``data.report.drop#reason:malformed,key:<api_shortname>`` : counter
+``data.report.drop#reason:malformed,key:<apikey>`` : counter
 
     Count incoming :term:`reports` that were discarded due to some internal
     consistency, range or validity-condition error.
 
 ``data.observation.upload#type:blue``,
-``data.observation.upload#type:blue,key:<api_shortname>``,
+``data.observation.upload#type:blue,key:<apikey>``,
 ``data.observation.upload#type:cell``,
-``data.observation.upload#type:cell,key:<api_shortname>``,
+``data.observation.upload#type:cell,key:<apikey>``,
 ``data.observation.upload#type:wifi``,
-``data.observation.upload#type:wifi,key:<api_shortname>`` : counters
+``data.observation.upload#type:wifi,key:<apikey>`` : counters
 
     Count the number of Bluetooth, cell or WiFi :term:`observations` entering
     the data processing pipeline; before normalization and blocklist processing
@@ -288,11 +286,11 @@ Along the way several counters measure the steps involved:
     else without a key tag.
 
 ``data.observation.drop#type:blue,reason:malformed``,
-``data.observation.drop#type:blue,reason:malformed,key:<api_shortname>``,
+``data.observation.drop#type:blue,reason:malformed,key:<apikey>``,
 ``data.observation.drop#type:cell,reason:malformed``,
-``data.observation.drop#type:cell,reason:malformed,key:<api_shortname>``,
+``data.observation.drop#type:cell,reason:malformed,key:<apikey>``,
 ``data.observation.drop#type:wifi,reason:malformed``
-``data.observation.drop#type:wifi,reason:malformed,key:<api_shortname>`` : counters
+``data.observation.drop#type:wifi,reason:malformed,key:<apikey>`` : counters
 
     Count incoming Bluetooth, cell or WiFi :term:`observations` that were
     discarded before integration due to some internal consistency, range or
@@ -350,7 +348,7 @@ targets. We keep metrics about how those individual export targets perform.
 Internal Monitoring
 -------------------
 
-``api.limit#key:<apikey_shortname>,#path:<path>`` : gauge
+``api.limit#key:<apikey>,#path:<path>`` : gauge
 
     One gauge is created per API key and API path which has rate limiting
     enabled on it. This gauge measures how many requests have been done

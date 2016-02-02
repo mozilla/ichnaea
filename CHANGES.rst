@@ -22,6 +22,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove internal API key human readable metric names.
+
 - Accept and use Bluetooth networks in public HTTP APIs.
 
 - Weight observations by their accuracy and signal strength values.

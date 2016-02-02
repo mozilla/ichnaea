@@ -24,7 +24,7 @@ class QueryTest(ConnectionTestCase):
     @classmethod
     def setUpClass(cls):
         super(QueryTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(shortname='key')
+        cls.api_key = ApiKeyFactory.build(valid_key='key')
         cls.london = cls.geoip_data['London']
         cls.london_ip = cls.london['ip']
 
@@ -348,20 +348,9 @@ class TestQueryStats(QueryTest):
         return query
 
     def test_no_log(self):
-        api_key = ApiKeyFactory.build(shortname='key', log_locate=False)
+        api_key = ApiKeyFactory.build(log_locate=False)
         self._make_query(api_key=api_key, api_type='locate')
         self.check_stats(total=0)
-
-    def test_no_api_key_shortname(self):
-        api_key = ApiKeyFactory.build(shortname=None, log_locate=True)
-        cell = CellShardFactory.build()
-        self._make_query(api_key=api_key, cell=[cell])
-        self.check_stats(counter=[
-            ('locate.query',
-                ['key:%s' % api_key.valid_key,
-                 'region:none', 'geoip:false',
-                 'blue:none', 'cell:one', 'wifi:none']),
-        ])
 
     def test_empty(self):
         self._make_query(ip=self.london_ip)
@@ -427,7 +416,7 @@ class TestResultStats(QueryTest):
         return query
 
     def test_no_log(self):
-        api_key = ApiKeyFactory.build(shortname='key', log_locate=False)
+        api_key = ApiKeyFactory.build(log_locate=False)
         self._make_query(self._make_result(),
                          api_key=api_key, api_type='locate')
         self.check_stats(total=0)

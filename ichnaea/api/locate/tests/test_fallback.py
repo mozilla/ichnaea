@@ -359,8 +359,7 @@ class TestSource(BaseSourceTest):
     def setUp(self):
         super(TestSource, self).setUp()
 
-        self.api_key = ApiKeyFactory.build(
-            shortname='test', allow_fallback=True)
+        self.api_key = ApiKeyFactory.build(allow_fallback=True)
         self.fallback_model = DummyModel(
             lat=51.5366, lon=0.03989, radius=1500.0)
 

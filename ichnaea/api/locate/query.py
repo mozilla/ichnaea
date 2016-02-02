@@ -339,7 +339,7 @@ class Query(object):
 
         metric = '%s.%s' % (self.api_type, metric)
         tags = [
-            'key:%s' % self.api_key.name,
+            'key:%s' % self.api_key.valid_key,
             'region:%s' % region,
         ]
         self.stats_client.incr(metric, tags=tags + extra_tags)

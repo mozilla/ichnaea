@@ -9,9 +9,7 @@ from ichnaea.api.locate.source import (
     RegionSource,
 )
 from ichnaea.tests.base import ConnectionTestCase
-from ichnaea.tests.factories import (
-    ApiKeyFactory,
-)
+from ichnaea.tests.factories import ApiKeyFactory
 
 
 class SourceTest(object):
@@ -19,7 +17,7 @@ class SourceTest(object):
     @classmethod
     def setUpClass(cls):
         super(SourceTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(shortname='key')
+        cls.api_key = ApiKeyFactory.build(valid_key='key')
         cls.source = cls.TestSource(
             settings={'foo': '1'},
             geoip_db=cls.geoip_db,

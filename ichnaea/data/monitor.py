@@ -2,12 +2,8 @@ from collections import defaultdict
 from datetime import timedelta
 
 from sqlalchemy import func
-from sqlalchemy.orm import load_only
 
-from ichnaea.models import (
-    ApiKey,
-    CellOCID,
-)
+from ichnaea.models import CellOCID
 from ichnaea import util
 
 
@@ -22,30 +18,17 @@ class ApiKeyLimits(object):
     def __call__(self):
         today = util.utcnow().strftime('%Y%m%d')
         keys = self.redis_client.keys('apilimit:*:' + today)
+        values = []
         if keys:
             values = self.redis_client.mget(keys)
             keys = [k.decode('utf-8').split(':')[1:3] for k in keys]
-            api_keys = [key[0] for key in keys]
-        else:
-            values = []
-            api_keys = []
-
-        names = {}
-        if api_keys:
-            query = (self.session.query(ApiKey)
-                                 .filter(ApiKey.valid_key.in_(api_keys))
-                                 .options(load_only('shortname')))
-            for api_key in query.all():
-                names[api_key.valid_key] = api_key.name
 
         result = defaultdict(dict)
-        for key, value in zip(keys, values):
-            api_key, path = key
-            name = names.get(api_key, api_key)
+        for (api_key, path), value in zip(keys, values):
             value = int(value)
-            result[name][path] = value
+            result[api_key][path] = value
             self.stats_client.gauge(
-                'api.limit', value, tags=['key:' + name, 'path:' + path])
+                'api.limit', value, tags=['key:' + api_key, 'path:' + path])
         return result
 
 

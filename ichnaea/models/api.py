@@ -24,11 +24,8 @@ class ApiKey(_Model):
     allow_locate = Column(Boolean)  #: Allow locate queries?
     shortname = Column(String(40))  #: A readable short name used in metrics.
 
-    @property
-    def name(self):
-        return self.shortname or self.valid_key
-
     def should_allow(self, api_type):
+        # Region and submit are always allowed, even without an API key.
         if api_type in ('fallback', 'locate'):
             return bool(getattr(self, 'allow_%s' % api_type, False))
         return True
@@ -38,5 +35,5 @@ class ApiKey(_Model):
             return bool(getattr(self, 'log_%s' % api_type, False))
         return False
 
-    def __str__(self):  # pragma: no cover
-        return '<ApiKey>: %s' % self.name
+    def __str__(self):
+        return '<ApiKey>: %s' % self.valid_key

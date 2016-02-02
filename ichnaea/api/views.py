@@ -37,15 +37,15 @@ class BaseAPIView(BaseView):
         self.redis_client = request.registry.redis_client
         self.stats_client = request.registry.stats_client
 
-    def log_unique_ip(self, apikey_shortname):
+    def log_unique_ip(self, valid_key):
         try:
             ip = str(ip_address(self.request.client_addr))
         except ValueError:  # pragma: no cover
             ip = None
         if ip:
-            redis_key = 'apiuser:{api_type}:{api_name}:{date}'.format(
+            redis_key = 'apiuser:{api_type}:{api_key}:{date}'.format(
                 api_type=self.view_type,
-                api_name=apikey_shortname,
+                api_key=valid_key,
                 date=util.utcnow().date().strftime('%Y-%m-%d'),
             )
             with self.redis_client.pipeline() as pipe:
@@ -53,15 +53,15 @@ class BaseAPIView(BaseView):
                 pipe.expire(redis_key, 691200)  # 8 days
                 pipe.execute()
 
-    def log_count(self, apikey_shortname, should_log):
+    def log_count(self, valid_key, should_log):
         self.stats_client.incr(
             self.view_type + '.request',
             tags=['path:' + self.metric_path,
-                  'key:' + apikey_shortname])
+                  'key:' + valid_key])
 
         if self.request.client_addr and should_log:
             try:
-                self.log_unique_ip(apikey_shortname)
+                self.log_unique_ip(valid_key)
             except Exception:  # pragma: no cover
                 self.raven_client.captureException()
 
@@ -85,7 +85,8 @@ class BaseAPIView(BaseView):
                 self.raven_client.captureException()
 
         if api_key is not None and api_key.should_allow(self.view_type):
-            self.log_count(api_key.name, api_key.should_log(self.view_type))
+            self.log_count(api_key.valid_key,
+                           api_key.should_log(self.view_type))
 
             rate_key = 'apilimit:{key}:{path}:{time}'.format(
                 key=api_key_text,

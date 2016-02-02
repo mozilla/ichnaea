@@ -1,5 +1,4 @@
 import operator
-import uuid
 
 import requests_mock
 import simplejson as json
@@ -70,6 +69,7 @@ class BaseSourceTest(ConnectionTestCase):
     @classmethod
     def setUpClass(cls):
         super(BaseSourceTest, cls).setUpClass()
+        cls.api_key = ApiKeyFactory.build(valid_key='test')
         bhutan = cls.geoip_data['Bhutan']
         cls.bhutan_model = DummyModel(
             lat=bhutan['latitude'],
@@ -89,7 +89,6 @@ class BaseSourceTest(ConnectionTestCase):
 
     def setUp(self):
         super(BaseSourceTest, self).setUp()
-        self.api_key = ApiKeyFactory.build(shortname='test')
         self.source = self.TestSource(
             settings=self.settings,
             geoip_db=self.geoip_db,
@@ -437,24 +436,24 @@ class CommonPositionTest(BaseLocateTest):
     # tests for only the locate_v1 and locate_v2 API's
 
     def test_api_key_limit(self):
-        api_key = uuid.uuid1().hex
-        ApiKeyFactory(valid_key=api_key, maxreq=5, shortname='dis')
+        api_key = ApiKeyFactory(maxreq=5)
         self.session.flush()
 
         # exhaust today's limit
         dstamp = util.utcnow().strftime('%Y%m%d')
         path = self.metric_path.split(':')[-1]
-        key = 'apilimit:%s:%s:%s' % (api_key, path, dstamp)
+        key = 'apilimit:%s:%s:%s' % (api_key.valid_key, path, dstamp)
         self.redis_client.incr(key, 10)
 
-        res = self._call(api_key=api_key, ip=self.test_ip, status=403)
+        res = self._call(
+            api_key=api_key.valid_key, ip=self.test_ip, status=403)
         self.check_response(res, 'limit_exceeded')
 
     def test_api_key_blocked(self):
-        api_key = uuid.uuid1().hex
-        ApiKeyFactory(valid_key=api_key, allow_locate=False)
+        api_key = ApiKeyFactory(allow_locate=False)
 
-        res = self._call(api_key=api_key, ip=self.test_ip, status=400)
+        res = self._call(
+            api_key=api_key.valid_key, ip=self.test_ip, status=400)
         self.check_response(res, 'invalid_key')
 
     def test_blue_not_found(self):

@@ -8,10 +8,7 @@ from ichnaea.data.tasks import (
     monitor_queue_size,
 )
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tests.factories import (
-    ApiKeyFactory,
-    CellOCIDFactory,
-)
+from ichnaea.tests.factories import CellOCIDFactory
 from ichnaea import util
 
 
@@ -22,12 +19,11 @@ class TestMonitorTasks(CeleryTestCase):
         self.assertEqual(result, {})
 
     def test_monitor_api_keys_one(self):
-        redis_client = self.redis_client
         now = util.utcnow()
         today = now.strftime('%Y%m%d')
 
         rate_key = 'apilimit:no_key_1:v1.geolocate:' + today
-        redis_client.incr(rate_key, 13)
+        self.redis_client.incr(rate_key, 13)
 
         result = monitor_api_key_limits.delay().get()
         self.assertEqual(result, {'no_key_1': {'v1.geolocate': 13}})
@@ -37,7 +33,6 @@ class TestMonitorTasks(CeleryTestCase):
         ])
 
     def test_monitor_api_keys_multiple(self):
-        redis_client = self.redis_client
         now = util.utcnow()
         today = now.strftime('%Y%m%d')
         yesterday = (now - timedelta(hours=24)).strftime('%Y%m%d')
@@ -49,30 +44,25 @@ class TestMonitorTasks(CeleryTestCase):
         for key, paths in data.items():
             for path, value in paths.items():
                 rate_key = 'apilimit:%s:%s:%s' % (key, path, today)
-                redis_client.incr(rate_key, value)
+                self.redis_client.incr(rate_key, value)
                 rate_key = 'apilimit:%s:%s:%s' % (key, path, yesterday)
-                redis_client.incr(rate_key, value - 10)
-
-        ApiKeyFactory(valid_key='no_key_1', shortname='shortname_1')
-        ApiKeyFactory(valid_key='no_key_2')
-        ApiKeyFactory(valid_key='no_key_3', shortname='shortname_3')
-        self.session.flush()
+                self.redis_client.incr(rate_key, value - 10)
 
         # add some other items into Redis
-        redis_client.lpush('default', 1, 2)
-        redis_client.set('cache_something', '{}')
+        self.redis_client.lpush('default', 1, 2)
+        self.redis_client.set('cache_something', '{}')
 
         result = monitor_api_key_limits.delay().get()
 
         self.check_stats(gauge=[
             ('api.limit', ['key:test', 'path:v1.geolocate']),
             ('api.limit', ['key:test', 'path:v1.search']),
-            ('api.limit', ['key:shortname_1', 'path:v1.search']),
+            ('api.limit', ['key:no_key_1', 'path:v1.search']),
             ('api.limit', ['key:no_key_2', 'path:v1.geolocate']),
         ])
         self.assertDictEqual(result, {
             'test': {'v1.search': 11, 'v1.geolocate': 13},
-            'shortname_1': {'v1.search': 12},
+            'no_key_1': {'v1.search': 12},
             'no_key_2': {'v1.geolocate': 15},
         })
 
