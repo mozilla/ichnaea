@@ -1,3 +1,5 @@
+import os
+import shutil
 import tempfile
 
 from maxminddb.const import MODE_MMAP
@@ -37,8 +39,14 @@ class TestDatabase(GeoIPTestCase):
         self.check_raven(['OSError: No geoip filename specified.'])
 
     def test_open_missing_file(self):
-        db = self._open_db('/i/taught/i/taw/a/putty/tat')
-        self.assertTrue(isinstance(db, geoip.GeoIPNull))
+        tmpdir = tempfile.mkdtemp()
+        try:
+            filename = os.path.join(tmpdir, 'not_there')
+            db = self._open_db(filename)
+            self.assertTrue(isinstance(db, geoip.GeoIPNull))
+        finally:
+            shutil.rmtree(tmpdir)
+
         error = 'FileNotFoundError'
         if PY2:
             error = 'IOError'
