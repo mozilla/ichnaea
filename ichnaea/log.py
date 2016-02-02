@@ -179,12 +179,14 @@ class DebugRavenClient(RavenClient):
 
     def _clear(self):
         self.msgs.clear()
+        self.context.clear()
 
     def is_enabled(self):
         return True
 
     def send(self, auth_header=None, **data):
         self.msgs.append(data)
+        self.state.set_success()
 
 
 class StatsClient(DogStatsd):
