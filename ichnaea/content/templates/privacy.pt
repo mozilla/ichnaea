@@ -15,7 +15,7 @@
 ></div>
 
 <p class="italic">
-    Last updated October 23, 2014
+    Last updated February 3, 2016
 </p>
 
 <p class="text-justified">
@@ -54,11 +54,12 @@
                 <ul>
                     <li class="text-justified">
                         We receive publicly observable data about WiFi access
-                        points and cell towers around you, your estimated
-                        latitude and longitude, and the date. This information
-                        is stored locally on your device until an Internet
-                        connection is established. The data is then deleted
-                        from your device and sent to Mozilla.
+                        points, Bluetooth beacons and cell towers around you,
+                        your estimated latitude and longitude, the date and
+                        information about your heading, speed and altitude.
+                        This information is stored locally on your device
+                        until an Internet connection is established. The data
+                        is then deleted from your device and sent to Mozilla.
                     </li>
                     <li class="text-justified">
                         If you do not want to report crowd-sourced data to
@@ -124,10 +125,10 @@
                 <a href="/downloads">view the reports here</a>.
             </li>
             <li class="text-justified">
-                We do not publicly share WiFi location data, which is more
-                sensitive. This information is used by Mozilla and our
-                partners to improve and provide the Mozilla Location
-                Service.
+                We do not publicly share Bluetooth or WiFi location data,
+                which are more sensitive. This information is used by
+                Mozilla and our partners to improve and provide the
+                Mozilla Location Service.
             </li>
         </ul>
 
