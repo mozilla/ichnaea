@@ -58,17 +58,20 @@ def redis_pipeline(redis_client, execute=True):
 class RedisClient(redis.StrictRedis):
     """A strict pingable RedisClient."""
 
+    # The last part of these keys is a counter than can be incremented
+    # whenever the contents/structure of the cache changes. This allows
+    # for easy `cache-busting'.
     cache_keys = {
-        'downloads': b'cache:downloads',
+        'downloads': b'cache:downloads:2',
         'fallback_blue': b'cache:fallback:blue:',
         'fallback_cell': b'cache:fallback:cell:',
         'fallback_wifi': b'cache:fallback:wifi:',
-        'leaders': b'cache:leaders',
-        'leaders_weekly': b'cache:leaders_weekly',
-        'stats': b'cache:stats:2',
-        'stats_regions': b'cache:stats_regions:2',
-        'stats_cell_json': b'cache:stats_cell_json',
-        'stats_wifi_json': b'cache:stats_wifi_json',
+        'leaders': b'cache:leaders:2',
+        'leaders_weekly': b'cache:leaders_weekly:2',
+        'stats': b'cache:stats:3',
+        'stats_regions': b'cache:stats_regions:3',
+        'stats_cell_json': b'cache:stats_cell_json:2',
+        'stats_wifi_json': b'cache:stats_wifi_json:2',
     }
 
     def ping(self):

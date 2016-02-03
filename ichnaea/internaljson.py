@@ -7,7 +7,7 @@ from calendar import timegm
 from datetime import date, datetime
 
 from pytz import UTC
-import simplejson as json
+import simplejson
 
 from ichnaea.models.base import JSONMixin
 
@@ -42,12 +42,12 @@ def internal_dumps(value):
     for roundtripping date, datetime and any
     :class:`ichnaea.models.base.JSONMixin` subclasses.
     """
-    return json.dumps(value, default=internal_default,
-                      namedtuple_as_object=True, separators=(',', ':'))
+    return simplejson.dumps(value, default=internal_default,
+                            namedtuple_as_object=True, separators=(',', ':'))
 
 
 def internal_loads(value):
     """
     Load a bytes object in internal JSON format.
     """
-    return json.loads(value, object_hook=internal_object_hook)
+    return simplejson.loads(value, object_hook=internal_object_hook)
