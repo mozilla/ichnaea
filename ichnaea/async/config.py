@@ -62,7 +62,7 @@ def configure_celery(celery_app):
     if conf.has_section('celery'):
         section = conf.get_map('celery')
     else:  # pragma: no cover
-        # happens while building docs locally and on rtfd.org
+        # happens while building docs locally
         return
 
     # testing settings

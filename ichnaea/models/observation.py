@@ -68,7 +68,7 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
         super(ValidReportSchema, self).validator(node, cstruct)
         for field in ('lat', 'lon'):
             if (cstruct[field] is None or
-                    cstruct[field] is colander.null):  # pragma: no cover
+                    cstruct[field] is colander.null):
                 raise colander.Invalid(node, 'Report %s is required.' % field)
 
         if not GEOCODER.any_region(cstruct['lat'], cstruct['lon']):
@@ -121,9 +121,6 @@ class ValidBlueReportSchema(ValidBlueSignalSchema):
 
     def validator(self, node, cstruct):
         super(ValidBlueReportSchema, self).validator(node, cstruct)
-        if (cstruct['key'] is None or
-                cstruct['key'] is colander.null):  # pragma: no cover
-            raise colander.Invalid(node, 'Bluetooth mac address is required.')
 
         accuracy = cstruct.get('accuracy', None)
         if (accuracy is not None and
@@ -309,9 +306,6 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
 
     def validator(self, node, cstruct):
         super(ValidWifiReportSchema, self).validator(node, cstruct)
-        if (cstruct['key'] is None or
-                cstruct['key'] is colander.null):  # pragma: no cover
-            raise colander.Invalid(node, 'Wifi mac address is required.')
 
         accuracy = cstruct.get('accuracy', None)
         if (accuracy is not None and

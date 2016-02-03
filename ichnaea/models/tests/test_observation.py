@@ -4,9 +4,13 @@ from ichnaea.internaljson import (
 )
 from ichnaea.models import (
     BlueObservation,
+    BlueReport,
     CellObservation,
+    CellReport,
     Radio,
+    Report,
     WifiObservation,
+    WifiReport,
 )
 from ichnaea.tests.base import (
     DBTestCase,
@@ -19,6 +23,17 @@ from ichnaea.tests.factories import (
     CellObservationFactory,
     WifiObservationFactory
 )
+
+
+class TestReport(DBTestCase):
+
+    def test_invalid(self):
+        self.assertTrue(Report.create(lat=0.0) is None)
+        self.assertTrue(Report.create(lat=0.0, lon='abc') is None)
+        self.assertTrue(Report.create(lat=0.0, lon=250.0) is None)
+
+    def test_valid(self):
+        self.assertFalse(Report.create(lat=GB_LAT, lon=GB_LON) is None)
 
 
 class TestBlueObservation(DBTestCase):
@@ -55,6 +70,18 @@ class TestBlueObservation(DBTestCase):
             accuracy=40.0, signal=-80).weight, 0.5)
         self.assertAlmostEqual(obs_factory(
             accuracy=100.0, signal=-80).weight, 0.316, 3)
+
+
+class TestBlueReport(DBTestCase):
+
+    def test_invalid(self):
+        self.assertTrue(BlueReport.create() is None)
+        self.assertTrue(BlueReport.create(key='') is None)
+        self.assertTrue(BlueReport.create(key='1234567890123') is None)
+        self.assertTrue(BlueReport.create(key='aaaaaaZZZZZZ') is None)
+
+    def test_valid(self):
+        self.assertFalse(BlueReport.create(key='3680873e9b83') is None)
 
 
 class TestCellObservation(DBTestCase):
@@ -126,12 +153,24 @@ class TestCellObservation(DBTestCase):
             radio=Radio.lte, accuracy=10.0, signal=-140).weight, 0.3, 2)
 
 
+class TestCellReport(DBTestCase):
+
+    def test_invalid(self):
+        self.assertTrue(CellReport.create() is None)
+        self.assertTrue(CellReport.create(radio=Radio.gsm) is None)
+
+    def test_valid(self):
+        self.assertFalse(CellReport.create(
+            radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456) is None)
+
+
 class TestWifiObservation(DBTestCase):
 
     def test_invalid(self):
-        mac = '3680873e9b83'
-        obs = WifiObservation.create(key=mac, lat=0.0, lon=0.0)
-        self.assertTrue(obs is None, obs)
+        self.assertTrue(WifiObservation.create(
+            key='3680873e9b83', lat=0.0, lon=0.0) is None)
+        self.assertTrue(WifiObservation.create(
+            key='', lat=0.0, lon=0.0) is None)
 
     def test_fields(self):
         mac = '3680873e9b83'
@@ -181,3 +220,15 @@ class TestWifiObservation(DBTestCase):
             accuracy=100.0, signal=-30).weight, 5.06, 2)
         self.assertAlmostEqual(obs_factory(
             accuracy=100.0, signal=-10).weight, 39.04, 2)
+
+
+class TestWifiReport(DBTestCase):
+
+    def test_invalid(self):
+        self.assertTrue(WifiReport.create() is None)
+        self.assertTrue(WifiReport.create(key='') is None)
+        self.assertTrue(WifiReport.create(key='1234567890123') is None)
+        self.assertTrue(WifiReport.create(key='aaaaaaZZZZZZ') is None)
+
+    def test_valid(self):
+        self.assertFalse(WifiReport.create(key='3680873e9b83') is None)
