@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update dependencies.
 
 20160202154300
 **************

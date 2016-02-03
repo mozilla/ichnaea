@@ -42,7 +42,7 @@ pyasn1==0.1.9
 pycparser==2.14
 PyMySQL==0.7.1
 pyopenssl==0.15.1
-pyramid==1.6.0
+pyramid==1.6.1
 pyramid-chameleon==0.3
 python-editor==0.5
 pytz==2015.7

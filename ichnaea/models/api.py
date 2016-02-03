@@ -22,7 +22,7 @@ class ApiKey(_Model):
     log_submit = Column(Boolean)  #: Extended submit logging enabled?
     allow_fallback = Column(Boolean)  #: Use the fallback source?
     allow_locate = Column(Boolean)  #: Allow locate queries?
-    shortname = Column(String(40))  #: A readable short name used in metrics.
+    shortname = Column(String(40))  #: Short descriptive name.
 
     def should_allow(self, api_type):
         # Region and submit are always allowed, even without an API key.
