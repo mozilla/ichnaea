@@ -19,11 +19,12 @@ from sqlalchemy.dialects.mysql import (
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea.models.base import _Model
-from ichnaea.models.hashkey import (
-    HashKey,
-    HashKeyQueryMixin,
+from ichnaea.models.base import (
+    _Model,
+    HashableDict,
+    JSONMixin,
 )
+from ichnaea.models.hashkey import HashKeyQueryMixin
 from ichnaea.models.sa_types import TinyIntEnum
 
 DATAMAP_GRID_SCALE = 1000
@@ -221,7 +222,7 @@ class RegionStat(_Model):
     wifi = Column(BigInteger(unsigned=True))  #:
 
 
-class ScoreHashKey(HashKey):
+class ScoreHashKey(HashableDict, JSONMixin):
 
     _fields = ('userid', 'key', 'time')
 

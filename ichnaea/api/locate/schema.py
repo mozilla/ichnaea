@@ -19,13 +19,13 @@ from ichnaea.models.cell import (
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
-from ichnaea.models.hashkey import HashKey
+from ichnaea.models.base import HashableDict
 from ichnaea.models.mac import MacNode
 from ichnaea.models.schema import DefaultNode
 from ichnaea.models.wifi import ValidWifiSignalSchema
 
 
-class BaseLookup(HashKey, CreationMixin, ValidationMixin):
+class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
     """A base class for lookup models."""
 
     _valid_schema = None  #:
@@ -179,7 +179,7 @@ class FallbackSchema(colander.MappingSchema):
     ipf = DefaultNode(colander.Boolean(), missing=True)
 
 
-class FallbackLookup(HashKey, CreationMixin, ValidationMixin):
+class FallbackLookup(HashableDict, CreationMixin, ValidationMixin):
     """A model class representing fallback lookup options."""
 
     _valid_schema = FallbackSchema()

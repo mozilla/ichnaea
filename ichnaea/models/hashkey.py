@@ -1,50 +1,11 @@
 """
-Classes representing unique hashable keys and related database query helpers.
+Database query helper mixin classes for models with composite primary keys.
 """
 
 from six import string_types
 from sqlalchemy.sql import and_, or_
 
-from ichnaea.models.base import JSONMixin
-
 _sentinel = object()
-
-
-class HashKey(JSONMixin):
-    """
-    A class representing a unique combination of fields, much like a
-    namedtuple. Instances of this class can be used as dictionary keys.
-    """
-
-    _fields = ()  #:
-
-    def __init__(self, **kw):
-        for field in self._fields:
-            if field in kw:
-                setattr(self, field, kw[field])
-            else:
-                setattr(self, field, None)
-
-    def __eq__(self, other):
-        if isinstance(other, HashKey):
-            return self.__dict__ == other.__dict__
-        return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other)
-
-    def __hash__(self):
-        """
-        Returns a hash of a tuple of the instance values in the same
-        order as the _fields definition.
-        """
-        value = ()
-        for field in self._fields:
-            value += (getattr(self, field, None), )
-        return hash(value)
-
-    def __repr__(self):
-        return '{cls}: {data}'.format(cls=self._dottedname, data=self.__dict__)
 
 
 class HashKeyQueryMixin(object):

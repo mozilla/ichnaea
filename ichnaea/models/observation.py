@@ -20,7 +20,10 @@ from ichnaea.models.cell import (
     ValidCellSignalSchema,
 )
 from ichnaea.models import constants
-from ichnaea.models.hashkey import HashKey
+from ichnaea.models.base import (
+    HashableDict,
+    JSONMixin,
+)
 from ichnaea.models.mac import MacNode
 from ichnaea.models.schema import (
     DefaultNode,
@@ -30,6 +33,10 @@ from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
     WifiShard,
 )
+
+
+class BaseReport(HashableDict, JSONMixin, CreationMixin, ValidationMixin):
+    """A base class for reports."""
 
 
 class ValidReportSchema(colander.MappingSchema, ValidatorNode):
@@ -68,7 +75,7 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
             raise colander.Invalid(node, 'Lat/lon must be inside a region.')
 
 
-class Report(HashKey, CreationMixin, ValidationMixin):
+class Report(BaseReport):
     """A class for report data."""
 
     _valid_schema = ValidReportSchema()
@@ -124,7 +131,7 @@ class ValidBlueReportSchema(ValidBlueSignalSchema):
             raise colander.Invalid(node, 'Invalid accuracy.')
 
 
-class BlueReport(HashKey, CreationMixin, ValidationMixin):
+class BlueReport(BaseReport):
     """A class for Bluetooth report data."""
 
     _valid_schema = ValidBlueReportSchema()
@@ -192,7 +199,7 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
             raise colander.Invalid(node, 'Invalid accuracy.')
 
 
-class CellReport(HashKey, CreationMixin, ValidationMixin):
+class CellReport(BaseReport):
     """A class for cell report data."""
 
     _valid_schema = ValidCellReportSchema()
@@ -312,7 +319,7 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
             raise colander.Invalid(node, 'Invalid accuracy.')
 
 
-class WifiReport(HashKey, CreationMixin, ValidationMixin):
+class WifiReport(BaseReport):
     """A class for wifi report data."""
 
     _valid_schema = ValidWifiReportSchema()

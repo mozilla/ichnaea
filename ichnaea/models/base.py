@@ -30,6 +30,40 @@ class BaseModel(object):
 _Model = declarative_base(cls=BaseModel)
 
 
+class HashableDict(object):
+    """
+    A class representing a unique combination of fields, much like a
+    namedtuple. Instances of this class can be used as dictionary keys.
+    """
+
+    _fields = ()  #:
+
+    def __init__(self, **kw):
+        for field in self._fields:
+            if field in kw:
+                setattr(self, field, kw[field])
+            else:
+                setattr(self, field, None)
+
+    def __eq__(self, other):
+        if isinstance(other, HashableDict):
+            return self.__dict__ == other.__dict__
+        return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
+    def __hash__(self):
+        """
+        Returns a hash of a tuple of the instance values in the same
+        order as the _fields definition.
+        """
+        value = ()
+        for field in self._fields:
+            value += (getattr(self, field, None), )
+        return hash(value)
+
+
 class JSONMixin(object):
     """
     A mixin class that supports round-tripping of the actual class
