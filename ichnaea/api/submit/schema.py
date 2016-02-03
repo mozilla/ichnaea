@@ -31,7 +31,7 @@ class BluetoothBeaconSchema(OptionalMappingSchema):
     def deserialize(self, data):
         data = super(BluetoothBeaconSchema, self).deserialize(data)
         if 'macAddress' not in data:
-            return colander.null
+            return colander.drop
         return data
 
 
@@ -55,11 +55,6 @@ class CellTowerSchema(OptionalMappingSchema):
     timingAdvance = OptionalIntNode()
 
 
-class ConnectionSchema(OptionalMappingSchema):
-
-    ip = OptionalStringNode()
-
-
 class WifiAccessPointSchema(OptionalMappingSchema):
 
     macAddress = OptionalStringNode()
@@ -75,7 +70,7 @@ class WifiAccessPointSchema(OptionalMappingSchema):
     def deserialize(self, data):
         data = super(WifiAccessPointSchema, self).deserialize(data)
         if 'macAddress' not in data:
-            return colander.null
+            return colander.drop
         return data
 
 
@@ -113,12 +108,12 @@ class ReportSchema(OptionalMappingSchema):
     def deserialize(self, data):
         data = super(ReportSchema, self).deserialize(data)
         if data in (colander.drop, colander.null):  # pragma: no cover
-            return data
+            return colander.drop
 
         if not (data.get('bluetoothBeacons') or
                 data.get('cellTowers') or
                 data.get('wifiAccessPoints')):
-            return colander.null
+            return colander.drop
 
         top_radio = data.get('radioType', None)
         for cell in data.get('cellTowers', ()):

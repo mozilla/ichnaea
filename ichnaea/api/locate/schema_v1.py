@@ -7,11 +7,7 @@ This API is based on the `Google geolocation API
 
 import colander
 
-from ichnaea.api.schema import (
-    InternalMappingSchema,
-    InternalSchemaNode,
-    InternalSequenceSchema,
-)
+from ichnaea.api.schema import RenamingMappingSchema
 from ichnaea.api.locate.schema import (
     BaseLocateSchema,
     FallbackSchema,
@@ -20,84 +16,84 @@ from ichnaea.api.locate.schema import (
 RADIO_STRINGS = ['gsm', 'cdma', 'wcdma', 'lte']
 
 
-class BluetoothBeaconsSchema(InternalSequenceSchema):
+class BluetoothBeaconsSchema(colander.SequenceSchema):
 
     @colander.instantiate()
-    class SequenceItem(InternalMappingSchema):
+    class SequenceItem(RenamingMappingSchema):
 
-        macAddress = InternalSchemaNode(
-            colander.String(), missing=None, internal_name='mac')
-        age = InternalSchemaNode(colander.Integer(), missing=None)
-        signalStrength = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='signal')
-        name = InternalSchemaNode(colander.String(), missing=None)
+        macAddress = colander.SchemaNode(
+            colander.String(), missing=None, to_name='mac')
+        age = colander.SchemaNode(colander.Integer(), missing=None)
+        signalStrength = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='signal')
+        name = colander.SchemaNode(colander.String(), missing=None)
 
 
-class CellTowersSchema(InternalSequenceSchema):
+class CellTowersSchema(colander.SequenceSchema):
 
     @colander.instantiate()
-    class SequenceItem(InternalMappingSchema):
+    class SequenceItem(RenamingMappingSchema):
 
         # radio is a FxOS specific undocumented workaround
-        radio = InternalSchemaNode(
+        radio = colander.SchemaNode(
             colander.String(),
             validator=colander.OneOf(RADIO_STRINGS), missing=colander.drop)
         # radioType resolves to the internal field 'radio', so if both
         # 'radio' and 'radioType' are provided, radioType should take
         # precedence. colander respects the order that fields are defined
         # and so radioType is defined after the 'radio' field.
-        radioType = InternalSchemaNode(
+        radioType = colander.SchemaNode(
             colander.String(), validator=colander.OneOf(RADIO_STRINGS),
-            missing=colander.drop, internal_name='radio')
-        mobileCountryCode = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='mcc')
-        mobileNetworkCode = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='mnc')
-        locationAreaCode = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='lac')
-        cellId = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='cid')
+            missing=colander.drop, to_name='radio')
+        mobileCountryCode = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='mcc')
+        mobileNetworkCode = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='mnc')
+        locationAreaCode = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='lac')
+        cellId = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='cid')
 
-        age = InternalSchemaNode(colander.Integer(), missing=None)
-        psc = InternalSchemaNode(colander.Integer(), missing=None)
-        signalStrength = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='signal')
-        timingAdvance = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='ta')
+        age = colander.SchemaNode(colander.Integer(), missing=None)
+        psc = colander.SchemaNode(colander.Integer(), missing=None)
+        signalStrength = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='signal')
+        timingAdvance = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='ta')
 
 
-class WifiAccessPointsSchema(InternalSequenceSchema):
+class WifiAccessPointsSchema(colander.SequenceSchema):
 
     @colander.instantiate()
-    class SequenceItem(InternalMappingSchema):
+    class SequenceItem(RenamingMappingSchema):
 
-        macAddress = InternalSchemaNode(
-            colander.String(), missing=None, internal_name='mac')
-        age = InternalSchemaNode(colander.Integer(), missing=None)
-        channel = InternalSchemaNode(colander.Integer(), missing=None)
-        frequency = InternalSchemaNode(colander.Integer(), missing=None)
-        signalStrength = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='signal')
-        signalToNoiseRatio = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='snr')
-        ssid = InternalSchemaNode(colander.String(), missing=None)
+        macAddress = colander.SchemaNode(
+            colander.String(), missing=None, to_name='mac')
+        age = colander.SchemaNode(colander.Integer(), missing=None)
+        channel = colander.SchemaNode(colander.Integer(), missing=None)
+        frequency = colander.SchemaNode(colander.Integer(), missing=None)
+        signalStrength = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='signal')
+        signalToNoiseRatio = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='snr')
+        ssid = colander.SchemaNode(colander.String(), missing=None)
 
 
 class LocateV1Schema(BaseLocateSchema):
 
-    carrier = InternalSchemaNode(colander.String(), missing=None)
-    considerIp = InternalSchemaNode(colander.Boolean(), missing=True)
-    homeMobileCountryCode = InternalSchemaNode(
+    carrier = colander.SchemaNode(colander.String(), missing=None)
+    considerIp = colander.SchemaNode(colander.Boolean(), missing=True)
+    homeMobileCountryCode = colander.SchemaNode(
         colander.Integer(), missing=None)
-    homeMobileNetworkCode = InternalSchemaNode(
+    homeMobileNetworkCode = colander.SchemaNode(
         colander.Integer(), missing=None)
-    radioType = InternalSchemaNode(
+    radioType = colander.SchemaNode(
         colander.String(), validator=colander.OneOf(RADIO_STRINGS),
-        missing=colander.drop, internal_name='radio')
+        missing=colander.drop, to_name='radio')
 
-    bluetoothBeacons = BluetoothBeaconsSchema(missing=(), internal_name='blue')
-    cellTowers = CellTowersSchema(missing=(), internal_name='cell')
-    wifiAccessPoints = WifiAccessPointsSchema(missing=(), internal_name='wifi')
+    bluetoothBeacons = BluetoothBeaconsSchema(missing=(), to_name='blue')
+    cellTowers = CellTowersSchema(missing=(), to_name='cell')
+    wifiAccessPoints = WifiAccessPointsSchema(missing=(), to_name='wifi')
     fallbacks = FallbackSchema(missing=None)
 
     def __init__(self, *args, **kw):

@@ -4,11 +4,7 @@ Colander schemata describing the public v1/search HTTP API.
 
 import colander
 
-from ichnaea.api.schema import (
-    InternalMappingSchema,
-    InternalSchemaNode,
-    InternalSequenceSchema,
-)
+from ichnaea.api.schema import RenamingMappingSchema
 from ichnaea.api.locate.schema import (
     BaseLocateSchema,
     FallbackSchema,
@@ -18,54 +14,54 @@ from ichnaea.api.locate.schema import (
 RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
 
 
-class BluesSchema(InternalSequenceSchema):
+class BluesSchema(colander.SequenceSchema):
 
     @colander.instantiate()
-    class SequenceItem(InternalMappingSchema):
+    class SequenceItem(RenamingMappingSchema):
 
-        key = InternalSchemaNode(
-            colander.String(), missing=None, internal_name='mac')
-        signal = InternalSchemaNode(colander.Integer(), missing=None)
-        name = InternalSchemaNode(colander.String(), missing=None)
+        key = colander.SchemaNode(
+            colander.String(), missing=None, to_name='mac')
+        signal = colander.SchemaNode(colander.Integer(), missing=None)
+        name = colander.SchemaNode(colander.String(), missing=None)
 
 
-class CellsSchema(InternalSequenceSchema):
+class CellsSchema(colander.SequenceSchema):
 
     @colander.instantiate()
-    class SequenceItem(InternalMappingSchema):
+    class SequenceItem(RenamingMappingSchema):
 
-        radio = InternalSchemaNode(
+        radio = colander.SchemaNode(
             colander.String(),
             validator=colander.OneOf(RADIO_STRINGS), missing=None)
-        mcc = InternalSchemaNode(colander.Integer(), missing=None)
-        mnc = InternalSchemaNode(colander.Integer(), missing=None)
-        lac = InternalSchemaNode(colander.Integer(), missing=None)
-        cid = InternalSchemaNode(colander.Integer(), missing=None)
+        mcc = colander.SchemaNode(colander.Integer(), missing=None)
+        mnc = colander.SchemaNode(colander.Integer(), missing=None)
+        lac = colander.SchemaNode(colander.Integer(), missing=None)
+        cid = colander.SchemaNode(colander.Integer(), missing=None)
 
-        asu = InternalSchemaNode(colander.Integer(), missing=None)
-        psc = InternalSchemaNode(colander.Integer(), missing=None)
-        signal = InternalSchemaNode(colander.Integer(), missing=None)
-        ta = InternalSchemaNode(colander.Integer(), missing=None)
+        asu = colander.SchemaNode(colander.Integer(), missing=None)
+        psc = colander.SchemaNode(colander.Integer(), missing=None)
+        signal = colander.SchemaNode(colander.Integer(), missing=None)
+        ta = colander.SchemaNode(colander.Integer(), missing=None)
 
 
-class WifisSchema(InternalSequenceSchema):
+class WifisSchema(colander.SequenceSchema):
 
     @colander.instantiate()
-    class SequenceItem(InternalMappingSchema):
+    class SequenceItem(RenamingMappingSchema):
 
-        key = InternalSchemaNode(
-            colander.String(), missing=None, internal_name='mac')
-        frequency = InternalSchemaNode(colander.Integer(), missing=None)
-        channel = InternalSchemaNode(colander.Integer(), missing=None)
-        signal = InternalSchemaNode(colander.Integer(), missing=None)
-        signalToNoiseRatio = InternalSchemaNode(
-            colander.Integer(), missing=None, internal_name='snr')
-        ssid = InternalSchemaNode(colander.String(), missing=None)
+        key = colander.SchemaNode(
+            colander.String(), missing=None, to_name='mac')
+        frequency = colander.SchemaNode(colander.Integer(), missing=None)
+        channel = colander.SchemaNode(colander.Integer(), missing=None)
+        signal = colander.SchemaNode(colander.Integer(), missing=None)
+        signalToNoiseRatio = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='snr')
+        ssid = colander.SchemaNode(colander.String(), missing=None)
 
 
 class LocateV0Schema(BaseLocateSchema):
 
-    radio = InternalSchemaNode(
+    radio = colander.SchemaNode(
         colander.String(),
         validator=colander.OneOf(RADIO_STRINGS), missing=None)
     blue = BluesSchema(missing=())

@@ -1,36 +1,39 @@
 import time
 
-from colander import MappingSchema, String
+import colander
 from pyramid.request import Request
 
 from ichnaea.api import exceptions as api_exceptions
 from ichnaea.api.rate_limit import rate_limit_exceeded
-from ichnaea.api.schema import InternalSchemaNode, InternalMapping
+from ichnaea.api.schema import RenamingMapping
 from ichnaea.tests.base import (
     RedisTestCase,
     TestCase,
 )
 
 
-class TestInternalSchemaNode(TestCase):
+class TestRenamingMapping(TestCase):
 
-    def test_internal_name(self):
+    def test_to_name(self):
 
-        class SampleSchema(MappingSchema):
-            schema_type = InternalMapping
+        class SampleSchema(colander.MappingSchema):
+            schema_type = RenamingMapping
 
-            input_name = InternalSchemaNode(
-                String(), internal_name='output_name')
+            input_name = colander.SchemaNode(
+                colander.String(), to_name='output_name')
+            name = colander.SchemaNode(colander.String())
 
             def __init__(self, *args, **kwargs):
                 super(SampleSchema, self).__init__(*args, **kwargs)
 
         input_data = {
-            'input_name': 'value',
+            'input_name': 'foo',
+            'name': 'bar',
         }
 
         output_data = SampleSchema().deserialize(input_data)
-        self.assertEqual(output_data['output_name'], 'value')
+        self.assertEqual(output_data['output_name'], 'foo')
+        self.assertEqual(output_data['name'], 'bar')
         self.assertFalse('input_name' in output_data)
 
 

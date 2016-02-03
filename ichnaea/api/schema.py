@@ -1,5 +1,18 @@
-import math
+"""
+This module contains basic colander types used in the public locate and
+submit HTTP APIs.
+
+The Optional* classes are used primarily in the submit APIs and drop any
+non-valid or not-found fields. This results in the smallest possible JSON
+representation to be send over the network to the backend queue.
+
+The locate APIs prefer to deserialize data into a consistent in-memory
+representation with all fields being present and missing values of
+`None` or empty tuples.
+"""
+
 import calendar
+import math
 import time
 
 import colander
@@ -50,92 +63,73 @@ class UnixTimeFromString(colander.String):
         return timestamp
 
 
-class InternalMixin(object):
+class RenamingMapping(colander.Mapping):
+    """
+    A RenamingMapping is a colander mapping that supports an additional
+    `to_name` argument. During deserialization the keys in the input
+    dictionary aren't left untouched, but instead mapped from their
+    original value to the `to_name` field.
 
-    def __init__(self, *args, **kwargs):
-        self.internal_name = kwargs.pop('internal_name', None)
-        super(InternalMixin, self).__init__(*args, **kwargs)
-
-
-class InternalSchemaNode(InternalMixin, colander.SchemaNode):
-    pass
-
-
-class InternalMapping(colander.Mapping):
+    The opposite support of taking a value from a different field isn't
+    implemented.
+    """
 
     def _impl(self, node, *args, **kw):
-        result = super(InternalMapping, self)._impl(node, *args, **kw)
-        internal_result = {}
+        result = super(RenamingMapping, self)._impl(node, *args, **kw)
+        renamed_result = {}
         for subnode in node.children:
-            subnode_internal_name = getattr(
-                subnode, 'internal_name', subnode.name) or subnode.name
+            subnode_to_name = getattr(
+                subnode, 'to_name', subnode.name) or subnode.name
 
             subnode_value = result.get(subnode.name, subnode.missing)
             if subnode_value in (colander.drop, colander.null):
                 continue
             else:
-                internal_result[subnode_internal_name] = subnode_value
+                renamed_result[subnode_to_name] = subnode_value
 
-        return internal_result
-
-
-class InternalMappingSchema(InternalMixin, colander.MappingSchema):
-
-    schema_type = InternalMapping
+        return renamed_result
 
 
-class InternalSequence(colander.Sequence):
+class RenamingMappingSchema(colander.MappingSchema):
 
-    def _impl(self, node, *args, **kw):
-        result = super(InternalSequence, self)._impl(node, *args, **kw)
-        internal_result = []
-        for value in result:
-            if value in (colander.drop, colander.null):
-                continue
-            else:
-                internal_result.append(value)
-        return internal_result
+    schema_type = RenamingMapping  #:
 
 
-class InternalSequenceSchema(InternalMixin, colander.SequenceSchema):
+class OptionalMapping(RenamingMapping):
 
-    schema_type = InternalSequence
-
-
-class OptionalMapping(InternalMapping):
-
-    unknown = 'ignore'
+    unknown = 'ignore'  #:
 
 
-class OptionalMappingSchema(InternalMappingSchema):
+class OptionalMappingSchema(RenamingMappingSchema):
 
-    schema_type = OptionalMapping
-
-
-class OptionalSequence(InternalSequence):
-    pass
+    schema_type = OptionalMapping  #:
 
 
-class OptionalSequenceSchema(InternalSequenceSchema):
+class OptionalSequence(colander.Sequence):
 
-    schema_type = OptionalSequence
+    missing = colander.drop  #:
 
 
-class OptionalNode(InternalSchemaNode):
+class OptionalSequenceSchema(colander.SequenceSchema):
 
-    missing = colander.drop
+    schema_type = OptionalSequence  #:
+
+
+class OptionalNode(colander.SchemaNode):
+
+    missing = colander.drop  #:
 
 
 class OptionalBoundedFloatNode(OptionalNode):
 
-    schema_type = BoundedFloat
+    schema_type = BoundedFloat  #:
 
 
 class OptionalIntNode(OptionalNode):
 
-    schema_type = colander.Integer
+    schema_type = colander.Integer  #:
 
 
 class OptionalStringNode(OptionalNode):
 
-    schema_type = colander.String
+    schema_type = colander.String  #:

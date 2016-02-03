@@ -17,53 +17,53 @@ from ichnaea.api.schema import (
 
 class CellV0Schema(OptionalMappingSchema):
 
-    radio = OptionalStringNode(internal_name='radioType')
-    mcc = OptionalIntNode(internal_name='mobileCountryCode')
-    mnc = OptionalIntNode(internal_name='mobileNetworkCode')
-    lac = OptionalIntNode(internal_name='locationAreaCode')
-    cid = OptionalIntNode(internal_name='cellId')
+    radio = OptionalStringNode(to_name='radioType')
+    mcc = OptionalIntNode(to_name='mobileCountryCode')
+    mnc = OptionalIntNode(to_name='mobileNetworkCode')
+    lac = OptionalIntNode(to_name='locationAreaCode')
+    cid = OptionalIntNode(to_name='cellId')
 
     age = OptionalIntNode()
     asu = OptionalIntNode()
-    psc = OptionalIntNode(internal_name='primaryScramblingCode')
+    psc = OptionalIntNode(to_name='primaryScramblingCode')
     serving = OptionalIntNode()
-    signal = OptionalIntNode(internal_name='signalStrength')
-    ta = OptionalIntNode(internal_name='timingAdvance')
+    signal = OptionalIntNode(to_name='signalStrength')
+    ta = OptionalIntNode(to_name='timingAdvance')
 
 
 class WifiV0Schema(OptionalMappingSchema):
 
-    key = OptionalStringNode(internal_name='macAddress')
+    key = OptionalStringNode(to_name='macAddress')
 
     age = OptionalIntNode()
     channel = OptionalIntNode()
     frequency = OptionalIntNode()
-    radio = OptionalStringNode(internal_name='radioType')
-    signal = OptionalIntNode(internal_name='signalStrength')
+    radio = OptionalStringNode(to_name='radioType')
+    signal = OptionalIntNode(to_name='signalStrength')
     signalToNoiseRatio = OptionalIntNode()
     ssid = OptionalStringNode()
 
     def deserialize(self, data):
         data = super(WifiV0Schema, self).deserialize(data)
         if 'macAddress' not in data:
-            return colander.null
+            return colander.drop
         return data
 
 
 class BaseReportV0Schema(OptionalMappingSchema):
 
-    lat = OptionalBoundedFloatNode(internal_name='latitude')
-    lon = OptionalBoundedFloatNode(internal_name='longitude')
+    lat = OptionalBoundedFloatNode(to_name='latitude')
+    lon = OptionalBoundedFloatNode(to_name='longitude')
 
-    time = OptionalNode(UnixTimeFromString(), internal_name='timestamp')
+    time = OptionalNode(UnixTimeFromString(), to_name='timestamp')
     accuracy = OptionalBoundedFloatNode()
     age = OptionalIntNode()
     altitude = OptionalBoundedFloatNode()
     altitude_accuracy = OptionalBoundedFloatNode(
-        internal_name='altitudeAccuracy')
+        to_name='altitudeAccuracy')
     heading = OptionalBoundedFloatNode()
     pressure = OptionalBoundedFloatNode()
-    radio = OptionalStringNode(internal_name='radioType')
+    radio = OptionalStringNode(to_name='radioType')
     speed = OptionalBoundedFloatNode()
     source = OptionalStringNode()
 
@@ -83,21 +83,21 @@ class ReportV0Schema(BaseReportV0Schema):
         'source',
     )
 
-    @colander.instantiate(internal_name='cellTowers', missing=())
+    @colander.instantiate(to_name='cellTowers', missing=())
     class cell(OptionalSequenceSchema):  # NOQA
         sequence_item = CellV0Schema()
 
-    @colander.instantiate(internal_name='wifiAccessPoints', missing=())
+    @colander.instantiate(to_name='wifiAccessPoints', missing=())
     class wifi(OptionalSequenceSchema):  # NOQA
         sequence_item = WifiV0Schema()
 
     def deserialize(self, data):
         data = super(ReportV0Schema, self).deserialize(data)
         if data in (colander.drop, colander.null):  # pragma: no cover
-            return data
+            return colander.drop
 
         if not (data.get('cellTowers') or data.get('wifiAccessPoints')):
-            return colander.null
+            return colander.drop
 
         top_radio = data.get('radioType', None)
         for cell in data.get('cellTowers', ()):

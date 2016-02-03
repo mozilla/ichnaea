@@ -6,7 +6,7 @@ import operator
 
 import colander
 
-from ichnaea.api.schema import InternalMappingSchema
+from ichnaea.api.schema import RenamingMappingSchema
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -189,7 +189,7 @@ class FallbackLookup(HashKey, CreationMixin, ValidationMixin):
     )
 
 
-class BaseLocateSchema(InternalMappingSchema):
+class BaseLocateSchema(RenamingMappingSchema):
     """A base schema for all locate related schemata."""
 
     def deserialize(self, data):

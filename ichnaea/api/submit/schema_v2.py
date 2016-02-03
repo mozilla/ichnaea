@@ -35,8 +35,5 @@ class SubmitV2Schema(OptionalMappingSchema):
             cellTowers = CellTowersV2Schema(missing=())
             position = PositionSchema(missing=None)
 
-            # connection is not mapped on purpose
-            # connection = ConnectionSchema(missing=None)
-
 
 SUBMIT_V2_SCHEMA = SubmitV2Schema()

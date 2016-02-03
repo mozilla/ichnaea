@@ -36,9 +36,6 @@ Geosubmit requests are submitted using a POST request with a JSON body:
             "speed": 3.6,
             "source": "gps"
         },
-        "connection": {
-            "ip": "192.168.1.15"
-        },
         "bluetoothBeacons": [
             {
                 "macAddress": "ff:23:45:67:89:ab",
@@ -198,18 +195,6 @@ signalStrength
 
 timingAdvance
     The timing advance value for this cell tower when available.
-
-
-Connection Fields
-~~~~~~~~~~~~~~~~~
-
-Information about the data connection at the time of the observation.
-
-This section might be extended in the future to include information
-about the network speed or network latency timings.
-
-ip
-    The public IP address at the time the observation was taken.
 
 
 Wifi Access Point Fields

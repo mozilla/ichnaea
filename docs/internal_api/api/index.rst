@@ -10,5 +10,6 @@
    exceptions
    locate/index
    rate_limit
+   schema
    submit/index
    views

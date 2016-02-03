@@ -97,10 +97,6 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'speed': 3.6,
                 'xtra_field': 2,
             },
-            'connection': {
-                'ip': self.geoip_data['London']['ip'],
-                'xtra_field': 3,
-            },
             'cellTowers': [{
                 'radioType': 'umts',
                 'mobileCountryCode': cell.mcc,
@@ -113,7 +109,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'serving': 1,
                 'signalStrength': -51,
                 'timingAdvance': 1,
-                'xtra_field': 4,
+                'xtra_field': 3,
             }]},
         ], api_key='test')
         # check that we get an empty response
@@ -141,7 +137,6 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(position['source'], 'fused')
         self.assertEqual(position['speed'], 3.6)
         self.assertFalse('xtra_field' in position)
-        self.assertFalse('connection' in report)
         cells = report['cellTowers']
         self.assertEqual(len(cells), 1)
         self.assertEqual(cells[0]['radioType'], 'wcdma')

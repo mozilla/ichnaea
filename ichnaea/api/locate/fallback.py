@@ -13,11 +13,10 @@ import simplejson
 
 from ichnaea.api.schema import (
     BoundedFloat,
-    InternalSchemaNode,
-    InternalMappingSchema,
     OptionalMappingSchema,
     OptionalNode,
     OptionalSequenceSchema,
+    RenamingMappingSchema,
 )
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import PositionSource
@@ -63,15 +62,15 @@ class ExternalResult(namedtuple('ExternalResult',
         return 10.0
 
 
-class ResultSchema(InternalMappingSchema):
+class ResultSchema(RenamingMappingSchema):
 
     @colander.instantiate()
-    class location(InternalMappingSchema):  # NOQA
+    class location(RenamingMappingSchema):  # NOQA
 
-        lat = InternalSchemaNode(BoundedFloat())
-        lng = InternalSchemaNode(BoundedFloat(), internal_name='lon')
+        lat = colander.SchemaNode(BoundedFloat())
+        lng = colander.SchemaNode(BoundedFloat(), to_name='lon')
 
-    accuracy = InternalSchemaNode(colander.Float())
+    accuracy = colander.SchemaNode(colander.Float())
     fallback = OptionalNode(colander.String(), missing=None)
 
     def deserialize(self, data):
@@ -97,55 +96,43 @@ class OutboundSchema(OptionalMappingSchema):
         lacf = OptionalNode(colander.Boolean())
 
     @colander.instantiate(missing=colander.drop,
-                          internal_name='bluetoothBeacons')  # NOQA
+                          to_name='bluetoothBeacons')  # NOQA
     class blue(OptionalSequenceSchema):
 
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            mac = OptionalNode(
-                colander.String(), internal_name='macAddress')
-            signal = OptionalNode(
-                colander.Integer(), internal_name='signalStrength')
+            mac = OptionalNode(colander.String(), to_name='macAddress')
+            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
             name = OptionalNode(colander.String())
 
     @colander.instantiate(missing=colander.drop,
-                          internal_name='cellTowers')  # NOQA
+                          to_name='cellTowers')  # NOQA
     class cell(OptionalSequenceSchema):
 
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            radio = OptionalNode(
-                RadioStringType(), internal_name='radioType')
-            mcc = OptionalNode(
-                colander.Integer(), internal_name='mobileCountryCode')
-            mnc = OptionalNode(
-                colander.Integer(), internal_name='mobileNetworkCode')
-            lac = OptionalNode(
-                colander.Integer(), internal_name='locationAreaCode')
-            cid = OptionalNode(
-                colander.Integer(), internal_name='cellId')
-            signal = OptionalNode(
-                colander.Integer(), internal_name='signalStrength')
-            ta = OptionalNode(
-                colander.Integer(), internal_name='timingAdvance')
+            radio = OptionalNode(RadioStringType(), to_name='radioType')
+            mcc = OptionalNode(colander.Integer(), to_name='mobileCountryCode')
+            mnc = OptionalNode(colander.Integer(), to_name='mobileNetworkCode')
+            lac = OptionalNode(colander.Integer(), to_name='locationAreaCode')
+            cid = OptionalNode(colander.Integer(), to_name='cellId')
+            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
+            ta = OptionalNode(colander.Integer(), to_name='timingAdvance')
 
     @colander.instantiate(missing=colander.drop,
-                          internal_name='wifiAccessPoints')  # NOQA
+                          to_name='wifiAccessPoints')  # NOQA
     class wifi(OptionalSequenceSchema):
 
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            mac = OptionalNode(
-                colander.String(), internal_name='macAddress')
-            channel = OptionalNode(
-                colander.Integer(), internal_name='channel')
-            signal = OptionalNode(
-                colander.Integer(), internal_name='signalStrength')
+            mac = OptionalNode(colander.String(), to_name='macAddress')
+            channel = OptionalNode(colander.Integer(), to_name='channel')
+            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
             snr = OptionalNode(
-                colander.Integer(), internal_name='signalToNoiseRatio')
+                colander.Integer(), to_name='signalToNoiseRatio')
             ssid = OptionalNode(colander.String())
 
 OUTBOUND_SCHEMA = OutboundSchema()

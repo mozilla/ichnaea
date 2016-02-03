@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Simplify colander schemata.
+
 - Update dependencies.
 
 20160202154300

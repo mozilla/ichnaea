@@ -37,7 +37,7 @@ class ReportV1Schema(PositionSchema, ReportSchema):
         @colander.instantiate()
         class SequenceItem(CellTowerSchema):
 
-            psc = OptionalIntNode(internal_name='primaryScramblingCode')
+            psc = OptionalIntNode(to_name='primaryScramblingCode')
 
     def deserialize(self, data):
         data = super(ReportV1Schema, self).deserialize(data)
