@@ -75,7 +75,7 @@ class BaseSubmitView(BaseAPIView):
                     'nickname': self.nickname,
                     'reports': batch,
                 },
-                expires=21600)
+                expires=86400)
 
         self.emit_upload_metrics(len(reports), api_key)
 

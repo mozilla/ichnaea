@@ -167,4 +167,4 @@ class InternalUploader(ReportUploader):
                     'nickname': group.nickname,
                     'reports': reports,
                 },
-                expires=21600)
+                expires=86400)

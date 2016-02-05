@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Queue data for up to 24 hours.
+
 - Simplify colander schemata.
 
 - Update dependencies.
