@@ -6,6 +6,7 @@ from ichnaea.api.exceptions import (
     ParseError,
     ServiceUnavailable,
 )
+from ichnaea.data.tasks import update_incoming
 from ichnaea.models import Radio
 from ichnaea import util
 
@@ -34,9 +35,11 @@ class BaseSubmitTest(object):
         if api_key:
             url += '?key=%s' % api_key
         extra = {'HTTP_X_FORWARDED_FOR': self.geoip_data['London']['ip']}
-        return self.app.post_json(
+        result = self.app.post_json(
             url, {'items': items},
             status=status, extra_environ=extra, **kw)
+        update_incoming.delay(batch=len(items)).get()
+        return result
 
     def _post_one_cell(self, nickname=None, status=status):
         cell, query = self._one_cell_query()
@@ -55,6 +58,7 @@ class BaseSubmitTest(object):
             content_type='application/json', status=self.status)
         self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
         self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        update_incoming.delay().get()
         self._assert_queue_size(1)
 
     def test_malformed_gzip(self):
@@ -90,14 +94,14 @@ class BaseSubmitTest(object):
         self.check_raven([('ParseError', 1)])
 
     def test_error_redis_failure(self):
-        mock_task = mock.Mock()
-        mock_task.side_effect = RedisError()
+        mock_queue = mock.Mock()
+        mock_queue.side_effect = RedisError()
 
-        with mock.patch('ichnaea.async.task.BaseTask.apply', mock_task):
+        with mock.patch('ichnaea.queue.DataQueue.enqueue', mock_queue):
             res = self._post_one_cell(status=503)
             self.assertEqual(res.json, ServiceUnavailable.json_body())
 
-        self.assertTrue(mock_task.called)
+        self.assertTrue(mock_queue.called)
         self.check_stats(counter=[
             ('data.batch.upload', 0),
             ('request', [self.metric_path, 'method:post', 'status:503']),

@@ -1,4 +1,7 @@
-from collections import namedtuple
+from collections import (
+    defaultdict,
+    namedtuple,
+)
 from contextlib import closing
 import uuid
 
@@ -45,6 +48,44 @@ class ExportScheduler(DataTask):
                 export_task.delay(export_queue.name, queue_key=queue_key)
                 triggered += 1
         return triggered
+
+
+class IncomingQueue(DataTask):
+
+    def __init__(self, task, session, pipe):
+        DataTask.__init__(self, task, session)
+        self.pipe = pipe
+        self.data_queue = task.app.data_queues['update_incoming']
+        self.export_queues = task.app.export_queues
+
+    def __call__(self, batch=100):
+        data = self.data_queue.dequeue(batch=batch)
+        if not data:
+            return
+
+        grouped = defaultdict(list)
+        for item in data:
+            grouped[item['api_key']].append({
+                'metadata': {
+                    'api_key': item['api_key'],
+                    'email': None,
+                    'ip': None,
+                    'nickname': item['nickname'],
+                },
+                'report': item['report'],
+            })
+
+        for api_key, items in grouped.items():
+            for name, queue in self.export_queues.items():
+                if queue.export_allowed(api_key):
+                    queue_key = queue.queue_key(api_key)
+                    queue.enqueue(items, queue_key, pipe=self.pipe)
+
+        if self.data_queue.enough_data(batch=batch):  # pragma: no cover
+            self.task.apply_async(
+                kwargs={'batch': batch},
+                countdown=2,
+                expires=5)
 
 
 class ExportQueue(DataTask):

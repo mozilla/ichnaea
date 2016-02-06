@@ -24,6 +24,7 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
+from ichnaea.queue import DataQueue
 from ichnaea.webapp import renderers
 from ichnaea.webapp.monitor import configure_monitor
 
@@ -105,6 +106,12 @@ def main(app_config, ping_connections=False,
                         redis_client=redis_client, stats_client=stats_client,
                         _searcher=default)
         setattr(registry, name, searcher)
+
+    registry.data_queues = {
+        'update_incoming': DataQueue('update_incoming', redis_client,
+                                     queue_key='update_incoming',
+                                     compress=True),
+    }
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)

@@ -15,7 +15,6 @@ from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
 from ichnaea.api.submit.schema_v2 import SUBMIT_V2_SCHEMA
 
 from ichnaea.api.views import BaseAPIView
-from ichnaea.data.tasks import queue_reports
 
 
 class BaseSubmitView(BaseAPIView):
@@ -30,6 +29,7 @@ class BaseSubmitView(BaseAPIView):
     def __init__(self, request):
         super(BaseSubmitView, self).__init__(request)
         self.nickname = self.decode_request_header('X-Nickname')
+        self.queue = self.request.registry.data_queues['update_incoming']
 
     def decode_request_header(self, header_name):
         value = self.request.headers.get(header_name, None)
@@ -62,21 +62,14 @@ class BaseSubmitView(BaseAPIView):
         # may raise HTTP error
         request_data = self.preprocess()
 
-        # data pipeline using new internal data format
         reports = request_data['items']
-        batch_size = 50
-        for i in range(0, len(reports), batch_size):
-            batch = reports[i:i + batch_size]
-            # insert reports, expire the task if it wasn't processed
-            # after six hours to avoid queue overload
-            queue_reports.apply_async(
-                kwargs={
-                    'api_key': api_key.valid_key,
-                    'nickname': self.nickname,
-                    'reports': batch,
-                },
-                expires=86400)
+        nickname = self.nickname
+        valid_key = api_key.valid_key
+        data = [{'api_key': valid_key,
+                 'nickname': nickname,
+                 'report': report} for report in reports]
 
+        self.queue.enqueue(data)
         self.emit_upload_metrics(len(reports), api_key)
 
     def view(self, api_key):

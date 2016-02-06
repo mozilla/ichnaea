@@ -11,6 +11,7 @@ from ichnaea.internaljson import (
     internal_dumps,
     internal_loads,
 )
+from ichnaea import util
 
 EXPORT_QUEUE_PREFIX = 'queue_export_'
 WHITESPACE = re.compile('\s', flags=re.UNICODE)
@@ -32,9 +33,10 @@ class BaseQueue(object):
     queue_ttl = 86400  #: Maximum TTL value for the Redis list.
     queue_max_age = 3600  #: Maximum age that data can sit in the queue.
 
-    def __init__(self, name, redis_client):
+    def __init__(self, name, redis_client, compress=False):
         self.name = name
         self.redis_client = redis_client
+        self.compress = compress
 
     def _dequeue(self, queue_key, batch, json=True):
         with self.redis_client.pipeline() as pipe:
@@ -46,8 +48,12 @@ class BaseQueue(object):
                 # special case for deleting everything
                 pipe.ltrim(queue_key, 1, 0)
             result = pipe.execute()[0]
+
+            if self.compress:
+                result = [util.decode_gzip(item) for item in result]
             if json:
                 result = [internal_loads(item) for item in result]
+
         return result
 
     def _push(self, pipe, items, queue_key, batch=100):
@@ -60,15 +66,19 @@ class BaseQueue(object):
 
     def _enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
         if json:
-            data = [str(internal_dumps(item)) for item in items]
-        else:
+            items = [str(internal_dumps(item)) for item in items]
+
+        if self.compress:
+            items = [util.encode_gzip(item) for item in items]
+        elif not json:
             # make a copy, since _push is modifying the list in-place
-            data = list(items)
+            items = list(items)
+
         if pipe is not None:
-            self._push(pipe, data, queue_key, batch=batch)
+            self._push(pipe, items, queue_key, batch=batch)
         else:
             with redis_pipeline(self.redis_client) as pipe:
-                self._push(pipe, data, queue_key, batch=batch)
+                self._push(pipe, items, queue_key, batch=batch)
 
     def _size_age(self, queue_key):
         with self.redis_client.pipeline() as pipe:
@@ -84,8 +94,8 @@ class BaseQueue(object):
 
 class DataQueue(BaseQueue):
 
-    def __init__(self, name, redis_client, queue_key):
-        super(DataQueue, self).__init__(name, redis_client)
+    def __init__(self, name, redis_client, queue_key, compress=False):
+        super(DataQueue, self).__init__(name, redis_client, compress=compress)
         self._queue_key = queue_key
 
     @property
@@ -115,8 +125,9 @@ class DataQueue(BaseQueue):
 
 class ExportQueue(BaseQueue):
 
-    def __init__(self, name, redis_client, settings):
-        super(ExportQueue, self).__init__(name, redis_client)
+    def __init__(self, name, redis_client, settings, compress=False):
+        super(ExportQueue, self).__init__(
+            name, redis_client, compress=compress)
         self.settings = settings
         self.batch = int(settings.get('batch', 0))
         self.metadata = bool(settings.get('metadata', False))

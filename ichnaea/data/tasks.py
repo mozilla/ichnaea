@@ -62,6 +62,12 @@ def schedule_export_reports(self):
     return export.ExportScheduler(self, None)(export_reports)
 
 
+@celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
+def update_incoming(self, batch=100):
+    with self.redis_pipeline() as pipe:
+        export.IncomingQueue(self, None, pipe)(batch=batch)
+
+
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def export_reports(self, export_queue_name, queue_key=None):
     export.ReportExporter(
