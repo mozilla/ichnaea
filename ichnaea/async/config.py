@@ -31,6 +31,7 @@ from ichnaea.queue import (
 CELERY_QUEUES = (
     Queue('celery_blue', routing_key='celery_blue'),
     Queue('celery_cell', routing_key='celery_cell'),
+    Queue('celery_content', routing_key='celery_content'),
     Queue('celery_default', routing_key='celery_default'),
     Queue('celery_export', routing_key='celery_export'),
     Queue('celery_incoming', routing_key='celery_incoming'),
