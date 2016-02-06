@@ -79,7 +79,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
         self._assert_queue_size(1)
         item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['api_key'], 'test')
+        self.assertEqual(item['api_key'], 'test')
         report = item['report']
         timestamp = datetime.utcfromtimestamp(report['timestamp'] / 1000.0)
         timestamp = timestamp.replace(microsecond=0, tzinfo=pytz.UTC)
@@ -113,7 +113,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
         self._assert_queue_size(1)
         item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['api_key'], None)
+        self.assertEqual(item['api_key'], None)
         report = item['report']
         position = report['position']
         self.assertEqual(position['latitude'], wifi.lat)

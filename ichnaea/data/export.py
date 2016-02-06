@@ -1,7 +1,4 @@
-from collections import (
-    defaultdict,
-    namedtuple,
-)
+from collections import defaultdict
 from contextlib import closing
 import uuid
 
@@ -12,8 +9,6 @@ from six.moves.urllib.parse import urlparse
 
 from ichnaea.data.base import DataTask
 from ichnaea import util
-
-MetadataGroup = namedtuple('MetadataGroup', 'api_key email ip nickname')
 
 
 class ExportScheduler(DataTask):
@@ -66,12 +61,8 @@ class IncomingQueue(DataTask):
         grouped = defaultdict(list)
         for item in data:
             grouped[item['api_key']].append({
-                'metadata': {
-                    'api_key': item['api_key'],
-                    'email': None,
-                    'ip': None,
-                    'nickname': item['nickname'],
-                },
+                'api_key': item['api_key'],
+                'nickname': item['nickname'],
                 'report': item['report'],
             })
 
@@ -88,7 +79,8 @@ class IncomingQueue(DataTask):
                 expires=5)
 
 
-class ExportQueue(DataTask):
+class ExportQueue(DataTask):  # pragma: no cover
+    # BBB
 
     def __init__(self, task, session, pipe, api_key=None, nickname=None):
         DataTask.__init__(self, task, session)
@@ -100,8 +92,6 @@ class ExportQueue(DataTask):
     def __call__(self, reports):
         metadata = {
             'api_key': self.api_key,
-            'email': None,
-            'ip': None,
             'nickname': self.nickname,
         }
         items = []
@@ -126,7 +116,7 @@ class ReportExporter(DataTask):
         if not self.queue_key:
             self.queue_key = self.export_queue.queue_key()
 
-    def __call__(self, export_task, upload_task):
+    def __call__(self, upload_task):
         export_queue = self.export_queue
         if not export_queue.enough_data(self.queue_key):  # pragma: no cover
             return
@@ -138,10 +128,9 @@ class ReportExporter(DataTask):
             export_queue.enqueue(items, self.queue_key)
             return
 
-        if self.metadata:  # pragma: no cover
-            reports = items
-        else:
-            # split out metadata
+        reports = items
+        if not self.metadata:
+            # ignore metadata
             reports = {'items': [item['report'] for item in items]}
 
         upload_task.delay(
@@ -152,7 +141,7 @@ class ReportExporter(DataTask):
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
         if export_queue.enough_data(self.queue_key):
-            export_task.apply_async(
+            self.task.apply_async(
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key},
                 countdown=1,

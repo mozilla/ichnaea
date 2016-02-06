@@ -10,7 +10,7 @@ from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
 from ichnaea.data.tasks import (
     schedule_export_reports,
-    queue_reports,
+    update_incoming,
 )
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
@@ -38,6 +38,10 @@ def mock_s3(mock_keys):
 
 
 class BaseExportTest(CeleryTestCase):
+
+    def setUp(self):
+        super(BaseExportTest, self).setUp()
+        self.incoming_queue = self.celery_app.data_queues['update_incoming']
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     api_key='test', nickname=None,
@@ -92,8 +96,12 @@ class BaseExportTest(CeleryTestCase):
 
             reports.append(report)
 
-        queue_reports.delay(reports=reports, api_key=api_key,
-                            nickname=nickname).get()
+        items = [{'api_key': api_key,
+                  'nickname': nickname,
+                  'report': rep} for rep in reports]
+
+        self.incoming_queue.enqueue(items)
+        update_incoming.delay(batch=len(items)).get()
         return reports
 
     def queue_length(self, redis_key):

@@ -4,10 +4,7 @@ from datetime import datetime
 import pytz
 import simplejson
 
-from ichnaea.data.export import (
-    MetadataGroup,
-    ReportUploader,
-)
+from ichnaea.data.export import ReportUploader
 
 
 class InternalTransform(object):
@@ -155,7 +152,12 @@ class InternalUploader(ReportUploader):
     def send(self, url, data):
         groups = defaultdict(list)
         for item in simplejson.loads(data):
-            group = MetadataGroup(**item['metadata'])
+            if 'metadata' in item:  # pragma: no cover
+                # BBB
+                group = (item['metadata']['api_key'],
+                         item['metadata']['nickname'])
+            else:
+                group = (item['api_key'], item['nickname'])
             report = self._format_report(item['report'])
             if report:
                 groups[group].append(report)
@@ -163,8 +165,8 @@ class InternalUploader(ReportUploader):
         for group, reports in groups.items():
             self._task().apply_async(
                 kwargs={
-                    'api_key': group.api_key,
-                    'nickname': group.nickname,
+                    'api_key': group[0],
+                    'nickname': group[1],
                     'reports': reports,
                 },
                 expires=86400)

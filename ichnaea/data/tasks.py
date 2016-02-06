@@ -72,7 +72,7 @@ def update_incoming(self, batch=100):
 def export_reports(self, export_queue_name, queue_key=None):
     export.ReportExporter(
         self, None, export_queue_name, queue_key
-    )(export_reports, upload_reports)
+    )(upload_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
@@ -91,8 +91,8 @@ def insert_reports(self, reports=(),
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
 def queue_reports(self, reports=(),
-                  api_key=None, ip=None, nickname=None):
-    # BBB ip argument
+                  api_key=None, ip=None, nickname=None):  # pragma: no cover
+    # BBB
     with self.redis_pipeline() as pipe:
         export.ExportQueue(
             self, None, pipe,

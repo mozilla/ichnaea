@@ -110,7 +110,7 @@ class BaseSubmitTest(object):
     def test_headers_nickname(self):
         self._post_one_cell(nickname=self.nickname)
         item = self.queue.dequeue(self.queue.queue_key())[0]
-        self.assertEqual(item['metadata']['nickname'], self.nickname)
+        self.assertEqual(item['nickname'], self.nickname)
 
     def test_log_api_key_none(self):
         cell, query = self._one_cell_query()
