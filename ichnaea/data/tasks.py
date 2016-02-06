@@ -10,7 +10,6 @@ from ichnaea.async.task import BaseTask
 from ichnaea.data import area
 from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
-from ichnaea.data.internal import InternalUploader
 from ichnaea.data import monitor
 from ichnaea.data import ocid
 from ichnaea.data.report import ReportQueue
@@ -103,15 +102,8 @@ def queue_reports(self, reports=(),
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
 def upload_reports(self, export_queue_name, data, queue_key=None):
-    uploaders = {
-        'http': export.GeosubmitUploader,
-        'https': export.GeosubmitUploader,
-        'internal': InternalUploader,
-        's3': export.S3Uploader,
-    }
     export_queue = self.app.export_queues[export_queue_name]
-    uploader_type = uploaders.get(export_queue.scheme, None)
-
+    uploader_type = export_queue.uploader_type
     if uploader_type is not None:
         uploader_type(self, None, export_queue_name, queue_key)(data)
 

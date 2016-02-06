@@ -22,12 +22,10 @@ from ichnaea.models.content import encode_datamap_grid
 
 class ReportQueue(DataTask):
 
-    def __init__(self, task, session, pipe, api_key=None,
-                 ip=None, nickname=None):
+    def __init__(self, task, session, pipe, api_key=None, nickname=None):
         DataTask.__init__(self, task, session)
         self.pipe = pipe
         self.api_key = api_key
-        self.ip = ip
         self.nickname = nickname
         self.data_queues = self.task.app.data_queues
 

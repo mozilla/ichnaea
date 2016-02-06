@@ -4,7 +4,7 @@ from datetime import datetime
 import pytz
 import simplejson
 
-from ichnaea.data.export import ReportUploader
+from ichnaea.data.upload import BaseReportUploader
 
 
 class InternalTransform(object):
@@ -129,7 +129,7 @@ class InternalTransform(object):
         return {}
 
 
-class InternalUploader(ReportUploader):
+class InternalUploader(BaseReportUploader):
 
     transform = InternalTransform()
 

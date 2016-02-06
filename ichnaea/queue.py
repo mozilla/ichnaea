@@ -133,8 +133,22 @@ class ExportQueue(BaseQueue):
         self.metadata = bool(settings.get('metadata', False))
         self.url = settings.get('url', '') or ''
         self.scheme = urlparse(self.url).scheme
+        self.uploader_type = self.configure_uploader(self.scheme)
         skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
         self.skip_keys = tuple([key for key in skip_keys if key])
+
+    @staticmethod
+    def configure_uploader(scheme):
+        from ichnaea.data import upload
+        from ichnaea.data.internal import InternalUploader
+
+        uploaders = {
+            'http': upload.GeosubmitUploader,
+            'https': upload.GeosubmitUploader,
+            'internal': InternalUploader,
+            's3': upload.S3Uploader,
+        }
+        return uploaders.get(scheme, None)
 
     @property
     def monitor_name(self):
