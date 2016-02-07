@@ -39,8 +39,7 @@ def internal_object_hook(dct):
 def internal_dumps(value):
     """
     Dump an object into a special internal JSON format with support
-    for roundtripping date, datetime and any
-    :class:`ichnaea.models.base.JSONMixin` subclasses.
+    for roundtripping date and datetime classes
     """
     return simplejson.dumps(value, default=internal_default,
                             namedtuple_as_object=True, separators=(',', ':'))

@@ -48,7 +48,7 @@ class TestBlue(StationTest):
 
         for shard_id, values in sharded_obs.items():
             queue = self.celery_app.data_queues['update_blue_' + shard_id]
-            queue.enqueue(values)
+            queue.enqueue([value.to_json() for value in values])
             update_blue.delay(shard_id=shard_id).get()
 
     def test_new(self):
@@ -86,7 +86,7 @@ class TestCell(StationTest):
 
         for shard_id, values in sharded_obs.items():
             queue = self.celery_app.data_queues['update_cell_' + shard_id]
-            queue.enqueue(values)
+            queue.enqueue([value.to_json() for value in values])
             update_cell.delay(shard_id=shard_id).get()
 
     def test_blocklist(self):
@@ -339,7 +339,7 @@ class TestWifi(StationTest):
 
         for shard_id, values in sharded_obs.items():
             queue = self.celery_app.data_queues['update_wifi_' + shard_id]
-            queue.enqueue(values)
+            queue.enqueue([value.to_json() for value in values])
             update_wifi.delay(shard_id=shard_id).get()
 
     def test_new(self):

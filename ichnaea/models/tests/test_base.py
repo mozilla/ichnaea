@@ -1,11 +1,4 @@
-from ichnaea.internaljson import (
-    internal_dumps,
-    internal_loads,
-)
-from ichnaea.models.base import (
-    HashableDict,
-    JSONMixin,
-)
+from ichnaea.models.base import HashableDict
 from ichnaea.tests.base import TestCase
 
 
@@ -17,13 +10,6 @@ class Single(HashableDict):
 class Double(HashableDict):
 
     _fields = ('one', 'two')
-
-
-class DummyJSON(JSONMixin):
-
-    def __init__(self, one=None, two=None):
-        self.one = one
-        self.two = two
 
 
 class TestHashableDict(TestCase):
@@ -82,12 +68,3 @@ class TestHashableDict(TestCase):
         self.assertNotEqual(empty, None)
         self.assertNotEqual(empty, {})
         self.assertNotEqual(empty, object())
-
-
-class TestJSONMixin(TestCase):
-
-    def test_json(self):
-        dummy = DummyJSON(one=1.1, two='two')
-        new_dummy = internal_loads(internal_dumps(dummy))
-        self.assertTrue(isinstance(new_dummy, DummyJSON))
-        self.assertEqual(internal_dumps(dummy), internal_dumps(new_dummy))

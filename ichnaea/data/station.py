@@ -12,6 +12,9 @@ from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellid,
     encode_cellarea,
+    BlueObservation,
+    CellObservation,
+    WifiObservation,
     StatCounter,
     StatKey,
 )
@@ -27,6 +30,7 @@ class StationUpdater(DataTask):
 
     MAX_OLD_WEIGHT = 10000.0
     max_dist_meters = None
+    obs_model = None
     station_type = None
     stat_obs_key = None
     stat_station_key = None
@@ -257,6 +261,9 @@ class StationUpdater(DataTask):
     def _shard_observations(self, observations):
         sharded_obs = {}
         for obs in observations:
+            if isinstance(obs, dict):
+                # BBB check can be removed
+                obs = self.obs_model.from_json(obs)
             if obs is not None:
                 shard = obs.shard_model
                 if shard not in sharded_obs:
@@ -355,6 +362,7 @@ class StationUpdater(DataTask):
 class BlueUpdater(StationUpdater):
 
     max_dist_meters = BLUE_MAX_RADIUS
+    obs_model = BlueObservation
     queue_prefix = 'update_blue_'
     station_type = 'blue'
     stat_obs_key = StatKey.blue
@@ -374,6 +382,7 @@ class BlueUpdater(StationUpdater):
 class CellUpdater(StationUpdater):
 
     max_dist_meters = CELL_MAX_RADIUS
+    obs_model = CellObservation
     queue_prefix = 'update_cell_'
     station_type = 'cell'
     stat_obs_key = StatKey.cell
@@ -410,6 +419,7 @@ class CellUpdater(StationUpdater):
 class WifiUpdater(StationUpdater):
 
     max_dist_meters = WIFI_MAX_RADIUS
+    obs_model = WifiObservation
     queue_prefix = 'update_wifi_'
     station_type = 'wifi'
     stat_obs_key = StatKey.wifi

@@ -49,9 +49,10 @@ class TestBlueObservation(DBTestCase):
         self.assertEqual(obs.signal, -45)
         self.assertEqual(obs.shard_id, '8')
 
-    def test_internaljson(self):
+    def test_json(self):
         obs = BlueObservationFactory.build(accuracy=None)
-        result = internal_loads(internal_dumps(obs))
+        result = BlueObservation.from_json(internal_loads(
+            internal_dumps(obs.to_json())))
         self.assertTrue(type(result), BlueObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(result.mac, obs.mac)
@@ -104,9 +105,10 @@ class TestCellObservation(DBTestCase):
         self.assertEqual(obs.ta, 10)
         self.assertEqual(obs.shard_id, 'gsm')
 
-    def test_internaljson(self):
+    def test_json(self):
         obs = CellObservationFactory.build(accuracy=None)
-        result = internal_loads(internal_dumps(obs))
+        result = CellObservation.from_json(internal_loads(
+            internal_dumps(obs.to_json())))
         self.assertTrue(type(result), CellObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(type(result.radio), Radio)
@@ -185,9 +187,10 @@ class TestWifiObservation(DBTestCase):
         self.assertEqual(obs.signal, -45)
         self.assertEqual(obs.shard_id, '8')
 
-    def test_internaljson(self):
+    def test_json(self):
         obs = WifiObservationFactory.build(accuracy=None)
-        result = internal_loads(internal_dumps(obs))
+        result = WifiObservation.from_json(internal_loads(
+            internal_dumps(obs.to_json())))
         self.assertTrue(type(result), WifiObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(result.mac, obs.mac)

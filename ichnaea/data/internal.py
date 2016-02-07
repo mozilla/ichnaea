@@ -291,7 +291,8 @@ class ReportQueue(DataTask):
                 sharded_obs[shard_id].append(ob)
             for shard_id, values in sharded_obs.items():
                 blue_queue = self.data_queues['update_blue_' + shard_id]
-                blue_queue.enqueue(list(values), pipe=self.pipe)
+                blue_queue.enqueue(
+                    [value.to_json() for value in values], pipe=self.pipe)
 
         if observations['cell']:
             sharded_obs = defaultdict(list)
@@ -300,7 +301,8 @@ class ReportQueue(DataTask):
                 sharded_obs[shard_id].append(ob)
             for shard_id, values in sharded_obs.items():
                 cell_queue = self.data_queues['update_cell_' + shard_id]
-                cell_queue.enqueue(list(values), pipe=self.pipe)
+                cell_queue.enqueue(
+                    [value.to_json() for value in values], pipe=self.pipe)
 
         if observations['wifi']:
             sharded_obs = defaultdict(list)
@@ -309,7 +311,8 @@ class ReportQueue(DataTask):
                 sharded_obs[shard_id].append(ob)
             for shard_id, values in sharded_obs.items():
                 wifi_queue = self.data_queues['update_wifi_' + shard_id]
-                wifi_queue.enqueue(list(values), pipe=self.pipe)
+                wifi_queue.enqueue(
+                    [value.to_json() for value in values], pipe=self.pipe)
 
         self.process_datamap(positions)
         self.process_score(userid, positions, new_station_count)

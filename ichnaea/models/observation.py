@@ -35,8 +35,33 @@ from ichnaea.models.wifi import (
 )
 
 
-class BaseReport(HashableDict, JSONMixin, CreationMixin, ValidationMixin):
+class BaseReport(HashableDict, CreationMixin, ValidationMixin):
     """A base class for reports."""
+
+
+class BaseObservation(JSONMixin):
+    """A base class for observations."""
+    # BBB JSONMixin base class
+
+    @classmethod
+    def _from_json_value(cls, value):
+        return cls(**value)
+
+    @classmethod
+    def from_json(cls, value):
+        return cls._from_json_value(value)
+
+    def _to_json_value(self):
+        # create a sparse representation of this instance
+        dct = {}
+        for field in self._fields:
+            value = getattr(self, field, None)
+            if value is not None:
+                dct[field] = value
+        return dct
+
+    def to_json(self):
+        return self._to_json_value()
 
 
 class ValidReportSchema(colander.MappingSchema, ValidatorNode):
@@ -88,15 +113,6 @@ class Report(BaseReport):
         'heading',
         'speed',
     )
-
-    def _to_json_value(self):
-        # create a sparse representation of this instance
-        dct = {}
-        for field in self._fields:
-            value = getattr(self, field, None)
-            if value is not None:
-                dct[field] = value
-        return dct
 
     @classmethod
     def combine(cls, *reports):
@@ -168,7 +184,7 @@ class ValidBlueObservationSchema(ValidBlueReportSchema, ValidReportSchema):
     """A schema which validates the fields in a Bluetooth observation."""
 
 
-class BlueObservation(BlueReport, Report):
+class BlueObservation(BlueReport, Report, BaseObservation):
     """A class for Bluetooth observation data."""
 
     _valid_schema = ValidBlueObservationSchema()
@@ -244,19 +260,6 @@ class CellReport(BaseReport):
         return encode_cellid(
             self.radio, self.mcc, self.mnc, self.lac, self.cid)
 
-    @classmethod
-    def _from_json_value(cls, dct):
-        if 'radio' in dct and dct['radio'] is not None and \
-           not type(dct['radio']) == Radio:
-            dct['radio'] = Radio(dct['radio'])
-        return super(CellReport, cls)._from_json_value(dct)
-
-    def _to_json_value(self):
-        dct = super(CellReport, self)._to_json_value()
-        if 'radio' in dct and type(dct['radio']) == Radio:
-            dct['radio'] = int(dct['radio'])
-        return dct
-
 
 class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
     """A schema which validates the fields present in a cell observation."""
@@ -272,11 +275,24 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
                 'Lat/lon must be inside one of the regions for the MCC'))
 
 
-class CellObservation(CellReport, Report):
+class CellObservation(CellReport, Report, BaseObservation):
     """A class for cell observation data."""
 
     _valid_schema = ValidCellObservationSchema()
     _fields = CellReport._fields + Report._fields
+
+    @classmethod
+    def _from_json_value(cls, dct):
+        if 'radio' in dct and dct['radio'] is not None and \
+           not type(dct['radio']) == Radio:
+            dct['radio'] = Radio(dct['radio'])
+        return super(CellObservation, cls)._from_json_value(dct)
+
+    def _to_json_value(self):
+        dct = super(CellObservation, self)._to_json_value()
+        if 'radio' in dct and type(dct['radio']) == Radio:
+            dct['radio'] = int(dct['radio'])
+        return dct
 
     @property
     def weight(self):
@@ -355,7 +371,7 @@ class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
 
 
-class WifiObservation(WifiReport, Report):
+class WifiObservation(WifiReport, Report, BaseObservation):
     """A class for wifi observation data."""
 
     _valid_schema = ValidWifiObservationSchema()

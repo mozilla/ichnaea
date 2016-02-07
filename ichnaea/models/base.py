@@ -72,7 +72,7 @@ class JSONMixin(object):
 
     @property
     def _dottedname(self):
-        """"Returns a fully qualified import path to this class."""
+        """Returns a fully qualified import path to this class."""
         klass = self.__class__
         return '%s:%s' % (klass.__module__, klass.__name__)
 
@@ -88,12 +88,12 @@ class JSONMixin(object):
         return klass._from_json_value(data['value'])
 
     @classmethod
-    def _from_json_value(cls, value):
-        """Instantiate this class based on the provided values."""
+    def _from_json_value(cls, value):  # pragma: no cover
+        """Instantiate this class based on the provided value."""
         return cls(**value)
 
     def _to_json(self):
-        """"
+        """
         Returns a dictionary representation of this class dotted name
         and its instance state.
         """
@@ -102,8 +102,8 @@ class JSONMixin(object):
             'value': self._to_json_value(),
         }}
 
-    def _to_json_value(self):
-        """"Returns a dictionary representation of the instance state."""
+    def _to_json_value(self):  # pragma: no cover
+        """Returns a dictionary representation of the instance state."""
         return self.__dict__
 
 
