@@ -11,8 +11,9 @@ from ichnaea import util
 
 class BaseReportUploader(DataTask):
 
-    def __init__(self, task, session, export_queue_name, queue_key):
+    def __init__(self, task, session, pipe, export_queue_name, queue_key):
         DataTask.__init__(self, task, session)
+        self.pipe = pipe
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         self.stats_prefix = 'data.export.'
@@ -58,9 +59,9 @@ class GeosubmitUploader(BaseReportUploader):
 
 class S3Uploader(BaseReportUploader):
 
-    def __init__(self, task, session, export_queue_name, queue_key):
+    def __init__(self, task, session, pipe, export_queue_name, queue_key):
         super(S3Uploader, self).__init__(
-            task, session, export_queue_name, queue_key)
+            task, session, pipe, export_queue_name, queue_key)
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         _, self.bucket, path = urlparse(self.url)[:3]
