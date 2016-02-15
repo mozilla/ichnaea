@@ -174,7 +174,6 @@ def regions(session):
         wcdma = int(row.wcdma or 0)
         lte = int(row.lte or 0)
         cell = sum((gsm, wcdma, lte))
-        wifi = int(row.wifi or 0)
         regions[code] = {
             'code': code,
             'name': name,
@@ -183,6 +182,7 @@ def regions(session):
             'wcdma': wcdma,
             'lte': lte,
             'cell': cell,
-            'wifi': wifi,
+            'blue': int(row.blue or 0),
+            'wifi': int(row.wifi or 0),
         }
     return sorted(regions.values(), key=itemgetter('cell'), reverse=True)

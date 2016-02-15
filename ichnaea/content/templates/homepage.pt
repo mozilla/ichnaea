@@ -7,19 +7,18 @@
 
     <div class="map-callout-left text-justified">
         <p>
-            The Mozilla Location Service (MLS) is an open service which lets
-            devices determine their location based on network infrastructure
-            like WiFi access points and cell towers. This network based
-            location service complements satellite based navigation systems
-            like A-GPS. Combined these two approaches are one of the
-            foundations for enabling context aware applications.
+            The Mozilla Location Service (MLS) is an open service which
+            lets devices determine their location based on network
+            infrastructure like Bluetooth beacons, cell towers and
+            WiFi access points. This network based location service
+            complements satellite based navigation systems like A-GPS.
         </p>
 
         <p>
-            This open service relies on a community of contributors, ranging
-            from <a href="/leaders">individuals collecting data</a>,
-            <a href="/apps">developers using and innovating</a> on top of
-            the service to
+            This open service relies on a community of contributors,
+            ranging from <a href="/apps">individuals collecting data</a>,
+            <a href="/api">developers using and innovating</a>
+            on top of the service to
             <a href="/contact">organizations sharing information</a>
             about their infrastructure.
         </p>
@@ -39,10 +38,9 @@
 
     <ul class="text-justified half-left">
         <li>
-            As an individual you can join our
-            <a href="/leaders">active community</a>
-            and start mapping the wireless networks in your neighborhood or
-            <a href="/apps">contribute to one of the client applications</a>.
+            As an individual you can use
+            <a href="/apps">one of the client applications</a>
+            and start mapping the wireless networks in your neighborhood.
         </li>
 
         <li>

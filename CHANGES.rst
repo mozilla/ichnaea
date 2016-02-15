@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Display region specific BLE statistics.
+
 - Remove geodude compatibility API again.
 
 - Avoid intermediate Redis task round-trip.

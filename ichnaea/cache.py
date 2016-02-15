@@ -69,7 +69,8 @@ class RedisClient(redis.StrictRedis):
         'leaders': b'cache:leaders:2',
         'leaders_weekly': b'cache:leaders_weekly:2',
         'stats': b'cache:stats:3',
-        'stats_regions': b'cache:stats_regions:3',
+        'stats_regions': b'cache:stats_regions:4',
+        'stats_blue_json': b'cache:stats_blue_json:2',
         'stats_cell_json': b'cache:stats_cell_json:2',
         'stats_wifi_json': b'cache:stats_wifi_json:2',
     }

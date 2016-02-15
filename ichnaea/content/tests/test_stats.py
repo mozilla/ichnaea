@@ -184,9 +184,9 @@ class TestStats(DBTestCase):
 
     def test_regions(self):
         RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
-        RegionStatFactory(region='GB', wifi=1)
+        RegionStatFactory(region='GB', wifi=1, blue=1)
         RegionStatFactory(region='TW', wcdma=1)
-        RegionStatFactory(region='US', gsm=3)
+        RegionStatFactory(region='US', gsm=3, blue=2)
         self.session.flush()
 
         result = regions(self.session)
@@ -208,13 +208,13 @@ class TestStats(DBTestCase):
 
         self.assertEqual(region_results['DE'],
                          {'gsm': 2, 'wcdma': 1, 'lte': 0, 'cell': 3,
-                          'wifi': 4, 'order': 'germany'})
+                          'blue': 0, 'wifi': 4, 'order': 'germany'})
         self.assertEqual(region_results['GB'],
                          {'gsm': 0, 'wcdma': 0, 'lte': 0, 'cell': 0,
-                          'wifi': 1, 'order': 'united kin'})
+                          'blue': 1, 'wifi': 1, 'order': 'united kin'})
         self.assertEqual(region_results['US'],
                          {'gsm': 3, 'wcdma': 0, 'lte': 0, 'cell': 3,
-                          'wifi': 0, 'order': 'united sta'})
+                          'blue': 2, 'wifi': 0, 'order': 'united sta'})
 
 
 class TestTransliterate(TestCase):

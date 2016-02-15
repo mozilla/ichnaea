@@ -48,6 +48,19 @@
 
     <p class="separator"></p>
 
+    <h3>Bluetooth networks</h3>
+
+    <p>
+        Shows data for Mozilla Location Service (MLS) unique logical
+        Bluetooth Low Energy (BLE) networks.
+    </p>
+
+    <div id="blue_chart" class="chart_container">
+        <div class="chart"></div>
+    </div>
+
+    <p class="separator"></p>
+
     <h3>Cell networks</h3>
 
     <p>

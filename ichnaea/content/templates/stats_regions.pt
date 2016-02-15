@@ -16,15 +16,17 @@
         This page shows statistics about regions. For cell networks it
         shows the number of logical cells per radio standard and the
         total number of cells. In addition the number of logical
-        WiFi networks are shown. Logical network numbers are only
-        loosely correlated with physical infrastructure like
-        cell towers or WiFi access points.
+        Bluetooth Low Energy (BLE) and WiFi networks are shown.
+        Logical network numbers are only loosely correlated with
+        physical infrastructure like cell towers, Bluetooth beacons or
+        WiFi access points.
     </p>
     <div class="separator">
     <table id="region-stats" class="table">
         <thead>
             <tr>
                 <th>Region</th>
+                <th class="text-right">BLEs</th>
                 <th class="text-right">GSM</th>
                 <th class="text-right">WCDMA</th>
                 <th class="text-right">LTE</th>
@@ -35,6 +37,7 @@
         <tbody>
             <tr tal:repeat="row metrics">
                 <td data-order="${row.order}">${row.name}</td>
+                <td class="text-right">${row.blue}</td>
                 <td class="text-right">${row.gsm}</td>
                 <td class="text-right">${row.wcdma}</td>
                 <td class="text-right">${row.lte}</td>

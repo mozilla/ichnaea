@@ -169,17 +169,31 @@ class TestFunctionalContent(AppTestCase):
     def test_stats_regions(self):
         self.app.get('/stats/regions', status=200)
 
-    def test_stats_cell_json(self):
-        app = self.app
+    def test_stats_blue_json(self):
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        session = self.session
+        stat = Stat(key=StatKey.unique_blue, time=yesterday, value=2)
+        self.session.add(stat)
+        self.session.commit()
+        result = self.app.get('/stats_blue.json', status=200)
+        self.assertEqual(
+            result.json, {'series': [
+                {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
+                 'title': 'MLS Bluetooth'},
+            ]}
+        )
+        second_result = self.app.get('/stats_blue.json', status=200)
+        self.assertEqual(second_result.json, result.json)
+
+    def test_stats_cell_json(self):
+        today = util.utcnow().date()
+        yesterday = today - timedelta(1)
         stat = Stat(key=StatKey.unique_cell, time=yesterday, value=2)
-        session.add(stat)
+        self.session.add(stat)
         stat = Stat(key=StatKey.unique_cell_ocid, time=yesterday, value=5)
-        session.add(stat)
-        session.commit()
-        result = app.get('/stats_cell.json', status=200)
+        self.session.add(stat)
+        self.session.commit()
+        result = self.app.get('/stats_cell.json', status=200)
         self.assertEqual(
             result.json, {'series': [
                 {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
@@ -188,25 +202,23 @@ class TestFunctionalContent(AppTestCase):
                  'title': 'OCID Cells'},
             ]}
         )
-        second_result = app.get('/stats_cell.json', status=200)
+        second_result = self.app.get('/stats_cell.json', status=200)
         self.assertEqual(second_result.json, result.json)
 
     def test_stats_wifi_json(self):
-        app = self.app
         today = util.utcnow().date()
         yesterday = today - timedelta(1)
-        session = self.session
         stat = Stat(key=StatKey.unique_wifi, time=yesterday, value=2)
-        session.add(stat)
-        session.commit()
-        result = app.get('/stats_wifi.json', status=200)
+        self.session.add(stat)
+        self.session.commit()
+        result = self.app.get('/stats_wifi.json', status=200)
         self.assertEqual(
             result.json, {'series': [
                 {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
                  'title': 'MLS WiFi'},
             ]}
         )
-        second_result = app.get('/stats_wifi.json', status=200)
+        second_result = self.app.get('/stats_wifi.json', status=200)
         self.assertEqual(second_result.json, result.json)
 
 

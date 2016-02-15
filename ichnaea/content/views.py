@@ -278,6 +278,20 @@ class ContentViews(Layout):
         return {'tiles_url': base_url}
 
     @view_config(
+        renderer='json', name='stats_blue.json', http_cache=3600)
+    def stats_blue_json(self):
+        redis_client = self.request.registry.redis_client
+        cache_key = redis_client.cache_keys['stats_blue_json']
+        cached = redis_client.get(cache_key)
+        if cached:
+            data = simplejson.loads(cached)
+        else:
+            session = self.request.db_ro_session
+            data = histogram(session, StatKey.unique_blue)
+            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
+        return {'series': [{'title': 'MLS Bluetooth', 'data': data[0]}]}
+
+    @view_config(
         renderer='json', name='stats_cell.json', http_cache=3600)
     def stats_cell_json(self):
         redis_client = self.request.registry.redis_client
@@ -375,7 +389,6 @@ _robots_response = Response(
 User-agent: *
 Disallow: /downloads
 Disallow: /leaders
-Disallow: /stats/regions
 Disallow: /static/
 Disallow: /v1/
 Disallow: /v2/

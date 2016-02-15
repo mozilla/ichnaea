@@ -87,6 +87,7 @@ function make_graph(url, graph_id) {
 }
 
 $(document).ready(function() {
+    make_graph('/stats_blue.json', '#blue_chart');
     make_graph('/stats_cell.json', '#cell_chart');
     make_graph('/stats_wifi.json', '#wifi_chart');
 });
