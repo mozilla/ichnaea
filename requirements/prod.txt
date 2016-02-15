@@ -6,14 +6,14 @@ billiard==3.3.0.22
 boto==2.39.0
 celery==3.1.20
 certifi==2015.11.20.1
-cffi==1.5.0
+cffi==1.5.2
 Chameleon==2.24
 colander==1.2
 configparser==3.5.0b2
 contextlib2==0.5.1 ; python_version < '3.2'
 cryptography==1.2.2
 datadog==0.10.0
-decorator==4.0.6
+decorator==4.0.9
 enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6
 genc==0.2
