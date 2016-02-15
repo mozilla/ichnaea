@@ -25,7 +25,6 @@ class BaseView(object):
     _cors_headers = None
     cors_max_age = 86400 * 30   #: Cache preflight requests for 30 days.
     cors_origin = '*'  # Allowed CORS origins.
-    http_cache = None  #: HTTP cache configuration.
     methods = ('GET', 'HEAD', 'POST')  # Supported HTTP methods.
     renderer = 'json'  #: The name of the renderer to use.
     route = None  #: The url path for this view, e.g. `/hello`.
@@ -46,7 +45,6 @@ class BaseView(object):
         http_methods = cls.methods
         config.add_view(
             cls,
-            http_cache=cls.http_cache,
             route_name=name,
             renderer=cls.renderer,
             request_method=http_methods,

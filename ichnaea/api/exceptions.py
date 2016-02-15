@@ -151,33 +151,6 @@ class LocationNotFoundV0(LocationNotFound):
         return {'status': 'not_found'}
 
 
-class RegionNotFoundV0(LocationNotFound):
-    """
-    A variant of :exc:`~ichnaea.api.exceptions.LocationNotFound` used
-    in earlier version 0 HTTP region APIs.
-    """
-
-    @classmethod
-    def json_body(cls):
-        """A JSON representation of this response."""
-        return None
-
-
-class RegionNotFoundV0JS(LocationNotFound):
-    """
-    A variant of :exc:`~ichnaea.api.exceptions.LocationNotFound` used
-    in earlier version 0 HTTP region APIs.
-    """
-
-    def __init__(self):
-        super(RegionNotFoundV0JS, self).__init__()
-        self.content_length = 0
-        self.content_type = 'text/javascript; charset=UTF-8'
-        self.text = u''
-
-    empty_body = True  #:
-
-
 class ParseError(BaseAPIClientError):
 
     code = 400  #:

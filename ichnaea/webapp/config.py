@@ -25,7 +25,6 @@ from ichnaea.log import (
     configure_stats,
 )
 from ichnaea.queue import DataQueue
-from ichnaea.webapp import renderers
 from ichnaea.webapp.monitor import configure_monitor
 
 
@@ -119,9 +118,6 @@ def main(app_config, ping_connections=False,
 
     # Add special JSON renderer with nicer float representation
     config.add_renderer('floatjson', floatjson.FloatJSONRenderer())
-
-    # Add text-as-JS renderer.
-    config.add_renderer('js', renderers.JSRenderer())
 
     # freeze skip logging set
     config.registry.skip_logging = frozenset(config.registry.skip_logging)

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove geodude compatibility API again.
+
 - Avoid intermediate Redis task round-trip.
 
 - Queue data for up to 24 hours.
