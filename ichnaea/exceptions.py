@@ -10,3 +10,7 @@ class BaseClientError(Exception):
 
 class BaseServiceError(Exception):
     """Base class for service side errors."""
+
+
+class GZIPDecodeError(BaseClientError):
+    """Exception raised by GZIP decoding."""

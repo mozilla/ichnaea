@@ -2,6 +2,7 @@ from datetime import datetime
 
 from pytz import UTC
 
+from ichnaea.exceptions import GZIPDecodeError
 from ichnaea.tests.base import TestCase
 from ichnaea import util
 
@@ -33,3 +34,7 @@ class TestUtil(TestCase):
     def test_roundtrip_gzip(self):
         data = util.decode_gzip(util.encode_gzip(b'foo'))
         self.assertEqual(data, u'foo')
+
+    def test_decode_gzip_error(self):
+        self.assertRaises(GZIPDecodeError, util.decode_gzip, self.gzip_foo[:1])
+        self.assertRaises(GZIPDecodeError, util.decode_gzip, self.gzip_foo[:5])

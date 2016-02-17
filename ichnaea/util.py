@@ -4,11 +4,15 @@ from datetime import datetime
 import gzip
 from io import BytesIO
 import shutil
+import struct
 import sys
 import tempfile
+import zlib
 
 from pytz import UTC
 import six
+
+from ichnaea.exceptions import GZIPDecodeError
 
 if sys.version_info < (2, 7):  # pragma: no cover
 
@@ -72,14 +76,14 @@ def encode_gzip(data, compresslevel=6, encoding='utf-8'):
 def decode_gzip(data, encoding='utf-8'):
     """Decode the bytes data and return a Unicode string.
 
-    :raises: OSError
+    :raises: :exc:`~ichnaea.exceptions.GZIPDecodeError`
     """
     try:
         with GzipFile(None, mode='rb', fileobj=BytesIO(data)) as gzip_file:
             out = gzip_file.read()
         return out.decode(encoding)
-    except (IOError, OSError) as exc:
-        raise OSError(str(exc))
+    except (IOError, OSError, EOFError, struct.error, zlib.error) as exc:
+        raise GZIPDecodeError(repr(exc))
 
 
 @contextmanager

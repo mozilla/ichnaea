@@ -12,6 +12,7 @@ from ichnaea.api.exceptions import (
     ParseError,
 )
 from ichnaea.api.rate_limit import rate_limit_exceeded
+from ichnaea.exceptions import GZIPDecodeError
 from ichnaea.models.api import ApiKey
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
@@ -135,7 +136,7 @@ class BaseAPIView(BaseView):
             # handle gzip self.request bodies
             try:
                 request_content = util.decode_gzip(self.request.body)
-            except OSError as exc:
+            except GZIPDecodeError as exc:
                 errors.append({'name': None, 'description': repr(exc)})
 
         request_data = {}
