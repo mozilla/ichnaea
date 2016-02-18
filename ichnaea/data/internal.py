@@ -26,6 +26,11 @@ from ichnaea.models.content import encode_datamap_grid
 
 
 class InternalTransform(object):
+    """
+    This maps the geosubmit v2 schema used in view code and external
+    transfers (backup, forward to partners) to the internal submit v1
+    schema used in our own database models.
+    """
 
     # *_id maps a source section id to a target section id
     # *_map maps fields inside the section from source to target id
@@ -94,10 +99,7 @@ class InternalTransform(object):
 
     def _parse_dict(self, item, report, key_map, field_map):
         value = {}
-        if key_map[0] is None:  # pragma: no cover
-            item_source = item
-        else:
-            item_source = item.get(key_map[0])
+        item_source = item.get(key_map[0])
         if item_source:
             value = self._map_dict(item_source, field_map)
         if value:
@@ -155,20 +157,94 @@ class InternalUploader(BaseReportUploader):
 
     def send(self, url, data):
         groups = defaultdict(list)
+        api_keys = set()
+        nicknames = set()
+
         for item in simplejson.loads(data):
             report = self._format_report(item['report'])
             if report:
                 groups[(item['api_key'], item['nickname'])].append(report)
+                api_keys.add(item['api_key'])
+                nicknames.add(item['nickname'])
+
+        scores = {}
+        users = {}
+        for nickname in nicknames:
+            userid = self.process_user(nickname)
+            users[nickname] = userid
+            scores[userid] = {
+                'positions': 0,
+                'new_stations': {
+                    'blue': 0, 'cell': 0, 'wifi': 0
+                },
+            }
+
+        metrics = {}
+        for api_key in api_keys:
+            metrics[api_key] = {
+                'reports': 0,
+                'malformed_reports': 0,
+                'obs_count': {
+                    'blue': {'upload': 0, 'drop': 0},
+                    'cell': {'upload': 0, 'drop': 0},
+                    'wifi': {'upload': 0, 'drop': 0},
+                }
+            }
+
+        all_positions = []
+        all_queued_obs = {
+            'blue': defaultdict(list),
+            'cell': defaultdict(list),
+            'wifi': defaultdict(list),
+        }
 
         for (api_key, nickname), reports in groups.items():
-            if api_key is not None:
-                api_key = self.session.query(ApiKey).get(api_key)
+            userid = users.get(nickname)
 
-            userid = self.process_user(nickname)
-            self.process_reports(reports, api_key=api_key, userid=userid)
+            obs_queue, malformed_reports, obs_count, positions, \
+                new_station_count = self.process_reports(reports, userid)
+
+            all_positions.extend(positions)
+            for datatype, queued_obs in obs_queue.items():
+                for queue_id, values in queued_obs.items():
+                    all_queued_obs[datatype][queue_id].extend(values)
+
+            metrics[api_key]['reports'] += len(reports)
+            metrics[api_key]['malformed_reports'] += malformed_reports
+            for datatype, type_stats in obs_count.items():
+                for reason, value in type_stats.items():
+                    metrics[api_key]['obs_count'][datatype][reason] += value
+
+            if userid is not None:
+                scores[userid]['positions'] += len(positions)
+                for datatype, value in new_station_count.items():
+                    scores[userid]['new_stations'][datatype] += value
+
+        for userid, values in scores.items():
+            self.process_score(
+                userid, values['positions'], values['new_stations'])
+
+        for datatype, queued_obs in all_queued_obs.items():
+            for queue_id, values in queued_obs.items():
+                queue = self.data_queues[queue_id]
+                queue.enqueue(values, pipe=self.pipe)
+
+        if all_positions:
+            self.process_datamap(all_positions)
+
+        for api_key, values in metrics.items():
+            self.emit_stats(
+                values['reports'],
+                values['malformed_reports'],
+                values['obs_count'],
+                api_key=api_key,
+            )
 
     def emit_stats(self, reports, malformed_reports, obs_count, api_key=None):
         api_tag = []
+        if api_key is not None:
+            api_key = self.session.query(ApiKey).get(api_key)
+
         if api_key and api_key.should_log('submit'):
             api_tag = ['key:%s' % api_key.valid_key]
 
@@ -192,131 +268,87 @@ class InternalUploader(BaseReportUploader):
                         count,
                         tags=tags + api_tag)
 
-    def new_stations(self, name, station_keys):
-        if len(station_keys) == 0:
-            return 0
+    def new_stations(self, shard_key, observations):
+        # observations are pre-grouped per shard
+        shard = observations[0].shard_model
+        key_column = getattr(shard, shard_key)
 
-        if name == 'blue':
-            model = BlueShard
-            key_id = 'mac'
-        elif name == 'cell':
-            model = CellShard
-            key_id = 'cellid'
-        elif name == 'wifi':
-            model = WifiShard
-            key_id = 'mac'
+        keys = set([obs.unique_key for obs in observations])
+        query = (self.session.query(key_column)
+                             .filter(key_column.in_(keys)))
+        return len(keys) - query.count()
 
-        # assume all stations are unknown
-        unknown_keys = set(station_keys)
-
-        shards = defaultdict(list)
-        for key in unknown_keys:
-            shards[model.shard_model(key)].append(key)
-
-        for shard, keys in shards.items():
-            key_column = getattr(shard, key_id)
-            query = (self.session.query(key_column)
-                                 .filter(key_column.in_(keys)))
-            unknown_keys -= set([getattr(r, key_id) for r in query.all()])
-
-        return len(unknown_keys)
-
-    def process_reports(self, reports, api_key=None, userid=None):
+    def process_reports(self, reports, userid):
         malformed_reports = 0
         positions = set()
-        observations = {'blue': [], 'cell': [], 'wifi': []}
-        obs_count = {
-            'blue': {'upload': 0, 'drop': 0},
-            'cell': {'upload': 0, 'drop': 0},
-            'wifi': {'upload': 0, 'drop': 0},
-        }
-        new_station_count = {'blue': 0, 'cell': 0, 'wifi': 0}
+        observations = {}
+        obs_count = {}
+        obs_queue = {}
+        new_station_count = {}
+
+        for name in ('blue', 'cell', 'wifi'):
+            observations[name] = []
+            obs_count[name] = {'upload': 0, 'drop': 0}
+            obs_queue[name] = defaultdict(list)
+            new_station_count[name] = 0
 
         for report in reports:
-            blue, cell, wifi, malformed_obs = self.process_report(report)
-            if blue:
-                observations['blue'].extend(blue)
-                obs_count['blue']['upload'] += len(blue)
-            if cell:
-                observations['cell'].extend(cell)
-                obs_count['cell']['upload'] += len(cell)
-            if wifi:
-                observations['wifi'].extend(wifi)
-                obs_count['wifi']['upload'] += len(wifi)
-            if (blue or cell or wifi):
+            obs, malformed_obs = self.process_report(report)
+
+            any_data = False
+            for name in ('blue', 'cell', 'wifi'):
+                if obs.get(name):
+                    observations[name].extend(obs[name])
+                    obs_count[name]['upload'] += len(obs[name])
+                    any_data = True
+                obs_count[name]['drop'] += malformed_obs.get(name, 0)
+
+            if any_data:
                 positions.add((report['lat'], report['lon']))
             else:
                 malformed_reports += 1
-            for name in ('blue', 'cell', 'wifi'):
-                obs_count[name]['drop'] += malformed_obs[name]
 
-        # group by unique station key
-        for name in ('blue', 'cell', 'wifi'):
-            station_keys = set()
-            for obs in observations[name]:
-                if name in ('blue', 'wifi'):
-                    station_keys.add(obs.mac)
-                elif name == 'cell':
-                    station_keys.add(obs.cellid)
-            # determine scores for stations
-            new_station_count[name] += self.new_stations(name, station_keys)
+        for name, shard_model, shard_key, queue_prefix in (
+                ('blue', BlueShard, 'mac', 'update_blue_'),
+                ('cell', CellShard, 'cellid', 'update_cell_'),
+                ('wifi', WifiShard, 'mac', 'update_wifi_')):
 
-        if observations['blue']:
-            sharded_obs = defaultdict(list)
-            for ob in observations['blue']:
-                shard_id = BlueShard.shard_id(ob.mac)
-                sharded_obs[shard_id].append(ob)
-            for shard_id, values in sharded_obs.items():
-                blue_queue = self.data_queues['update_blue_' + shard_id]
-                blue_queue.enqueue(
-                    [value.to_json() for value in values], pipe=self.pipe)
+            if observations[name]:
+                sharded_obs = defaultdict(list)
+                for ob in observations[name]:
+                    shard_id = shard_model.shard_id(getattr(ob, shard_key))
+                    sharded_obs[shard_id].append(ob)
 
-        if observations['cell']:
-            sharded_obs = defaultdict(list)
-            for ob in observations['cell']:
-                shard_id = CellShard.shard_id(ob.cellid)
-                sharded_obs[shard_id].append(ob)
-            for shard_id, values in sharded_obs.items():
-                cell_queue = self.data_queues['update_cell_' + shard_id]
-                cell_queue.enqueue(
-                    [value.to_json() for value in values], pipe=self.pipe)
+                for shard_id, values in sharded_obs.items():
+                    obs_queue[name][queue_prefix + shard_id].extend(
+                        [value.to_json() for value in values])
 
-        if observations['wifi']:
-            sharded_obs = defaultdict(list)
-            for ob in observations['wifi']:
-                shard_id = WifiShard.shard_id(ob.mac)
-                sharded_obs[shard_id].append(ob)
-            for shard_id, values in sharded_obs.items():
-                wifi_queue = self.data_queues['update_wifi_' + shard_id]
-                wifi_queue.enqueue(
-                    [value.to_json() for value in values], pipe=self.pipe)
+                    # determine scores for stations
+                    if userid is not None:
+                        new_station_count[name] += self.new_stations(
+                            shard_key, values)
 
-        self.process_datamap(positions)
-        self.process_score(userid, positions, new_station_count)
-        self.emit_stats(
-            len(reports),
-            malformed_reports,
-            obs_count,
-            api_key=api_key,
-        )
+        return (obs_queue, malformed_reports, obs_count,
+                positions, new_station_count)
 
     def process_report(self, data):
-        malformed = {'blue': 0, 'cell': 0, 'wifi': 0}
-        observations = {'blue': {}, 'cell': {}, 'wifi': {}}
-
         report = Report.create(**data)
         if report is None:
-            return (None, None, None, malformed)
+            return ({}, {})
 
+        malformed = {}
+        observations = {}
         for name, report_cls, obs_cls in (
                 ('blue', BlueReport, BlueObservation),
                 ('cell', CellReport, CellObservation),
                 ('wifi', WifiReport, WifiObservation)):
+
+            malformed[name] = 0
             observations[name] = {}
 
             if data.get(name):
                 for item in data[name]:
-                    # validate the cell/wifi specific fields
+                    # validate the blue/cell/wifi specific fields
                     item_report = report_cls.create(**item)
                     if item_report is None:
                         malformed[name] += 1
@@ -328,23 +360,19 @@ class InternalUploader(BaseReportUploader):
 
                     # if we have better data for the same key, ignore
                     existing = observations[name].get(item_key)
-                    if existing is not None:
-                        if existing.better(item_obs):
-                            continue
+                    if existing is not None and existing.better(item_obs):
+                        continue
 
                     observations[name][item_key] = item_obs
 
-        return (
-            observations['blue'].values(),
-            observations['cell'].values(),
-            observations['wifi'].values(),
-            malformed,
-        )
+        obs = {
+            'blue': observations['blue'].values(),
+            'cell': observations['cell'].values(),
+            'wifi': observations['wifi'].values(),
+        }
+        return (obs, malformed)
 
     def process_datamap(self, positions):
-        if not positions:
-            return
-
         grids = set()
         for lat, lon in positions:
             if lat is not None and lon is not None:
@@ -359,18 +387,16 @@ class InternalUploader(BaseReportUploader):
             queue = self.task.app.data_queues['update_datamap_' + shard_id]
             queue.enqueue(list(values), pipe=self.pipe, json=False)
 
-    def process_score(self, userid, positions, new_station_count):
-        if userid is None or len(positions) <= 0:
+    def process_score(self, userid, pos_count, new_station_count):
+        if userid is None or pos_count <= 0:
             return
 
-        queue = self.task.app.data_queues['update_score']
         scores = []
-
         key = Score.to_hashkey(
             userid=userid,
             key=ScoreKey.location,
             time=None)
-        scores.append({'hashkey': key, 'value': len(positions)})
+        scores.append({'hashkey': key, 'value': pos_count})
 
         for name, score_key in (('cell', ScoreKey.new_cell),
                                 ('wifi', ScoreKey.new_wifi)):
@@ -383,6 +409,7 @@ class InternalUploader(BaseReportUploader):
                 time=None)
             scores.append({'hashkey': key, 'value': count})
 
+        queue = self.task.app.data_queues['update_score']
         queue.enqueue(scores)
 
     def process_user(self, nickname):
