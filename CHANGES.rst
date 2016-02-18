@@ -5,11 +5,8 @@ Changelog
 1.4 (unreleased)
 ================
 
-Untagged
-********
-
-Migrations
-~~~~~~~~~~
+20160218132400
+**************
 
 Changes
 ~~~~~~~
