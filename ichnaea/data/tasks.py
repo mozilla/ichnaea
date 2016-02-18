@@ -12,7 +12,6 @@ from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
 from ichnaea.data import monitor
 from ichnaea.data import ocid
-from ichnaea.data.internal import ReportQueue
 from ichnaea.data.score import ScoreUpdater
 from ichnaea.data import station
 from ichnaea.data import stats
@@ -70,26 +69,6 @@ def update_incoming(self, batch=100):
 def export_reports(self, export_queue_name, queue_key=None):
     export.ReportExporter(
         self, None, export_queue_name, queue_key)(upload_reports)
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_incoming')
-def insert_reports(self, reports=(),
-                   api_key=None, nickname=None):  # pragma: no cover
-    # BBB
-    with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            ReportQueue(self, session, pipe,
-                        api_key=api_key, nickname=nickname)(reports)
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
-def queue_reports(self, reports=(),
-                  api_key=None, ip=None, nickname=None):  # pragma: no cover
-    # BBB
-    with self.redis_pipeline() as pipe:
-        export.ExportQueue(self, None, pipe,
-                           api_key=api_key,
-                           nickname=nickname)(reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')

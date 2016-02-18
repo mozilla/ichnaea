@@ -73,31 +73,6 @@ class IncomingQueue(DataTask):
                 expires=5)
 
 
-class ExportQueue(DataTask):  # pragma: no cover
-    # BBB
-
-    def __init__(self, task, session, pipe, api_key=None, nickname=None):
-        DataTask.__init__(self, task, session)
-        self.pipe = pipe
-        self.api_key = api_key
-        self.nickname = nickname
-        self.export_queues = task.app.export_queues
-
-    def __call__(self, reports):
-        metadata = {
-            'api_key': self.api_key,
-            'nickname': self.nickname,
-        }
-        items = []
-        for report in reports:
-            items.append({'report': report, 'metadata': metadata})
-        if items:
-            for name, queue in self.export_queues.items():
-                if queue.export_allowed(self.api_key):
-                    queue_key = queue.queue_key(self.api_key)
-                    queue.enqueue(items, queue_key, pipe=self.pipe)
-
-
 class ReportExporter(DataTask):
 
     def __init__(self, task, session, export_queue_name, queue_key):

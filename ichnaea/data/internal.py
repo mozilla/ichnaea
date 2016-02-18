@@ -4,7 +4,6 @@ from datetime import datetime
 import pytz
 import simplejson
 
-from ichnaea.data.base import DataTask
 from ichnaea.data.upload import BaseReportUploader
 from ichnaea.models import (
     ApiKey,
@@ -142,6 +141,7 @@ class InternalUploader(BaseReportUploader):
     def __init__(self, task, session, pipe, export_queue_name, queue_key):
         super(InternalUploader, self).__init__(
             task, session, pipe, export_queue_name, queue_key)
+        self.data_queues = self.task.app.data_queues
 
     def _format_report(self, item):
         report = self.transform(item)
@@ -156,44 +156,21 @@ class InternalUploader(BaseReportUploader):
     def send(self, url, data):
         groups = defaultdict(list)
         for item in simplejson.loads(data):
-            if 'metadata' in item:  # pragma: no cover
-                # BBB
-                group = (item['metadata']['api_key'],
-                         item['metadata']['nickname'])
-            else:
-                group = (item['api_key'], item['nickname'])
             report = self._format_report(item['report'])
             if report:
-                groups[group].append(report)
+                groups[(item['api_key'], item['nickname'])].append(report)
 
-        for group, reports in groups.items():
-            queue = ReportQueue(
-                self.task, self.session, self.pipe,
-                api_key=group[0], nickname=group[1])
-            userid = queue.process_user(group[1])
-            queue.process_reports(reports, userid=userid)
+        for (api_key, nickname), reports in groups.items():
+            if api_key is not None:
+                api_key = self.session.query(ApiKey).get(api_key)
 
+            userid = self.process_user(nickname)
+            self.process_reports(reports, api_key=api_key, userid=userid)
 
-class ReportQueue(DataTask):
-    # BBB as a standalone task
-
-    def __init__(self, task, session, pipe, api_key=None, nickname=None):
-        DataTask.__init__(self, task, session)
-        self.pipe = pipe
-        self.api_key = api_key
-        if self.api_key is not None:
-            self.api_key = self.session.query(ApiKey).get(self.api_key)
-        self.nickname = nickname
-        self.data_queues = self.task.app.data_queues
-
-    def __call__(self, reports):  # pragma: no cover
-        userid = self.process_user(self.nickname)
-        self.process_reports(reports, userid=userid)
-
-    def emit_stats(self, reports, malformed_reports, obs_count):
+    def emit_stats(self, reports, malformed_reports, obs_count, api_key=None):
         api_tag = []
-        if self.api_key and self.api_key.should_log('submit'):
-            api_tag = ['key:%s' % self.api_key.valid_key]
+        if api_key and api_key.should_log('submit'):
+            api_tag = ['key:%s' % api_key.valid_key]
 
         if reports > 0:
             self.stats_client.incr(
@@ -244,7 +221,7 @@ class ReportQueue(DataTask):
 
         return len(unknown_keys)
 
-    def process_reports(self, reports, userid=None):
+    def process_reports(self, reports, api_key=None, userid=None):
         malformed_reports = 0
         positions = set()
         observations = {'blue': [], 'cell': [], 'wifi': []}
@@ -320,6 +297,7 @@ class ReportQueue(DataTask):
             len(reports),
             malformed_reports,
             obs_count,
+            api_key=api_key,
         )
 
     def process_report(self, data):

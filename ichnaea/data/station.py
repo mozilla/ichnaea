@@ -261,9 +261,7 @@ class StationUpdater(DataTask):
     def _shard_observations(self, observations):
         sharded_obs = {}
         for obs in observations:
-            if isinstance(obs, dict):
-                # BBB check can be removed
-                obs = self.obs_model.from_json(obs)
+            obs = self.obs_model.from_json(obs)
             if obs is not None:
                 shard = obs.shard_model
                 if shard not in sharded_obs:

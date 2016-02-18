@@ -22,7 +22,6 @@ from ichnaea.models.cell import (
 from ichnaea.models import constants
 from ichnaea.models.base import (
     HashableDict,
-    JSONMixin,
 )
 from ichnaea.models.mac import MacNode
 from ichnaea.models.schema import (
@@ -39,9 +38,8 @@ class BaseReport(HashableDict, CreationMixin, ValidationMixin):
     """A base class for reports."""
 
 
-class BaseObservation(JSONMixin):
+class BaseObservation(object):
     """A base class for observations."""
-    # BBB JSONMixin base class
 
     @classmethod
     def _from_json_value(cls, value):
