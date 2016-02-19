@@ -140,9 +140,9 @@ class InternalUploader(BaseReportUploader):
 
     transform = InternalTransform()
 
-    def __init__(self, task, session, pipe, export_queue_name, queue_key):
+    def __init__(self, task, pipe, export_queue_name, queue_key):
         super(InternalUploader, self).__init__(
-            task, session, pipe, export_queue_name, queue_key)
+            task, pipe, export_queue_name, queue_key)
         self.data_queues = self.task.app.data_queues
 
     def _format_report(self, item):
@@ -156,6 +156,10 @@ class InternalUploader(BaseReportUploader):
         return report
 
     def send(self, url, data):
+        with self.task.db_session() as session:
+            self._send(session, url, data)
+
+    def _send(self, session, url, data):
         groups = defaultdict(list)
         api_keys = set()
         nicknames = set()
@@ -170,7 +174,7 @@ class InternalUploader(BaseReportUploader):
         scores = {}
         users = {}
         for nickname in nicknames:
-            userid = self.process_user(nickname)
+            userid = self.process_user(session, nickname)
             users[nickname] = userid
             scores[userid] = {
                 'positions': 0,
@@ -202,7 +206,8 @@ class InternalUploader(BaseReportUploader):
             userid = users.get(nickname)
 
             obs_queue, malformed_reports, obs_count, positions, \
-                new_station_count = self.process_reports(reports, userid)
+                new_station_count = self.process_reports(
+                    session, reports, userid)
 
             all_positions.extend(positions)
             for datatype, queued_obs in obs_queue.items():
@@ -234,26 +239,28 @@ class InternalUploader(BaseReportUploader):
 
         for api_key, values in metrics.items():
             self.emit_stats(
+                session,
                 values['reports'],
                 values['malformed_reports'],
                 values['obs_count'],
                 api_key=api_key,
             )
 
-    def emit_stats(self, reports, malformed_reports, obs_count, api_key=None):
+    def emit_stats(self, session, reports, malformed_reports, obs_count,
+                   api_key=None):
         api_tag = []
         if api_key is not None:
-            api_key = self.session.query(ApiKey).get(api_key)
+            api_key = session.query(ApiKey).get(api_key)
 
         if api_key and api_key.should_log('submit'):
             api_tag = ['key:%s' % api_key.valid_key]
 
         if reports > 0:
-            self.stats_client.incr(
+            self.task.stats_client.incr(
                 'data.report.upload', reports, tags=api_tag)
 
         if malformed_reports > 0:
-            self.stats_client.incr(
+            self.task.stats_client.incr(
                 'data.report.drop', malformed_reports,
                 tags=['reason:malformed'] + api_tag)
 
@@ -263,22 +270,22 @@ class InternalUploader(BaseReportUploader):
                     tags = ['type:%s' % name]
                     if action == 'drop':
                         tags.append('reason:malformed')
-                    self.stats_client.incr(
+                    self.task.stats_client.incr(
                         'data.observation.%s' % action,
                         count,
                         tags=tags + api_tag)
 
-    def new_stations(self, shard_key, observations):
+    def new_stations(self, session, shard_key, observations):
         # observations are pre-grouped per shard
         shard = observations[0].shard_model
         key_column = getattr(shard, shard_key)
 
         keys = set([obs.unique_key for obs in observations])
-        query = (self.session.query(key_column)
-                             .filter(key_column.in_(keys)))
+        query = (session.query(key_column)
+                        .filter(key_column.in_(keys)))
         return len(keys) - query.count()
 
-    def process_reports(self, reports, userid):
+    def process_reports(self, session, reports, userid):
         malformed_reports = 0
         positions = set()
         observations = {}
@@ -326,7 +333,7 @@ class InternalUploader(BaseReportUploader):
                     # determine scores for stations
                     if userid is not None:
                         new_station_count[name] += self.new_stations(
-                            shard_key, values)
+                            session, shard_key, values)
 
         return (obs_queue, malformed_reports, obs_count,
                 positions, new_station_count)
@@ -412,18 +419,18 @@ class InternalUploader(BaseReportUploader):
         queue = self.task.app.data_queues['update_score']
         queue.enqueue(scores)
 
-    def process_user(self, nickname):
+    def process_user(self, session, nickname):
         userid = None
         if nickname and (2 <= len(nickname) <= 128):
             # automatically create user objects and update nickname
-            rows = self.session.query(User).filter(User.nickname == nickname)
+            rows = session.query(User).filter(User.nickname == nickname)
             old = rows.first()
             if not old:
                 user = User(
                     nickname=nickname,
                 )
-                self.session.add(user)
-                self.session.flush()
+                session.add(user)
+                session.flush()
                 userid = user.id
             else:  # pragma: no cover
                 userid = old.id

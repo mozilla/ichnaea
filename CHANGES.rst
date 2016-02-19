@@ -14,9 +14,11 @@ Migrations
 Changes
 ~~~~~~~
 
-* Retry station updates on deadlocks and lock timeouts.
+- Decrease database session times in data tasks.
 
-* Simplify and speed up InternalUploader.
+- Retry station updates on deadlocks and lock timeouts.
+
+- Simplify and speed up InternalUploader.
 
 20160218132400
 **************

@@ -9,7 +9,6 @@ from pymysql.constants.ER import (
 )
 from sqlalchemy.exc import InternalError as SQLInternalError
 
-from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     centroid_weighted,
     circle_radius,
@@ -33,7 +32,7 @@ from ichnaea.models.constants import (
 from ichnaea import util
 
 
-class StationUpdater(DataTask):
+class StationUpdater(object):
 
     MAX_OLD_WEIGHT = 10000.0
     max_dist_meters = None
@@ -45,8 +44,8 @@ class StationUpdater(DataTask):
     _retries = 3
     _retry_wait = 1.0
 
-    def __init__(self, task, session, pipe, shard_id=None):
-        super(StationUpdater, self).__init__(task, session)
+    def __init__(self, task, pipe, shard_id=None):
+        self.task = task
         self.pipe = pipe
         self.shard_id = shard_id
         self.utcnow = util.utcnow()
@@ -59,7 +58,7 @@ class StationUpdater(DataTask):
             tags = ['type:%s' % self.station_type]
             if reason:
                 tags.append('reason:%s' % reason)
-            self.stats_client.incr(
+            self.task.stats_client.incr(
                 'data.observation.%s' % action,
                 count,
                 tags=tags)
@@ -81,7 +80,7 @@ class StationUpdater(DataTask):
         for reason, count in drop_counter.items():
             self.stat_count('drop', drop_counter[reason], reason=reason)
         if stats_counter['block']:
-            self.stats_client.incr(
+            self.task.stats_client.incr(
                 'data.station.blocklist',
                 stats_counter['block'],
                 tags=['type:%s' % self.station_type,

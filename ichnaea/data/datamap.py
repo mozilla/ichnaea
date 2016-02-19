@@ -1,6 +1,5 @@
 from sqlalchemy.orm import load_only
 
-from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
     DataMap,
     encode_datamap_grid,
@@ -8,26 +7,21 @@ from ichnaea.models.content import (
 from ichnaea import util
 
 
-class DataMapUpdater(DataTask):
+class DataMapUpdater(object):
 
-    def __init__(self, task, session, pipe, shard_id=None):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task, pipe, shard_id=None):
+        self.task = task
         self.pipe = pipe
         self.shard_id = shard_id
         self.shard = DataMap.shards().get(shard_id)
 
-    def __call__(self, batch=1000):
-        queue = self.task.app.data_queues['update_datamap_' + self.shard_id]
+    def _update_shards(self, session, grids):
         today = util.utcnow().date()
-        grids = queue.dequeue(batch=batch, json=False)
-        grids = list(set(grids))
-        if not grids or not self.shard:
-            return 0
 
         load_fields = ('grid', 'modified')
-        rows = (self.session.query(self.shard)
-                            .filter(self.shard.grid.in_(grids))
-                            .options(load_only(*load_fields))).all()
+        rows = (session.query(self.shard)
+                       .filter(self.shard.grid.in_(grids))
+                       .options(load_only(*load_fields))).all()
 
         outdated = set()
         skip = set()
@@ -55,11 +49,21 @@ class DataMapUpdater(DataTask):
             stmt = self.shard.__table__.insert(
                 mysql_on_duplicate='modified = modified'  # no-op
             )
-            self.session.execute(stmt.values(new_values))
+            session.execute(stmt.values(new_values))
 
         if update_values:
             # do a batch update of grids
-            self.session.bulk_update_mappings(self.shard, update_values)
+            session.bulk_update_mappings(self.shard, update_values)
+
+    def __call__(self, batch=1000):
+        queue = self.task.app.data_queues['update_datamap_' + self.shard_id]
+        grids = queue.dequeue(batch=batch, json=False)
+        grids = list(set(grids))
+        if not grids or not self.shard:
+            return 0
+
+        with self.task.db_session() as session:
+            self._update_shards(session, grids)
 
         if queue.enough_data(batch=batch):
             self.task.apply_async(

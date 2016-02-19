@@ -5,14 +5,13 @@ import boto
 import requests
 from six.moves.urllib.parse import urlparse
 
-from ichnaea.data.base import DataTask
 from ichnaea import util
 
 
-class BaseReportUploader(DataTask):
+class BaseReportUploader(object):
 
-    def __init__(self, task, session, pipe, export_queue_name, queue_key):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task, pipe, export_queue_name, queue_key):
+        self.task = task
         self.pipe = pipe
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
@@ -25,7 +24,7 @@ class BaseReportUploader(DataTask):
 
     def __call__(self, data):
         self.send(self.url, data)
-        self.stats_client.incr(
+        self.task.stats_client.incr(
             self.stats_prefix + 'batch', tags=self.stats_tags)
 
     def send(self, url, data):
@@ -40,8 +39,8 @@ class GeosubmitUploader(BaseReportUploader):
             'Content-Type': 'application/json',
             'User-Agent': 'ichnaea',
         }
-        with self.stats_client.timed(self.stats_prefix + 'upload',
-                                     tags=self.stats_tags):
+        with self.task.stats_client.timed(self.stats_prefix + 'upload',
+                                          tags=self.stats_tags):
             response = requests.post(
                 url,
                 data=util.encode_gzip(data, compresslevel=5),
@@ -51,7 +50,7 @@ class GeosubmitUploader(BaseReportUploader):
 
         # log upload_status and trigger exception for bad responses
         # this causes the task to be re-tried
-        self.stats_client.incr(
+        self.task.stats_client.incr(
             self.stats_prefix + 'upload',
             tags=self.stats_tags + ['status:%s' % response.status_code])
         response.raise_for_status()
@@ -59,9 +58,9 @@ class GeosubmitUploader(BaseReportUploader):
 
 class S3Uploader(BaseReportUploader):
 
-    def __init__(self, task, session, pipe, export_queue_name, queue_key):
+    def __init__(self, task, pipe, export_queue_name, queue_key):
         super(S3Uploader, self).__init__(
-            task, session, pipe, export_queue_name, queue_key)
+            task, pipe, export_queue_name, queue_key)
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         _, self.bucket, path = urlparse(self.url)[:3]
@@ -84,8 +83,8 @@ class S3Uploader(BaseReportUploader):
         key_name += uuid.uuid1().hex + '.json.gz'
 
         try:
-            with self.stats_client.timed(self.stats_prefix + 'upload',
-                                         tags=self.stats_tags):
+            with self.task.stats_client.timed(self.stats_prefix + 'upload',
+                                              tags=self.stats_tags):
                 conn = boto.connect_s3()
                 bucket = conn.get_bucket(self.bucket)
                 with closing(boto.s3.key.Key(bucket)) as key:
@@ -95,11 +94,11 @@ class S3Uploader(BaseReportUploader):
                     key.set_contents_from_string(
                         util.encode_gzip(data, compresslevel=7))
 
-            self.stats_client.incr(
+            self.task.stats_client.incr(
                 self.stats_prefix + 'upload',
                 tags=self.stats_tags + ['status:success'])
         except Exception:  # pragma: no cover
-            self.raven_client.captureException()
-            self.stats_client.incr(
+            self.task.stats_client.incr(
                 self.stats_prefix + 'upload',
                 tags=self.stats_tags + ['status:failure'])
+            raise

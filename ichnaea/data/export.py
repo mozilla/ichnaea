@@ -2,13 +2,12 @@ from collections import defaultdict
 
 import simplejson
 
-from ichnaea.data.base import DataTask
 
+class ExportScheduler(object):
 
-class ExportScheduler(DataTask):
-
-    def __init__(self, task, session):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task):
+        self.task = task
+        self.redis_client = task.redis_client
         self.export_queues = task.app.export_queues
 
     def __call__(self, export_task):
@@ -39,10 +38,10 @@ class ExportScheduler(DataTask):
         return triggered
 
 
-class IncomingQueue(DataTask):
+class IncomingQueue(object):
 
-    def __init__(self, task, session, pipe):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task, pipe):
+        self.task = task
         self.pipe = pipe
         self.data_queue = task.app.data_queues['update_incoming']
         self.export_queues = task.app.export_queues
@@ -73,10 +72,10 @@ class IncomingQueue(DataTask):
                 expires=5)
 
 
-class ReportExporter(DataTask):
+class ReportExporter(object):
 
-    def __init__(self, task, session, export_queue_name, queue_key):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task, export_queue_name, queue_key):
+        self.task = task
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         self.batch = self.export_queue.batch

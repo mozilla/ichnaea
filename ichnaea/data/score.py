@@ -2,31 +2,23 @@ from collections import defaultdict
 
 from sqlalchemy.orm import load_only
 
-from ichnaea.data.base import DataTask
 from ichnaea.models.content import (
     Score,
 )
 from ichnaea import util
 
 
-class ScoreUpdater(DataTask):
+class ScoreUpdater(object):
 
-    def __init__(self, task, session, pipe):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task, pipe):
+        self.task = task
         self.pipe = pipe
         self.queue = self.task.app.data_queues['update_score']
         self.today = util.utcnow().date()
 
-    def __call__(self, batch=1000):
-        score_values = defaultdict(int)
-        for score in self.queue.dequeue(batch=batch):
-            key = score['hashkey']
-            if key.time is None:
-                key.time = self.today
-            score_values[key] += score['value']
-
+    def _update_scores(self, session, score_values):
         score_iter = Score.iterkeys(
-            self.session, list(score_values.keys()),
+            session, list(score_values.keys()),
             extra=lambda query: query.options(load_only('value', )))
 
         scores = {}
@@ -42,7 +34,20 @@ class ScoreUpdater(DataTask):
                 stmt = Score.__table__.insert(
                     mysql_on_duplicate='value = value + %s' % value
                 ).values(value=value, **key.__dict__)
-                self.session.execute(stmt)
+                session.execute(stmt)
+
+        return len(scores)
+
+    def __call__(self, batch=1000):
+        score_values = defaultdict(int)
+        for score in self.queue.dequeue(batch=batch):
+            key = score['hashkey']
+            if key.time is None:
+                key.time = self.today
+            score_values[key] += score['value']
+
+        with self.task.db_session() as session:
+            length = self._update_scores(session, score_values)
 
         if self.queue.enough_data(batch=batch):
             self.task.apply_async(
@@ -50,4 +55,4 @@ class ScoreUpdater(DataTask):
                 countdown=2,
                 expires=10)
 
-        return len(scores)
+        return length

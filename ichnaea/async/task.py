@@ -94,7 +94,7 @@ class BaseTask(Task):
         return self.app.geoip_db
 
     @property
-    def raven_client(self):
+    def raven_client(self):  # pragma: no cover
         """Exposes a :class:`~raven.Client`."""
         return self.app.raven_client
 

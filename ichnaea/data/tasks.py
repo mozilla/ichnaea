@@ -34,8 +34,7 @@ def cell_import_external(self, diff=True):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_api_key_limits(self):
-    with self.db_session(commit=False) as session:
-        return monitor.ApiKeyLimits(self, session)()
+    return monitor.ApiKeyLimits(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
@@ -45,8 +44,7 @@ def monitor_api_users(self):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
-    with self.db_session(commit=False) as session:
-        return monitor.OcidImport(self, session)()
+    return monitor.OcidImport(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
@@ -56,19 +54,19 @@ def monitor_queue_size(self):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def schedule_export_reports(self):
-    return export.ExportScheduler(self, None)(export_reports)
+    return export.ExportScheduler(self)(export_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
 def update_incoming(self, batch=100):
     with self.redis_pipeline() as pipe:
-        export.IncomingQueue(self, None, pipe)(batch=batch)
+        export.IncomingQueue(self, pipe)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def export_reports(self, export_queue_name, queue_key=None):
     export.ReportExporter(
-        self, None, export_queue_name, queue_key)(upload_reports)
+        self, export_queue_name, queue_key)(upload_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
@@ -77,66 +75,55 @@ def upload_reports(self, export_queue_name, data, queue_key=None):
     uploader_type = export_queue.uploader_type
     if uploader_type is not None:
         with self.redis_pipeline() as pipe:
-            with self.db_session() as session:
-                uploader_type(self, session, pipe,
-                              export_queue_name, queue_key)(data)
+            uploader_type(self, pipe, export_queue_name, queue_key)(data)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue')
 def update_blue(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:
-        station.BlueUpdater(
-            self, None, pipe, shard_id=shard_id)(batch=batch)
+        station.BlueUpdater(self, pipe, shard_id=shard_id)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def update_cell(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:
-        station.CellUpdater(
-            self, None, pipe, shard_id=shard_id)(batch=batch)
+        station.CellUpdater(self, pipe, shard_id=shard_id)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi')
 def update_wifi(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:
-        station.WifiUpdater(
-            self, None, pipe, shard_id=shard_id)(batch=batch)
+        station.WifiUpdater(self, pipe, shard_id=shard_id)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell')
 def update_cellarea(self, batch=100):
-    with self.db_session() as session:
-        area.CellAreaUpdater(self, session)(batch=batch)
+    area.CellAreaUpdater(self)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid')
 def update_cellarea_ocid(self, batch=100):
-    with self.db_session() as session:
-        area.CellAreaOCIDUpdater(self, session)(batch=batch)
+    area.CellAreaOCIDUpdater(self)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content')
 def update_datamap(self, batch=1000, shard_id=None):
     with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            DataMapUpdater(self, session, pipe, shard_id=shard_id)(batch=batch)
+        DataMapUpdater(self, pipe, shard_id=shard_id)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content')
 def update_score(self, batch=1000):
     with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            ScoreUpdater(self, session, pipe)(batch=batch)
+        ScoreUpdater(self, pipe)(batch=batch)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content')
 def update_statregion(self):
-    with self.db_session() as session:
-        stats.StatRegion(self, session)()
+    stats.StatRegion(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content')
 def update_statcounter(self, ago=1):
     with self.redis_pipeline() as pipe:
-        with self.db_session() as session:
-            stats.StatCounterUpdater(self, session, pipe)(ago=ago)
+        stats.StatCounterUpdater(self, pipe)(ago=ago)

@@ -311,10 +311,9 @@ class ImportExternal(ImportBase):
 
 class ImportLocal(ImportBase):
 
-    def __init__(self, task, session, pipe, cell_type='ocid'):
+    def __init__(self, task, pipe, cell_type='ocid'):
         super(ImportLocal, self).__init__(task, cell_type=cell_type)
-        self.session = session
         self.pipe = pipe
 
-    def __call__(self, filename=None):
-        self.import_stations(self.session, self.pipe, filename)
+    def __call__(self, session, filename=None):
+        self.import_stations(session, self.pipe, filename)

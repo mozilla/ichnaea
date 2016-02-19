@@ -9,9 +9,8 @@ from ichnaea import util
 
 class ApiKeyLimits(object):
 
-    def __init__(self, task, session):
+    def __init__(self, task):
         self.task = task
-        self.session = session
         self.redis_client = task.redis_client
         self.stats_client = task.stats_client
 
@@ -74,16 +73,19 @@ class ApiUsers(object):
 
 class OcidImport(object):
 
-    def __init__(self, task, session):
+    def __init__(self, task):
         self.task = task
-        self.session = session
         self.stats_client = task.stats_client
 
     def __call__(self):
-        result = -1
+        max_created = None
         now = util.utcnow()
-        query = self.session.query(func.max(CellOCID.created))
-        max_created = query.first()[0]
+        result = -1
+
+        with self.task.db_session(commit=False) as session:
+            query = session.query(func.max(CellOCID.created))
+            max_created = query.first()[0]
+
         if max_created:
             # diff between now and the value, in milliseconds
             diff = now - max_created

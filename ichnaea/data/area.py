@@ -3,7 +3,6 @@ from collections import defaultdict
 import numpy
 from sqlalchemy.orm import load_only
 
-from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
     centroid,
     circle_radius,
@@ -19,21 +18,23 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-class CellAreaUpdater(DataTask):
+class CellAreaUpdater(object):
 
     area_model = CellArea
     cell_model = CellShard
     queue_name = 'update_cellarea'
 
-    def __init__(self, task, session):
-        DataTask.__init__(self, task, session)
+    def __init__(self, task):
+        self.task = task
         self.queue = self.task.app.data_queues[self.queue_name]
         self.utcnow = util.utcnow()
 
     def __call__(self, batch=100):
         areaids = self.queue.dequeue(batch=batch, json=False)
-        for areaid in set(areaids):
-            self.update_area(areaid)
+
+        with self.task.db_session() as session:
+            for areaid in set(areaids):
+                self.update_area(session, areaid)
 
         if self.queue.enough_data(batch=batch):  # pragma: no cover
             self.task.apply_async(
@@ -68,24 +69,24 @@ class CellAreaUpdater(DataTask):
 
         return region
 
-    def update_area(self, areaid):
+    def update_area(self, session, areaid):
         # Select all cells in this area and derive a bounding box for them
         radio, mcc, mnc, lac = decode_cellarea(areaid)
         load_fields = ('lat', 'lon', 'radius', 'region', 'last_seen',
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
         shard = self.cell_model.shard_model(radio)
-        cells = (self.session.query(shard)
-                             .options(load_only(*load_fields))
-                             .filter(shard.radio == radio)
-                             .filter(shard.mcc == mcc)
-                             .filter(shard.mnc == mnc)
-                             .filter(shard.lac == lac)
-                             .filter(shard.lat.isnot(None))
-                             .filter(shard.lon.isnot(None))).all()
+        cells = (session.query(shard)
+                        .options(load_only(*load_fields))
+                        .filter(shard.radio == radio)
+                        .filter(shard.mcc == mcc)
+                        .filter(shard.mnc == mnc)
+                        .filter(shard.lac == lac)
+                        .filter(shard.lat.isnot(None))
+                        .filter(shard.lon.isnot(None))).all()
 
-        area_query = (self.session.query(self.area_model)
-                                  .filter(self.area_model.areaid == areaid))
+        area_query = (session.query(self.area_model)
+                             .filter(self.area_model.areaid == areaid))
 
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
@@ -145,7 +146,7 @@ class CellAreaUpdater(DataTask):
                     num_cells=num_cells,
                     last_seen=last_seen,
                 )
-                self.session.execute(stmt)
+                session.execute(stmt)
             else:
                 area.modified = self.utcnow
                 area.lat = ctr_lat
