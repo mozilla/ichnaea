@@ -1,10 +1,14 @@
 from collections import defaultdict
 from datetime import timedelta
 
+import mock
+from sqlalchemy import text
+
 from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
 )
+from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import (
     update_blue,
     update_cell,
@@ -38,10 +42,7 @@ class StationTest(CeleryTestCase):
         stat_counter = StatCounter(stat_key, util.utcnow())
         self.assertEqual(stat_counter.get(self.redis_client), value)
 
-
-class TestBlue(StationTest):
-
-    def _queue_and_update(self, obs):
+    def _queue_and_update_blue(self, obs):
         sharded_obs = defaultdict(list)
         for ob in obs:
             sharded_obs[BlueShard.shard_id(ob.mac)].append(ob)
@@ -51,10 +52,88 @@ class TestBlue(StationTest):
             queue.enqueue([value.to_json() for value in values])
             update_blue.delay(shard_id=shard_id).get()
 
+    def _queue_and_update_cell(self, obs):
+        sharded_obs = defaultdict(list)
+        for ob in obs:
+            sharded_obs[CellShard.shard_id(ob.cellid)].append(ob)
+
+        for shard_id, values in sharded_obs.items():
+            queue = self.celery_app.data_queues['update_cell_' + shard_id]
+            queue.enqueue([value.to_json() for value in values])
+            update_cell.delay(shard_id=shard_id).get()
+
+    def _queue_and_update_wifi(self, obs):
+        sharded_obs = defaultdict(list)
+        for ob in obs:
+            sharded_obs[WifiShard.shard_id(ob.mac)].append(ob)
+
+        for shard_id, values in sharded_obs.items():
+            queue = self.celery_app.data_queues['update_wifi_' + shard_id]
+            queue.enqueue([value.to_json() for value in values])
+            update_wifi.delay(shard_id=shard_id).get()
+
+
+class TestDatabaseErrors(StationTest):
+    # this is a standalone class to ensure DB isolation
+
+    def tearDown(self):
+        for model in CellShard.shards().values():
+            self.session.execute(text('drop table %s;' % model.__tablename__))
+
+        self.setup_tables(self.db_rw.engine)
+        super(TestDatabaseErrors, self).tearDown()
+
+    def test_lock_timeout(self):
+        obs = CellObservationFactory.build()
+        cell = CellShardFactory.build(
+            radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
+            lac=obs.lac, cid=obs.cid,
+            samples=10,
+        )
+        self.db_ro_session.add(cell)
+        self.db_ro_session.flush()
+
+        orig_add_area = CellUpdater.add_area_update
+        orig_wait = CellUpdater._retry_wait
+        num = [0]
+
+        def mock_area(self, updated_areas, key,
+                      num=num, ro_session=self.db_ro_session):
+            orig_add_area(self, updated_areas, key)
+            num[0] += 1
+            if num[0] == 2:
+                ro_session.rollback()
+
+        try:
+            CellUpdater._retry_wait = 0.001
+            self.session.execute('set session innodb_lock_wait_timeout = 1')
+            with mock.patch.object(CellUpdater, 'add_area_update', mock_area):
+                self._queue_and_update_cell([obs])
+        finally:
+            CellUpdater._retry_wait = orig_wait
+
+        # the inner task logic was called exactly twice
+        self.assertEqual(num[0], 2)
+
+        shard = CellShard.shard_model(obs.cellid)
+        cells = self.session.query(shard).all()
+        self.assertEqual(len(cells), 1)
+        self.assertEqual(cells[0].samples, 1)
+
+        self.check_statcounter(StatKey.cell, 1)
+        self.check_statcounter(StatKey.unique_cell, 1)
+        self.check_stats(
+            counter=[('data.observation.insert', 1, ['type:cell'])],
+            timer=[('task', 1, ['task:data.update_cell'])],
+        )
+
+
+class TestBlue(StationTest):
+
     def test_new(self):
         utcnow = util.utcnow()
         obs = BlueObservationFactory.build()
-        self._queue_and_update([obs])
+        self._queue_and_update_blue([obs])
 
         shard = BlueShard.shard_model(obs.mac)
         blues = self.session.query(shard).all()
@@ -79,16 +158,6 @@ class TestBlue(StationTest):
 
 class TestCell(StationTest):
 
-    def _queue_and_update(self, obs):
-        sharded_obs = defaultdict(list)
-        for ob in obs:
-            sharded_obs[CellShard.shard_id(ob.cellid)].append(ob)
-
-        for shard_id, values in sharded_obs.items():
-            queue = self.celery_app.data_queues['update_cell_' + shard_id]
-            queue.enqueue([value.to_json() for value in values])
-            update_cell.delay(shard_id=shard_id).get()
-
     def test_blocklist(self):
         now = util.utcnow()
         today = now.date()
@@ -103,7 +172,7 @@ class TestCell(StationTest):
             block_count=1,
         )
         self.session.commit()
-        self._queue_and_update(observations)
+        self._queue_and_update_cell(observations)
 
         blocks = []
         for obs in observations:
@@ -196,7 +265,7 @@ class TestCell(StationTest):
         ])
         moving.add(cell.cellid)
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_cell(obs)
 
         shards = set()
         for cellid in moving:
@@ -242,7 +311,7 @@ class TestCell(StationTest):
             obs_factory(lat=lat3 + 0.5, lon=lon3 + 0.5, **key3)
 
         self.session.commit()
-        self._queue_and_update(observations)
+        self._queue_and_update_cell(observations)
 
         shard = CellShard.shard_model(cell1.cellid)
         found = (self.session.query(shard)
@@ -282,7 +351,7 @@ class TestCell(StationTest):
         ]
 
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_cell(obs)
 
         shard = CellShard.shard_model(cell.cellid)
         cells = self.session.query(shard).all()
@@ -314,7 +383,7 @@ class TestCell(StationTest):
         ]
 
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_cell(obs)
         shard = CellShard.shard_model(cell.cellid)
         cells = self.session.query(shard).all()
         self.assertEqual(len(cells), 1)
@@ -332,20 +401,10 @@ class TestCell(StationTest):
 
 class TestWifi(StationTest):
 
-    def _queue_and_update(self, obs):
-        sharded_obs = defaultdict(list)
-        for ob in obs:
-            sharded_obs[WifiShard.shard_id(ob.mac)].append(ob)
-
-        for shard_id, values in sharded_obs.items():
-            queue = self.celery_app.data_queues['update_wifi_' + shard_id]
-            queue.enqueue([value.to_json() for value in values])
-            update_wifi.delay(shard_id=shard_id).get()
-
     def test_new(self):
         utcnow = util.utcnow()
         obs = WifiObservationFactory.build()
-        self._queue_and_update([obs])
+        self._queue_and_update_wifi([obs])
 
         shard = WifiShard.shard_model(obs.mac)
         wifis = self.session.query(shard).all()
@@ -399,7 +458,7 @@ class TestWifi(StationTest):
                         lon=lon2 + 0.004, key=mac2),
         ])
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_wifi(obs)
 
         shard = WifiShard.shard_model(mac1)
         found = self.session.query(shard).filter(shard.mac == mac1).one()
@@ -444,7 +503,7 @@ class TestWifi(StationTest):
             block_count=1)
         obs = [good_wifi, bad_wifi, good_wifi]
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_wifi(obs)
 
         shard = WifiShard.shard_model(good_wifi.mac)
         wifis = (self.session.query(shard)
@@ -484,7 +543,7 @@ class TestWifi(StationTest):
             block_count=1)
         self.session.commit()
         # add a new entry for the previously blocked wifi
-        self._queue_and_update([obs])
+        self._queue_and_update_wifi([obs])
 
         # the wifi was inserted again
         shard = WifiShard.shard_model(obs.mac)
@@ -598,7 +657,7 @@ class TestWifi(StationTest):
         ])
         moving.add(wifi.mac)
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_wifi(obs)
 
         shards = set()
         for mac in moving:
@@ -622,7 +681,7 @@ class TestWifi(StationTest):
             5, key=wifi2.mac, lat=wifi2.lat, lon=wifi2.lon + 0.05,
         ))
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_wifi(obs)
 
         # position is really not in FR anymore, but still close enough
         # to not re-trigger region determination
@@ -648,7 +707,7 @@ class TestWifi(StationTest):
         ]
 
         self.session.commit()
-        self._queue_and_update(obs)
+        self._queue_and_update_wifi(obs)
         shard = WifiShard.shard_model(wifi.mac)
         wifis = self.session.query(shard).all()
         self.assertEqual(len(wifis), 1)

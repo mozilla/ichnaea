@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+* Retry station updates on deadlocks and lock timeouts.
+
 * Simplify and speed up InternalUploader.
 
 20160218132400

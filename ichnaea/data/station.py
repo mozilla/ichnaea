@@ -1,6 +1,13 @@
 from collections import defaultdict
+import time
 
 import numpy
+from pymysql.err import InternalError as PyMysqlInternalError
+from pymysql.constants.ER import (
+    LOCK_WAIT_TIMEOUT,
+    LOCK_DEADLOCK,
+)
+from sqlalchemy.exc import InternalError as SQLInternalError
 
 from ichnaea.data.base import DataTask
 from ichnaea.geocalc import (
@@ -34,12 +41,14 @@ class StationUpdater(DataTask):
     station_type = None
     stat_obs_key = None
     stat_station_key = None
+    _retriable = (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
+    _retries = 3
+    _retry_wait = 1.0
 
     def __init__(self, task, session, pipe, shard_id=None):
         super(StationUpdater, self).__init__(task, session)
         self.pipe = pipe
         self.shard_id = shard_id
-        self.updated_areas = set()
         self.utcnow = util.utcnow()
         self.today = self.utcnow.date()
         self.data_queues = self.task.app.data_queues
@@ -55,10 +64,10 @@ class StationUpdater(DataTask):
                 count,
                 tags=tags)
 
-    def add_area_update(self, key):
+    def add_area_update(self, updated_areas, key):
         pass
 
-    def queue_area_updates(self):  # pragma: no cover
+    def queue_area_updates(self, updated_areas):  # pragma: no cover
         pass
 
     def emit_stats(self, stats_counter, drop_counter):
@@ -269,15 +278,15 @@ class StationUpdater(DataTask):
                 sharded_obs[shard][obs.unique_key].append(obs)
         return sharded_obs
 
-    def _query_shard(self, shard, keys):
+    def _query_shard(self, session, shard, keys):
         raise NotImplementedError()
 
-    def _query_stations(self, shard, shard_values):
+    def _query_stations(self, session, shard, shard_values):
         blocklist = {}
         stations = {}
 
         keys = list(shard_values.keys())
-        rows = self._query_shard(shard, keys)
+        rows = self._query_shard(session, shard, keys)
         for row in rows:
             unique_key = row.unique_key
             stations[unique_key] = row
@@ -285,10 +294,12 @@ class StationUpdater(DataTask):
 
         return (blocklist, stations)
 
-    def _update_shard(self, shard, shard_values,
+    def _update_shard(self, session, shard, shard_values,
                       drop_counter, stats_counter):
+        updated_areas = set()
         new_data = defaultdict(list)
-        blocklist, stations = self._query_stations(shard, shard_values)
+        blocklist, stations = self._query_stations(
+            session, shard, shard_values)
 
         for station_key, observations in shard_values.items():
             if blocklist.get(station_key, False):
@@ -311,26 +322,40 @@ class StationUpdater(DataTask):
                 stats_counter['obs'] += len(observations)
 
             # track potential updates to dependent areas
-            self.add_area_update(station_key)
+            self.add_area_update(updated_areas, station_key)
 
         if new_data['new']:
             # do a batch insert of new stations
             stmt = shard.__table__.insert(
                 mysql_on_duplicate='samples = samples'  # no-op
             )
-            self.session.execute(stmt.values(new_data['new']))
+            session.execute(stmt.values(new_data['new']))
 
         if new_data['new_moving']:
             # do a batch insert of new moving stations
             stmt = shard.__table__.insert(
                 mysql_on_duplicate='block_count = block_count'  # no-op
             )
-            self.session.execute(stmt.values(new_data['new_moving']))
+            session.execute(stmt.values(new_data['new_moving']))
 
         if new_data['moving'] or new_data['changed']:
             # do a batch update of changing and moving stations
-            self.session.bulk_update_mappings(
+            session.bulk_update_mappings(
                 shard, new_data['changed'] + new_data['moving'])
+
+        return updated_areas
+
+    def _update_shards(self, session, sharded_obs):
+        drop_counter = defaultdict(int)
+        stats_counter = defaultdict(int)
+        updated_areas = set()
+
+        for shard, shard_values in sharded_obs.items():
+            updated_areas.update(self._update_shard(
+                session, shard, shard_values,
+                drop_counter, stats_counter))
+
+        return (updated_areas, drop_counter, stats_counter)
 
     def __call__(self, batch=10):
         sharded_obs = self._shard_observations(
@@ -338,23 +363,35 @@ class StationUpdater(DataTask):
         if not sharded_obs:
             return
 
-        drop_counter = defaultdict(int)
-        stats_counter = defaultdict(int)
+        success = False
+        for i in range(self._retries):
+            try:
+                with self.task.db_session() as session:
+                    updated_areas, drop_counter, stats_counter = \
+                        self._update_shards(session, sharded_obs)
+                success = True
+            except SQLInternalError as exc:
+                if (isinstance(exc.orig, PyMysqlInternalError) and
+                        exc.orig.args[0] in self._retriable):
+                    success = False
+                    time.sleep(self._retry_wait * (i ** 2 + 1))
+                else:  # pragma: no cover
+                    raise
 
-        for shard, shard_values in sharded_obs.items():
-            self._update_shard(shard, shard_values,
-                               drop_counter, stats_counter)
+            if success:
+                break
 
-        if self.updated_areas:
-            self.queue_area_updates()
+        if success:
+            if updated_areas:
+                self.queue_area_updates(updated_areas)
 
-        self.emit_stats(stats_counter, drop_counter)
+            self.emit_stats(stats_counter, drop_counter)
 
-        if self.data_queue.enough_data(batch=batch):  # pragma: no cover
-            self.task.apply_async(
-                kwargs={'batch': batch, 'shard_id': self.shard_id},
-                countdown=5,
-                expires=10)
+            if self.data_queue.enough_data(batch=batch):  # pragma: no cover
+                self.task.apply_async(
+                    kwargs={'batch': batch, 'shard_id': self.shard_id},
+                    countdown=5,
+                    expires=10)
 
 
 class BlueUpdater(StationUpdater):
@@ -372,9 +409,9 @@ class BlueUpdater(StationUpdater):
             'modified': self.utcnow,
         }
 
-    def _query_shard(self, shard, keys):
-        return (self.session.query(shard)
-                            .filter(shard.mac.in_(keys))).all()
+    def _query_shard(self, session, shard, keys):
+        return (session.query(shard)
+                       .filter(shard.mac.in_(keys))).all()
 
 
 class CellUpdater(StationUpdater):
@@ -386,12 +423,12 @@ class CellUpdater(StationUpdater):
     stat_obs_key = StatKey.cell
     stat_station_key = StatKey.unique_cell
 
-    def add_area_update(self, key):
-        self.updated_areas.add(encode_cellarea(*decode_cellid(key)[:4]))
+    def add_area_update(self, updated_areas, key):
+        updated_areas.add(encode_cellarea(*decode_cellid(key)[:4]))
 
-    def queue_area_updates(self):
+    def queue_area_updates(self, updated_areas):
         data_queue = self.data_queues['update_cellarea']
-        data_queue.enqueue(list(self.updated_areas),
+        data_queue.enqueue(list(updated_areas),
                            pipe=self.pipe, json=False)
 
     def _base_station_values(self, station_key, observations):
@@ -409,9 +446,9 @@ class CellUpdater(StationUpdater):
             'modified': self.utcnow,
         }
 
-    def _query_shard(self, shard, keys):
-        return (self.session.query(shard)
-                            .filter(shard.cellid.in_(keys))).all()
+    def _query_shard(self, session, shard, keys):
+        return (session.query(shard)
+                       .filter(shard.cellid.in_(keys))).all()
 
 
 class WifiUpdater(StationUpdater):
@@ -429,6 +466,6 @@ class WifiUpdater(StationUpdater):
             'modified': self.utcnow,
         }
 
-    def _query_shard(self, shard, keys):
-        return (self.session.query(shard)
-                            .filter(shard.mac.in_(keys))).all()
+    def _query_shard(self, session, shard, keys):
+        return (session.query(shard)
+                       .filter(shard.mac.in_(keys))).all()
