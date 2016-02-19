@@ -41,7 +41,7 @@ class ReportV1Schema(PositionSchema, ReportSchema):
 
     def deserialize(self, data):
         data = super(ReportV1Schema, self).deserialize(data)
-        if data in (colander.drop, colander.null):
+        if (data is colander.drop or data is colander.null):
             return data
         position_data = {}
         for field in self._position_fields:

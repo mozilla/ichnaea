@@ -93,7 +93,8 @@ class ReportV0Schema(BaseReportV0Schema):
 
     def deserialize(self, data):
         data = super(ReportV0Schema, self).deserialize(data)
-        if data in (colander.drop, colander.null):  # pragma: no cover
+        if (data is colander.drop or
+                data is colander.null):  # pragma: no cover
             return colander.drop
 
         if not (data.get('cellTowers') or data.get('wifiAccessPoints')):

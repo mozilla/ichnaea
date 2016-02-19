@@ -27,7 +27,9 @@ class BoundedFloat(colander.Float):
 
     def deserialize(self, schema, cstruct):
         value = super(BoundedFloat, self).deserialize(schema, cstruct)
-        if value is colander.null or math.isnan(value) or math.isinf(value):
+        if (value is colander.null or (
+                isinstance(value, float) and
+                (math.isnan(value) or math.isinf(value)))):
             return colander.null
         return value
 
@@ -82,7 +84,8 @@ class RenamingMapping(colander.Mapping):
                 subnode, 'to_name', subnode.name) or subnode.name
 
             subnode_value = result.get(subnode.name, subnode.missing)
-            if subnode_value in (colander.drop, colander.null):
+            if (subnode_value is colander.drop or
+                    subnode_value is colander.null):
                 continue
             else:
                 renamed_result[subnode_to_name] = subnode_value
