@@ -33,9 +33,9 @@ class TestWifi(BaseSourceTest):
     TestSource = WifiTestPositionSource
 
     def test_wifi(self):
-        wifi = WifiShardFactory(radius=50, samples=50)
+        wifi = WifiShardFactory(radius=5, samples=50)
         wifi2 = WifiShardFactory(
-            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=30,
+            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=5,
             block_count=1, block_last=None, samples=100)
         self.session.flush()
 
@@ -109,15 +109,16 @@ class TestWifi(BaseSourceTest):
 
     def test_ignore_outlier(self):
         wifi = WifiShardFactory()
-        wifis = WifiShardFactory.create_batch(3, lat=wifi.lat, lon=wifi.lon)
-        wifis[0].lat = wifi.lat + 0.0001
-        wifis[1].lat = wifi.lat + 0.0002
+        wifis = WifiShardFactory.create_batch(
+            3, lat=wifi.lat, lon=wifi.lon, radius=5)
+        wifis[0].lat = wifi.lat + 0.00001
+        wifis[1].lat = wifi.lat + 0.00002
         wifis[2].lat = wifi.lat + 1.0
         self.session.flush()
 
         query = self.model_query(wifis=[wifi] + wifis)
         results = self.source.search(query)
-        self.check_model_results(results, [wifi], lat=wifi.lat + 0.0001)
+        self.check_model_results(results, [wifi], lat=wifi.lat + 0.00001)
 
     def test_not_closeby(self):
         wifi = WifiShardFactory()
@@ -157,10 +158,10 @@ class TestWifi(BaseSourceTest):
         wifi11 = WifiShardFactory(
             samples=20, created=last_week, modified=yesterday)
         wifi12 = WifiShardFactory(
-            lat=wifi11.lat + 0.0003, lon=wifi11.lon,
+            lat=wifi11.lat + 0.00003, lon=wifi11.lon,
             samples=30, created=yesterday, modified=now)
         wifi13 = WifiShardFactory(
-            lat=wifi11.lat - 0.0003, lon=wifi11.lon,
+            lat=wifi11.lat - 0.00003, lon=wifi11.lon,
             samples=10, created=yesterday, modified=now)
         wifi21 = WifiShardFactory(
             lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0,
@@ -183,12 +184,12 @@ class TestWifi(BaseSourceTest):
     def test_top_results_in_noisy_cluster(self):
         now = util.utcnow()
         # all these should wind up in the same cluster since
-        # the WiFis are spaced in increments of (+1m, +1.2m)
+        # the WiFis are spaced in increments of (+0.1m, +0.12m)
         wifi1 = WifiShardFactory.build()
         wifis = []
         for i in range(0, MAX_WIFIS_IN_CLUSTER + 10):
-            wifis.append(WifiShardFactory(lat=wifi1.lat + i * 0.00001,
-                                          lon=wifi1.lon + i * 0.000012,
+            wifis.append(WifiShardFactory(lat=wifi1.lat + i * 0.000001,
+                                          lon=wifi1.lon + i * 0.0000012,
                                           samples=100 - i))
         self.session.flush()
 

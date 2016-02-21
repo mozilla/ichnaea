@@ -25,7 +25,7 @@ Maximum number of Bluetooth networks used from one combined cluster to form
 the aggregate result.
 """
 
-MAX_WIFI_CLUSTER_METERS = 1000.0
+MAX_WIFI_CLUSTER_METERS = 500.0
 """
 Maximum distance between WiFi networks to be considered close enough
 to be from one consistent observation.
@@ -37,7 +37,7 @@ Minimum number of WiFi networks in a query to allow returning results
 based on WiFi information.
 """
 
-MAX_WIFIS_IN_CLUSTER = 10
+MAX_WIFIS_IN_CLUSTER = 20
 """
 Maximum number of WiFi networks used from one combined cluster to form
 the aggregate result.
@@ -48,9 +48,9 @@ the aggregate result.
 # and adjustments in one need to be reflected in the other.
 
 BLUE_MIN_ACCURACY = 10.0  #: Minimum accuracy returned for Bluetooth queries.
-BLUE_MAX_ACCURACY = 100.0  #: Minimum accuracy returned for Bluetooth queries.
+BLUE_MAX_ACCURACY = 100.0  #: Maximum accuracy returned for Bluetooth queries.
 
-WIFI_MIN_ACCURACY = 100.0  #: Minimum accuracy returned for Wifi queries.
+WIFI_MIN_ACCURACY = 10.0  #: Minimum accuracy returned for Wifi queries.
 WIFI_MAX_ACCURACY = 1000.0  # Maximum accuracy returned for Wifi queries.
 
 CELL_MIN_ACCURACY = 1000.1  #: Minimum accuracy returned for cell queries.
