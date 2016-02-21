@@ -48,9 +48,9 @@ def global_stats(session):
         StatKey.unique_cell_ocid,
         StatKey.unique_wifi,
     )
-    rows = session.query(Stat.key, Stat.value).filter(
-        Stat.key.in_(stat_keys)).filter(
-        Stat.time == yesterday)
+    rows = (session.query(Stat.key, Stat.value)
+                   .filter(Stat.key.in_(stat_keys),
+                           (Stat.time == yesterday)))
 
     stats = {}
     for row in rows.all():
@@ -65,9 +65,10 @@ def global_stats(session):
         except KeyError:
             # no stats entry available, maybe closely after midnight
             # and task hasn't run yet, take latest value
-            row = session.query(Stat.value).filter(
-                Stat.key == stat_key).order_by(
-                Stat.time.desc()).limit(1).first()
+            row = (session.query(Stat.value)
+                          .filter(Stat.key == stat_key)
+                          .order_by(Stat.time.desc())
+                          .limit(1)).first()
             if row is not None:
                 result[name] = row[0]
             else:
@@ -84,13 +85,12 @@ def histogram(session, stat_key, days=365):
     today = util.utcnow().date()
     start = today - timedelta(days=days)
     month_key = (func.year(Stat.time), func.month(Stat.time))
-    rows = session.query(func.max(Stat.value), *month_key).filter(
-        Stat.key == stat_key).filter(
-        Stat.time >= start).filter(
-        Stat.time < today).group_by(
-        *month_key).order_by(
-        *month_key
-    )
+    rows = (session.query(func.max(Stat.value), *month_key)
+                   .filter((Stat.key == stat_key),
+                           (Stat.time >= start),
+                           (Stat.time < today))
+                   .group_by(*month_key)
+                   .order_by(*month_key))
     result = []
     for num, year, month in rows.all():
         # use first of August to plot the highest result for July
@@ -107,13 +107,13 @@ def histogram(session, stat_key, days=365):
 
 
 def leaders(session):
-    score_rows = session.query(
-        Score.userid, func.sum(Score.value)).filter(
-        Score.key == ScoreKey.location).group_by(
-        Score.userid).having(func.sum(Score.value) >= 10).all()
+    rows = (session.query(Score.userid, func.sum(Score.value))
+                   .filter(Score.key == ScoreKey.location)
+                   .group_by(Score.userid)
+                   .having(func.sum(Score.value) >= 10)).all()
     # sort descending by value
-    score_rows.sort(key=itemgetter(1), reverse=True)
-    userids = [s[0] for s in score_rows]
+    rows.sort(key=itemgetter(1), reverse=True)
+    userids = [s[0] for s in rows]
     if not userids:
         return []
     user_rows = session.query(User.id, User.nickname).filter(
@@ -121,7 +121,7 @@ def leaders(session):
     users = dict(user_rows)
 
     result = []
-    for userid, value in score_rows:
+    for userid, value in rows:
         nickname = users.get(userid, 'anonymous')
         if len(nickname) > 24:
             nickname = nickname[:24] + u'...'
@@ -138,19 +138,19 @@ def leaders_weekly(session, batch=20):
     score_rows = {}
     userids = set()
     for name in ('new_cell', 'new_wifi'):
-        score_rows[name] = session.query(
-            Score.userid, func.sum(Score.value)).filter(
-            Score.key == ScoreKey[name]).filter(
-            Score.time >= one_week).order_by(
-            func.sum(Score.value).desc()).group_by(
-            Score.userid).limit(batch).all()
+        score_rows[name] = (session.query(Score.userid, func.sum(Score.value))
+                                   .filter((Score.key == ScoreKey[name]),
+                                           (Score.time >= one_week))
+                                   .order_by(func.sum(Score.value).desc())
+                                   .group_by(Score.userid)
+                                   .limit(batch)).all()
         userids.update(set([s[0] for s in score_rows[name]]))
 
     if not userids:  # pragma: no cover
         return result
 
-    user_rows = session.query(User.id, User.nickname).filter(
-        User.id.in_(userids)).all()
+    user_rows = (session.query(User.id, User.nickname)
+                        .filter(User.id.in_(userids))).all()
     users = dict(user_rows)
 
     for name, value in score_rows.items():

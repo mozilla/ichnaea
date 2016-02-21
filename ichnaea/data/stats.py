@@ -30,8 +30,8 @@ class StatCounterUpdater(object):
     def update_key(self, session, stat_key, day):
         # determine the value from the day before
         query = (session.query(Stat)
-                        .filter(Stat.key == stat_key)
-                        .filter(Stat.time < day)
+                        .filter((Stat.key == stat_key),
+                                (Stat.time < day))
                         .order_by(Stat.time.desc()))
         before = query.first()
         old_value = 0
@@ -44,8 +44,8 @@ class StatCounterUpdater(object):
 
         # insert or update a new stat value
         query = (session.query(Stat)
-                        .filter(Stat.key == stat_key)
-                        .filter(Stat.time == day))
+                        .filter((Stat.key == stat_key),
+                                (Stat.time == day)))
         stat = query.first()
         if stat is not None:
             stat.value += value

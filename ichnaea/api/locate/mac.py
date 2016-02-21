@@ -136,16 +136,14 @@ def query_macs(query, lookups, raven_client, db_model):
         for shard, shard_macs in shards.items():
             rows = (
                 query.session.query(shard)
-                             .filter(shard.mac.in_(shard_macs))
-                             .filter(shard.lat.isnot(None))
-                             .filter(shard.lon.isnot(None))
-                             .filter(or_(
-                                 shard.block_count.is_(None),
-                                 shard.block_count <
-                                     PERMANENT_BLOCKLIST_THRESHOLD))
-                             .filter(or_(
-                                 shard.block_last.is_(None),
-                                 shard.block_last < temp_blocked))
+                             .filter(shard.mac.in_(shard_macs),
+                                     shard.lat.isnot(None),
+                                     shard.lon.isnot(None),
+                                     or_(shard.block_count.is_(None),
+                                         shard.block_count <
+                                         PERMANENT_BLOCKLIST_THRESHOLD),
+                                     or_(shard.block_last.is_(None),
+                                         shard.block_last < temp_blocked))
                              .options(load_only(*load_fields))
             ).all()
             result.extend(list(rows))

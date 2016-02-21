@@ -133,16 +133,14 @@ def query_cell_table(session, model, cellids, temp_blocked,
     try:
         return (
             session.query(model)
-                   .filter(model.cellid.in_(cellids))
-                   .filter(model.lat.isnot(None))
-                   .filter(model.lon.isnot(None))
-                   .filter(or_(
-                       model.block_count.is_(None),
-                       model.block_count <
-                           PERMANENT_BLOCKLIST_THRESHOLD))
-                   .filter(or_(
-                       model.block_last.is_(None),
-                       model.block_last < temp_blocked))
+                   .filter(model.cellid.in_(cellids),
+                           model.lat.isnot(None),
+                           model.lon.isnot(None),
+                           or_(model.block_count.is_(None),
+                               model.block_count <
+                               PERMANENT_BLOCKLIST_THRESHOLD),
+                           or_(model.block_last.is_(None),
+                               model.block_last < temp_blocked))
                    .options(load_only(*load_fields))
         ).all()
     except Exception:
@@ -194,9 +192,9 @@ def query_areas(query, lookups, model, raven_client):
                    'created', 'modified', 'num_cells')
     try:
         areas = (query.session.query(model)
-                              .filter(model.areaid.in_(areaids))
-                              .filter(model.lat.isnot(None))
-                              .filter(model.lon.isnot(None))
+                              .filter(model.areaid.in_(areaids),
+                                      model.lat.isnot(None),
+                                      model.lon.isnot(None))
                               .options(load_only(*load_fields))).all()
 
         return areas

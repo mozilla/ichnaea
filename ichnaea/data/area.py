@@ -77,13 +77,13 @@ class CellAreaUpdater(object):
 
         shard = self.cell_model.shard_model(radio)
         cells = (session.query(shard)
-                        .options(load_only(*load_fields))
-                        .filter(shard.radio == radio)
-                        .filter(shard.mcc == mcc)
-                        .filter(shard.mnc == mnc)
-                        .filter(shard.lac == lac)
-                        .filter(shard.lat.isnot(None))
-                        .filter(shard.lon.isnot(None))).all()
+                        .filter((shard.radio == radio),
+                                (shard.mcc == mcc),
+                                (shard.mnc == mnc),
+                                (shard.lac == lac),
+                                shard.lat.isnot(None),
+                                shard.lon.isnot(None))
+                        .options(load_only(*load_fields))).all()
 
         area_query = (session.query(self.area_model)
                              .filter(self.area_model.areaid == areaid))
