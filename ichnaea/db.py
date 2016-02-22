@@ -1,6 +1,7 @@
 """Database related functionality."""
 
 from contextlib import contextmanager
+from pymysql.err import DatabaseError
 
 from sqlalchemy import (
     create_engine,
@@ -87,6 +88,9 @@ def db_tween_factory(handler, registry):
                     # during tests.
                     try:
                         ro_session.rollback()
+                    except DatabaseError:  # pragma: no cover
+                        registry.raven_client.captureException()
+                        pass
                     finally:
                         ro_session.close()
         return response
