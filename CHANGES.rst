@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Take signal strength into account for location queries.
+
 - Decrease database session times in data tasks.
 
 - Retry station updates on deadlocks and lock timeouts.

@@ -121,11 +121,12 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         query = self.model_query(blues=blues)
         blue_query = query['blue']
-        blue_query[0]['signal'] = -77
+        blue_query[0]['signal'] = -50
+        blue_query[1]['signal'] = -150
         blue_query[1]['name'] = 'my-beacon'
 
         res = self._call(body=query)
-        self.check_model_response(res, blue, lat=blue.lat + offset)
+        self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
 
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
@@ -163,7 +164,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
     def test_wifi(self):
         wifi = WifiShardFactory()
-        offset = 0.0001
+        offset = 0.00001
         wifis = [
             wifi,
             WifiShardFactory(lat=wifi.lat + offset),
@@ -175,13 +176,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifi']
         wifi_query[0]['channel'] = 6
+        wifi_query[0]['signal'] = -50
         wifi_query[1]['frequency'] = 2437
-        wifi_query[2]['signal'] = -77
-        wifi_query[3]['signalToNoiseRatio'] = 13
+        wifi_query[2]['signal'] = -130
+        wifi_query[2]['signalToNoiseRatio'] = 13
         wifi_query[3]['ssid'] = 'my-wifi'
 
         res = self._call(body=query)
-        self.check_model_response(res, wifi, lat=wifi.lat + offset)
+        self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
 
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),

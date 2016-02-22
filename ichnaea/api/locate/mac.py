@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 import itertools
+import math
 
 import numpy
 from scipy.cluster import hierarchy
@@ -13,7 +14,6 @@ from ichnaea.constants import (
     TEMPORARY_BLOCKLIST_DURATION,
 )
 from ichnaea.geocalc import (
-    aggregate_position,
     distance,
 )
 from ichnaea import util
@@ -93,6 +93,25 @@ def cluster_networks(models, lookups, min_signal=None, max_distance=None):
     return clusters
 
 
+def aggregate_mac_position(networks, minimum_accuracy):
+    points = numpy.array(
+        [(net['lat'], net['lon']) for net in networks],
+        dtype=numpy.double)
+
+    weights = numpy.array([
+        1.0 / math.pow(net['signal'], 2) for net in networks],
+        dtype=numpy.double)
+
+    lat, lon = numpy.average(points, axis=0, weights=weights)
+
+    radius = minimum_accuracy
+    for net in networks:
+        p_dist = distance(lat, lon, net['lat'], net['lon']) + net['radius']
+        radius = max(radius, p_dist)
+
+    return (float(lat), float(lon), float(radius))
+
+
 def aggregate_cluster_position(cluster, result_type, max_networks=None,
                                min_accuracy=None, max_accuracy=None):
     """
@@ -102,14 +121,9 @@ def aggregate_cluster_position(cluster, result_type, max_networks=None,
     # Reverse sort by signal, to pick the best sample of networks.
     cluster.sort(order='signal')
     cluster = numpy.flipud(cluster)
+    sample = cluster[:max_networks]
 
-    sample = cluster[:min(len(cluster), max_networks)]
-    circles = numpy.array(
-        [(net[0], net[1], net[2])
-         for net in sample[['lat', 'lon', 'radius']]],
-        dtype=numpy.double)
-
-    lat, lon, accuracy = aggregate_position(circles, min_accuracy)
+    lat, lon, accuracy = aggregate_mac_position(sample, min_accuracy)
     accuracy = min(accuracy, max_accuracy)
     score = float(cluster['score'].sum())
     return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score)

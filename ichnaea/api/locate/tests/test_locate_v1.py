@@ -141,7 +141,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
     def test_wifi(self):
         wifi = WifiShardFactory()
-        offset = 0.0001
+        offset = 0.00001
         wifis = [
             wifi,
             WifiShardFactory(lat=wifi.lat + offset),
@@ -153,13 +153,14 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifiAccessPoints']
         wifi_query[0]['channel'] = 6
+        wifi_query[0]['signalStrength'] = -50
         wifi_query[1]['frequency'] = 2437
-        wifi_query[2]['signalStrength'] = -77
+        wifi_query[2]['signalStrength'] = -130
         wifi_query[3]['signalToNoiseRatio'] = 13
         wifi_query[3]['ssid'] = 'my-wifi'
 
         res = self._call(body=query)
-        self.check_model_response(res, wifi, lat=wifi.lat + offset)
+        self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),

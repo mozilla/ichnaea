@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-import numpy
-
 from ichnaea.api.locate.constants import (
     DataSource,
     MAX_WIFIS_IN_CLUSTER,
@@ -194,14 +192,34 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         # calculate expected result
-        lat, lon = numpy.array(
-            [(wifi.lat, wifi.lon) for wifi in
-             wifis[:MAX_WIFIS_IN_CLUSTER]]).mean(axis=0)
         score = sum([wifi.score(now) for wifi in wifis])
 
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
-            entry.signal = -70 - i
+            entry.signal = -50 - i
+
         results = self.source.search(query)
-        self.check_model_results(results, [wifi1], lat=lat, lon=lon)
-        self.assertAlmostEqual(results.best().score, score, 4)
+        result = results.best()
+        self.assertAlmostEqual(result.lat, wifi1.lat, 4)
+        self.assertAlmostEqual(result.lon, wifi1.lon, 4)
+        self.assertAlmostEqual(result.score, score, 4)
+
+    def test_signal_weight(self):
+        wifi1 = WifiShardFactory.build()
+        wifis = []
+        for i in range(4):
+            wifis.append(WifiShardFactory(lat=wifi1.lat + i * 0.0001,
+                                          lon=wifi1.lon + i * 0.00012))
+        self.session.flush()
+
+        query = self.model_query(wifis=wifis)
+        query.wifi[0].signal = -10
+        query.wifi[1].signal = -40
+        query.wifi[2].signal = -70
+        query.wifi[3].signal = -100
+
+        results = self.source.search(query)
+        result = results.best()
+        self.assertAlmostEqual(result.lat, 51.500012, 6)
+        self.assertAlmostEqual(result.lon, -0.099985, 6)
+        self.assertAlmostEqual(result.accuracy, 44.945, 3)
