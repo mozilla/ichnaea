@@ -1,9 +1,5 @@
-import numpy
-
 from ichnaea.geocalc import (
-    aggregate_position,
     bbox,
-    centroid_weighted,
     distance,
     latitude_add,
     longitude_add,
@@ -11,27 +7,6 @@ from ichnaea.geocalc import (
 )
 from ichnaea import constants
 from ichnaea.tests.base import TestCase
-
-
-class TestAggregatePosition(TestCase):
-
-    def test_same(self):
-        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
-        self.assertEqual(aggregate_position(circles, 100.0),
-                         (1.0, 1.0, 100.0))
-
-    def test_minimum(self):
-        circles = numpy.array([(1.0, 1.0, 100.0)], dtype=numpy.double)
-        self.assertEqual(aggregate_position(circles, 333.0),
-                         (1.0, 1.0, 333.0))
-
-    def test_circle_radius(self):
-        circles = numpy.array(
-            [(1.0, 1.0, 100.0), (1.001, 1.001, 100.0)],
-            dtype=numpy.double)
-        lat, lon, radius = aggregate_position(circles, 10.0)
-        self.assertEqual((lat, lon), (1.0005, 1.0005))
-        self.assertAlmostEqual(distance(lat, lon, 1.0, 1.0) + 100.0, radius, 7)
 
 
 class TestBbox(TestCase):
@@ -49,34 +24,6 @@ class TestBbox(TestCase):
         self.assertEqual(bbox(lat, lon, 0.0),
                          (constants.MAX_LAT, constants.MAX_LAT,
                           constants.MAX_LON, constants.MAX_LON))
-
-
-class TestCentroidWeighted(TestCase):
-
-    def test_one(self):
-        points = numpy.array([(2.0, 3.0)], dtype=numpy.double)
-
-        for weight in (0.5, 1.0, 2.0):
-            lat, lon = centroid_weighted(
-                points, numpy.array([weight], dtype=numpy.double))
-            self.assertAlmostEqual(lat, 2.0)
-            self.assertAlmostEqual(lon, 3.0)
-
-    def test_multiple(self):
-        points = numpy.array([(2.0, 3.0), (4.0, 6.0)], dtype=numpy.double)
-        weights = numpy.array([0.5, 2.0], dtype=numpy.double)
-        lat, lon = centroid_weighted(points, weights)
-        self.assertAlmostEqual(lat, 3.6)
-        self.assertAlmostEqual(lon, 5.4)
-
-        self.assertEqual(centroid_weighted(points, weights), (3.6, 5.4))
-
-    def test_negative(self):
-        points = numpy.array([(-1.0, -2.0), (1.7, 4.3)], dtype=numpy.double)
-        weights = numpy.array([2.0, 1.0], dtype=numpy.double)
-        lat, lon = centroid_weighted(points, weights)
-        self.assertAlmostEqual(lat, -0.1)
-        self.assertAlmostEqual(lon, 0.1)
 
 
 class TestDistance(TestCase):

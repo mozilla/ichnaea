@@ -304,9 +304,11 @@ class TestCache(QueryTest):
 
         # check combined query, avg lat/lon, max accuracy
         query = Query(wifi=self.wifi_model_query(wifis1 + wifis2))
-        self.assertEqual(
-            self.cache.get(query),
-            ((wifis1[0].lat + wifis2[0].lat) / 2, wifis1[0].lon, 200, None))
+        cached = self.cache.get(query)
+        self.assertAlmostEqual(cached[0], (wifis1[0].lat + wifis2[0].lat) / 2)
+        self.assertAlmostEqual(cached[1], wifis1[0].lon)
+        self.assertAlmostEqual(cached[2], 205.56, 2)
+        self.assertTrue(cached[3] is None)
 
         # different lat/lon
         wifis3 = WifiShardFactory.build_batch(2, lat=wifis1[0].lat + 10.0)

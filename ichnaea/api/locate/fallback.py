@@ -22,7 +22,7 @@ from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea import floatjson
-from ichnaea.geocalc import aggregate_position
+from ichnaea.geocalc import distance
 from ichnaea.models.cell import (
     encode_cellid,
     Radio,
@@ -259,15 +259,25 @@ class FallbackCache(object):
             # all the cached values agree with each other
             self._stat_count('cache', tags=['status:hit'])
             results = list(clustered_results.values())[0]
+
             circles = numpy.array(
                 [(res.lat, res.lon, res.accuracy) for res in results],
                 dtype=numpy.double)
-            lat, lon, accuracy = aggregate_position(circles, 10.0)
-            _, accuracies = numpy.hsplit(circles, [2])
+            points, accuracies = numpy.hsplit(circles, [2])
+
+            lat, lon = points.mean(axis=0)
+            lat = float(lat)
+            lon = float(lon)
+
+            radius = 0.0
+            for circle in circles:
+                p_dist = distance(lat, lon, circle[0], circle[1]) + circle[2]
+                radius = max(radius, p_dist)
+
             return ExternalResult(
                 lat=lat,
                 lon=lon,
-                accuracy=float(numpy.nanmax(accuracies)),
+                accuracy=float(radius),
                 fallback=results[0].fallback,
             )
 

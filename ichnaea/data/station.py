@@ -10,7 +10,6 @@ from pymysql.constants.ER import (
 from sqlalchemy.exc import InternalError as SQLInternalError
 
 from ichnaea.geocalc import (
-    centroid_weighted,
     circle_radius,
     distance,
 )
@@ -118,8 +117,10 @@ class StationUpdater(object):
             dtype=numpy.double)
         obs_weight = float(obs_weights.sum())
 
-        obs_new_lat, obs_new_lon = centroid_weighted(
-            obs_positions, obs_weights)
+        obs_new_lat, obs_new_lon = numpy.average(
+            obs_positions, axis=0, weights=obs_weights)
+        obs_new_lat = float(obs_new_lat)
+        obs_new_lon = float(obs_new_lon)
 
         obs_max_lat, obs_max_lon = obs_positions.max(axis=0)
         obs_min_lat, obs_min_lon = obs_positions.min(axis=0)

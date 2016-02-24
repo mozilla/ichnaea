@@ -75,43 +75,6 @@ cdef inline double deg2rad(double degrees):
     return degrees * M_PI / 180.0
 
 
-cpdef tuple aggregate_position(ndarray[double_t, ndim=2] circles,
-                               double minimum_accuracy):
-    """
-    Calculate the aggregate position based on a number of circles
-    (numpy 3-column arrays of lat/lon/radius).
-
-    Return the position and an accuracy estimate, but at least
-    use the minimum_accuracy.
-    """
-    cdef ndarray[double_t, ndim=2] points
-    cdef double lat, lon, radius
-    cdef double p_dist, p_lat, p_lon, p_radius
-
-    if len(circles) == 1:
-        lat = circles[0][0]
-        lon = circles[0][1]
-        radius = circles[0][2]
-        radius = fmax(radius, minimum_accuracy)
-        return (lat, lon, radius)
-
-    points, _ = numpy.hsplit(circles, [2])
-    lat, lon = centroid(points)
-
-    # Given the centroid of all the circles, calculate the distance
-    # between that point and and all the centers of the provided
-    # circles. Add the radius of each of the circles to the distance,
-    # to account for the area / uncertainty range of those circles.
-
-    radius = 0.0
-    for p_lat, p_lon, p_radius in circles:
-        p_dist = distance(lat, lon, p_lat, p_lon) + p_radius
-        radius = fmax(radius, p_dist)
-
-    radius = fmax(radius, minimum_accuracy)
-    return (lat, lon, radius)
-
-
 cpdef tuple bbox(double lat, double lon, double meters):
     """
     Return a bounding box around the passed in lat/lon position.
@@ -123,38 +86,6 @@ cpdef tuple bbox(double lat, double lon, double meters):
     max_lon = longitude_add(lat, lon, meters)
     min_lon = longitude_add(lat, lon, -meters)
     return (max_lat, min_lat, max_lon, min_lon)
-
-
-cpdef tuple centroid(ndarray[double_t, ndim=2] points):
-    """
-    Compute the centroid (average lat and lon) from a set of points
-    (two-dimensional lat/lon array).
-    """
-    cdef ndarray[double_t, ndim=1] center
-    cdef double avg_lat, avg_lon
-
-    center = points.mean(axis=0)
-    avg_lat = center[0]
-    avg_lon = center[1]
-    return (avg_lat, avg_lon)
-
-
-cpdef tuple centroid_weighted(ndarray[double_t, ndim=2] points,
-                              ndarray[double_t, ndim=1] weights):
-    """
-    Compute the weighted centroid from a 2-d array of points and
-    a 1-d array of weights.
-
-    Returns a two-tuple of (lat, lon).
-    """
-    cdef ndarray[double_t, ndim=1] center
-    cdef double lat, lon
-
-    center = numpy.average(points, axis=0, weights=weights)
-
-    lat = center[0]
-    lon = center[1]
-    return (lat, lon)
 
 
 cpdef int circle_radius(double lat, double lon,

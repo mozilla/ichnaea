@@ -4,7 +4,6 @@ import numpy
 from sqlalchemy.orm import load_only
 
 from ichnaea.geocalc import (
-    centroid,
     circle_radius,
 )
 from ichnaea.geocode import GEOCODER
@@ -107,9 +106,12 @@ class CellAreaUpdater(object):
             max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
             min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
 
-            ctr_lat, ctr_lon = centroid(
-                numpy.array([(c.lat, c.lon) for c in cells],
-                            dtype=numpy.double))
+            ctr_lat, ctr_lon = numpy.array(
+                [(c.lat, c.lon) for c in cells],
+                dtype=numpy.double).mean(axis=0)
+            ctr_lat = float(ctr_lat)
+            ctr_lon = float(ctr_lon)
+
             radius = circle_radius(
                 ctr_lat, ctr_lon, max_lat, max_lon, min_lat, min_lon)
 

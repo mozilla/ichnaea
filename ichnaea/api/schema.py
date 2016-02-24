@@ -85,7 +85,7 @@ class RenamingMapping(colander.Mapping):
 
             subnode_value = result.get(subnode.name, subnode.missing)
             if (subnode_value is colander.drop or
-                    subnode_value is colander.null):
+                    subnode_value is colander.null):  # pragma: no cover
                 continue
             else:
                 renamed_result[subnode_to_name] = subnode_value

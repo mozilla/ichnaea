@@ -207,7 +207,10 @@ def to_geojson(regions):  # pragma: no cover
         for boundary in boundaries:
             # flip x/y aka lon/lat to lat/lon
             boundary = numpy.fliplr(numpy.array(boundary))
-            ctr_lat, ctr_lon = geocalc.centroid(boundary)
+            # calculate centroid
+            ctr_lat, ctr_lon = boundary.mean(axis=0)
+            ctr_lat = float(ctr_lat)
+            ctr_lon = float(ctr_lon)
             radii.append(geocalc.max_distance(ctr_lat, ctr_lon, boundary))
         radius = round(max(radii) / 1000.0) * 1000.0
 

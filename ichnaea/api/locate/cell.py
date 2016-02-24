@@ -1,6 +1,7 @@
 """Search implementation using a cell database."""
 
 from collections import defaultdict
+import math
 
 import numpy
 from sqlalchemy.orm import load_only
@@ -24,7 +25,7 @@ from ichnaea.constants import (
     PERMANENT_BLOCKLIST_THRESHOLD,
     TEMPORARY_BLOCKLIST_DURATION,
 )
-from ichnaea.geocalc import aggregate_position
+from ichnaea.geocalc import distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     encode_cellarea,
@@ -95,37 +96,40 @@ def cluster_areas(areas, lookups):
     return clusters
 
 
-def aggregate_cell_position(cluster, result_type):
+def aggregate_cell_position(networks, min_accuracy, max_accuracy):
     """
-    Given a cell cluster, return the aggregate position of the user
-    inside the cluster.
+    Calculate the aggregate position of the user inside the given
+    cluster of networks.
+
+    Return the position, an accuracy estimate and a combined score.
+    The accuracy is bounded by the min_accuracy and max_accuracy.
     """
-    circles = numpy.array(
-        [(net[0], net[1], net[2])
-         for net in cluster[['lat', 'lon', 'radius']]],
+    if len(networks) == 1:
+        lat = networks[0]['lat']
+        lon = networks[0]['lon']
+        radius = min(max(networks[0]['radius'], min_accuracy), max_accuracy)
+        score = networks[0]['score']
+        return (float(lat), float(lon), float(radius), float(score))
+
+    points = numpy.array(
+        [(net['lat'], net['lon']) for net in networks],
         dtype=numpy.double)
 
-    lat, lon, accuracy = aggregate_position(circles, CELL_MIN_ACCURACY)
-    accuracy = min(accuracy, CELL_MAX_ACCURACY)
-    score = float(cluster['score'].sum())
-    return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score)
-
-
-def aggregate_area_position(cluster, result_type):
-    """
-    Given an area cluster, return the aggregate position of the user
-    inside the cluster.
-    """
-    circles = numpy.array(
-        [(net[0], net[1], net[2])
-         for net in cluster[['lat', 'lon', 'radius']]],
+    weights = numpy.array([
+        1.0 / math.pow(net['signal'], 2) for net in networks],
         dtype=numpy.double)
 
-    lat, lon, accuracy = aggregate_position(circles, CELLAREA_MIN_ACCURACY)
-    accuracy = min(accuracy, CELLAREA_MAX_ACCURACY)
-    score = float(cluster['score'].sum())
-    return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score,
-                       fallback='lacf')
+    lat, lon = numpy.average(points, axis=0, weights=weights)
+
+    radius = min_accuracy
+    for net in networks:
+        p_dist = distance(lat, lon, net['lat'], net['lon']) + net['radius']
+        radius = max(radius, p_dist)
+    radius = min(radius, max_accuracy)
+
+    score = networks['score'].sum()
+
+    return (float(lat), float(lon), float(radius), float(score))
 
 
 def query_cell_table(session, model, cellids, temp_blocked,
@@ -226,8 +230,10 @@ class CellPositionMixin(object):
                 query, query.cell, self.cell_model, self.raven_client)
             if cells:
                 for cluster in cluster_cells(cells, query.cell):
-                    results.add(aggregate_cell_position(
-                        cluster, self.result_type))
+                    lat, lon, accuracy, score = aggregate_cell_position(
+                        cluster, CELL_MIN_ACCURACY, CELL_MAX_ACCURACY)
+                    results.add(self.result_type(
+                        lat=lat, lon=lon, accuracy=accuracy, score=score))
 
             if len(results):
                 return results
@@ -237,8 +243,11 @@ class CellPositionMixin(object):
                 query, query.cell_area, self.area_model, self.raven_client)
             if areas:
                 for cluster in cluster_areas(areas, query.cell_area):
-                    results.add(aggregate_area_position(
-                        cluster, self.result_type))
+                    lat, lon, accuracy, score = aggregate_cell_position(
+                        cluster, CELLAREA_MIN_ACCURACY, CELLAREA_MAX_ACCURACY)
+                    results.add(self.result_type(
+                        lat=lat, lon=lon, accuracy=accuracy, score=score,
+                        fallback='lacf'))
 
         return results
 
