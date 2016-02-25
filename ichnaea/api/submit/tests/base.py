@@ -122,10 +122,17 @@ class BaseSubmitTest(object):
 
     def test_log_api_key_invalid(self):
         cell, query = self._one_cell_query()
-        self._post([query], api_key='invalidkey')
+        self._post([query], api_key='invalid_key')
+        self.check_stats(counter=[
+            (self.metric_type + '.request', [self.metric_path, 'key:none']),
+        ])
+        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+
+    def test_log_api_key_unknown(self):
+        cell, query = self._one_cell_query()
+        self._post([query], api_key='abcdefg')
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:invalid']),
-            (self.metric_type + '.request', 0, [self.metric_path, 'key:none']),
         ])
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 

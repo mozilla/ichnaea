@@ -93,6 +93,11 @@ class TestView(RegionBase, CommonLocateTest):
             status=200, response='ok')
         self.check_db_calls(rw=0, ro=0)
 
+    def test_unknown_api_key(self):
+        super(TestView, self).test_unknown_api_key(
+            status=200, response='ok', metric_key='abcdefg')
+        self.check_db_calls(rw=0, ro=0)
+
     def test_incomplete_request(self):
         res = self._call(body={'wifiAccessPoints': []}, ip=self.test_ip)
         self.check_response(res, 'ok')

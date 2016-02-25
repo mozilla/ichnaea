@@ -14,6 +14,7 @@ from ichnaea.api.exceptions import (
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea.models.api import ApiKey
+from ichnaea.models.constants import VALID_APIKEY_REGEX
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
 
@@ -123,8 +124,10 @@ class BaseAPIView(BaseView):
 
     def parse_apikey(self):
         api_key_text = self.request.GET.get('key', None)
-        if api_key_text and (0 < len(api_key_text) < 41):
-            # check length against DB column length
+        # check length against DB column length and restrict
+        # to a known set of characters
+        if (api_key_text and (3 < len(api_key_text) < 41) and
+                VALID_APIKEY_REGEX.match(api_key_text)):
             return api_key_text
         return None
 

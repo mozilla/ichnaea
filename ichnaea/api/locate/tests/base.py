@@ -408,11 +408,21 @@ class CommonLocateTest(BaseLocateTest):
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
     def test_invalid_api_key(self, status=400, response='invalid_key'):
-        res = self._call(api_key='invalid', ip=self.test_ip, status=status)
+        res = self._call(api_key='invalid_key', ip=self.test_ip, status=status)
         self.check_response(res, response)
         self.check_stats(counter=[
             (self.metric_type + '.request',
-                [self.metric_path, 'key:invalid']),
+                [self.metric_path, 'key:none']),
+        ])
+        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+
+    def test_unknown_api_key(self, status=400,
+                             response='invalid_key', metric_key='invalid'):
+        res = self._call(api_key='abcdefg', ip=self.test_ip, status=status)
+        self.check_response(res, response)
+        self.check_stats(counter=[
+            (self.metric_type + '.request',
+                [self.metric_path, 'key:' + metric_key]),
         ])
         self.assertEqual(self.redis_client.keys('apiuser:*'), [])
 
