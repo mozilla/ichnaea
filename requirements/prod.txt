@@ -40,7 +40,7 @@ ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9
 pycparser==2.14
-PyMySQL==0.7.1
+PyMySQL==0.7.2
 pyopenssl==0.15.1
 pyramid==1.6.1
 pyramid-chameleon==0.3
