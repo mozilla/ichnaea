@@ -121,7 +121,12 @@ def s3_list_downloads(assets_bucket, assets_url, raven_client):
     return sorted(files, key=operator.itemgetter('name'), reverse=True)
 
 
-class Layout(object):
+class ContentViews(object):
+
+    def __init__(self, request):
+        self.request = request
+        self.session = request.db_ro_session
+        self.redis_client = request.registry.redis_client
 
     @reify
     def base_template(self):
@@ -132,22 +137,26 @@ class Layout(object):
     def this_year(self):
         return THIS_YEAR
 
-
-class ContentViews(Layout):
-
-    def __init__(self, request):
-        self.request = request
-
     def _tiles_url(self):
         tiles_url = getattr(self.request.registry, 'tiles_url', None)
         if not tiles_url:
             tiles_url = map_tiles_url(None)
         return tiles_url
 
+    def _get_cache(self, cache_key):
+        cache_key = self.redis_client.cache_keys[cache_key]
+        cached = self.redis_client.get(cache_key)
+        if cached:
+            return simplejson.loads(cached)
+        return None
+
+    def _set_cache(self, cache_key, data, ex=3600):
+        cache_key = self.redis_client.cache_keys[cache_key]
+        self.redis_client.set(cache_key, simplejson.dumps(data), ex=ex)
+
     @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
-        tiles_url = self._tiles_url()
-        map_url = tiles_url.format(z=0, x=0, y=0)
+        map_url = self._tiles_url().format(z=0, x=0, y=0)
         scheme = urlparse.urlparse(self.request.url).scheme
         map_base_url = '%s://a.tiles.mapbox.com/v3/%s/0/0/0.png' % (
             scheme, BASE_MAP_KEY)
@@ -158,107 +167,83 @@ class ContentViews(Layout):
             'map_base_url': map_base_url,
         }
 
-    @view_config(renderer='templates/api.pt',
-                 name='api', http_cache=3600)
+    @view_config(renderer='templates/api.pt', name='api', http_cache=3600)
     def api_view(self):
         return {'page_title': 'API'}
 
-    @view_config(renderer='templates/apps.pt',
-                 name='apps', http_cache=3600)
+    @view_config(renderer='templates/apps.pt', name='apps', http_cache=3600)
     def apps_view(self):
         return {'page_title': 'Client Applications'}
 
-    @view_config(renderer='templates/contact.pt',
-                 name='contact', http_cache=3600)
+    @view_config(renderer='templates/contact.pt', name='contact',
+                 http_cache=3600)
     def contact_view(self):
         return {'page_title': 'Contact Us'}
 
-    @view_config(renderer='templates/downloads.pt',
-                 name='downloads', http_cache=3600)
+    @view_config(renderer='templates/downloads.pt', name='downloads',
+                 http_cache=3600)
     def downloads_view(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['downloads']
-        cached = redis_client.get(cache_key)
-        if cached:
-            data = simplejson.loads(cached)
-        else:
+        data = self._get_cache('downloads')
+        if data is None:
             settings = self.request.registry.settings
-            assets_bucket = settings['assets']['bucket']
-            assets_url = settings['assets']['url']
-            raven_client = self.request.registry.raven_client
-            data = s3_list_downloads(assets_bucket, assets_url, raven_client)
-            # cache the download files
-            redis_client.set(cache_key, simplejson.dumps(data), ex=1800)
+            data = s3_list_downloads(
+                settings['assets']['bucket'],
+                settings['assets']['url'],
+                self.request.registry.raven_client)
+            self._set_cache('downloads', data, ex=1800)
         return {'page_title': 'Downloads', 'files': data}
 
-    @view_config(renderer='templates/optout.pt',
-                 name='optout', http_cache=3600)
+    @view_config(renderer='templates/optout.pt', name='optout',
+                 http_cache=3600)
     def optout_view(self):
         return {'page_title': 'Opt-Out'}
 
-    @view_config(renderer='templates/privacy.pt',
-                 name='privacy', http_cache=3600)
+    @view_config(renderer='templates/privacy.pt', name='privacy',
+                 http_cache=3600)
     def privacy_view(self):
         return {'page_title': 'Privacy Notice'}
 
-    @view_config(renderer='templates/leaders.pt',
-                 route_name='leaders', http_cache=3600)
+    @view_config(renderer='templates/leaders.pt', route_name='leaders',
+                 http_cache=3600)
     def leaders_view(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['leaders']
-        cached = redis_client.get(cache_key)
-
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
-            data = list(enumerate(leaders(session)))
-            data = [
-                {
-                    'pos': l[0] + 1,
-                    'num': l[1]['num'],
-                    'nickname': l[1]['nickname'],
-                    'anchor': l[1]['nickname'],
-                } for l in data]
-            redis_client.set(cache_key, simplejson.dumps(data), ex=1800)
+        data = self._get_cache('leaders')
+        if data is None:
+            data = [{
+                'pos': lead[0] + 1,
+                'num': lead[1]['num'],
+                'nickname': lead[1]['nickname'],
+                'anchor': lead[1]['nickname'],
+            } for lead in enumerate(leaders(self.session))]
+            self._set_cache('leaders', data)
 
         half = len(data) // 2 + len(data) % 2
-        leaders1 = data[:half]
-        leaders2 = data[half:]
         return {
             'page_title': 'Leaderboard',
-            'leaders1': leaders1,
-            'leaders2': leaders2,
+            'leaders1': data[:half],
+            'leaders2': data[half:],
         }
 
     @view_config(renderer='templates/leaders_weekly.pt',
                  route_name='leaders_weekly', http_cache=3600)
     def leaders_weekly_view(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['leaders_weekly']
-        cached = redis_client.get(cache_key)
-
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
+        data = self._get_cache('leaders_weekly')
+        if data is None:
             data = {
                 'new_cell': {'leaders1': [], 'leaders2': []},
                 'new_wifi': {'leaders1': [], 'leaders2': []},
             }
-            for name, value in leaders_weekly(session).items():
-                value = [
-                    {
-                        'pos': l[0] + 1,
-                        'num': l[1]['num'],
-                        'nickname': l[1]['nickname'],
-                    } for l in list(enumerate(value))]
+            for name, value in leaders_weekly(self.session).items():
+                value = [{
+                    'pos': l[0] + 1,
+                    'num': l[1]['num'],
+                    'nickname': l[1]['nickname'],
+                } for l in enumerate(value)]
                 half = len(value) // 2 + len(value) % 2
                 data[name] = {
                     'leaders1': value[:half],
                     'leaders2': value[half:],
                 }
-            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
+            self._set_cache('leaders_weekly', data)
 
         return {
             'page_title': 'Weekly Leaderboard',
@@ -277,83 +262,55 @@ class ContentViews(Layout):
         base_url = tiles_url[:offset]
         return {'tiles_url': base_url}
 
-    @view_config(
-        renderer='json', name='stats_blue.json', http_cache=3600)
+    @view_config(renderer='json', name='stats_blue.json', http_cache=3600)
     def stats_blue_json(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['stats_blue_json']
-        cached = redis_client.get(cache_key)
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
-            data = histogram(session, StatKey.unique_blue)
-            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
+        data = self._get_cache('stats_blue_json')
+        if data is None:
+            data = histogram(self.session, StatKey.unique_blue)
+            self._set_cache('stats_blue_json', data)
         return {'series': [{'title': 'MLS Bluetooth', 'data': data[0]}]}
 
-    @view_config(
-        renderer='json', name='stats_cell.json', http_cache=3600)
+    @view_config(renderer='json', name='stats_cell.json', http_cache=3600)
     def stats_cell_json(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['stats_cell_json']
-        cached = redis_client.get(cache_key)
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
-            mls_data = histogram(session, StatKey.unique_cell)
-            ocid_data = histogram(session, StatKey.unique_cell_ocid)
+        data = self._get_cache('stats_cell_json')
+        if data is None:
+            mls_data = histogram(self.session, StatKey.unique_cell)
+            ocid_data = histogram(self.session, StatKey.unique_cell_ocid)
             data = [
                 {'title': 'MLS Cells', 'data': mls_data[0]},
                 {'title': 'OCID Cells', 'data': ocid_data[0]},
             ]
-            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
+            self._set_cache('stats_cell_json', data)
         return {'series': data}
 
-    @view_config(
-        renderer='json', name='stats_wifi.json', http_cache=3600)
+    @view_config(renderer='json', name='stats_wifi.json', http_cache=3600)
     def stats_wifi_json(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['stats_wifi_json']
-        cached = redis_client.get(cache_key)
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
-            data = histogram(session, StatKey.unique_wifi)
-            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
+        data = self._get_cache('stats_wifi_json')
+        if data is None:
+            data = histogram(self.session, StatKey.unique_wifi)
+            self._set_cache('stats_wifi_json', data)
         return {'series': [{'title': 'MLS WiFi', 'data': data[0]}]}
 
-    @view_config(renderer='templates/stats.pt',
-                 route_name='stats', http_cache=3600)
+    @view_config(renderer='templates/stats.pt', route_name='stats',
+                 http_cache=3600)
     def stats_view(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['stats']
-        cached = redis_client.get(cache_key)
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
-            data = {
-                'leaders': [],
-                'metrics1': [],
-                'metrics2': [],
-            }
-            metrics = global_stats(session)
+        data = self._get_cache('stats')
+        if data is None:
+            data = {'leaders': [], 'metrics1': [], 'metrics2': []}
             metric_names = [
-                (StatKey.unique_blue.name, 'Bluetooth Networks'),
-                (StatKey.blue.name, 'Bluetooth Observations'),
-                (StatKey.unique_wifi.name, 'Wifi Networks'),
-                (StatKey.wifi.name, 'Wifi Observations'),
-                (StatKey.unique_cell.name, 'MLS Cells'),
-                (StatKey.cell.name, 'MLS Cell Observations'),
-                (StatKey.unique_cell_ocid.name, 'OpenCellID Cells'),
+                ('1', StatKey.unique_blue.name, 'Bluetooth Networks'),
+                ('1', StatKey.blue.name, 'Bluetooth Observations'),
+                ('1', StatKey.unique_wifi.name, 'Wifi Networks'),
+                ('1', StatKey.wifi.name, 'Wifi Observations'),
+                ('2', StatKey.unique_cell.name, 'MLS Cells'),
+                ('2', StatKey.cell.name, 'MLS Cell Observations'),
+                ('2', StatKey.unique_cell_ocid.name, 'OpenCellID Cells'),
             ]
-            for mid, name in metric_names[:4]:
-                data['metrics1'].append({'name': name, 'value': metrics[mid]})
-            for mid, name in metric_names[4:]:
-                data['metrics2'].append({'name': name, 'value': metrics[mid]})
-            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
+            metrics = global_stats(self.session)
+            for i, mid, name in metric_names:
+                data['metrics' + i].append(
+                    {'name': name, 'value': metrics[mid]})
+            self._set_cache('stats', data)
 
         result = {'page_title': 'Statistics'}
         result.update(data)
@@ -362,16 +319,10 @@ class ContentViews(Layout):
     @view_config(renderer='templates/stats_regions.pt',
                  route_name='stats_regions', http_cache=3600)
     def stats_regions_view(self):
-        redis_client = self.request.registry.redis_client
-        cache_key = redis_client.cache_keys['stats_regions']
-        cached = redis_client.get(cache_key)
-        if cached:
-            data = simplejson.loads(cached)
-        else:
-            session = self.request.db_ro_session
-            data = regions(session)
-            redis_client.set(cache_key, simplejson.dumps(data), ex=3600)
-
+        data = self._get_cache('stats_regions')
+        if data is None:
+            data = regions(self.session)
+            self._set_cache('stats_regions', data)
         return {'page_title': 'Region Statistics', 'metrics': data}
 
 
@@ -383,9 +334,7 @@ def touchicon_view(request):
     return FileResponse(TOUCHICON_PATH, request=request)
 
 
-_robots_response = Response(
-    content_type='text/plain',
-    body='''\
+_robots_response = Response(content_type='text/plain', body='''\
 User-agent: *
 Disallow: /downloads
 Disallow: /leaders
@@ -395,8 +344,7 @@ Disallow: /v2/
 Disallow: /__heartbeat__
 Disallow: /__monitor__
 Disallow: /__version__
-'''
-)
+''')
 
 
 def robotstxt_view(context, request):

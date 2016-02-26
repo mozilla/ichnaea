@@ -2,10 +2,12 @@ from calendar import timegm
 from datetime import timedelta
 
 import boto
+from chameleon.zpt.template import Macro
 from mock import MagicMock, patch
 from pyramid.testing import DummyRequest
 from pyramid import testing
 
+from ichnaea.content.views import ContentViews
 from ichnaea.models.content import (
     Score,
     ScoreKey,
@@ -27,49 +29,43 @@ class TestContentViews(TestCase):
         super(TestContentViews, self).setUp()
         request = DummyRequest()
         self.config = testing.setUp(request=request)
+        self.config.include('pyramid_chameleon')
 
     def tearDown(self):
         super(TestContentViews, self).setUp()
         testing.tearDown()
 
-    def _make_view(self, request):
-        from ichnaea.content.views import ContentViews
+    def _make_view(self):
+        request = DummyRequest()
+        setattr(request, 'db_ro_session', None)
+        setattr(request.registry, 'redis_client', None)
         return ContentViews(request)
 
+    def test_base_template(self):
+        self.assertEqual(self._make_view().base_template.__class__, Macro)
+
     def test_homepage(self):
-        request = DummyRequest()
-        inst = self._make_view(request)
-        result = inst.homepage_view()
+        result = self._make_view().homepage_view()
         self.assertEqual(result['page_title'], 'Overview')
 
     def test_api(self):
-        request = DummyRequest()
-        inst = self._make_view(request)
-        result = inst.api_view()
+        result = self._make_view().api_view()
         self.assertTrue('API' in result['page_title'])
 
     def test_apps(self):
-        request = DummyRequest()
-        inst = self._make_view(request)
-        result = inst.apps_view()
+        result = self._make_view().apps_view()
         self.assertTrue('App' in result['page_title'])
 
     def test_optout(self):
-        request = DummyRequest()
-        inst = self._make_view(request)
-        result = inst.optout_view()
+        result = self._make_view().optout_view()
         self.assertTrue('Opt' in result['page_title'])
 
     def test_privacy(self):
-        request = DummyRequest()
-        inst = self._make_view(request)
-        result = inst.privacy_view()
+        result = self._make_view().privacy_view()
         self.assertTrue('Privacy' in result['page_title'])
 
     def test_map(self):
-        request = DummyRequest()
-        inst = self._make_view(request)
-        result = inst.map_view()
+        result = self._make_view().map_view()
         self.assertEqual(result['page_title'], 'Map')
         self.assertEqual(result['tiles'], LOCAL_TILES)
 
@@ -170,10 +166,9 @@ class TestFunctionalContent(AppTestCase):
         self.app.get('/stats/regions', status=200)
 
     def test_stats_blue_json(self):
-        today = util.utcnow().date()
-        yesterday = today - timedelta(1)
-        stat = Stat(key=StatKey.unique_blue, time=yesterday, value=2)
-        self.session.add(stat)
+        yesterday = util.utcnow().date() - timedelta(1)
+        self.session.add(
+            Stat(key=StatKey.unique_blue, time=yesterday, value=2))
         self.session.commit()
         result = self.app.get('/stats_blue.json', status=200)
         self.assertEqual(
@@ -186,12 +181,11 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(second_result.json, result.json)
 
     def test_stats_cell_json(self):
-        today = util.utcnow().date()
-        yesterday = today - timedelta(1)
-        stat = Stat(key=StatKey.unique_cell, time=yesterday, value=2)
-        self.session.add(stat)
-        stat = Stat(key=StatKey.unique_cell_ocid, time=yesterday, value=5)
-        self.session.add(stat)
+        yesterday = util.utcnow().date() - timedelta(1)
+        self.session.add(
+            Stat(key=StatKey.unique_cell, time=yesterday, value=2))
+        self.session.add(
+            Stat(key=StatKey.unique_cell_ocid, time=yesterday, value=5))
         self.session.commit()
         result = self.app.get('/stats_cell.json', status=200)
         self.assertEqual(
@@ -206,10 +200,9 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(second_result.json, result.json)
 
     def test_stats_wifi_json(self):
-        today = util.utcnow().date()
-        yesterday = today - timedelta(1)
-        stat = Stat(key=StatKey.unique_wifi, time=yesterday, value=2)
-        self.session.add(stat)
+        yesterday = util.utcnow().date() - timedelta(1)
+        self.session.add(
+            Stat(key=StatKey.unique_wifi, time=yesterday, value=2))
         self.session.commit()
         result = self.app.get('/stats_wifi.json', status=200)
         self.assertEqual(
@@ -234,24 +227,22 @@ class TestFunctionalContentViews(AppTestCase):
         testing.tearDown()
 
     def _make_view(self, request):
-        from ichnaea.content.views import ContentViews
         return ContentViews(request)
 
     def test_leaders(self):
-        session = self.session
         today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
         for i in range(7, 1, -1):
             user = User(nickname=u'%s' % i)
-            session.add(user)
-            session.flush()
+            self.session.add(user)
+            self.session.flush()
             score1 = Score(key=ScoreKey.location,
                            userid=user.id, time=today, value=i)
-            session.add(score1)
+            self.session.add(score1)
             score2 = Score(key=ScoreKey.location,
                            userid=user.id, time=yesterday, value=i + 1)
-            session.add(score2)
-        session.commit()
+            self.session.add(score2)
+        self.session.commit()
         request = DummyRequest()
         request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
@@ -273,19 +264,18 @@ class TestFunctionalContentViews(AppTestCase):
         self.assertEqual(second_result, result)
 
     def test_leaders_weekly(self):
-        session = self.session
         today = util.utcnow().date()
         for i in range(3):
             user = User(nickname=u'%s' % i)
-            session.add(user)
-            session.flush()
+            self.session.add(user)
+            self.session.flush()
             score1 = Score(key=ScoreKey.new_cell,
                            userid=user.id, time=today, value=i)
-            session.add(score1)
+            self.session.add(score1)
             score2 = Score(key=ScoreKey.new_wifi,
                            userid=user.id, time=today, value=i)
-            session.add(score2)
-        session.commit()
+            self.session.add(score2)
+        self.session.commit()
         request = DummyRequest()
         request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
@@ -309,7 +299,6 @@ class TestFunctionalContentViews(AppTestCase):
 
     def test_stats(self):
         day = util.utcnow().date() - timedelta(1)
-        session = self.session
         stats = [
             Stat(key=StatKey.blue, time=day, value=2200000),
             Stat(key=StatKey.cell, time=day, value=2000000),
@@ -319,8 +308,8 @@ class TestFunctionalContentViews(AppTestCase):
             Stat(key=StatKey.unique_cell_ocid, time=day, value=1500000),
             Stat(key=StatKey.unique_wifi, time=day, value=2000000),
         ]
-        session.add_all(stats)
-        session.commit()
+        self.session.add_all(stats)
+        self.session.commit()
         request = DummyRequest()
         request.db_ro_session = self.session
         request.registry.redis_client = self.redis_client
@@ -362,25 +351,3 @@ class TestFunctionalContentViews(AppTestCase):
         request.db_ro_session = None
         second_result = inst.stats_regions_view()
         self.assertEqual(second_result, result)
-
-
-class TestLayout(TestCase):
-
-    def setUp(self):
-        super(TestLayout, self).setUp()
-        request = DummyRequest()
-        self.config = testing.setUp(request=request)
-        self.config.include('pyramid_chameleon')
-
-    def tearDown(self):
-        super(TestLayout, self).tearDown()
-        testing.tearDown()
-
-    def _make_layout(self):
-        from ichnaea.content.views import Layout
-        return Layout()
-
-    def test_base_template(self):
-        from chameleon.zpt.template import Macro
-        layout = self._make_layout()
-        self.assertEqual(layout.base_template.__class__, Macro)
