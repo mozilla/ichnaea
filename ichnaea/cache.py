@@ -62,7 +62,7 @@ class RedisClient(redis.StrictRedis):
     # whenever the contents/structure of the cache changes. This allows
     # for easy `cache-busting'.
     cache_keys = {
-        'downloads': b'cache:downloads:2',
+        'downloads': b'cache:downloads:3',
         'fallback_blue': b'cache:fallback:blue:',
         'fallback_cell': b'cache:fallback:cell:',
         'fallback_wifi': b'cache:fallback:wifi:',

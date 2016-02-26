@@ -2,7 +2,7 @@
 Contains website related routes and views.
 """
 
-import operator
+from operator import itemgetter
 import os
 
 import boto
@@ -97,8 +97,10 @@ def security_headers(event):
 
 
 def s3_list_downloads(assets_bucket, assets_url, raven_client):
+    files = {'full': [], 'diff1': [], 'diff2': []}
+
     if not assets_bucket:  # pragma: no cover
-        return []
+        return files
 
     if not assets_url.endswith('/'):  # pragma: no cover
         assets_url = assets_url + '/'
@@ -106,19 +108,31 @@ def s3_list_downloads(assets_bucket, assets_url, raven_client):
     conn = boto.connect_s3()
     bucket = conn.lookup(assets_bucket, validate=False)
     if bucket is None:  # pragma: no cover
-        return []
-    files = []
+        return files
+
+    diff = []
+    full = []
     try:
         for key in bucket.list(prefix='export/'):
             name = key.name.split('/')[-1]
             path = urlparse.urljoin(assets_url, key.name)
             # round to kilobyte
             size = int(round(key.size / 1024.0, 0))
-            files.append(dict(name=name, path=path, size=size))
+            file = dict(name=name, path=path, size=size)
+            if 'diff-' in name:
+                diff.append(file)
+            elif 'full-' in name:
+                full.append(file)
     except S3ResponseError:  # pragma: no cover
         raven_client.captureException()
-        return []
-    return sorted(files, key=operator.itemgetter('name'), reverse=True)
+        return files
+
+    half = len(diff) // 2 + len(diff) % 2
+    diff = list(sorted(diff, key=itemgetter('name'), reverse=True))
+    files['diff1'] = diff[:half]
+    files['diff2'] = diff[half:]
+    files['full'] = list(sorted(full, key=itemgetter('name'), reverse=True))
+    return files
 
 
 class ContentViews(object):

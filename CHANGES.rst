@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Improve readability of downloads page.
+
 - Restrict valid characters in API keys.
 
 - Take signal strength into account for location queries.

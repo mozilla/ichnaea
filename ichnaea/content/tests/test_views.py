@@ -100,7 +100,7 @@ class TestFunctionalContent(AppTestCase):
         mock_conn = MagicMock(name='conn')
         mock_bucket = MagicMock(name='bucket')
         mock_conn.return_value.lookup.return_value = mock_bucket
-        key_prefix = 'export/MLS-diff-cell-export-2014-08-20T'
+        key_prefix = 'export/MLS-'
 
         class MockKey(object):
 
@@ -109,23 +109,22 @@ class TestFunctionalContent(AppTestCase):
                 self.size = size
 
         mock_bucket.list.return_value = [
-            MockKey('120000.csv.gz', 1024),
-            MockKey('130000.csv.gz', 1000),
-            MockKey('140000.csv.gz', 8192),
+            MockKey('full-cell-export-2016-02-24T000000.csv.gz', 1024),
+            MockKey('diff-cell-export-2016-02-26T110000.csv.gz', 1000),
+            MockKey('diff-cell-export-2016-02-26T100000.csv.gz', 1000),
+            MockKey('full-cell-export-2016-02-26T000000.csv.gz', 8192),
+            MockKey('diff-cell-export-2016-02-26T120000.csv.gz', 1000),
         ]
         with patch.object(boto, 'connect_s3', mock_conn):
             result = self.app.get('/downloads', status=200)
-            self.assertTrue(key_prefix + '120000.csv.gz' in result.text)
-            self.assertTrue('1kB' in result.text)
-            self.assertTrue(key_prefix + '130000.csv.gz' in result.text)
             self.assertFalse('0kB' in result.text)
-            self.assertTrue(key_prefix + '140000.csv.gz' in result.text)
+            self.assertTrue('1kB' in result.text)
             self.assertTrue('8kB' in result.text)
 
         # calling the page again should use the cache
         with patch.object(boto, 'connect_s3', mock_conn):
             result = self.app.get('/downloads', status=200)
-            self.assertTrue(key_prefix + '120000.csv.gz' in result.text)
+            self.assertTrue('1kB' in result.text)
 
         # The mock / S3 API was only called once
         self.assertEqual(len(mock_bucket.list.mock_calls), 1)
