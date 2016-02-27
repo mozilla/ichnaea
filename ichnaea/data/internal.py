@@ -15,7 +15,6 @@ from ichnaea.models import (
     CellShard,
     DataMap,
     Report,
-    Score,
     ScoreKey,
     User,
     WifiObservation,
@@ -399,22 +398,17 @@ class InternalUploader(BaseReportUploader):
             return
 
         scores = []
-        key = Score.to_hashkey(
-            userid=userid,
-            key=ScoreKey.location,
-            time=None)
-        scores.append({'hashkey': key, 'value': pos_count})
+        scores.append({
+            'key': int(ScoreKey.location),
+            'userid': userid,
+            'value': pos_count,
+        })
 
-        for name, score_key in (('cell', ScoreKey.new_cell),
-                                ('wifi', ScoreKey.new_wifi)):
-            count = new_station_count[name]
-            if count <= 0:
-                continue
-            key = Score.to_hashkey(
-                userid=userid,
-                key=score_key,
-                time=None)
-            scores.append({'hashkey': key, 'value': count})
+        for name, key in (('cell', int(ScoreKey.new_cell)),
+                          ('wifi', int(ScoreKey.new_wifi))):
+            value = new_station_count[name]
+            if value > 0:
+                scores.append({'key': key, 'userid': userid, 'value': value})
 
         queue = self.task.app.data_queues['update_score']
         queue.enqueue(scores)

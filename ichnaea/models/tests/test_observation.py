@@ -1,7 +1,5 @@
-from ichnaea.internaljson import (
-    internal_dumps,
-    internal_loads,
-)
+import simplejson
+
 from ichnaea.models import (
     BlueObservation,
     BlueReport,
@@ -51,8 +49,8 @@ class TestBlueObservation(DBTestCase):
 
     def test_json(self):
         obs = BlueObservationFactory.build(accuracy=None)
-        result = BlueObservation.from_json(internal_loads(
-            internal_dumps(obs.to_json())))
+        result = BlueObservation.from_json(simplejson.loads(
+            simplejson.dumps(obs.to_json())))
         self.assertTrue(type(result), BlueObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(result.mac, obs.mac)
@@ -107,8 +105,8 @@ class TestCellObservation(DBTestCase):
 
     def test_json(self):
         obs = CellObservationFactory.build(accuracy=None)
-        result = CellObservation.from_json(internal_loads(
-            internal_dumps(obs.to_json())))
+        result = CellObservation.from_json(simplejson.loads(
+            simplejson.dumps(obs.to_json())))
         self.assertTrue(type(result), CellObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(type(result.radio), Radio)
@@ -189,8 +187,8 @@ class TestWifiObservation(DBTestCase):
 
     def test_json(self):
         obs = WifiObservationFactory.build(accuracy=None)
-        result = WifiObservation.from_json(internal_loads(
-            internal_dumps(obs.to_json())))
+        result = WifiObservation.from_json(simplejson.loads(
+            simplejson.dumps(obs.to_json())))
         self.assertTrue(type(result), WifiObservation)
         self.assertTrue(result.accuracy is None)
         self.assertEqual(result.mac, obs.mac)

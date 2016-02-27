@@ -65,10 +65,7 @@ class HashableDict(object):
 
 
 class JSONMixin(object):
-    """
-    A mixin class that supports round-tripping of the actual class
-    via our internal JSON format back into an instance of the class.
-    """
+    # BBB
 
     @property
     def _dottedname(self):

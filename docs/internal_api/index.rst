@@ -31,7 +31,6 @@ Indices and Tables
    geocode
    geoip
    http
-   internaljson
    log
    models/index
    queue

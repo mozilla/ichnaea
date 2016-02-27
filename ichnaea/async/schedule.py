@@ -83,7 +83,7 @@ def celerybeat_schedule(app_config):
 
         'update-score': {
             'task': 'ichnaea.data.tasks.update_score',
-            'args': (250, ),
+            'args': (100, ),
             'schedule': timedelta(seconds=9),
             'options': {'expires': 10},
         },

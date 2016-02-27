@@ -252,7 +252,7 @@ class TestUploader(BaseExportTest):
         queue = self.celery_app.data_queues['update_score']
         self.assertEqual(queue.size(), 2)
         scores = queue.dequeue()
-        score_keys = set([score['hashkey'].key for score in scores])
+        score_keys = set([ScoreKey(score['key']) for score in scores])
         self.assertEqual(
             score_keys, set([ScoreKey.location, ScoreKey.new_cell]))
 

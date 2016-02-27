@@ -3,7 +3,7 @@ from contextlib import contextmanager
 import boto
 import mock
 import requests_mock
-import simplejson as json
+import simplejson
 
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
@@ -66,10 +66,8 @@ class TestGeosubmitUploader(BaseExportTest):
         self.assertEqual(req.headers['Content-Encoding'], 'gzip')
         self.assertEqual(req.headers['User-Agent'], 'ichnaea')
 
-        # make sure a standards based json can decode this data
-        # and none of our internal_json structures end up in it
         body = util.decode_gzip(req.body)
-        send_reports = json.loads(body)['items']
+        send_reports = simplejson.loads(body)['items']
         self.assertEqual(len(send_reports), 3)
         expect = [report['position']['accuracy'] for report in reports]
         gotten = [report['position']['accuracy'] for report in send_reports]
@@ -140,7 +138,7 @@ class TestS3Uploader(BaseExportTest):
         uploaded_data = args[0]
         uploaded_text = util.decode_gzip(uploaded_data)
 
-        send_reports = json.loads(uploaded_text)['items']
+        send_reports = simplejson.loads(uploaded_text)['items']
         self.assertEqual(len(send_reports), 3)
         expect = [report['position']['accuracy'] for report in reports]
         gotten = [report['position']['accuracy'] for report in send_reports]

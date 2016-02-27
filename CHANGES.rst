@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Deprecate hashkey and internaljson logic.
+
 - Improve readability of downloads page.
 
 - Restrict valid characters in API keys.

@@ -19,7 +19,7 @@ WHITESPACE = re.compile('\s', flags=re.UNICODE)
 
 class BaseQueue(object):
     """
-    A Redis based queue which stores items formatted via internaljson
+    A Redis based queue which stores binary or JSON encoded items
     in lists.
 
     The lists maintain a TTL value corresponding to the time data has
@@ -52,6 +52,7 @@ class BaseQueue(object):
             if self.compress:
                 result = [util.decode_gzip(item) for item in result]
             if json:
+                # BBB replace with simplejson
                 result = [internal_loads(item) for item in result]
 
         return result
@@ -66,6 +67,7 @@ class BaseQueue(object):
 
     def _enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
         if json:
+            # BBB replace with simplejson
             items = [str(internal_dumps(item)) for item in items]
 
         if self.compress:

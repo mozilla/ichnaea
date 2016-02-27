@@ -24,7 +24,6 @@ from ichnaea.models.base import (
     HashableDict,
     JSONMixin,
 )
-from ichnaea.models.hashkey import HashKeyQueryMixin
 from ichnaea.models.sa_types import TinyIntEnum
 
 DATAMAP_GRID_SCALE = 1000
@@ -223,6 +222,7 @@ class RegionStat(_Model):
 
 
 class ScoreHashKey(HashableDict, JSONMixin):
+    # BBB
 
     _fields = ('userid', 'key', 'time')
 
@@ -238,13 +238,12 @@ class ScoreHashKey(HashableDict, JSONMixin):
         return value
 
 
-class Score(HashKeyQueryMixin, _Model):
+class Score(_Model):
     __tablename__ = 'score'
 
     _indices = (
         PrimaryKeyConstraint('key', 'userid', 'time'),
     )
-    _hashkey_cls = ScoreHashKey
 
     # this is a foreign key to user.id
     userid = Column(Integer(unsigned=True), autoincrement=False)
