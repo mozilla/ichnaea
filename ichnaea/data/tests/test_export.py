@@ -58,8 +58,7 @@ class TestExporter(BaseExportTest):
 
     def test_one_queue(self):
         self.add_reports(3)
-        triggered = schedule_export_reports.delay().get()
-        self.assertEqual(triggered, 1)
+        schedule_export_reports.delay().get()
 
         # data from one queue was processed
         export_queues = self.celery_app.export_queues

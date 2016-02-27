@@ -34,27 +34,27 @@ def cell_import_external(self, diff=True):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_api_key_limits(self):
-    return monitor.ApiKeyLimits(self)()
+    monitor.ApiKeyLimits(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_api_users(self):
-    return monitor.ApiUsers(self)()
+    monitor.ApiUsers(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_ocid_import(self):
-    return monitor.OcidImport(self)()
+    monitor.OcidImport(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor')
 def monitor_queue_size(self):
-    return monitor.QueueSize(self)()
+    monitor.QueueSize(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
 def schedule_export_reports(self):
-    return export.ExportScheduler(self)(export_reports)
+    export.ExportScheduler(self)(export_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports')
