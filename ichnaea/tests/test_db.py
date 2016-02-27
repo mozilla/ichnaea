@@ -23,17 +23,6 @@ class TestDatabase(DBTestCase):
         result = self.session.execute('select * from cell_gsm;')
         self.assertTrue(result.first() is None)
 
-    def test_session_hook(self):
-        session = self.session
-        result = []
-
-        def hook(session, value, _result=result, **kw):
-            _result.append((value, kw))
-
-        session.on_post_commit(hook, 123, foo='bar')
-        session.commit()
-        self.assertEqual(result, [(123, {'foo': 'bar'})])
-
     def test_show_warnings_backport(self):
         # Fixed in PyMySQL 0.6.7
         stmt = text('DROP TABLE IF EXISTS a; DROP TABLE IF EXISTS b;')

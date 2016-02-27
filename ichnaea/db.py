@@ -118,7 +118,7 @@ class Database(object):
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(
-            bind=self.engine, class_=HookedSession,
+            bind=self.engine, class_=PingableSession,
             autocommit=False, autoflush=False)
 
     def ping(self):
@@ -135,24 +135,12 @@ class Database(object):
         return self.session_factory()
 
 
-class HookedSession(Session):
-    """A custom database session providing a post commit hook."""
+class PingableSession(Session):
+    """A custom pingable database session."""
 
     def __init__(self, *args, **kw):
         # disable automatic docstring
-        return super(HookedSession, self).__init__(*args, **kw)
-
-    def on_post_commit(self, function, *args, **kw):
-        """
-        Register a post commit (after-transaction-end) hook.
-
-        The function will be called with all the arguments and keywords
-        arguments preceded by a single session argument.
-        """
-        def wrapper(session, transaction):
-            return function(session, *args, **kw)
-
-        event.listen(self, 'after_transaction_end', wrapper, once=True)
+        return super(PingableSession, self).__init__(*args, **kw)
 
     def ping(self):
         """Use this active session to check the database connectivity."""
