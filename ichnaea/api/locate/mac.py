@@ -6,6 +6,7 @@ import math
 
 import numpy
 from scipy.cluster import hierarchy
+from scipy.optimize import leastsq
 from sqlalchemy.orm import load_only
 from sqlalchemy.sql import or_
 
@@ -27,7 +28,8 @@ NETWORK_DTYPE = numpy.dtype([
 ])
 
 
-def cluster_networks(models, lookups, min_signal=None, max_distance=None):
+def cluster_networks(models, lookups,
+                     min_radius=None, min_signal=None, max_distance=None):
     """
     Given a list of database models and lookups, return
     a list of clusters of nearby networks.
@@ -40,7 +42,7 @@ def cluster_networks(models, lookups, min_signal=None, max_distance=None):
         signals[lookup.mac] = lookup.signal or min_signal
 
     networks = numpy.array(
-        [(model.lat, model.lon, model.radius,
+        [(model.lat, model.lon, model.radius or min_radius,
           signals[model.mac], model.score(now))
          for model in models],
         dtype=NETWORK_DTYPE)
@@ -94,22 +96,40 @@ def cluster_networks(models, lookups, min_signal=None, max_distance=None):
 
 
 def aggregate_mac_position(networks, minimum_accuracy):
+    # Idea based on https://gis.stackexchange.com/questions/40660
+
+    def func(point, points):
+        return numpy.array([
+            distance(p['lat'], p['lon'], point[0], point[1]) /
+            math.pow(p['signal'], 2)
+            for p in points])
+
+    # Guess initial position as the weighted mean over all networks.
     points = numpy.array(
         [(net['lat'], net['lon']) for net in networks],
         dtype=numpy.double)
 
     weights = numpy.array([
-        1.0 / math.pow(net['signal'], 2) for net in networks],
+        net['score'] / math.pow(net['signal'], 2) for net in networks],
         dtype=numpy.double)
 
-    lat, lon = numpy.average(points, axis=0, weights=weights)
+    initial = numpy.average(points, axis=0, weights=weights)
 
-    radius = minimum_accuracy
-    for net in networks:
-        p_dist = distance(lat, lon, net['lat'], net['lon']) + net['radius']
-        radius = max(radius, p_dist)
+    (lat, lon), cov_x, info, mesg, ier = leastsq(
+        func, initial, args=networks, full_output=True)
 
-    return (float(lat), float(lon), float(radius))
+    if ier not in (1, 2, 3, 4):  # pragma: no cover
+        # No solution found, use initial estimate.
+        lat, lon = initial
+
+    # Guess the accuracy as the 95th percentile of the distances
+    # from the lat/lon to the positions of all networks.
+    distances = numpy.array([
+        distance(lat, lon, net['lat'], net['lon'])
+        for net in networks], dtype=numpy.double)
+    accuracy = max(numpy.percentile(distances, 95), minimum_accuracy)
+
+    return (float(lat), float(lon), float(accuracy))
 
 
 def aggregate_cluster_position(cluster, result_type, max_networks=None,
@@ -118,9 +138,8 @@ def aggregate_cluster_position(cluster, result_type, max_networks=None,
     Given a single cluster, return the aggregate position of the user
     inside the cluster.
     """
-    # Reverse sort by signal, to pick the best sample of networks.
-    cluster.sort(order='signal')
-    cluster = numpy.flipud(cluster)
+    # Sort by score, to pick the best sample of networks.
+    cluster.sort(order='score')
     sample = cluster[:max_networks]
 
     lat, lon, accuracy = aggregate_mac_position(sample, min_accuracy)

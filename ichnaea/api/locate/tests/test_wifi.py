@@ -38,8 +38,10 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
+        query.wifi[0].signal = -60
+        query.wifi[1].signal = -80
         results = self.source.search(query)
-        self.check_model_results(results, [wifi], lon=wifi.lon + 0.000005)
+        self.check_model_results(results, [wifi], lon=wifi.lon + 0.000004)
         self.assertTrue(results.best().score > 1.0)
 
     def test_wifi_no_position(self):
@@ -117,6 +119,7 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(wifis=[wifi] + wifis)
         results = self.source.search(query)
         self.check_model_results(results, [wifi], lat=wifi.lat + 0.00001)
+        self.assertAlmostEqual(results.best().score, 0.15)
 
     def test_not_closeby(self):
         wifi = WifiShardFactory()
@@ -172,12 +175,17 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(
             wifis=[wifi11, wifi12, wifi13, wifi21, wifi22])
         results = self.source.search(query)
-        self.check_model_results(results, [wifi11, wifi21])
+        self.assertEqual(len(results), 2)
         best_result = results.best()
         self.assertAlmostEqual(best_result.lat, wifi21.lat, 7)
         self.assertAlmostEqual(best_result.lon, wifi21.lon, 7)
+        self.assertAlmostEqual(best_result.accuracy, 10.0, 2)
         self.assertAlmostEqual(
             best_result.score, wifi21.score(now) + wifi22.score(now), 4)
+        other_result = [res for res in results
+                        if res.score < best_result.score][0]
+        self.assertAlmostEqual(other_result.lat, wifi11.lat, 4)
+        self.assertAlmostEqual(other_result.lon, wifi11.lon, 4)
 
     def test_top_results_in_noisy_cluster(self):
         now = util.utcnow()
@@ -220,6 +228,6 @@ class TestWifi(BaseSourceTest):
 
         results = self.source.search(query)
         result = results.best()
-        self.assertAlmostEqual(result.lat, 51.500012, 6)
-        self.assertAlmostEqual(result.lon, -0.099985, 6)
-        self.assertAlmostEqual(result.accuracy, 44.945, 3)
+        self.assertAlmostEqual(result.lat, wifi1.lat + 0.0000018, 7)
+        self.assertAlmostEqual(result.lon, wifi1.lon + 0.0000014, 7)
+        self.assertAlmostEqual(result.accuracy, 39.34, 2)

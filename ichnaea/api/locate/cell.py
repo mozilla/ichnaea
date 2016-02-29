@@ -116,20 +116,21 @@ def aggregate_cell_position(networks, min_accuracy, max_accuracy):
         dtype=numpy.double)
 
     weights = numpy.array([
-        1.0 / math.pow(net['signal'], 2) for net in networks],
+        net['score'] / math.pow(net['signal'], 2) for net in networks],
         dtype=numpy.double)
 
     lat, lon = numpy.average(points, axis=0, weights=weights)
-
-    radius = min_accuracy
-    for net in networks:
-        p_dist = distance(lat, lon, net['lat'], net['lon']) + net['radius']
-        radius = max(radius, p_dist)
-    radius = min(radius, max_accuracy)
-
     score = networks['score'].sum()
 
-    return (float(lat), float(lon), float(radius), float(score))
+    # Guess the accuracy as the 95th percentile of the distances
+    # from the lat/lon to the positions of all networks.
+    distances = numpy.array([
+        distance(lat, lon, net['lat'], net['lon'])
+        for net in networks], dtype=numpy.double)
+    accuracy = min(max(numpy.percentile(distances, 95),
+                       min_accuracy), max_accuracy)
+
+    return (float(lat), float(lon), float(accuracy), float(score))
 
 
 def query_cell_table(session, model, cellids, temp_blocked,

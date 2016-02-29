@@ -53,7 +53,7 @@ class TestCellPosition(BaseSourceTest):
 
     def test_multiple_cells(self):
         now = util.utcnow()
-        cell = CellShardFactory(samples=20)
+        cell = CellShardFactory(samples=100)
         cell2 = CellShardFactory(radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc,
                                  lac=cell.lac, cid=cell.cid + 1,
                                  lat=cell.lat + 1.0, lon=cell.lon + 1.0,
@@ -64,7 +64,7 @@ class TestCellPosition(BaseSourceTest):
         results = self.source.search(query)
         self.check_model_results(
             results, [cell],
-            lat=cell.lat + 0.5, lon=cell.lon + 0.5,
+            lat=cell.lat + 0.3333333, lon=cell.lon + 0.3333333,
             accuracy=CELL_MAX_ACCURACY)
         self.assertAlmostEqual(
             results.best().score, cell.score(now) + cell2.score(now), 4)

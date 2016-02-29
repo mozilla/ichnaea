@@ -170,7 +170,7 @@ class BaseSourceTest(ConnectionTestCase):
                 expected.append({
                     'lat': kw.get('lat', model.lat),
                     'lon': kw.get('lon', model.lon),
-                    'accuracy': accuracy,
+                    'accuracy': kw.get('accuracy', accuracy),
                 })
 
             # don't test ordering of results

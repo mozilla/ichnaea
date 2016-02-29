@@ -43,6 +43,7 @@ class WifiPositionMixin(object):
 
         wifis = query_macs(query, query.wifi, self.raven_client, WifiShard)
         for cluster in cluster_networks(wifis, query.wifi,
+                                        min_radius=WIFI_MIN_ACCURACY,
                                         min_signal=MIN_WIFI_SIGNAL,
                                         max_distance=MAX_WIFI_CLUSTER_METERS):
             results.add(aggregate_cluster_position(

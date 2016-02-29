@@ -43,6 +43,7 @@ class BluePositionMixin(object):
 
         blues = query_macs(query, query.blue, self.raven_client, BlueShard)
         for cluster in cluster_networks(blues, query.blue,
+                                        min_radius=BLUE_MIN_ACCURACY,
                                         min_signal=MIN_BLUE_SIGNAL,
                                         max_distance=MAX_BLUE_CLUSTER_METERS):
             results.add(aggregate_cluster_position(
