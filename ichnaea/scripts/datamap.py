@@ -257,7 +257,7 @@ def upload_folder(bucketname, bucket_prefix,
 
 
 def upload_files(pool, bucketname, tiles, max_zoom,
-                 bucket_prefix='tiles/'):  # pragma: no cover
+                 raven_client, bucket_prefix='tiles/'):  # pragma: no cover
     result = {
         'tile_changed': 0,
         'tile_deleted': 0,
@@ -288,9 +288,12 @@ def upload_files(pool, bucketname, tiles, max_zoom,
             upload_folder, (bucketname, bucket_prefix, tiles, folder)))
 
     for job in jobs:
-        folder_result = job.get()
-        for key, value in folder_result.items():
-            result[key] += value
+        try:
+            folder_result = job.get()
+            for key, value in folder_result.items():
+                result[key] += value
+        except Exception:
+            raven_client.captureException()
 
     # Update status file
     conn = boto.connect_s3()
@@ -366,7 +369,8 @@ def generate(db_url, bucketname, raven_client, stats_client,
             pool = billiard.Pool(processes=concurrency * 2)
 
             with stats_client.timed('datamaps', tags=['func:upload']):
-                result = upload_files(pool, bucketname, tiles, max_zoom)
+                result = upload_files(pool, bucketname, tiles, max_zoom,
+                                      raven_client)
 
             pool.close()
             pool.join()
