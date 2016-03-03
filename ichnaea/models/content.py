@@ -19,11 +19,7 @@ from sqlalchemy.dialects.mysql import (
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea.models.base import (
-    _Model,
-    HashableDict,
-    JSONMixin,
-)
+from ichnaea.models.base import _Model
 from ichnaea.models.sa_types import TinyIntEnum
 
 DATAMAP_GRID_SCALE = 1000
@@ -219,23 +215,6 @@ class RegionStat(_Model):
     lte = Column(Integer(unsigned=True))  #:
     blue = Column(BigInteger(unsigned=True))  #:
     wifi = Column(BigInteger(unsigned=True))  #:
-
-
-class ScoreHashKey(HashableDict, JSONMixin):
-    # BBB
-
-    _fields = ('userid', 'key', 'time')
-
-    @classmethod
-    def _from_json_value(cls, value):
-        data = value.copy()
-        data['key'] = ScoreKey(data['key'])
-        return cls(**data)
-
-    def _to_json_value(self):
-        value = self.__dict__.copy()
-        value['key'] = int(value['key'])
-        return value
 
 
 class Score(_Model):

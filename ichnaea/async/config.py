@@ -6,11 +6,11 @@ import os
 
 from kombu import Queue
 from kombu.serialization import register
+import simplejson
 
 from ichnaea.async.schedule import celerybeat_schedule
 from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
-from ichnaea import internaljson
 from ichnaea.db import configure_db
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
@@ -43,8 +43,8 @@ CELERY_QUEUES = (
 )  #: List of :class:`kombu.Queue` instances.
 
 register('internal_json',
-         internaljson.internal_dumps,
-         internaljson.internal_loads,
+         simplejson.dumps,
+         simplejson.loads,
          content_type='application/x-internaljson',
          content_encoding='utf-8')
 

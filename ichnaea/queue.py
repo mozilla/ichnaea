@@ -4,13 +4,10 @@ Functionality related to custom Redis based queues.
 
 import re
 
+import simplejson
 from six.moves.urllib.parse import urlparse
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.internaljson import (
-    internal_dumps,
-    internal_loads,
-)
 from ichnaea import util
 
 EXPORT_QUEUE_PREFIX = 'queue_export_'
@@ -52,8 +49,7 @@ class BaseQueue(object):
             if self.compress:
                 result = [util.decode_gzip(item) for item in result]
             if json:
-                # BBB replace with simplejson
-                result = [internal_loads(item) for item in result]
+                result = [simplejson.loads(item) for item in result]
 
         return result
 
@@ -67,8 +63,7 @@ class BaseQueue(object):
 
     def _enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
         if json:
-            # BBB replace with simplejson
-            items = [str(internal_dumps(item)) for item in items]
+            items = [str(simplejson.dumps(item)) for item in items]
 
         if self.compress:
             items = [util.encode_gzip(item) for item in items]

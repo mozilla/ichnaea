@@ -3,7 +3,6 @@ Model and schema related common classes.
 """
 
 import colander
-from pyramid.path import DottedNameResolver
 from sqlalchemy.ext.declarative import (
     declared_attr,
     declarative_base,
@@ -13,8 +12,6 @@ MYSQL_SETTINGS = {
     'mysql_engine': 'InnoDB',
     'mysql_charset': 'utf8',
 }  #: Common MySQL database settings.
-RESOLVER = DottedNameResolver('ichnaea')
-RESOLVER_CACHE = {}
 
 
 class BaseModel(object):
@@ -62,46 +59,6 @@ class HashableDict(object):
         for field in self._fields:
             value += (getattr(self, field, None), )
         return hash(value)
-
-
-class JSONMixin(object):
-    # BBB
-
-    @property
-    def _dottedname(self):
-        """Returns a fully qualified import path to this class."""
-        klass = self.__class__
-        return '%s:%s' % (klass.__module__, klass.__name__)
-
-    @staticmethod
-    def _from_json(dct):
-        """Instantiate a class based on the provided JSON dictionary."""
-        data = dct['__class__']
-        name = data['name']
-        global RESOLVER_CACHE
-        klass = RESOLVER_CACHE.get(name, None)
-        if klass is None:
-            RESOLVER_CACHE[name] = klass = RESOLVER.resolve(name)
-        return klass._from_json_value(data['value'])
-
-    @classmethod
-    def _from_json_value(cls, value):  # pragma: no cover
-        """Instantiate this class based on the provided value."""
-        return cls(**value)
-
-    def _to_json(self):
-        """
-        Returns a dictionary representation of this class dotted name
-        and its instance state.
-        """
-        return {'__class__': {
-            'name': self._dottedname,
-            'value': self._to_json_value(),
-        }}
-
-    def _to_json_value(self):  # pragma: no cover
-        """Returns a dictionary representation of the instance state."""
-        return self.__dict__
 
 
 class ValidationMixin(object):

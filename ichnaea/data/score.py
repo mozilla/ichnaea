@@ -33,16 +33,8 @@ class ScoreUpdater(object):
     def __call__(self, batch=1000):
         score_values = defaultdict(int)
         for score in self.queue.dequeue(batch=batch):
-            if 'hashkey' in score:
-                # BBB
-                hashkey = score['hashkey']
-                key = hashkey.key
-                userid = hashkey.userid
-            else:
-                key = ScoreKey(score['key'])
-                userid = score['userid']
-
-            score_values[(key, userid)] += score['value']
+            score_values[(ScoreKey(score['key']),
+                          score['userid'])] += score['value']
 
         with self.task.db_session() as session:
             self._update_scores(session, score_values)
