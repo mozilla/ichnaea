@@ -60,7 +60,7 @@ def write_stations_to_csv(session, path, start_time=None, end_time=None):
     ) AS `cell_value`
 FROM %s
 WHERE %s
-ORDER BY `radio`, `mcc`, `mnc`, `lac`, `cid`
+ORDER BY `cellid`
 LIMIT :l
 OFFSET :o
 '''
@@ -71,7 +71,7 @@ OFFSET :o
             for table in tables:
                 table_stmt = text(stmt % (table, where))
                 offset = 0
-                limit = 10000
+                limit = 25000
                 while True:
                     rows = session.execute(
                         table_stmt.bindparams(o=offset, l=limit)).fetchall()

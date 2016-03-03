@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Speed up full cell export.
+
 - Rename internal blue/wifi observation key to mac.
 
 - Removed migrations before version 1.4.
