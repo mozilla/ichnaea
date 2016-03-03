@@ -13,3 +13,5 @@ Migrations
 
 Changes
 ~~~~~~~
+
+- Removed migrations before version 1.4.

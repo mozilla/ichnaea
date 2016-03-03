@@ -1,7 +1,7 @@
 """add bluetooth region stat
 
 Revision ID: 4b11500c9014
-Revises: b247526b9501
+Revises: None
 Create Date: 2016-01-26 22:49:08.201425
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 log = logging.getLogger('alembic.migration')
 revision = '4b11500c9014'
-down_revision = 'b247526b9501'
+down_revision = None
 
 
 def upgrade():
