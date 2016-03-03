@@ -131,7 +131,15 @@ class Report(BaseReport):
 class ValidBlueReportSchema(ValidBlueSignalSchema):
     """A schema which validates the Bluetooth specific fields in a report."""
 
-    key = MacNode(colander.String())
+    mac = MacNode(colander.String())
+
+    def deserialize(self, data):
+        if 'key' in data and 'mac' not in data:  # pragma: no cover
+            # BBB
+            data = data.copy()
+            mac = data.pop('key')
+            data['mac'] = mac
+        return super(ValidBlueReportSchema, self).deserialize(data)
 
     def validator(self, node, cstruct):
         super(ValidBlueReportSchema, self).validator(node, cstruct)
@@ -147,7 +155,7 @@ class BlueReport(BaseReport):
 
     _valid_schema = ValidBlueReportSchema()
     _fields = (
-        'key',
+        'mac',
         'signal',
     )
 
@@ -172,11 +180,6 @@ class BlueReport(BaseReport):
     def shard_model(self):
         return BlueShard.shard_model(self.mac)
 
-    @property
-    def mac(self):
-        # BBB: alias
-        return self.key
-
 
 class ValidBlueObservationSchema(ValidBlueReportSchema, ValidReportSchema):
     """A schema which validates the fields in a Bluetooth observation."""
@@ -192,6 +195,13 @@ class BlueObservation(BlueReport, Report, BaseObservation):
     def weight(self):
         signal_weight = 1.0
         return signal_weight * self.accuracy_weight
+
+    @classmethod
+    def _from_json_value(cls, dct):
+        # BBB
+        if 'key' in dct and 'mac' not in dct:  # pragma: no cover
+            dct['mac'] = dct['key']
+        return super(BlueObservation, cls)._from_json_value(dct)
 
 
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
@@ -316,7 +326,15 @@ class CellObservation(CellReport, Report, BaseObservation):
 class ValidWifiReportSchema(ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
 
-    key = MacNode(colander.String())
+    mac = MacNode(colander.String())
+
+    def deserialize(self, data):
+        if 'key' in data and 'mac' not in data:  # pragma: no cover
+            # BBB
+            data = data.copy()
+            mac = data.pop('key')
+            data['mac'] = mac
+        return super(ValidWifiReportSchema, self).deserialize(data)
 
     def validator(self, node, cstruct):
         super(ValidWifiReportSchema, self).validator(node, cstruct)
@@ -332,7 +350,7 @@ class WifiReport(BaseReport):
 
     _valid_schema = ValidWifiReportSchema()
     _fields = (
-        'key',
+        'mac',
         'channel',
         'signal',
         'snr',
@@ -359,11 +377,6 @@ class WifiReport(BaseReport):
     def shard_model(self):
         return WifiShard.shard_model(self.mac)
 
-    @property
-    def mac(self):
-        # BBB: alias
-        return self.key
-
 
 class ValidWifiObservationSchema(ValidWifiReportSchema, ValidReportSchema):
     """A schema which validates the fields in wifi observation."""
@@ -382,3 +395,10 @@ class WifiObservation(WifiReport, Report, BaseObservation):
         # Maps -100: ~0.5, -80: 1.0, -60: 2.4, -30: 16, -10: ~123
         signal_weight = ((1.0 / (signal - 20.0) ** 2) * 10000) ** 2
         return signal_weight * self.accuracy_weight
+
+    @classmethod
+    def _from_json_value(cls, dct):
+        # BBB
+        if 'key' in dct and 'mac' not in dct:  # pragma: no cover
+            dct['mac'] = dct['key']
+        return super(WifiObservation, cls)._from_json_value(dct)

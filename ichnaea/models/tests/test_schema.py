@@ -65,7 +65,7 @@ class TestBlue(ValidationTest):
             'time': self.time,
         }
         blue = {
-            'key': '12:34:56:78:90:12',
+            'mac': '12:34:56:78:90:12',
             'signal': -85,
         }
         for (k, v) in kwargs.items():
@@ -418,7 +418,7 @@ class TestWifi(ValidationTest):
             'time': self.time,
         }
         wifi = {
-            'key': '12:34:56:78:90:12',
+            'mac': '12:34:56:78:90:12',
             'frequency': 2442,
             'channel': 7,
             'signal': -85,
@@ -431,8 +431,8 @@ class TestWifi(ValidationTest):
                 wifi[k] = v
         return (obs, wifi)
 
-    def test_valid_key(self):
-        valid_key_pairs = [
+    def test_valid_mac(self):
+        valid_mac_pairs = [
             ('12:34:56:78:90:12', '123456789012'),
             ('12.34.56.78.90.12', '123456789012'),
             ('1234::5678::9012', '123456789012'),
@@ -449,12 +449,12 @@ class TestWifi(ValidationTest):
             ('0a:00:00:00:00:00', '0a0000000000'),
         ]
 
-        for (in_, out) in valid_key_pairs:
-            obs, wifi = self.get_sample(key=in_)
-            self.check_normalized_wifi(obs, wifi, dict(key=out))
+        for (in_, out) in valid_mac_pairs:
+            obs, wifi = self.get_sample(mac=in_)
+            self.check_normalized_wifi(obs, wifi, dict(mac=out))
 
-    def test_invalid_key(self):
-        invalid_keys = [
+    def test_invalid_mac(self):
+        invalid_macs = [
             'ab:cd',
             'ffffffffffff',
             '000000000000',
@@ -467,8 +467,8 @@ class TestWifi(ValidationTest):
                     for x in range(6)])
             for c in '!@#$%^&*()_+={}\x01\x02\x03\r\n']
 
-        for key in invalid_keys:
-            obs, wifi = self.get_sample(key=key)
+        for mac in invalid_macs:
+            obs, wifi = self.get_sample(mac=mac)
             self.check_normalized_wifi(obs, wifi, None)
 
     def test_valid_accuracy(self):

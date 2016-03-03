@@ -138,10 +138,9 @@ class BlueShardFactory(BaseSQLFactory):
 
 class BlueObservationFactory(BaseMemoryFactory):
 
-    key = FuzzyMacKey()
+    mac = FuzzyMacKey()
     lat = GB_LAT
     lon = GB_LON
-    range = BLUE_MIN_ACCURACY / 2.0
     accuracy = 10.0
     signal = -80
     snr = 30
@@ -280,10 +279,9 @@ class WifiShardFactory(BaseSQLFactory):
 
 class WifiObservationFactory(BaseMemoryFactory):
 
-    key = FuzzyMacKey()
+    mac = FuzzyMacKey()
     lat = GB_LAT
     lon = GB_LON
-    range = WIFI_MIN_ACCURACY / 2.0
     accuracy = 10.0
     signal = -80
     snr = 30

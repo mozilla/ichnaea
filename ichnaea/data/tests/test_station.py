@@ -436,11 +436,11 @@ class TestWifi(StationTest):
         mac1, lat1, lon1 = (wifi1.mac, new_pos.lat, new_pos.lon)
         obs.extend([
             obs_factory(lat=lat1,
-                        lon=lon1, key=mac1),
+                        lon=lon1, mac=mac1),
             obs_factory(lat=lat1 + 0.002,
-                        lon=lon1 + 0.003, key=mac1),
+                        lon=lon1 + 0.003, mac=mac1),
             obs_factory(lat=lat1 + 0.004,
-                        lon=lon1 + 0.006, key=mac1),
+                        lon=lon1 + 0.006, mac=mac1),
         ])
         # second wifi
         wifi2 = WifiShardFactory(
@@ -453,9 +453,9 @@ class TestWifi(StationTest):
         mac2, lat2, lon2 = (wifi2.mac, wifi2.lat, wifi2.lon)
         obs.extend([
             obs_factory(lat=lat2 + 0.002,
-                        lon=lon2 + 0.004, key=mac2),
+                        lon=lon2 + 0.004, mac=mac2),
             obs_factory(lat=lat2 + 0.002,
-                        lon=lon2 + 0.004, key=mac2),
+                        lon=lon2 + 0.004, mac=mac2),
         ])
         self.session.commit()
         self._queue_and_update_wifi(obs)
@@ -570,19 +570,19 @@ class TestWifi(StationTest):
         # a wifi without an entry and disagreeing observations
         wifi = wifis[-1]
         obs.extend([
-            obs_factory(lat=wifi.lat, lon=wifi.lon, key=wifi.mac),
-            obs_factory(lat=wifi.lat + 2.0, lon=wifi.lon, key=wifi.mac),
+            obs_factory(lat=wifi.lat, lon=wifi.lon, mac=wifi.mac),
+            obs_factory(lat=wifi.lat + 2.0, lon=wifi.lon, mac=wifi.mac),
         ])
         moving.add(wifi.mac)
         # a wifi with an entry but no prior position
         wifi = wifis[0]
         obs.extend([
             obs_factory(lat=wifi.lat + 0.001,
-                        lon=wifi.lon + 0.001, key=wifi.mac),
+                        lon=wifi.lon + 0.001, mac=wifi.mac),
             obs_factory(lat=wifi.lat + 0.002,
-                        lon=wifi.lon + 0.005, key=wifi.mac),
+                        lon=wifi.lon + 0.005, mac=wifi.mac),
             obs_factory(lat=wifi.lat + 0.003,
-                        lon=wifi.lon + 0.009, key=wifi.mac),
+                        lon=wifi.lon + 0.009, mac=wifi.mac),
         ])
         wifi.lat = None
         wifi.lon = None
@@ -596,9 +596,9 @@ class TestWifi(StationTest):
         wifi.lon += 1.0
         obs.extend([
             obs_factory(lat=wifi.lat + 0.01,
-                        lon=wifi.lon, key=wifi.mac),
+                        lon=wifi.lon, mac=wifi.mac),
             obs_factory(lat=wifi.lat + 0.07,
-                        lon=wifi.lon, key=wifi.mac),
+                        lon=wifi.lon, mac=wifi.mac),
         ])
         moving.add(wifi.mac)
         # a wifi with a very different prior position
@@ -607,9 +607,9 @@ class TestWifi(StationTest):
         wifi.weight = 1.0
         obs.extend([
             obs_factory(lat=wifi.lat + 2.0,
-                        lon=wifi.lon, key=wifi.mac),
+                        lon=wifi.lon, mac=wifi.mac),
             obs_factory(lat=wifi.lat + 2.002,
-                        lon=wifi.lon, key=wifi.mac),
+                        lon=wifi.lon, mac=wifi.mac),
         ])
         moving.add(wifi.mac)
         # an already blocked wifi
@@ -618,9 +618,9 @@ class TestWifi(StationTest):
         wifi.block_count = 1
         obs.extend([
             obs_factory(lat=wifi.lat,
-                        lon=wifi.lon, key=wifi.mac),
+                        lon=wifi.lon, mac=wifi.mac),
             obs_factory(lat=wifi.lat + 0.1,
-                        lon=wifi.lon, key=wifi.mac),
+                        lon=wifi.lon, mac=wifi.mac),
         ])
         moving.add(wifi.mac)
         # a permanently blocked wifi
@@ -631,7 +631,7 @@ class TestWifi(StationTest):
         for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
             setattr(wifi, col, None)
         obs.extend([
-            obs_factory(lat=wifi_lat, lon=wifi_lon, key=wifi.mac),
+            obs_factory(lat=wifi_lat, lon=wifi_lon, mac=wifi.mac),
         ])
         moving.add(wifi.mac)
         # a no longer blocked wifi
@@ -642,7 +642,7 @@ class TestWifi(StationTest):
         for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
             setattr(wifi, col, None)
         obs.extend([
-            obs_factory(lat=wifi_lat, lon=wifi_lon, key=wifi.mac),
+            obs_factory(lat=wifi_lat, lon=wifi_lon, mac=wifi.mac),
         ])
         # a no longer blocked wifi with disagreeing observations
         wifi = wifis[6]
@@ -652,8 +652,8 @@ class TestWifi(StationTest):
         for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
             setattr(wifi, col, None)
         obs.extend([
-            obs_factory(lat=wifi_lat, lon=wifi_lon, key=wifi.mac),
-            obs_factory(lat=wifi_lat + 2.0, lon=wifi_lon, key=wifi.mac),
+            obs_factory(lat=wifi_lat, lon=wifi_lon, mac=wifi.mac),
+            obs_factory(lat=wifi_lat + 2.0, lon=wifi_lon, mac=wifi.mac),
         ])
         moving.add(wifi.mac)
         self.session.commit()
@@ -674,11 +674,11 @@ class TestWifi(StationTest):
         obs_factory = WifiObservationFactory
         wifi1 = WifiShardFactory(lat=46.2884, lon=6.77, region='FR')
         obs.extend(obs_factory.create_batch(
-            5, key=wifi1.mac, lat=wifi1.lat, lon=wifi1.lon + 0.05,
+            5, mac=wifi1.mac, lat=wifi1.lat, lon=wifi1.lon + 0.05,
         ))
         wifi2 = WifiShardFactory(lat=46.2884, lon=7.4, region='FR')
         obs.extend(obs_factory.create_batch(
-            5, key=wifi2.mac, lat=wifi2.lat, lon=wifi2.lon + 0.05,
+            5, mac=wifi2.mac, lat=wifi2.lat, lon=wifi2.lon + 0.05,
         ))
         self.session.commit()
         self._queue_and_update_wifi(obs)
@@ -696,14 +696,13 @@ class TestWifi(StationTest):
         wifi = WifiShardFactory(samples=2, weight=3.0)
         wifi_lat = wifi.lat
         wifi_lon = wifi.lon
-        wifi_key = dict(key=wifi.mac)
 
         obs_factory = WifiObservationFactory
         obs = [
             obs_factory(lat=wifi.lat, lon=wifi.lon - 0.002,
-                        accuracy=20.0, signal=-30, **wifi_key),
+                        accuracy=20.0, signal=-30, mac=wifi.mac),
             obs_factory(lat=wifi.lat, lon=wifi.lon - 0.004,
-                        accuracy=40.0, signal=-60, **wifi_key),
+                        accuracy=40.0, signal=-60, mac=wifi.mac),
         ]
 
         self.session.commit()

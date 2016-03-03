@@ -39,7 +39,7 @@ class TestBlueObservation(DBTestCase):
     def test_fields(self):
         mac = '3680873e9b83'
         obs = BlueObservation.create(
-            key=mac, lat=GB_LAT, lon=GB_LON, signal=-45)
+            mac=mac, lat=GB_LAT, lon=GB_LON, signal=-45)
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
@@ -75,12 +75,12 @@ class TestBlueReport(DBTestCase):
 
     def test_invalid(self):
         self.assertTrue(BlueReport.create() is None)
-        self.assertTrue(BlueReport.create(key='') is None)
-        self.assertTrue(BlueReport.create(key='1234567890123') is None)
-        self.assertTrue(BlueReport.create(key='aaaaaaZZZZZZ') is None)
+        self.assertTrue(BlueReport.create(mac='') is None)
+        self.assertTrue(BlueReport.create(mac='1234567890123') is None)
+        self.assertTrue(BlueReport.create(mac='aaaaaaZZZZZZ') is None)
 
     def test_valid(self):
-        self.assertFalse(BlueReport.create(key='3680873e9b83') is None)
+        self.assertFalse(BlueReport.create(mac='3680873e9b83') is None)
 
 
 class TestCellObservation(DBTestCase):
@@ -168,14 +168,14 @@ class TestWifiObservation(DBTestCase):
 
     def test_invalid(self):
         self.assertTrue(WifiObservation.create(
-            key='3680873e9b83', lat=0.0, lon=0.0) is None)
+            mac='3680873e9b83', lat=0.0, lon=0.0) is None)
         self.assertTrue(WifiObservation.create(
-            key='', lat=0.0, lon=0.0) is None)
+            mac='', lat=0.0, lon=0.0) is None)
 
     def test_fields(self):
         mac = '3680873e9b83'
         obs = WifiObservation.create(
-            key=mac, lat=GB_LAT, lon=GB_LON,
+            mac=mac, lat=GB_LAT, lon=GB_LON,
             channel=5, signal=-45)
 
         self.assertEqual(obs.lat, GB_LAT)
@@ -227,9 +227,9 @@ class TestWifiReport(DBTestCase):
 
     def test_invalid(self):
         self.assertTrue(WifiReport.create() is None)
-        self.assertTrue(WifiReport.create(key='') is None)
-        self.assertTrue(WifiReport.create(key='1234567890123') is None)
-        self.assertTrue(WifiReport.create(key='aaaaaaZZZZZZ') is None)
+        self.assertTrue(WifiReport.create(mac='') is None)
+        self.assertTrue(WifiReport.create(mac='1234567890123') is None)
+        self.assertTrue(WifiReport.create(mac='aaaaaaZZZZZZ') is None)
 
     def test_valid(self):
-        self.assertFalse(WifiReport.create(key='3680873e9b83') is None)
+        self.assertFalse(WifiReport.create(mac='3680873e9b83') is None)

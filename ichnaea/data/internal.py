@@ -52,7 +52,7 @@ class InternalTransform(object):
 
     blue_id = ('bluetoothBeacons', 'blue')
     blue_map = [
-        ('macAddress', 'key'),
+        ('macAddress', 'mac'),
         'age',
         ('signalStrength', 'signal'),
     ]
@@ -74,7 +74,7 @@ class InternalTransform(object):
 
     wifi_id = ('wifiAccessPoints', 'wifi')
     wifi_map = [
-        ('macAddress', 'key'),
+        ('macAddress', 'mac'),
         ('radioType', 'radio'),
         'age',
         'channel',
