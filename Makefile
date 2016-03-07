@@ -113,7 +113,7 @@ $(PYTHON):
 ifeq ($(TRAVIS), true)
 	virtualenv .
 else
-	virtualenv-2.6 .
+	virtualenv --python=python2.6 .
 endif
 
 pip:
