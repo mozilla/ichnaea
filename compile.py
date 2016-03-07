@@ -20,6 +20,7 @@ import sys
 
 # files excluded when run under Python 2.x
 PYTHON_2_INCOMPATIBLE = [
+    'gevent/_socket3.py',
     'gunicorn/workers/_gaiohttp.py',
     'linecache2/tests/inspect_fodder2.py',
 ]
