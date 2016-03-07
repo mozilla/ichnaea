@@ -60,6 +60,22 @@ class DummyModel(object):
         self.ip = ip
 
 
+def bound_model_accuracy(model, accuracy):
+    if isinstance(model, BlueShard):
+        accuracy = min(max(accuracy, BLUE_MIN_ACCURACY),
+                       BLUE_MAX_ACCURACY)
+    elif isinstance(model, (CellOCID, CellShard)):
+        accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
+                       CELL_MAX_ACCURACY)
+    elif isinstance(model, (CellArea, CellAreaOCID)):
+        accuracy = min(max(accuracy, CELLAREA_MIN_ACCURACY),
+                       CELLAREA_MAX_ACCURACY)
+    elif isinstance(model, WifiShard):
+        accuracy = min(max(accuracy, WIFI_MIN_ACCURACY),
+                       WIFI_MAX_ACCURACY)
+    return accuracy
+
+
 class BaseSourceTest(ConnectionTestCase):
 
     api_type = 'locate'
@@ -154,23 +170,11 @@ class BaseSourceTest(ConnectionTestCase):
         if type_ is Position:
             check_func = self.assertAlmostEqual
             for model in models:
-                accuracy = kw.get('accuracy', model.radius)
-                if isinstance(model, BlueShard):
-                    accuracy = min(max(accuracy, BLUE_MIN_ACCURACY),
-                                   BLUE_MAX_ACCURACY)
-                elif isinstance(model, (CellOCID, CellShard)):
-                    accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
-                                   CELL_MAX_ACCURACY)
-                elif isinstance(model, (CellArea, CellAreaOCID)):
-                    accuracy = min(max(accuracy, CELLAREA_MIN_ACCURACY),
-                                   CELLAREA_MAX_ACCURACY)
-                elif isinstance(model, WifiShard):
-                    accuracy = min(max(accuracy, WIFI_MIN_ACCURACY),
-                                   WIFI_MAX_ACCURACY)
                 expected.append({
                     'lat': kw.get('lat', model.lat),
                     'lon': kw.get('lon', model.lon),
-                    'accuracy': kw.get('accuracy', accuracy),
+                    'accuracy': bound_model_accuracy(
+                        model, kw.get('accuracy', model.radius)),
                 })
 
             # don't test ordering of results
@@ -265,21 +269,8 @@ class BaseLocateTest(object):
             else:
                 model_name = name
                 if name == 'accuracy':
-                    model_value = getattr(model, 'radius')
-                    if isinstance(model, BlueShard):
-                        model_value = min(max(model_value, BLUE_MIN_ACCURACY),
-                                          BLUE_MAX_ACCURACY)
-                    elif isinstance(model, (CellOCID, CellShard)):
-                        model_value = min(max(model_value, CELL_MIN_ACCURACY),
-                                          CELL_MAX_ACCURACY)
-                    elif isinstance(model, (CellArea, CellAreaOCID)):
-                        model_value = min(max(model_value,
-                                              CELLAREA_MIN_ACCURACY),
-                                          CELLAREA_MAX_ACCURACY)
-                    elif isinstance(model, WifiShard):
-                        model_value = min(max(model_value, WIFI_MIN_ACCURACY),
-                                          WIFI_MAX_ACCURACY)
-                    expected[name] = model_value
+                    expected[name] = bound_model_accuracy(
+                        model, getattr(model, 'radius'))
                 else:
                     expected[name] = getattr(model, model_name)
 
