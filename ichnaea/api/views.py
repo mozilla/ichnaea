@@ -166,8 +166,7 @@ class BaseAPIView(BaseView):
             return self.check()
         else:
             api_key = ApiKey(
-                valid_key=None, allow_fallback=False, allow_locate=True,
-                log_locate=False, log_region=False, log_submit=False)
+                valid_key=None, allow_fallback=False, allow_locate=True)
             # Only use the unchecked API key in the request for simple
             # logging purposes.
             self.log_count(self.parse_apikey(), False)

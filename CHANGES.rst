@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Enable extended metrics for all API keys.
+
 - Speed up full cell export.
 
 - Rename internal blue/wifi observation key to mac.

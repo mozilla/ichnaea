@@ -17,9 +17,9 @@ class ApiKey(_Model):
 
     valid_key = Column(String(40), primary_key=True)  #: UUID API key.
     maxreq = Column(Integer)  #: Maximum number of requests per day.
-    log_locate = Column(Boolean)  #: Extended locate logging enabled?
-    log_region = Column(Boolean)  #: Extended region logging enabled?
-    log_submit = Column(Boolean)  #: Extended submit logging enabled?
+    log_locate = Column(Boolean)  # unused
+    log_region = Column(Boolean)  # unused
+    log_submit = Column(Boolean)  # unused
     allow_fallback = Column(Boolean)  #: Use the fallback source?
     allow_locate = Column(Boolean)  #: Allow locate queries?
     shortname = Column(String(40))  #: Short descriptive name.
@@ -31,8 +31,10 @@ class ApiKey(_Model):
         return True
 
     def should_log(self, api_type):
-        if api_type in ('locate', 'region', 'submit'):
-            return bool(getattr(self, 'log_%s' % api_type, False))
+        # This used to differentiate between basic/extended logging
+        # for each API type (locate, region, submit).
+        if self.valid_key:
+            return True
         return False
 
     def __str__(self):

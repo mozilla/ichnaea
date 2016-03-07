@@ -424,14 +424,10 @@ class DBTestCase(LogTestCase):
             conn.execute(ApiKey.__table__.delete())
 
             key1 = ApiKey.__table__.insert().values(
-                valid_key='test',
-                allow_fallback=False, allow_locate=True,
-                log_locate=True, log_region=True, log_submit=True)
+                valid_key='test', allow_fallback=False, allow_locate=True)
             conn.execute(key1)
             key2 = ApiKey.__table__.insert().values(
-                valid_key='export',
-                allow_fallback=False, allow_locate=False,
-                log_locate=False, log_region=False, log_submit=False)
+                valid_key='export', allow_fallback=False, allow_locate=False)
             conn.execute(key2)
 
             trans.commit()

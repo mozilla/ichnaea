@@ -39,7 +39,7 @@ class TestExporter(BaseExportTest):
         self.celery_app.export_queues = queues = configure_export(
             self.redis_client, config)
         self.test_queue_key = queues['test'].queue_key()
-        ApiKeyFactory(valid_key='test2', log_submit=True)
+        ApiKeyFactory(valid_key='test2')
         self.session.flush()
 
     def test_enqueue_reports(self):

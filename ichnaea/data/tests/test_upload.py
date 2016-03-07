@@ -46,7 +46,7 @@ class TestGeosubmitUploader(BaseExportTest):
             self.redis_client, config)
 
     def test_upload(self):
-        ApiKeyFactory(valid_key='e5444-794', log_submit=True)
+        ApiKeyFactory(valid_key='e5444-794')
         self.session.flush()
 
         reports = []
@@ -103,7 +103,7 @@ class TestS3Uploader(BaseExportTest):
         self.assertFalse(export_queue.monitor_name)
 
     def test_upload(self):
-        ApiKeyFactory(valid_key='e5444-794', log_submit=True)
+        ApiKeyFactory(valid_key='e5444-794')
         self.session.flush()
 
         reports = self.add_reports(3)

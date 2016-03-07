@@ -46,7 +46,7 @@ class TestUploader(BaseExportTest):
             update_wifi.delay(shard_id=shard_id).get()
 
     def test_stats(self):
-        ApiKeyFactory(valid_key='e5444-794', log_submit=True)
+        ApiKeyFactory(valid_key='e5444-794')
         self.session.flush()
 
         self.add_reports(3)

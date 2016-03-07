@@ -348,7 +348,7 @@ class TestQueryStats(QueryTest):
         return query
 
     def test_no_log(self):
-        api_key = ApiKeyFactory.build(log_locate=False)
+        api_key = ApiKeyFactory.build(valid_key=None)
         self._make_query(api_key=api_key, api_type='locate')
         self.check_stats(total=0)
 
@@ -416,7 +416,7 @@ class TestResultStats(QueryTest):
         return query
 
     def test_no_log(self):
-        api_key = ApiKeyFactory.build(log_locate=False)
+        api_key = ApiKeyFactory.build(valid_key=None)
         self._make_query(self._make_result(),
                          api_key=api_key, api_type='locate')
         self.check_stats(total=0)
