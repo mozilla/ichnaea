@@ -26,7 +26,6 @@ class TestUploader(BaseExportTest):
         config = DummyConfig({
             'export:internal': {
                 'url': 'internal://',
-                'metadata': 'true',
                 'batch': '0',
             },
         })

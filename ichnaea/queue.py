@@ -127,7 +127,6 @@ class ExportQueue(BaseQueue):
             name, redis_client, compress=compress)
         self.settings = settings
         self.batch = int(settings.get('batch', 0))
-        self.metadata = bool(settings.get('metadata', False))
         self.url = settings.get('url', '') or ''
         self.scheme = urlparse(self.url).scheme
         self.uploader_type = self.configure_uploader(self.scheme)
@@ -146,6 +145,12 @@ class ExportQueue(BaseQueue):
             's3': upload.S3Uploader,
         }
         return uploaders.get(scheme, None)
+
+    @property
+    def metadata(self):
+        if self.scheme == 'internal':
+            return True
+        return False
 
     @property
     def monitor_name(self):

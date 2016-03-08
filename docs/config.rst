@@ -192,14 +192,12 @@ Internal Export
 +++++++++++++++
 
 The internal export forwards the incoming data into the internal data
-pipeline. The url must be the exact string ``internal://`` and the
-``metadata`` setting must have a value of ``true``.
+pipeline. The url must be the exact string ``internal://``.
 
 .. code-block:: ini
 
     [export:internal]
     url = internal://
-    metadata = true
     batch = 1000
 
 

@@ -35,7 +35,6 @@ class TestBeat(CeleryTestCase):
             },
             'export:internal': {
                 'url': 'internal://',
-                'metadata': 'True',
                 'batch': '1000',
             },
             'export:backup': {

@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove the implied metadata setting from the config file.
+
 - Enable extended metrics for all API keys.
 
 - Speed up full cell export.

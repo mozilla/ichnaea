@@ -71,7 +71,6 @@ TEST_CONFIG = DummyConfig({
     },
     'export:internal': {
         'url': 'internal://',
-        'metadata': 'true',
         'batch': '0',
     },
     'import:ocid': {
