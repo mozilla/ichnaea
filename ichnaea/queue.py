@@ -122,53 +122,51 @@ class DataQueue(BaseQueue):
 
 class ExportQueue(BaseQueue):
 
-    def __init__(self, name, redis_client, settings, compress=False):
+    metadata = False
+
+    def __init__(self, name, redis_client,
+                 url=None, batch=0, skip_keys=(),
+                 uploader_type=None, compress=False):
         super(ExportQueue, self).__init__(
             name, redis_client, compress=compress)
-        self.settings = settings
-        self.batch = int(settings.get('batch', 0))
-        self.url = settings.get('url', '') or ''
-        self.scheme = urlparse(self.url).scheme
-        self.uploader_type = self.configure_uploader(self.scheme)
-        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
-        self.skip_keys = tuple([key for key in skip_keys if key])
+        self.batch = batch
+        self.url = url
+        self.skip_keys = skip_keys
+        self.uploader_type = uploader_type
 
-    @staticmethod
-    def configure_uploader(scheme):
+    @classmethod
+    def configure_queue(cls, name, redis_client, settings, compress=False):
         from ichnaea.data import upload
         from ichnaea.data.internal import InternalUploader
 
-        uploaders = {
-            'http': upload.GeosubmitUploader,
-            'https': upload.GeosubmitUploader,
-            'internal': InternalUploader,
-            's3': upload.S3Uploader,
-        }
-        return uploaders.get(scheme, None)
+        url = settings.get('url', '') or ''
+        scheme = urlparse(url).scheme
+        batch = int(settings.get('batch', 0))
 
-    @property
-    def metadata(self):
-        if self.scheme == 'internal':
-            return True
-        return False
+        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
+        skip_keys = tuple([key for key in skip_keys if key])
+
+        queue_types = {
+            'http': (HTTPSExportQueue, upload.GeosubmitUploader),
+            'https': (HTTPSExportQueue, upload.GeosubmitUploader),
+            'internal': (InternalExportQueue, InternalUploader),
+            's3': (S3ExportQueue, upload.S3Uploader),
+        }
+        klass, uploader_type = queue_types.get(scheme, (cls, None))
+
+        return klass(name, redis_client,
+                     url=url, batch=batch, skip_keys=skip_keys,
+                     uploader_type=uploader_type, compress=compress)
 
     @property
     def monitor_name(self):
-        if self.scheme == 's3':
-            return None
         return self.queue_key()
 
     def queue_key(self, api_key=None):
-        if self.scheme == 's3':
-            if not api_key:
-                api_key = 'no_key'
-            return self.queue_prefix + api_key
         return EXPORT_QUEUE_PREFIX + self.name
 
     @property
     def queue_prefix(self):
-        if self.scheme == 's3':
-            return EXPORT_QUEUE_PREFIX + self.name + ':'
         return None
 
     def export_allowed(self, api_key):
@@ -191,3 +189,28 @@ class ExportQueue(BaseQueue):
 
     def size_age(self, queue_key):
         return self._size_age(queue_key)
+
+
+class HTTPSExportQueue(ExportQueue):
+    pass
+
+
+class InternalExportQueue(ExportQueue):
+
+    metadata = True
+
+
+class S3ExportQueue(ExportQueue):
+
+    @property
+    def monitor_name(self):
+        return None
+
+    def queue_key(self, api_key=None):
+        if not api_key:
+            api_key = 'no_key'
+        return self.queue_prefix + api_key
+
+    @property
+    def queue_prefix(self):
+        return EXPORT_QUEUE_PREFIX + self.name + ':'

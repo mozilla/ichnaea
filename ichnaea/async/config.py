@@ -129,7 +129,8 @@ def configure_export(redis_client, app_config):
         if section_name.startswith('export:'):
             section = app_config.get_map(section_name)
             name = section_name.split(':')[1]
-            export_queues[name] = ExportQueue(name, redis_client, section)
+            export_queues[name] = ExportQueue.configure_queue(
+                name, redis_client, section)
     return export_queues
 
 
