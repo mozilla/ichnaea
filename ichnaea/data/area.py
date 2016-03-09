@@ -35,7 +35,7 @@ class CellAreaUpdater(object):
             for areaid in set(areaids):
                 self.update_area(session, areaid)
 
-        if self.queue.enough_data(batch=batch):  # pragma: no cover
+        if self.queue.ready(batch=batch):  # pragma: no cover
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=5,

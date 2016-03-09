@@ -51,27 +51,27 @@ class TestDataQueue(RedisTestCase):
         pipe.execute()
         self.assertEqual(queue.size(), 3)
 
-    def test_enough_data(self):
-        queue = self._make_queue()
-        self.assertFalse(queue.enough_data())
-        self.assertFalse(queue.enough_data(batch=10))
-        queue.enqueue(['a', 'b', 'c'])
-        self.assertFalse(queue.enough_data(batch=4))
-        self.assertTrue(queue.enough_data(batch=3))
-        self.assertTrue(queue.enough_data())
-
-    def test_enough_data_ttl(self):
-        queue = self._make_queue()
-        queue.enqueue(['a', 'b', 'c'])
-        self.assertFalse(queue.enough_data(batch=10))
-        self.redis_client.expire(queue.queue_key, 70000)
-        self.assertTrue(queue.enough_data(batch=10))
-        self.assertTrue(queue.enough_data(batch=3))
-        self.assertTrue(queue.enough_data())
-
     def test_monitor_name(self):
         queue = self._make_queue()
         self.assertEqual(queue.monitor_name, queue.queue_key)
+
+    def test_ready(self):
+        queue = self._make_queue()
+        self.assertFalse(queue.ready())
+        self.assertFalse(queue.ready(batch=10))
+        queue.enqueue(['a', 'b', 'c'])
+        self.assertFalse(queue.ready(batch=4))
+        self.assertTrue(queue.ready(batch=3))
+        self.assertTrue(queue.ready())
+
+    def test_ready_ttl(self):
+        queue = self._make_queue()
+        queue.enqueue(['a', 'b', 'c'])
+        self.assertFalse(queue.ready(batch=10))
+        self.redis_client.expire(queue.queue_key, 70000)
+        self.assertTrue(queue.ready(batch=10))
+        self.assertTrue(queue.ready(batch=3))
+        self.assertTrue(queue.ready())
 
     def test_size(self):
         queue = self._make_queue()

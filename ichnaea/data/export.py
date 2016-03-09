@@ -69,9 +69,6 @@ class ExportQueue(object):
         data_queue = self._data_queue(queue_key)
         data_queue.enqueue(items, batch=batch, pipe=pipe, json=json)
 
-    def enough_data(self, queue_key):
-        return self._data_queue(queue_key).enough_data()
-
     def export_allowed(self, api_key):
         return (api_key not in self.skip_keys)
 
@@ -85,6 +82,9 @@ class ExportQueue(object):
     @property
     def queue_prefix(self):
         return None
+
+    def ready(self, queue_key):
+        return self._data_queue(queue_key).ready()
 
     def size(self, queue_key):
         return self.redis_client.llen(queue_key)
@@ -134,7 +134,7 @@ class ExportScheduler(object):
     def schedule_one(self, export_queue, export_task):
         triggered = 0
         queue_key = export_queue.queue_key()
-        if export_queue.enough_data(queue_key):
+        if export_queue.ready(queue_key):
             export_task.delay(export_queue.name)
             triggered += 1
         return triggered
@@ -144,7 +144,7 @@ class ExportScheduler(object):
         queue_prefix = export_queue.queue_prefix
         for queue_key in self.redis_client.scan_iter(match=queue_prefix + '*',
                                                      count=100):
-            if export_queue.enough_data(queue_key):
+            if export_queue.ready(queue_key):
                 export_task.delay(export_queue.name, queue_key=queue_key)
                 triggered += 1
         return triggered
@@ -177,7 +177,7 @@ class IncomingQueue(object):
                     queue_key = queue.queue_key(api_key)
                     queue.enqueue(items, queue_key, pipe=self.pipe)
 
-        if self.data_queue.enough_data(batch=batch):  # pragma: no cover
+        if self.data_queue.ready(batch=batch):  # pragma: no cover
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,
@@ -198,7 +198,7 @@ class ReportExporter(object):
 
     def __call__(self, upload_task):
         export_queue = self.export_queue
-        if not export_queue.enough_data(self.queue_key):  # pragma: no cover
+        if not export_queue.ready(self.queue_key):  # pragma: no cover
             return
 
         items = export_queue.dequeue(self.queue_key, batch=self.batch)
@@ -220,7 +220,7 @@ class ReportExporter(object):
 
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
-        if export_queue.enough_data(self.queue_key):
+        if export_queue.ready(self.queue_key):
             self.task.apply_async(
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key},

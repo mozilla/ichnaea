@@ -65,7 +65,7 @@ class DataMapUpdater(object):
         with self.task.db_session() as session:
             self._update_shards(session, grids)
 
-        if queue.enough_data(batch=batch):
+        if queue.ready(batch=batch):
             self.task.apply_async(
                 kwargs={'batch': batch, 'shard_id': self.shard_id},
                 countdown=2,

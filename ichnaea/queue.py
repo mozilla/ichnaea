@@ -79,7 +79,12 @@ class DataQueue(object):
             with redis_pipeline(self.redis_client) as pipe:
                 self._push(pipe, items, batch=batch)
 
-    def enough_data(self, batch=0):
+    @property
+    def monitor_name(self):
+        """Queue name used in monitoring metrics."""
+        return self.queue_key
+
+    def ready(self, batch=0):
         """
         Returns True if the queue has either more than a certain
         batch number of items in it, or if the last time it has seen
@@ -94,11 +99,6 @@ class DataQueue(object):
         else:
             age = max(self.queue_ttl - ttl, 0)
         return bool(size > 0 and (size >= batch or age >= self.queue_max_age))
-
-    @property
-    def monitor_name(self):
-        """Queue name used in monitoring metrics."""
-        return self.queue_key
 
     def size(self):
         """Return the size of the queue."""

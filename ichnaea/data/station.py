@@ -387,7 +387,7 @@ class StationUpdater(object):
 
             self.emit_stats(stats_counter, drop_counter)
 
-            if self.data_queue.enough_data(batch=batch):  # pragma: no cover
+            if self.data_queue.ready(batch=batch):  # pragma: no cover
                 self.task.apply_async(
                     kwargs={'batch': batch, 'shard_id': self.shard_id},
                     countdown=5,

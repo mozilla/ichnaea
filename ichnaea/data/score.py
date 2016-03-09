@@ -39,7 +39,7 @@ class ScoreUpdater(object):
         with self.task.db_session() as session:
             self._update_scores(session, score_values)
 
-        if self.queue.enough_data(batch=batch):
+        if self.queue.ready(batch=batch):
             self.task.apply_async(
                 kwargs={'batch': batch},
                 countdown=2,
