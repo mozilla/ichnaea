@@ -36,7 +36,7 @@ class TestDataMap(CeleryTestCase):
 
         for shard_id, values in grids.items():
             queue = self.celery_app.data_queues['update_datamap_' + shard_id]
-            queue.enqueue(list(values), json=False)
+            queue.enqueue(list(values))
 
     def test_empty(self):
         for shard_id, shard in DataMap.shards().items():

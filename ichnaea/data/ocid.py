@@ -269,7 +269,7 @@ class ImportBase(object):
                     commit_batch(rows)
 
         self.area_queue.enqueue(
-            [encode_cellarea(*id_) for id_ in areaids], json=False)
+            [encode_cellarea(*id_) for id_ in areaids])
 
 
 class ImportExternal(ImportBase):

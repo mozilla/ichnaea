@@ -29,7 +29,7 @@ class CellAreaUpdater(object):
         self.utcnow = util.utcnow()
 
     def __call__(self, batch=100):
-        areaids = self.queue.dequeue(batch=batch, json=False)
+        areaids = self.queue.dequeue(batch=batch)
 
         with self.task.db_session() as session:
             for areaid in set(areaids):

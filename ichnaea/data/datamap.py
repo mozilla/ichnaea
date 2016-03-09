@@ -57,7 +57,7 @@ class DataMapUpdater(object):
 
     def __call__(self, batch=1000):
         queue = self.task.app.data_queues['update_datamap_' + self.shard_id]
-        grids = queue.dequeue(batch=batch, json=False)
+        grids = queue.dequeue(batch=batch)
         grids = list(set(grids))
         if not grids or not self.shard:
             return 0

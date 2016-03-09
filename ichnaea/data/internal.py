@@ -391,7 +391,7 @@ class InternalUploader(BaseReportUploader):
 
         for shard_id, values in shards.items():
             queue = self.task.app.data_queues['update_datamap_' + shard_id]
-            queue.enqueue(list(values), pipe=self.pipe, json=False)
+            queue.enqueue(list(values), pipe=self.pipe)
 
     def process_score(self, userid, pos_count, new_station_count):
         if userid is None or pos_count <= 0:

@@ -20,15 +20,15 @@ class DataQueue(object):
     queue_ttl = 86400  #: Maximum TTL value for the Redis list.
     queue_max_age = 3600  #: Maximum age that data can sit in the queue.
 
-    def __init__(self, key, redis_client, compress=False):
+    def __init__(self, key, redis_client, compress=False, json=True):
         self.key = key
         self.redis_client = redis_client
         self.compress = compress
+        self.json = json
 
-    def dequeue(self, batch=100, json=True):
+    def dequeue(self, batch=100):
         """
-        Get batch number of items from the queue, optionally decode
-        all items from JSON.
+        Get batch number of items from the queue.
         """
         with self.redis_client.pipeline() as pipe:
             pipe.multi()
@@ -43,23 +43,23 @@ class DataQueue(object):
             if self.compress:
                 result = [util.decode_gzip(item, encoding=None)
                           for item in result]
-            if json:
+            if self.json:
                 # simplejson.loads returns Unicode strings
                 result = [simplejson.loads(item, encoding='utf-8')
                           for item in result]
 
         return result
 
-    def _push(self, pipe, items, batch=100):
+    def _push(self, pipe, items, batch):
         for i in range(0, len(items), batch):
             pipe.rpush(self.key, *items[i:i + batch])
 
         # expire key after it was created by rpush
         pipe.expire(self.key, self.queue_ttl)
 
-    def enqueue(self, items, batch=100, pipe=None, json=True):
+    def enqueue(self, items, batch=100, pipe=None):
         """
-        Put items into the queue, optionally encode all items as JSON.
+        Put items into the queue.
 
         The items will be pushed into Redis as part of a single (given)
         pipe in batches corresponding to the given batch argument.
@@ -67,7 +67,7 @@ class DataQueue(object):
         if batch == 0:
             batch = len(items)
 
-        if json:
+        if self.json:
             # simplejson.dumps returns Unicode strings
             items = [simplejson.dumps(item, encoding='utf-8').encode('utf-8')
                      for item in items]
@@ -76,10 +76,10 @@ class DataQueue(object):
             items = [util.encode_gzip(item, encoding=None) for item in items]
 
         if pipe is not None:
-            self._push(pipe, items, batch=batch)
+            self._push(pipe, items, batch)
         else:
             with redis_pipeline(self.redis_client) as pipe:
-                self._push(pipe, items, batch=batch)
+                self._push(pipe, items, batch)
 
     @property
     def monitor_name(self):

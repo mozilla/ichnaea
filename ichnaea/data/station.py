@@ -428,8 +428,7 @@ class CellUpdater(StationUpdater):
 
     def queue_area_updates(self, updated_areas):
         data_queue = self.data_queues['update_cellarea']
-        data_queue.enqueue(list(updated_areas),
-                           pipe=self.pipe, json=False)
+        data_queue.enqueue(list(updated_areas), pipe=self.pipe)
 
     def _base_station_values(self, station_key, observations):
         radio, mcc, mnc, lac, cid = decode_cellid(station_key)

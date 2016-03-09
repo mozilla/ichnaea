@@ -36,7 +36,7 @@ class BaseTest(object):
 
         areaid = encode_cellarea(
             cell.radio, cell.mcc, cell.mnc, cell.lac)
-        self.area_queue.enqueue([areaid], json=False)
+        self.area_queue.enqueue([areaid])
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
@@ -53,7 +53,7 @@ class BaseTest(object):
         self.session.flush()
 
         areaid = encode_cellarea(*area.areaid)
-        self.area_queue.enqueue([areaid], json=False)
+        self.area_queue.enqueue([areaid])
         self.task.delay().get()
         self.assertEqual(self.session.query(self.area_model).count(), 0)
 
@@ -71,7 +71,7 @@ class BaseTest(object):
         self.session.commit()
 
         areaid = encode_cellarea(*area.areaid)
-        self.area_queue.enqueue([areaid], json=False)
+        self.area_queue.enqueue([areaid])
         self.task.delay().get()
 
         self.session.refresh(area)
@@ -95,7 +95,7 @@ class BaseTest(object):
         self.session.commit()
 
         areaid = encode_cellarea(*area.areaid)
-        self.area_queue.enqueue([areaid], json=False)
+        self.area_queue.enqueue([areaid])
         self.task.delay().get()
 
         self.session.refresh(area)
@@ -112,7 +112,7 @@ class BaseTest(object):
             lat=32.2, lon=34.9, radius=10000, region='IL')
         self.session.flush()
 
-        self.area_queue.enqueue([cell.areaid], json=False)
+        self.area_queue.enqueue([cell.areaid])
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
@@ -130,7 +130,7 @@ class BaseTest(object):
             lat=35.8, lon=-83.1, radius=10000, region='US')
         self.session.flush()
 
-        self.area_queue.enqueue([cell.areaid], json=False)
+        self.area_queue.enqueue([cell.areaid])
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
@@ -145,7 +145,7 @@ class BaseTest(object):
             lat=18.34, lon=-64.9, radius=10000, region='PR')
         self.session.flush()
 
-        self.area_queue.enqueue([cell.areaid], json=False)
+        self.area_queue.enqueue([cell.areaid])
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()

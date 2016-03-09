@@ -6,9 +6,9 @@ from ichnaea.tests.base import RedisTestCase
 
 class TestDataQueue(RedisTestCase):
 
-    def _make_queue(self, compress=False):
-        key = uuid4().hex
-        return DataQueue(key, self.redis_client, compress=compress)
+    def _make_queue(self, compress=False, json=True):
+        return DataQueue(uuid4().hex, self.redis_client,
+                         compress=compress, json=json)
 
     def test_objects(self):
         queue = self._make_queue()
@@ -17,10 +17,10 @@ class TestDataQueue(RedisTestCase):
         self.assertEqual(queue.dequeue(), items)
 
     def test_binary(self):
-        queue = self._make_queue()
+        queue = self._make_queue(json=False)
         items = [b'\x00ab', b'123']
-        queue.enqueue(items, json=False)
-        self.assertEqual(queue.dequeue(json=False), items)
+        queue.enqueue(items)
+        self.assertEqual(queue.dequeue(), items)
 
     def test_compress(self):
         queue = self._make_queue(compress=True)
@@ -29,10 +29,10 @@ class TestDataQueue(RedisTestCase):
         self.assertEqual(queue.dequeue(), items)
 
     def test_compress_binary(self):
-        queue = self._make_queue(compress=True)
+        queue = self._make_queue(compress=True, json=False)
         items = [b'\x00ab', b'123']
-        queue.enqueue(items, json=False)
-        self.assertEqual(queue.dequeue(json=False), items)
+        queue.enqueue(items)
+        self.assertEqual(queue.dequeue(), items)
 
     def test_batch(self):
         queue = self._make_queue()
