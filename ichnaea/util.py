@@ -64,7 +64,7 @@ def gzip_open(filename, mode, compresslevel=6):  # pragma: no cover
 
 def encode_gzip(data, compresslevel=6, encoding='utf-8'):
     """Encode the passed in data with gzip."""
-    if isinstance(data, six.string_types):
+    if encoding and isinstance(data, six.string_types):
         data = data.encode(encoding)
     out = BytesIO()
     with GzipFile(None, 'wb',
@@ -81,7 +81,9 @@ def decode_gzip(data, encoding='utf-8'):
     try:
         with GzipFile(None, mode='rb', fileobj=BytesIO(data)) as gzip_file:
             out = gzip_file.read()
-        return out.decode(encoding)
+        if encoding:
+            return out.decode(encoding)
+        return out
     except (IOError, OSError, EOFError, struct.error, zlib.error) as exc:
         raise GZIPDecodeError(repr(exc))
 

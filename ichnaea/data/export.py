@@ -1,6 +1,118 @@
 from collections import defaultdict
+import re
 
 import simplejson
+from six.moves.urllib.parse import urlparse
+
+from ichnaea.queue import DataQueue
+
+EXPORT_QUEUE_PREFIX = 'queue_export_'
+WHITESPACE = re.compile('\s', flags=re.UNICODE)
+
+
+class ExportQueue(object):
+    """
+    A Redis based queue which stores binary or JSON encoded items
+    in lists. The queue supports dynamic queue keys and partitioned
+    queues with a common queue key prefix.
+
+    The lists maintain a TTL value corresponding to the time data has
+    been last put into the queue.
+    """
+
+    metadata = False
+
+    def __init__(self, name, redis_client,
+                 url=None, batch=0, skip_keys=(),
+                 uploader_type=None, compress=False):
+        self.name = name
+        self.redis_client = redis_client
+        self.batch = batch
+        self.url = url
+        self.skip_keys = skip_keys
+        self.uploader_type = uploader_type
+        self.compress = compress
+
+    def _data_queue(self, queue_key):
+        return DataQueue(self.name, self.redis_client, queue_key,
+                         compress=self.compress)
+
+    @classmethod
+    def configure_queue(cls, name, redis_client, settings, compress=False):
+        from ichnaea.data import upload
+        from ichnaea.data.internal import InternalUploader
+
+        url = settings.get('url', '') or ''
+        scheme = urlparse(url).scheme
+        batch = int(settings.get('batch', 0))
+
+        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
+        skip_keys = tuple([key for key in skip_keys if key])
+
+        queue_types = {
+            'http': (HTTPSExportQueue, upload.GeosubmitUploader),
+            'https': (HTTPSExportQueue, upload.GeosubmitUploader),
+            'internal': (InternalExportQueue, InternalUploader),
+            's3': (S3ExportQueue, upload.S3Uploader),
+        }
+        klass, uploader_type = queue_types.get(scheme, (cls, None))
+
+        return klass(name, redis_client,
+                     url=url, batch=batch, skip_keys=skip_keys,
+                     uploader_type=uploader_type, compress=compress)
+
+    def dequeue(self, queue_key, batch=100, json=True):
+        data_queue = self._data_queue(queue_key)
+        return data_queue.dequeue(batch=batch, json=json)
+
+    def enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
+        data_queue = self._data_queue(queue_key)
+        data_queue.enqueue(items, batch=batch, pipe=pipe, json=json)
+
+    def enough_data(self, queue_key):
+        return self._data_queue(queue_key).enough_data()
+
+    def export_allowed(self, api_key):
+        return (api_key not in self.skip_keys)
+
+    @property
+    def monitor_name(self):
+        return self.queue_key()
+
+    def queue_key(self, api_key=None):
+        return EXPORT_QUEUE_PREFIX + self.name
+
+    @property
+    def queue_prefix(self):
+        return None
+
+    def size(self, queue_key):
+        return self.redis_client.llen(queue_key)
+
+
+class HTTPSExportQueue(ExportQueue):
+    pass
+
+
+class InternalExportQueue(ExportQueue):
+
+    metadata = True
+
+
+class S3ExportQueue(ExportQueue):
+
+    @property
+    def monitor_name(self):
+        return None
+
+    def queue_key(self, api_key=None):
+        if not api_key:
+            api_key = 'no_key'
+        return self.queue_prefix + api_key
+
+    @property
+    def queue_prefix(self):
+        return EXPORT_QUEUE_PREFIX + self.name + ':'
 
 
 class ExportScheduler(object):

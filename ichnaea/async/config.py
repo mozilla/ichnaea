@@ -23,10 +23,8 @@ from ichnaea.models import (
     DataMap,
     WifiShard,
 )
-from ichnaea.queue import (
-    DataQueue,
-    ExportQueue,
-)
+from ichnaea.queue import DataQueue
+from ichnaea.data.export import ExportQueue
 
 CELERY_QUEUES = (
     Queue('celery_blue', routing_key='celery_blue'),
