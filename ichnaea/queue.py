@@ -20,9 +20,11 @@ class DataQueue(object):
     queue_ttl = 86400  #: Maximum TTL value for the Redis list.
     queue_max_age = 3600  #: Maximum age that data can sit in the queue.
 
-    def __init__(self, key, redis_client, compress=False, json=True):
+    def __init__(self, key, redis_client,
+                 batch=None, compress=False, json=True):
         self.key = key
         self.redis_client = redis_client
+        self.batch = batch
         self.compress = compress
         self.json = json
 
@@ -30,6 +32,9 @@ class DataQueue(object):
         """
         Get batch number of items from the queue.
         """
+        if self.batch is not None:
+            batch = self.batch
+
         with self.redis_client.pipeline() as pipe:
             pipe.multi()
             pipe.lrange(self.key, 0, batch - 1)
@@ -64,6 +69,9 @@ class DataQueue(object):
         The items will be pushed into Redis as part of a single (given)
         pipe in batches corresponding to the given batch argument.
         """
+        if self.batch is not None:
+            batch = self.batch
+
         if batch == 0:
             batch = len(items)
 
@@ -92,6 +100,9 @@ class DataQueue(object):
         batch number of items in it, or if the last time it has seen
         new data was more than an hour ago (queue_max_age).
         """
+        if self.batch is not None:
+            batch = self.batch
+
         with self.redis_client.pipeline() as pipe:
             pipe.ttl(self.key)
             pipe.llen(self.key)

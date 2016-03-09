@@ -34,7 +34,7 @@ class ExportQueue(object):
 
     def _data_queue(self, queue_key):
         return DataQueue(queue_key, self.redis_client,
-                         compress=self.compress, json=True)
+                         batch=self.batch, compress=self.compress, json=True)
 
     @classmethod
     def configure_queue(cls, key, redis_client, settings, compress=False):
@@ -61,12 +61,10 @@ class ExportQueue(object):
                      uploader_type=uploader_type, compress=compress)
 
     def dequeue(self, queue_key):
-        data_queue = self._data_queue(queue_key)
-        return data_queue.dequeue(batch=self.batch)
+        return self._data_queue(queue_key).dequeue()
 
     def enqueue(self, items, queue_key, pipe=None):
-        data_queue = self._data_queue(queue_key)
-        data_queue.enqueue(items, batch=self.batch, pipe=pipe)
+        self._data_queue(queue_key).enqueue(items, pipe=pipe)
 
     def export_allowed(self, api_key):
         return (api_key not in self.skip_keys)
@@ -85,7 +83,7 @@ class ExportQueue(object):
     def ready(self, queue_key=None):
         if queue_key is None:
             queue_key = self.key
-        return self._data_queue(queue_key).ready(batch=self.batch)
+        return self._data_queue(queue_key).ready()
 
     def size(self, queue_key):
         return self.redis_client.llen(queue_key)
