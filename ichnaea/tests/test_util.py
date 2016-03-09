@@ -35,6 +35,13 @@ class TestUtil(TestCase):
         data = util.decode_gzip(util.encode_gzip(b'foo'))
         self.assertEqual(data, u'foo')
 
+    def test_no_encoding(self):
+        data = util.encode_gzip(b'\x00ab', encoding=None)
+        self.assertTrue(isinstance(data, bytes))
+        result = util.decode_gzip(data, encoding=None)
+        self.assertTrue(isinstance(result, bytes))
+        self.assertEqual(result, b'\x00ab')
+
     def test_decode_gzip_error(self):
         self.assertRaises(GZIPDecodeError, util.decode_gzip, self.gzip_foo[:1])
         self.assertRaises(GZIPDecodeError, util.decode_gzip, self.gzip_foo[:5])
