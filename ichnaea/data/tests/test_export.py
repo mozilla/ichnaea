@@ -38,7 +38,7 @@ class TestExporter(BaseExportTest):
         })
         self.celery_app.export_queues = queues = configure_export(
             self.redis_client, config)
-        self.test_queue_key = queues['test'].queue_key()
+        self.test_queue_key = queues['queue_export_test'].queue_key()
         ApiKeyFactory(valid_key='test2')
         self.session.flush()
 
@@ -49,9 +49,9 @@ class TestExporter(BaseExportTest):
 
         export_queues = self.celery_app.export_queues
         expected = [
-            (export_queues['test'].queue_key(), 5),
-            (export_queues['everything'].queue_key(), 5),
-            (export_queues['no_test'].queue_key(), 2),
+            (export_queues['queue_export_test'].queue_key(), 5),
+            (export_queues['queue_export_everything'].queue_key(), 5),
+            (export_queues['queue_export_no_test'].queue_key(), 2),
         ]
         for key, num in expected:
             self.assertEqual(self.queue_length(key), num)
@@ -63,9 +63,9 @@ class TestExporter(BaseExportTest):
         # data from one queue was processed
         export_queues = self.celery_app.export_queues
         expected = [
-            (export_queues['test'].queue_key(), 0),
-            (export_queues['everything'].queue_key(), 3),
-            (export_queues['no_test'].queue_key(), 0),
+            (export_queues['queue_export_test'].queue_key(), 0),
+            (export_queues['queue_export_everything'].queue_key(), 3),
+            (export_queues['queue_export_no_test'].queue_key(), 0),
         ]
         for key, num in expected:
             self.assertEqual(self.queue_length(key), num)

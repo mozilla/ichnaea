@@ -89,31 +89,24 @@ def configure_data(redis_client):
     Configure fixed set of data queues.
     """
     data_queues = {
-        'update_cellarea': DataQueue('update_cellarea', redis_client,
-                                     queue_key='update_cellarea'),
-        'update_cellarea_ocid': DataQueue('update_cellarea_ocid', redis_client,
-                                          queue_key='update_cellarea_ocid'),
+        # needs to be the exact same as webapp.config
         'update_incoming': DataQueue('update_incoming', redis_client,
-                                     queue_key='update_incoming',
                                      compress=True),
-        'update_score': DataQueue('update_score', redis_client,
-                                  queue_key='update_score'),
     }
+    for key in ('update_cellarea', 'update_cellarea_ocid', 'update_score'):
+        data_queues[key] = DataQueue(key, redis_client)
     for shard_id in BlueShard.shards().keys():
-        name = 'update_blue_' + shard_id
-        data_queues[name] = DataQueue(
-            name, redis_client, queue_key=name)
+        key = 'update_blue_' + shard_id
+        data_queues[key] = DataQueue(key, redis_client)
     for shard_id in DataMap.shards().keys():
-        name = 'update_datamap_' + shard_id
-        data_queues[name] = DataQueue(name, redis_client, queue_key=name)
+        key = 'update_datamap_' + shard_id
+        data_queues[key] = DataQueue(key, redis_client)
     for shard_id in CellShard.shards().keys():
-        name = 'update_cell_' + shard_id
-        data_queues[name] = DataQueue(
-            name, redis_client, queue_key=name)
+        key = 'update_cell_' + shard_id
+        data_queues[key] = DataQueue(key, redis_client)
     for shard_id in WifiShard.shards().keys():
-        name = 'update_wifi_' + shard_id
-        data_queues[name] = DataQueue(
-            name, redis_client, queue_key=name)
+        key = 'update_wifi_' + shard_id
+        data_queues[key] = DataQueue(key, redis_client)
     return data_queues
 
 
@@ -126,9 +119,9 @@ def configure_export(redis_client, app_config):
     for section_name in app_config.sections():
         if section_name.startswith('export:'):
             section = app_config.get_map(section_name)
-            name = section_name.split(':')[1]
-            export_queues[name] = ExportQueue.configure_queue(
-                name, redis_client, section)
+            key = 'queue_export_' + section_name.split(':')[1]
+            export_queues[key] = ExportQueue.configure_queue(
+                key, redis_client, section)
     return export_queues
 
 

@@ -106,9 +106,9 @@ def main(app_config, ping_connections=False,
                         _searcher=default)
         setattr(registry, name, searcher)
 
+    # needs to be the exact same as async.config
     registry.data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
-                                     queue_key='update_incoming',
                                      compress=True),
     }
 

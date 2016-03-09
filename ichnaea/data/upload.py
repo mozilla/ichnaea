@@ -10,13 +10,12 @@ from ichnaea import util
 
 class BaseReportUploader(object):
 
-    def __init__(self, task, pipe, export_queue_name, queue_key):
+    def __init__(self, task, pipe, export_queue_key, queue_key):
         self.task = task
         self.pipe = pipe
-        self.export_queue_name = export_queue_name
-        self.export_queue = task.app.export_queues[export_queue_name]
+        self.export_queue = task.app.export_queues[export_queue_key]
         self.stats_prefix = 'data.export.'
-        self.stats_tags = ['key:%s' % export_queue_name]
+        self.stats_tags = ['key:' + self.export_queue.metric_tag()]
         self.url = self.export_queue.url
         self.queue_key = queue_key
         if not self.queue_key:  # pragma: no cover
@@ -58,11 +57,9 @@ class GeosubmitUploader(BaseReportUploader):
 
 class S3Uploader(BaseReportUploader):
 
-    def __init__(self, task, pipe, export_queue_name, queue_key):
+    def __init__(self, task, pipe, export_queue_key, queue_key):
         super(S3Uploader, self).__init__(
-            task, pipe, export_queue_name, queue_key)
-        self.export_queue_name = export_queue_name
-        self.export_queue = task.app.export_queues[export_queue_name]
+            task, pipe, export_queue_key, queue_key)
         _, self.bucket, path = urlparse(self.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
@@ -73,10 +70,7 @@ class S3Uploader(BaseReportUploader):
     def send(self, url, data):
         year, month, day = util.utcnow().timetuple()[:3]
         # strip away queue prefix again
-        api_key = self.queue_key
-        queue_prefix = self.export_queue.queue_prefix
-        if self.queue_key.startswith(queue_prefix):
-            api_key = self.queue_key[len(queue_prefix):]
+        api_key = self.queue_key.split(':')[-1]
 
         key_name = self.path.format(
             api_key=api_key, year=year, month=month, day=day)

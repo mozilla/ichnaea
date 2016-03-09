@@ -99,7 +99,7 @@ class TestS3Uploader(BaseExportTest):
             self.redis_client, config)
 
     def test_no_monitoring(self):
-        export_queue = self.celery_app.export_queues['backup']
+        export_queue = self.celery_app.export_queues['queue_export_backup']
         self.assertFalse(export_queue.monitor_name)
 
     def test_upload(self):

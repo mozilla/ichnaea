@@ -20,10 +20,9 @@ class DataQueue(object):
     queue_ttl = 86400  #: Maximum TTL value for the Redis list.
     queue_max_age = 3600  #: Maximum age that data can sit in the queue.
 
-    def __init__(self, name, redis_client, queue_key, compress=False):
-        self.name = name
+    def __init__(self, key, redis_client, compress=False):
+        self.key = key
         self.redis_client = redis_client
-        self.queue_key = queue_key
         self.compress = compress
 
     def dequeue(self, batch=100, json=True):
@@ -33,12 +32,12 @@ class DataQueue(object):
         """
         with self.redis_client.pipeline() as pipe:
             pipe.multi()
-            pipe.lrange(self.queue_key, 0, batch - 1)
+            pipe.lrange(self.key, 0, batch - 1)
             if batch != 0:
-                pipe.ltrim(self.queue_key, batch, -1)
+                pipe.ltrim(self.key, batch, -1)
             else:
                 # special case for deleting everything
-                pipe.ltrim(self.queue_key, 1, 0)
+                pipe.ltrim(self.key, 1, 0)
             result = pipe.execute()[0]
 
             if self.compress:
@@ -53,10 +52,10 @@ class DataQueue(object):
 
     def _push(self, pipe, items, batch=100):
         for i in range(0, len(items), batch):
-            pipe.rpush(self.queue_key, *items[i:i + batch])
+            pipe.rpush(self.key, *items[i:i + batch])
 
         # expire key after it was created by rpush
-        pipe.expire(self.queue_key, self.queue_ttl)
+        pipe.expire(self.key, self.queue_ttl)
 
     def enqueue(self, items, batch=100, pipe=None, json=True):
         """
@@ -65,6 +64,9 @@ class DataQueue(object):
         The items will be pushed into Redis as part of a single (given)
         pipe in batches corresponding to the given batch argument.
         """
+        if batch == 0:
+            batch = len(items)
+
         if json:
             # simplejson.dumps returns Unicode strings
             items = [simplejson.dumps(item, encoding='utf-8').encode('utf-8')
@@ -82,7 +84,7 @@ class DataQueue(object):
     @property
     def monitor_name(self):
         """Queue name used in monitoring metrics."""
-        return self.queue_key
+        return self.key
 
     def ready(self, batch=0):
         """
@@ -91,8 +93,8 @@ class DataQueue(object):
         new data was more than an hour ago (queue_max_age).
         """
         with self.redis_client.pipeline() as pipe:
-            pipe.ttl(self.queue_key)
-            pipe.llen(self.queue_key)
+            pipe.ttl(self.key)
+            pipe.llen(self.key)
             ttl, size = pipe.execute()
         if ttl < 0:
             age = -1
@@ -102,4 +104,4 @@ class DataQueue(object):
 
     def size(self):
         """Return the size of the queue."""
-        return self.redis_client.llen(self.queue_key)
+        return self.redis_client.llen(self.key)

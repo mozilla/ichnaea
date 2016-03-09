@@ -64,18 +64,26 @@ def update_incoming(self, batch=100):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export')
-def export_reports(self, export_queue_name, queue_key=None):
+def export_reports(self, export_queue_key, queue_key=None):
+    if not export_queue_key.startswith('queue_export_'):  # pragma: no cover
+        # BBB
+        export_queue_key = 'queue_export_' + 'queue_export_'
+
     export.ReportExporter(
-        self, export_queue_name, queue_key)(upload_reports)
+        self, export_queue_key, queue_key)(upload_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
-def upload_reports(self, export_queue_name, data, queue_key=None):
-    export_queue = self.app.export_queues[export_queue_name]
+def upload_reports(self, export_queue_key, data, queue_key=None):
+    if not export_queue_key.startswith('queue_export_'):  # pragma: no cover
+        # BBB
+        export_queue_key = 'queue_export_' + export_queue_key
+
+    export_queue = self.app.export_queues[export_queue_key]
     uploader_type = export_queue.uploader_type
     if uploader_type is not None:
         with self.redis_pipeline() as pipe:
-            uploader_type(self, pipe, export_queue_name, queue_key)(data)
+            uploader_type(self, pipe, export_queue_key, queue_key)(data)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue')

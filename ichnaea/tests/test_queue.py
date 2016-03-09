@@ -7,8 +7,8 @@ from ichnaea.tests.base import RedisTestCase
 class TestDataQueue(RedisTestCase):
 
     def _make_queue(self, compress=False):
-        name = uuid4().hex
-        return DataQueue(name, self.redis_client, name, compress=compress)
+        key = uuid4().hex
+        return DataQueue(key, self.redis_client, compress=compress)
 
     def test_objects(self):
         queue = self._make_queue()
@@ -53,7 +53,7 @@ class TestDataQueue(RedisTestCase):
 
     def test_monitor_name(self):
         queue = self._make_queue()
-        self.assertEqual(queue.monitor_name, queue.queue_key)
+        self.assertEqual(queue.monitor_name, queue.key)
 
     def test_ready(self):
         queue = self._make_queue()
@@ -68,7 +68,7 @@ class TestDataQueue(RedisTestCase):
         queue = self._make_queue()
         queue.enqueue(['a', 'b', 'c'])
         self.assertFalse(queue.ready(batch=10))
-        self.redis_client.expire(queue.queue_key, 70000)
+        self.redis_client.expire(queue.key, 70000)
         self.assertTrue(queue.ready(batch=10))
         self.assertTrue(queue.ready(batch=3))
         self.assertTrue(queue.ready())

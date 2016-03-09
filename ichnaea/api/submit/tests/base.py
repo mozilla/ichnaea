@@ -22,7 +22,7 @@ class BaseSubmitTest(object):
 
     def setUp(self):
         super(BaseSubmitTest, self).setUp()
-        self.queue = self.celery_app.export_queues['internal']
+        self.queue = self.celery_app.export_queues['queue_export_internal']
 
     def _assert_queue_size(self, expected):
         self.assertEqual(self.queue.size(self.queue.queue_key()), expected)

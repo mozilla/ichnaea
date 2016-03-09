@@ -6,7 +6,6 @@ from six.moves.urllib.parse import urlparse
 
 from ichnaea.queue import DataQueue
 
-EXPORT_QUEUE_PREFIX = 'queue_export_'
 WHITESPACE = re.compile('\s', flags=re.UNICODE)
 
 
@@ -22,10 +21,10 @@ class ExportQueue(object):
 
     metadata = False
 
-    def __init__(self, name, redis_client,
+    def __init__(self, key, redis_client,
                  url=None, batch=0, skip_keys=(),
                  uploader_type=None, compress=False):
-        self.name = name
+        self.key = key
         self.redis_client = redis_client
         self.batch = batch
         self.url = url
@@ -34,11 +33,10 @@ class ExportQueue(object):
         self.compress = compress
 
     def _data_queue(self, queue_key):
-        return DataQueue(self.name, self.redis_client, queue_key,
-                         compress=self.compress)
+        return DataQueue(queue_key, self.redis_client, compress=self.compress)
 
     @classmethod
-    def configure_queue(cls, name, redis_client, settings, compress=False):
+    def configure_queue(cls, key, redis_client, settings, compress=False):
         from ichnaea.data import upload
         from ichnaea.data.internal import InternalUploader
 
@@ -47,7 +45,7 @@ class ExportQueue(object):
         batch = int(settings.get('batch', 0))
 
         skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
-        skip_keys = tuple([key for key in skip_keys if key])
+        skip_keys = tuple([skip_key for skip_key in skip_keys if skip_key])
 
         queue_types = {
             'http': (HTTPSExportQueue, upload.GeosubmitUploader),
@@ -57,34 +55,36 @@ class ExportQueue(object):
         }
         klass, uploader_type = queue_types.get(scheme, (cls, None))
 
-        return klass(name, redis_client,
+        return klass(key, redis_client,
                      url=url, batch=batch, skip_keys=skip_keys,
                      uploader_type=uploader_type, compress=compress)
 
-    def dequeue(self, queue_key, batch=100, json=True):
+    def dequeue(self, queue_key):
         data_queue = self._data_queue(queue_key)
-        return data_queue.dequeue(batch=batch, json=json)
+        return data_queue.dequeue(batch=self.batch, json=True)
 
-    def enqueue(self, items, queue_key, batch=100, pipe=None, json=True):
+    def enqueue(self, items, queue_key, pipe=None):
         data_queue = self._data_queue(queue_key)
-        data_queue.enqueue(items, batch=batch, pipe=pipe, json=json)
+        data_queue.enqueue(items, batch=self.batch, pipe=pipe, json=True)
 
     def export_allowed(self, api_key):
         return (api_key not in self.skip_keys)
 
+    def metric_tag(self):
+        # strip away queue_export_ prefix
+        return self.key[13:]
+
     @property
     def monitor_name(self):
-        return self.queue_key()
+        return self.key
 
     def queue_key(self, api_key=None):
-        return EXPORT_QUEUE_PREFIX + self.name
+        return self.key
 
-    @property
-    def queue_prefix(self):
-        return None
-
-    def ready(self, queue_key):
-        return self._data_queue(queue_key).ready()
+    def ready(self, queue_key=None):
+        if queue_key is None:
+            queue_key = self.key
+        return self._data_queue(queue_key).ready(batch=self.batch)
 
     def size(self, queue_key):
         return self.redis_client.llen(queue_key)
@@ -105,14 +105,14 @@ class S3ExportQueue(ExportQueue):
     def monitor_name(self):
         return None
 
+    def partitions(self):
+        # e.g. ['queue_export_something:api_key']
+        return self.redis_client.scan_iter(match=self.key + ':*', count=100)
+
     def queue_key(self, api_key=None):
         if not api_key:
             api_key = 'no_key'
-        return self.queue_prefix + api_key
-
-    @property
-    def queue_prefix(self):
-        return EXPORT_QUEUE_PREFIX + self.name + ':'
+        return self.key + ':' + api_key
 
 
 class ExportScheduler(object):
@@ -125,27 +125,24 @@ class ExportScheduler(object):
     def __call__(self, export_task):
         triggered = 0
         for export_queue in self.export_queues.values():
-            if not export_queue.queue_prefix:
-                triggered += self.schedule_one(export_queue, export_task)
-            else:
+            if isinstance(export_queue, S3ExportQueue):
                 triggered += self.schedule_multiple(export_queue, export_task)
+            else:
+                triggered += self.schedule_one(export_queue, export_task)
         return triggered
 
     def schedule_one(self, export_queue, export_task):
         triggered = 0
-        queue_key = export_queue.queue_key()
-        if export_queue.ready(queue_key):
-            export_task.delay(export_queue.name)
+        if export_queue.ready():
+            export_task.delay(export_queue.key)
             triggered += 1
         return triggered
 
     def schedule_multiple(self, export_queue, export_task):
         triggered = 0
-        queue_prefix = export_queue.queue_prefix
-        for queue_key in self.redis_client.scan_iter(match=queue_prefix + '*',
-                                                     count=100):
+        for queue_key in export_queue.partitions():
             if export_queue.ready(queue_key):
-                export_task.delay(export_queue.name, queue_key=queue_key)
+                export_task.delay(export_queue.key, queue_key=queue_key)
                 triggered += 1
         return triggered
 
@@ -172,7 +169,7 @@ class IncomingQueue(object):
             })
 
         for api_key, items in grouped.items():
-            for name, queue in self.export_queues.items():
+            for queue in self.export_queues.values():
                 if queue.export_allowed(api_key):
                     queue_key = queue.queue_key(api_key)
                     queue.enqueue(items, queue_key, pipe=self.pipe)
@@ -186,26 +183,18 @@ class IncomingQueue(object):
 
 class ReportExporter(object):
 
-    def __init__(self, task, export_queue_name, queue_key):
+    def __init__(self, task, export_queue_key, queue_key):
         self.task = task
-        self.export_queue_name = export_queue_name
-        self.export_queue = task.app.export_queues[export_queue_name]
-        self.batch = self.export_queue.batch
+        self.export_queue_key = export_queue_key
+        self.export_queue = task.app.export_queues[export_queue_key]
         self.metadata = self.export_queue.metadata
         self.queue_key = queue_key
         if not self.queue_key:
             self.queue_key = self.export_queue.queue_key()
 
     def __call__(self, upload_task):
-        export_queue = self.export_queue
-        if not export_queue.ready(self.queue_key):  # pragma: no cover
-            return
-
-        items = export_queue.dequeue(self.queue_key, batch=self.batch)
-        if items and len(items) < self.batch:  # pragma: no cover
-            # race condition, something emptied the queue in between
-            # our llen call and fetching the items, put them back
-            export_queue.enqueue(items, self.queue_key)
+        items = self.export_queue.dequeue(self.queue_key)
+        if not items:  # pragma: no cover
             return
 
         reports = items
@@ -214,15 +203,15 @@ class ReportExporter(object):
             reports = {'items': [item['report'] for item in items]}
 
         upload_task.delay(
-            self.export_queue_name,
+            self.export_queue_key,
             simplejson.dumps(reports),
             queue_key=self.queue_key)
 
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
-        if export_queue.ready(self.queue_key):
+        if self.export_queue.ready(self.queue_key):
             self.task.apply_async(
-                args=[self.export_queue_name],
+                args=[self.export_queue_key],
                 kwargs={'queue_key': self.queue_key},
                 countdown=1,
                 expires=300)

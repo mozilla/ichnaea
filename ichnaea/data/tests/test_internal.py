@@ -93,7 +93,7 @@ class TestUploader(BaseExportTest):
     def test_blue_duplicated(self):
         self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
         # duplicate the Bluetooth entry inside the report
-        queue = self.celery_app.export_queues['internal']
+        queue = self.celery_app.export_queues['queue_export_internal']
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
         blue = report['bluetoothBeacons'][0]
@@ -140,7 +140,7 @@ class TestUploader(BaseExportTest):
     def test_cell_duplicated(self):
         self.add_reports(cell_factor=1, wifi_factor=0)
         # duplicate the cell entry inside the report
-        queue = self.celery_app.export_queues['internal']
+        queue = self.celery_app.export_queues['queue_export_internal']
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
         cell = report['cellTowers'][0]
@@ -187,7 +187,7 @@ class TestUploader(BaseExportTest):
     def test_wifi_duplicated(self):
         self.add_reports(cell_factor=0, wifi_factor=1)
         # duplicate the wifi entry inside the report
-        queue = self.celery_app.export_queues['internal']
+        queue = self.celery_app.export_queues['queue_export_internal']
         items = queue.dequeue(queue.queue_key())
         report = items[0]['report']
         wifi = report['wifiAccessPoints'][0]

@@ -139,9 +139,9 @@ class InternalUploader(BaseReportUploader):
 
     transform = InternalTransform()
 
-    def __init__(self, task, pipe, export_queue_name, queue_key):
+    def __init__(self, task, pipe, export_queue_key, queue_key):
         super(InternalUploader, self).__init__(
-            task, pipe, export_queue_name, queue_key)
+            task, pipe, export_queue_key, queue_key)
         self.data_queues = self.task.app.data_queues
 
     def _format_report(self, item):
