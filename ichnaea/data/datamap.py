@@ -66,8 +66,6 @@ class DataMapUpdater(object):
             self._update_shards(session, grids)
 
         if queue.ready():  # pragma: no cover
-            self.task.apply_async(
-                kwargs={'shard_id': self.shard_id},
-                countdown=2, expires=10)
+            self.task.apply_countdown(kwargs={'shard_id': self.shard_id})
 
         return len(grids)

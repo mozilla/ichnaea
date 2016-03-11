@@ -40,4 +40,4 @@ class ScoreUpdater(object):
             self._update_scores(session, score_values)
 
         if self.queue.ready():  # pragma: no cover
-            self.task.apply_async(countdown=2, expires=10)
+            self.task.apply_countdown()

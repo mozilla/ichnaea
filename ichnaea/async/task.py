@@ -17,6 +17,7 @@ class BaseTask(Task):
 
     abstract = True  #:
     acks_late = False  #:
+    countdown = None  #:
     ignore_result = True  #:
     max_retries = 3  #:
 
@@ -69,6 +70,12 @@ class BaseTask(Task):
             args = kombu_loads(data, content_type, encoding)
 
         return super(BaseTask, self).apply(*args, **kw)
+
+    def apply_countdown(self, args=None, kwargs=None):
+        """
+        Run the task again after the task's default countdown.
+        """
+        self.apply_async(countdown=self.countdown, args=args, kwargs=kwargs)
 
     def db_session(self, commit=True):
         """

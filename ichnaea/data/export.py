@@ -174,7 +174,7 @@ class IncomingQueue(object):
                     queue.enqueue(items, queue_key, pipe=self.pipe)
 
         if self.data_queue.ready():  # pragma: no cover
-            self.task.apply_async(countdown=2, expires=5)
+            self.task.apply_countdown()
 
 
 class ReportExporter(object):
@@ -206,7 +206,6 @@ class ReportExporter(object):
         # check the queue at the end, if there's still enough to do
         # schedule another job, but give it a second before it runs
         if self.export_queue.ready(self.queue_key):
-            self.task.apply_async(
+            self.task.apply_countdown(
                 args=[self.export_queue_key],
-                kwargs={'queue_key': self.queue_key},
-                countdown=1, expires=300)
+                kwargs={'queue_key': self.queue_key})

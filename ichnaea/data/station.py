@@ -388,9 +388,7 @@ class StationUpdater(object):
             self.emit_stats(stats_counter, drop_counter)
 
             if self.data_queue.ready():  # pragma: no cover
-                self.task.apply_async(
-                    kwargs={'shard_id': self.shard_id},
-                    countdown=5, expires=10)
+                self.task.apply_countdown(kwargs={'shard_id': self.shard_id})
 
 
 class BlueUpdater(StationUpdater):
