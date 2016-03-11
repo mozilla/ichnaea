@@ -21,18 +21,18 @@ class DataQueue(object):
     queue_max_age = 3600  #: Maximum age that data can sit in the queue.
 
     def __init__(self, key, redis_client,
-                 batch=None, compress=False, json=True):
+                 batch=0, compress=False, json=True):
         self.key = key
         self.redis_client = redis_client
         self.batch = batch
         self.compress = compress
         self.json = json
 
-    def dequeue(self, batch=100):
+    def dequeue(self, batch=None):
         """
         Get batch number of items from the queue.
         """
-        if self.batch is not None:
+        if batch is None:
             batch = self.batch
 
         with self.redis_client.pipeline() as pipe:
@@ -62,14 +62,14 @@ class DataQueue(object):
         # expire key after it was created by rpush
         pipe.expire(self.key, self.queue_ttl)
 
-    def enqueue(self, items, batch=100, pipe=None):
+    def enqueue(self, items, batch=None, pipe=None):
         """
         Put items into the queue.
 
         The items will be pushed into Redis as part of a single (given)
         pipe in batches corresponding to the given batch argument.
         """
-        if self.batch is not None:
+        if batch is None:
             batch = self.batch
 
         if batch == 0:
@@ -94,13 +94,13 @@ class DataQueue(object):
         """Queue name used in monitoring metrics."""
         return self.key
 
-    def ready(self, batch=0):
+    def ready(self, batch=None):
         """
         Returns True if the queue has either more than a certain
         batch number of items in it, or if the last time it has seen
         new data was more than an hour ago (queue_max_age).
         """
-        if self.batch is not None:
+        if batch is None:
             batch = self.batch
 
         with self.redis_client.pipeline() as pipe:

@@ -91,23 +91,24 @@ def configure_data(redis_client):
     data_queues = {
         # needs to be the exact same as webapp.config
         'update_incoming': DataQueue('update_incoming', redis_client,
-                                     compress=True),
-        'update_score': DataQueue('update_score', redis_client),
+                                     batch=100, compress=True),
+        'update_score': DataQueue('update_score', redis_client,
+                                  batch=100),
     }
     for key in ('update_cellarea', 'update_cellarea_ocid'):
-        data_queues[key] = DataQueue(key, redis_client, json=False)
+        data_queues[key] = DataQueue(key, redis_client, batch=100, json=False)
     for shard_id in BlueShard.shards().keys():
         key = 'update_blue_' + shard_id
-        data_queues[key] = DataQueue(key, redis_client)
+        data_queues[key] = DataQueue(key, redis_client, batch=500)
     for shard_id in DataMap.shards().keys():
         key = 'update_datamap_' + shard_id
-        data_queues[key] = DataQueue(key, redis_client, json=False)
+        data_queues[key] = DataQueue(key, redis_client, batch=500, json=False)
     for shard_id in CellShard.shards().keys():
         key = 'update_cell_' + shard_id
-        data_queues[key] = DataQueue(key, redis_client)
+        data_queues[key] = DataQueue(key, redis_client, batch=500)
     for shard_id in WifiShard.shards().keys():
         key = 'update_wifi_' + shard_id
-        data_queues[key] = DataQueue(key, redis_client)
+        data_queues[key] = DataQueue(key, redis_client, batch=500)
     return data_queues
 
 

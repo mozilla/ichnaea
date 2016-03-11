@@ -357,9 +357,9 @@ class StationUpdater(object):
 
         return (updated_areas, drop_counter, stats_counter)
 
-    def __call__(self, batch=10):
+    def __call__(self):
         sharded_obs = self._shard_observations(
-            self.data_queue.dequeue(batch=batch))
+            self.data_queue.dequeue())
         if not sharded_obs:
             return
 
@@ -387,11 +387,10 @@ class StationUpdater(object):
 
             self.emit_stats(stats_counter, drop_counter)
 
-            if self.data_queue.ready(batch=batch):  # pragma: no cover
+            if self.data_queue.ready():  # pragma: no cover
                 self.task.apply_async(
-                    kwargs={'batch': batch, 'shard_id': self.shard_id},
-                    countdown=5,
-                    expires=10)
+                    kwargs={'shard_id': self.shard_id},
+                    countdown=5, expires=10)
 
 
 class BlueUpdater(StationUpdater):

@@ -85,7 +85,9 @@ class ExportQueue(object):
             queue_key = self.key
         return self._data_queue(queue_key).ready()
 
-    def size(self, queue_key):
+    def size(self, queue_key=None):
+        if queue_key is None:
+            queue_key = self.key
         return self.redis_client.llen(queue_key)
 
 
@@ -154,10 +156,8 @@ class IncomingQueue(object):
         self.data_queue = task.app.data_queues['update_incoming']
         self.export_queues = task.app.export_queues
 
-    def __call__(self, batch=100):
-        data = self.data_queue.dequeue(batch=batch)
-        if not data:
-            return
+    def __call__(self):
+        data = self.data_queue.dequeue()
 
         grouped = defaultdict(list)
         for item in data:
@@ -173,11 +173,8 @@ class IncomingQueue(object):
                     queue_key = queue.queue_key(api_key)
                     queue.enqueue(items, queue_key, pipe=self.pipe)
 
-        if self.data_queue.ready(batch=batch):  # pragma: no cover
-            self.task.apply_async(
-                kwargs={'batch': batch},
-                countdown=2,
-                expires=5)
+        if self.data_queue.ready():  # pragma: no cover
+            self.task.apply_async(countdown=2, expires=5)
 
 
 class ReportExporter(object):
@@ -212,5 +209,4 @@ class ReportExporter(object):
             self.task.apply_async(
                 args=[self.export_queue_key],
                 kwargs={'queue_key': self.queue_key},
-                countdown=1,
-                expires=300)
+                countdown=1, expires=300)

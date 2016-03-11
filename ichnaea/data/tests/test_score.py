@@ -81,7 +81,7 @@ class TestScore(CeleryTestCase):
             (users['nick2'].id, ScoreKey.new_cell, 1),
         ])
 
-        update_score.delay(batch=3).get()
+        update_score.delay().get()
         scores = (self.session.query(Score)
                               .filter(Score.time == self.today)).all()
         self.assertEqual(len(scores), 5)

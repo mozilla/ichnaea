@@ -109,7 +109,7 @@ def main(app_config, ping_connections=False,
     # needs to be the exact same as async.config
     registry.data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
-                                     compress=True),
+                                     batch=100, compress=True),
     }
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)

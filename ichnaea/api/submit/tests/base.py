@@ -22,6 +22,7 @@ class BaseSubmitTest(object):
 
     def setUp(self):
         super(BaseSubmitTest, self).setUp()
+        self.data_queue = self.celery_app.data_queues['update_incoming']
         self.queue = self.celery_app.export_queues['queue_export_internal']
 
     def _assert_queue_size(self, expected):
@@ -38,7 +39,8 @@ class BaseSubmitTest(object):
         result = self.app.post_json(
             url, {'items': items},
             status=status, extra_environ=extra, **kw)
-        update_incoming.delay(batch=len(items)).get()
+        while self.data_queue.size() > 0:
+            update_incoming.delay().get()
         return result
 
     def _post_one_cell(self, nickname=None, status=status):

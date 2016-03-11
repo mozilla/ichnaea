@@ -278,19 +278,16 @@ class ImportExternal(ImportBase):
         super(ImportExternal, self).__init__(task, cell_type=cell_type)
         self.settings = self.task.app.settings.get('import:ocid', {})
 
-    def __call__(self, diff=True, _filename=None):
+    def __call__(self, _filename=None):
         url = self.settings.get('url')
         apikey = self.settings.get('apikey')
         if not url or not apikey:  # pragma: no cover
             return
 
         if _filename is None:
-            if diff:
-                prev_hour = util.utcnow() - timedelta(hours=1)
-                _filename = prev_hour.strftime(
-                    'cell_towers_diff-%Y%m%d%H.csv.gz')
-            else:  # pragma: no cover
-                _filename = 'cell_towers.csv.gz'
+            prev_hour = util.utcnow() - timedelta(hours=1)
+            _filename = prev_hour.strftime(
+                'cell_towers_diff-%Y%m%d%H.csv.gz')
 
         with util.selfdestruct_tempdir() as temp_dir:
             path = os.path.join(temp_dir, _filename)

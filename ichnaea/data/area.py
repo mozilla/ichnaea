@@ -28,18 +28,15 @@ class CellAreaUpdater(object):
         self.queue = self.task.app.data_queues[self.queue_name]
         self.utcnow = util.utcnow()
 
-    def __call__(self, batch=100):
-        areaids = self.queue.dequeue(batch=batch)
+    def __call__(self):
+        areaids = self.queue.dequeue()
 
         with self.task.db_session() as session:
             for areaid in set(areaids):
                 self.update_area(session, areaid)
 
-        if self.queue.ready(batch=batch):  # pragma: no cover
-            self.task.apply_async(
-                kwargs={'batch': batch},
-                countdown=5,
-                expires=10)
+        if self.queue.ready():  # pragma: no cover
+            self.task.apply_async(countdown=5, expires=10)
 
     def region(self, ctr_lat, ctr_lon, mcc, cells):
         region = None

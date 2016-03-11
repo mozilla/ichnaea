@@ -39,9 +39,9 @@ class TestDataQueue(RedisTestCase):
         queue.enqueue([1, 2, 3, 4, 5, 6])
         first = queue.dequeue()
         self.assertEqual(first, [1, 2, 3])
-        second = queue.dequeue()
-        self.assertEqual(second, [4, 5, 6])
-        self.assertEqual(queue.dequeue(), [])
+        second = queue.dequeue(batch=2)
+        self.assertEqual(second, [4, 5])
+        self.assertEqual(queue.dequeue(), [6])
 
     def test_pipe(self):
         queue = self._make_queue()

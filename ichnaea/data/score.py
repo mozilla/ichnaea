@@ -30,17 +30,14 @@ class ScoreUpdater(object):
                 ).values(key=key, userid=userid, time=time, value=value)
                 session.execute(stmt)
 
-    def __call__(self, batch=1000):
+    def __call__(self):
         score_values = defaultdict(int)
-        for score in self.queue.dequeue(batch=batch):
+        for score in self.queue.dequeue():
             score_values[(ScoreKey(score['key']),
                           score['userid'])] += score['value']
 
         with self.task.db_session() as session:
             self._update_scores(session, score_values)
 
-        if self.queue.ready(batch=batch):
-            self.task.apply_async(
-                kwargs={'batch': batch},
-                countdown=2,
-                expires=10)
+        if self.queue.ready():  # pragma: no cover
+            self.task.apply_async(countdown=2, expires=10)

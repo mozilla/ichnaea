@@ -36,9 +36,8 @@ class TestExporter(BaseExportTest):
                 'batch': '5',
             },
         })
-        self.celery_app.export_queues = queues = configure_export(
+        self.celery_app.export_queues = self.export_queues = configure_export(
             self.redis_client, config)
-        self.test_queue_key = queues['queue_export_test'].queue_key()
         ApiKeyFactory(valid_key='test2')
         self.session.flush()
 
@@ -47,35 +46,29 @@ class TestExporter(BaseExportTest):
         self.add_reports(1, api_key='test2')
         self.add_reports(1, api_key=None)
 
-        export_queues = self.celery_app.export_queues
-        expected = [
-            (export_queues['queue_export_test'].queue_key(), 5),
-            (export_queues['queue_export_everything'].queue_key(), 5),
-            (export_queues['queue_export_no_test'].queue_key(), 2),
-        ]
-        for key, num in expected:
-            self.assertEqual(self.queue_length(key), num)
+        for queue_key, num in [
+                ('queue_export_test', 5),
+                ('queue_export_everything', 5),
+                ('queue_export_no_test', 2)]:
+            self.assertEqual(self.export_queues[queue_key].size(), num)
 
     def test_one_queue(self):
         self.add_reports(3)
         schedule_export_reports.delay().get()
 
         # data from one queue was processed
-        export_queues = self.celery_app.export_queues
-        expected = [
-            (export_queues['queue_export_test'].queue_key(), 0),
-            (export_queues['queue_export_everything'].queue_key(), 3),
-            (export_queues['queue_export_no_test'].queue_key(), 0),
-        ]
-        for key, num in expected:
-            self.assertEqual(self.queue_length(key), num)
+        for queue_key, num in [
+                ('queue_export_test', 0),
+                ('queue_export_everything', 3),
+                ('queue_export_no_test', 0)]:
+            self.assertEqual(self.export_queues[queue_key].size(), num)
 
     def test_one_batch(self):
         self.add_reports(5)
         schedule_export_reports.delay().get()
-        self.assertEqual(self.queue_length(self.test_queue_key), 2)
+        self.assertEqual(self.export_queues['queue_export_test'].size(), 2)
 
     def test_multiple_batches(self):
         self.add_reports(10)
         schedule_export_reports.delay().get()
-        self.assertEqual(self.queue_length(self.test_queue_key), 1)
+        self.assertEqual(self.export_queues['queue_export_test'].size(), 1)

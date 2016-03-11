@@ -72,10 +72,12 @@ class TestDataMap(CeleryTestCase):
 
     def test_multiple(self):
         self._add([
+            (0.0, 1.0, self.today),
             (1.0, 2.0, self.yesterday),
             (-10.0, 40.0, self.yesterday),
         ])
         self._queue([
+            (0.0, 1.0),
             (1.0, 2.0), (1.0, 2.0),
             (40.0011, 3.0011), (40.0012, 3.0012), (40.0013, 3.0013),
             (0.0, 0.0),
@@ -83,13 +85,13 @@ class TestDataMap(CeleryTestCase):
             (1.00001, 2.00001),
         ])
         for shard_id in DataMap.shards():
-            update_datamap.delay(batch=2, shard_id=shard_id).get()
+            update_datamap.delay(shard_id=shard_id).get()
 
         rows = []
         for shard in DataMap.shards().values():
             rows.extend(self.session.query(shard).all())
 
-        self.assertEqual(len(rows), 4)
+        self.assertEqual(len(rows), 5)
         created = set()
         modified = set()
         positions = set()
@@ -101,6 +103,6 @@ class TestDataMap(CeleryTestCase):
 
         self.assertEqual(created, set([self.today, self.yesterday]))
         self.assertEqual(modified, set([self.today, self.yesterday]))
-        self.assertEqual(
-            positions,
-            set([(1.0, 2.0), (-10.0, 40.0), (0.0, 0.0), (40.001, 3.001)]))
+        self.assertEqual(positions, set([
+            (0.0, 0.0), (0.0, 1.0), (1.0, 2.0),
+            (-10.0, 40.0), (40.001, 3.001)]))

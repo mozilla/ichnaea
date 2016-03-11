@@ -75,7 +75,7 @@ class BaseExportTest(CeleryTestCase):
                   'report': rep} for rep in reports]
 
         self.incoming_queue.enqueue(items)
-        update_incoming.delay(batch=len(items)).get()
+        update_incoming.delay().get()
         return reports
 
     def queue_length(self, redis_key):

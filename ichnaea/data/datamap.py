@@ -55,9 +55,9 @@ class DataMapUpdater(object):
             # do a batch update of grids
             session.bulk_update_mappings(self.shard, update_values)
 
-    def __call__(self, batch=1000):
+    def __call__(self):
         queue = self.task.app.data_queues['update_datamap_' + self.shard_id]
-        grids = queue.dequeue(batch=batch)
+        grids = queue.dequeue()
         grids = list(set(grids))
         if not grids or not self.shard:
             return 0
@@ -65,10 +65,9 @@ class DataMapUpdater(object):
         with self.task.db_session() as session:
             self._update_shards(session, grids)
 
-        if queue.ready(batch=batch):
+        if queue.ready():  # pragma: no cover
             self.task.apply_async(
-                kwargs={'batch': batch, 'shard_id': self.shard_id},
-                countdown=2,
-                expires=10)
+                kwargs={'shard_id': self.shard_id},
+                countdown=2, expires=10)
 
         return len(grids)

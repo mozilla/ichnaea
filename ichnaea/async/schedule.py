@@ -44,7 +44,6 @@ def celerybeat_schedule(app_config):
 
         'update-statcounter': {
             'task': 'ichnaea.data.tasks.update_statcounter',
-            'args': (1, ),
             'schedule': crontab(minute=3),
             'options': {'expires': 2700},
         },
@@ -64,26 +63,22 @@ def celerybeat_schedule(app_config):
         'update-incoming': {
             'task': 'ichnaea.data.tasks.update_incoming',
             'schedule': timedelta(seconds=5),
-            'args': (100, ),
             'options': {'expires': 10},
         },
 
         'update-cellarea': {
             'task': 'ichnaea.data.tasks.update_cellarea',
             'schedule': timedelta(seconds=14),
-            'args': (100, ),
             'options': {'expires': 20},
         },
         'update-cellarea-ocid': {
             'task': 'ichnaea.data.tasks.update_cellarea_ocid',
             'schedule': timedelta(seconds=15),
-            'args': (100, ),
             'options': {'expires': 20},
         },
 
         'update-score': {
             'task': 'ichnaea.data.tasks.update_score',
-            'args': (100, ),
             'schedule': timedelta(seconds=9),
             'options': {'expires': 10},
         },
@@ -95,7 +90,7 @@ def celerybeat_schedule(app_config):
             'update-blue-' + shard_id: {
                 'task': 'ichnaea.data.tasks.update_blue',
                 'schedule': timedelta(seconds=18),
-                'args': (500, shard_id),
+                'kwargs': {'shard_id': shard_id},
                 'options': {'expires': 20},
             }
         })
@@ -105,7 +100,7 @@ def celerybeat_schedule(app_config):
             'update-cell-' + shard_id: {
                 'task': 'ichnaea.data.tasks.update_cell',
                 'schedule': timedelta(seconds=11),
-                'args': (500, shard_id),
+                'kwargs': {'shard_id': shard_id},
                 'options': {'expires': 15},
             }
         })
@@ -114,8 +109,8 @@ def celerybeat_schedule(app_config):
         schedule.update({
             'update-datamap-' + shard_id: {
                 'task': 'ichnaea.data.tasks.update_datamap',
-                'args': (500, shard_id),
                 'schedule': timedelta(seconds=14),
+                'kwargs': {'shard_id': shard_id},
                 'options': {'expires': 20},
             },
         })
@@ -125,7 +120,7 @@ def celerybeat_schedule(app_config):
             'update-wifi-' + shard_id: {
                 'task': 'ichnaea.data.tasks.update_wifi',
                 'schedule': timedelta(seconds=10),
-                'args': (500, shard_id),
+                'kwargs': {'shard_id': shard_id},
                 'options': {'expires': 15},
             }
         })
@@ -154,7 +149,6 @@ def celerybeat_schedule(app_config):
             },
             'cell-import-external': {
                 'task': 'ichnaea.data.tasks.cell_import_external',
-                'args': (True, ),
                 'schedule': crontab(minute=52),
                 'options': {'expires': 2700},
             },
