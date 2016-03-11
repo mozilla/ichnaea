@@ -54,18 +54,18 @@ class TestBeat(CeleryTestCase):
         })
 
         tasks = set(schedule.celerybeat_schedule(app_config))
-        for name in ('cell-export-full', 'cell-export-diff'):
+        for name in ('data.cell_export_full', 'data.cell_export_diff'):
             self.assertTrue(name in tasks)
-        for name in ('cell-import-external', 'monitor-ocid-import'):
+        for name in ('data.cell_import_external', 'data.monitor_ocid_import'):
             self.assertTrue(name in tasks)
         for i in range(16):
-            self.assertTrue('update-blue-%x' % i in tasks)
+            self.assertTrue('data.update_blue_%x' % i in tasks)
         for name in ('gsm', 'wcdma', 'lte'):
-            self.assertTrue('update-cell-' + name in tasks)
+            self.assertTrue('data.update_cell_' + name in tasks)
         for name in ('ne', 'nw', 'se', 'sw'):
-            self.assertTrue('update-datamap-' + name in tasks)
+            self.assertTrue('data.update_datamap_' + name in tasks)
         for i in range(16):
-            self.assertTrue('update-wifi-%x' % i in tasks)
+            self.assertTrue('data.update_wifi_%x' % i in tasks)
 
 
 class TestWorkerConfig(TestCase):

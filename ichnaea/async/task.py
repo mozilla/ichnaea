@@ -20,6 +20,8 @@ class BaseTask(Task):
     countdown = None  #:
     ignore_result = True  #:
     max_retries = 3  #:
+    schedule = None  #:
+    shard_model = None  #:
 
     _auto_retry = True  #:
     _shortname = None  #:
@@ -36,6 +38,25 @@ class BaseTask(Task):
             segments = [s for s in segments if s not in ('ichnaea', 'tasks')]
             short = self._shortname = '.'.join(segments)
         return short
+
+    def beat_config(self):
+        """
+        Returns the beat schedule for this task, taking into account
+        the optional shard_model to create multiple schedule entries.
+        """
+        if self.shard_model is None:
+            return {self.shortname: {
+                'task': self.name,
+                'schedule': self.schedule,
+            }}
+        result = {}
+        for shard_id in self.shard_model.shards().keys():
+            result[self.shortname + '_' + shard_id] = {
+                'task': self.name,
+                'schedule': self.schedule,
+                'kwargs': {'shard_id': shard_id},
+            }
+        return result
 
     def __call__(self, *args, **kw):
         """

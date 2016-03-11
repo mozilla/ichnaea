@@ -29,7 +29,7 @@ ipaddress==1.0.16 ; python_version < '3.0'
 iso8601==0.1.11
 kombu==3.0.34
 linecache2==1.0.0 ; python_version < '3.0'
-Mako==1.0.3
+Mako==1.0.4
 MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7

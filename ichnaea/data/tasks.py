@@ -5,6 +5,10 @@ The task function names and this module's import path is used in generating
 automatic statsd timer metrics to track the runtime of each task.
 """
 
+from datetime import timedelta
+
+from celery.schedules import crontab
+
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
 from ichnaea.data import area
@@ -15,59 +19,60 @@ from ichnaea.data import ocid
 from ichnaea.data.score import ScoreUpdater
 from ichnaea.data import station
 from ichnaea.data import stats
+from ichnaea import models
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=2700)
+                 expires=2700, schedule=crontab(minute=3))
 def cell_export_diff(self, _bucket=None):
     ocid.CellExport(self)(hourly=True, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=39600)
+                 expires=39600, schedule=crontab(hour=0, minute=13))
 def cell_export_full(self, _bucket=None):
     ocid.CellExport(self)(hourly=False, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=2700)
+                 expires=2700, schedule=crontab(minute=52))
 def cell_import_external(self, diff=None):
     # BBB diff argument
     ocid.ImportExternal(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570)
+                 expires=570, schedule=timedelta(seconds=600))
 def monitor_api_key_limits(self):
     monitor.ApiKeyLimits(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570)
+                 expires=570, schedule=timedelta(seconds=600))
 def monitor_api_users(self):
     monitor.ApiUsers(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570)
+                 expires=570, schedule=timedelta(seconds=600))
 def monitor_ocid_import(self):
     monitor.OcidImport(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=57)
+                 expires=57, schedule=timedelta(seconds=60))
 def monitor_queue_size(self):
     monitor.QueueSize(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
-                 expires=10)
+                 expires=10, schedule=timedelta(seconds=6))
 def schedule_export_reports(self):
     export.ExportScheduler(self)(export_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
-                 countdown=2, expires=10)
+                 countdown=2, expires=10, schedule=timedelta(seconds=5))
 def update_incoming(self, batch=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -99,7 +104,8 @@ def upload_reports(self, export_queue_key, data, queue_key=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
-                 countdown=5, expires=30)
+                 countdown=5, expires=30, schedule=timedelta(seconds=18),
+                 shard_model=models.BlueShard)
 def update_blue(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -107,7 +113,8 @@ def update_blue(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
-                 countdown=5, expires=30)
+                 countdown=5, expires=30, schedule=timedelta(seconds=11),
+                 shard_model=models.CellShard)
 def update_cell(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -115,7 +122,8 @@ def update_cell(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi',
-                 countdown=5, expires=30)
+                 countdown=5, expires=30, schedule=timedelta(seconds=10),
+                 shard_model=models.WifiShard)
 def update_wifi(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -123,21 +131,22 @@ def update_wifi(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
-                 countdown=5, expires=20)
+                 countdown=5, expires=20, schedule=timedelta(seconds=14))
 def update_cellarea(self, batch=None):
     # BBB batch argument
     area.CellAreaUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 countdown=5, expires=20)
+                 countdown=5, expires=20, schedule=timedelta(seconds=15))
 def update_cellarea_ocid(self, batch=None):
     # BBB batch argument
     area.CellAreaOCIDUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 countdown=2, expires=30)
+                 countdown=2, expires=30, schedule=timedelta(seconds=14),
+                 shard_model=models.DataMap)
 def update_datamap(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -145,7 +154,7 @@ def update_datamap(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 countdown=2, expires=10)
+                 countdown=2, expires=10, schedule=timedelta(seconds=9))
 def update_score(self, batch=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -153,13 +162,13 @@ def update_score(self, batch=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=18000)
+                 expires=18000, schedule=timedelta(seconds=21600))
 def update_statregion(self):
     stats.StatRegion(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=2700)
+                 expires=2700, schedule=crontab(minute=3))
 def update_statcounter(self, ago=1):
     with self.redis_pipeline() as pipe:
         stats.StatCounterUpdater(self, pipe)(ago=ago)
