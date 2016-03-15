@@ -6,9 +6,19 @@
 <section id="main-content">
 
     <p>
-        You have a variety of options in order to contact us. If you want
-        to engage with the larger community or are comfortable discussing
-        your request in the open, please use either:
+        If you have a question not related specifically to the Mozilla
+        Location Service, please see
+        <a href="https://www.mozilla.org/contact/">
+            https://www.mozilla.org/contact/</a>
+        for options to contact Mozilla or ask for help with other
+        Mozilla products and projects.
+    </p>
+
+    <p>
+        If you have a question about the Mozilla Location Service,
+        you have a variety of options to contact us. If you want to
+        engage with the larger geolocation community or are comfortable
+        discussing your request in the open, please use either:
         <ul>
             <li>
                 <a href="https://lists.mozilla.org/listinfo/dev-geolocation">
@@ -25,14 +35,18 @@
     </p>
 
     <p>
-        If your inquiry should stay private, you can
-        <a href="mailto:mls-contact@mozilla.com">
-            contact us via email</a>.
+        If your inquiry about the Mozilla Location Service should stay
+        private, you can contact us via email:
+        <i>mls-contact (at) mozilla (dot) com</i>
+
+        <br />
+
+        Please note that we do not answer questions unrelated to this
+        service via this email address.
     </p>
 
     <p>
-        In the unlikely event that you want to raise a formal legal
-        question, our address is:
+        If you want to raise a formal legal question, our address is:
 
         <pre>
             Mozilla Corporation
