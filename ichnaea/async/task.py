@@ -7,6 +7,7 @@ from kombu.serialization import (
     dumps as kombu_dumps,
     loads as kombu_loads,
 )
+from six import get_unbound_function
 
 from ichnaea.cache import redis_pipeline
 from ichnaea.db import db_worker_session
@@ -17,53 +18,68 @@ class BaseTask(Task):
 
     abstract = True  #:
     acks_late = False  #:
-    countdown = None  #:
     ignore_result = True  #:
     max_retries = 3  #:
-    schedule = None  #:
-    shard_model = None  #:
+
+    _countdown = None  #:
+    _enabled = True  #:
+    _schedule = None  #:
+    _shard_model = None  #:
 
     _auto_retry = True  #:
     _shortname = None  #:
 
-    @property
-    def shortname(self):
+    @classmethod
+    def shortname(cls):
         """
         A short name for the task, used in statsd metric names.
         """
-        short = self._shortname
+        short = cls._shortname
         if short is None:
             # strip off ichnaea prefix and tasks module
-            segments = self.name.split('.')
+            segments = cls.name.split('.')
             segments = [s for s in segments if s not in ('ichnaea', 'tasks')]
-            short = self._shortname = '.'.join(segments)
+            short = cls._shortname = '.'.join(segments)
         return short
 
-    def beat_config(self):
+    @classmethod
+    def beat_config(cls):
         """
         Returns the beat schedule for this task, taking into account
         the optional shard_model to create multiple schedule entries.
         """
-        if self.shard_model is None:
-            return {self.shortname: {
-                'task': self.name,
-                'schedule': self.schedule,
+        if cls._shard_model is None:
+            return {cls.shortname(): {
+                'task': cls.name,
+                'schedule': cls._schedule,
             }}
+
         result = {}
-        for shard_id in self.shard_model.shards().keys():
-            result[self.shortname + '_' + shard_id] = {
-                'task': self.name,
-                'schedule': self.schedule,
+        for shard_id in cls._shard_model.shards().keys():
+            result[cls.shortname() + '_' + shard_id] = {
+                'task': cls.name,
+                'schedule': cls._schedule,
                 'kwargs': {'shard_id': shard_id},
             }
         return result
+
+    @classmethod
+    def on_bound(cls, app):
+        # Set up celery beat entry after celery app initialization is done.
+        enabled = cls._enabled
+        if callable(enabled):
+            enabled = get_unbound_function(enabled)(app.app_config)
+
+        if enabled and cls._schedule:
+            app.conf.CELERYBEAT_SCHEDULE.update(cls.beat_config())
 
     def __call__(self, *args, **kw):
         """
         Execute the task, capture a statsd timer for the task duration and
         automatically report exceptions into Sentry.
         """
-        with self.stats_client.timed('task', tags=['task:' + self.shortname]):
+        with self.stats_client.timed('task',
+                                     tags=['task:' + self.shortname()]):
             try:
                 result = super(BaseTask, self).__call__(*args, **kw)
             except Exception as exc:  # pragma: no cover
@@ -96,7 +112,7 @@ class BaseTask(Task):
         """
         Run the task again after the task's default countdown.
         """
-        self.apply_async(countdown=self.countdown, args=args, kwargs=kwargs)
+        self.apply_async(countdown=self._countdown, args=args, kwargs=kwargs)
 
     def db_session(self, commit=True):
         """

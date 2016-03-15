@@ -95,18 +95,18 @@ class DummyConfig(object):
         return result
 
 
-def read_config(filename=None, envvar='ICHNAEA_CFG', fallback='location.ini'):
+def read_config(filename=None, envvar='ICHNAEA_CFG'):
     """
-    Read a configuration file from three possible locations:
+    Read a configuration file from one of two possible locations:
 
     1. from the passed in filename,
-    2. from the environment variable passed as `envvar`
-    3. from the `fallback` file in the current working directory.
+    2. from the environment variable passed as `envvar`.
 
     :rtype: :class:`ichnaea.config.Config`
     """
     if filename is None:
-        filename = os.environ.get(envvar, fallback)
+        filename = os.environ.get(envvar, '')
         if PY2:  # pragma: no cover
             filename = filename.decode('utf-8')
+
     return Config(filename)

@@ -23,7 +23,7 @@ from ichnaea.async.config import (
     shutdown_worker,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.config import DummyConfig
+from ichnaea.config import read_config
 from ichnaea.db import configure_db
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import (
@@ -59,32 +59,7 @@ SESSION = {}
 
 # Some test-data constants
 
-TEST_CONFIG = DummyConfig({
-    'assets': {
-        'bucket': 'localhost.bucket',
-        'url': 'http://127.0.0.1:7001/static/',
-    },
-    'export:test': {
-        'url': None,
-        'skip_keys': 'export',
-        'batch': '3',
-    },
-    'export:internal': {
-        'url': 'internal://',
-        'batch': '0',
-    },
-    'import:ocid': {
-        'url': 'http://127.0.0.1:9/downloads/',
-        'apikey': 'xxxxxxxx-yyyy-xxxx-yyyy-xxxxxxxxxxxx',
-    },
-    'locate:fallback': {
-        'url': 'http://127.0.0.1:9/?api',
-        'ratelimit': '10',
-        'ratelimit_expire': '60',
-        'ratelimit_interval': '5',
-        'cache_expire': '60',
-    },
-})
+TEST_CONFIG = read_config(filename=os.path.join(DATA_DIRECTORY, 'test.ini'))
 
 GEOIP_DATA = {
     'London': {
@@ -554,8 +529,10 @@ class CeleryTestCase(ConnectionTestCase):
     def setUpClass(cls):
         super(CeleryTestCase, cls).setUpClass()
         cls.celery_app = celery_app
+        celery_app.app_config = TEST_CONFIG
+        celery_app.settings = TEST_CONFIG.asdict()
         init_worker(
-            celery_app, TEST_CONFIG,
+            celery_app,
             _db_rw=cls.db_rw,
             _geoip_db=cls.geoip_db,
             _raven_client=cls.raven_client,

@@ -7,6 +7,7 @@ TRAVIS ?= false
 
 TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
+ICHNAEA_CFG ?= $(TOXINIDIR)/ichnaea/tests/data/test.ini
 
 MAXMINDDB_VERSION = 1.2.0
 MYSQL_DB = location
@@ -255,7 +256,7 @@ clean:
 
 test: mysql
 	SQLURI=$(SQLURI) REDIS_URI=$(REDIS_URI) CELERY_ALWAYS_EAGER=true \
-	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
+	ICHNAEA_CFG=$(ICHNAEA_CFG) LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(NOSE) -s -d $(TEST_ARG)
 
 tox_install:

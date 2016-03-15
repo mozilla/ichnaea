@@ -22,57 +22,70 @@ from ichnaea.data import stats
 from ichnaea import models
 
 
+def _cell_export_enabled(app_config):
+    return ('assets' in app_config.sections() and
+            bool(app_config.get('assets', 'bucket', False)))
+
+
+def _ocid_import_enabled(app_config):
+    return 'import:ocid' in app_config.sections()
+
+
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=2700, schedule=crontab(minute=3))
+                 expires=2700, _schedule=crontab(minute=3),
+                 _enabled=_cell_export_enabled)
 def cell_export_diff(self, _bucket=None):
     ocid.CellExport(self)(hourly=True, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=39600, schedule=crontab(hour=0, minute=13))
+                 expires=39600, _schedule=crontab(hour=0, minute=13),
+                 _enabled=_cell_export_enabled)
 def cell_export_full(self, _bucket=None):
     ocid.CellExport(self)(hourly=False, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=2700, schedule=crontab(minute=52))
+                 expires=2700, _schedule=crontab(minute=52),
+                 _enabled=_ocid_import_enabled)
 def cell_import_external(self, diff=None):
     # BBB diff argument
     ocid.ImportExternal(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570, schedule=timedelta(seconds=600))
+                 expires=570, _schedule=timedelta(seconds=600))
 def monitor_api_key_limits(self):
     monitor.ApiKeyLimits(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570, schedule=timedelta(seconds=600))
+                 expires=570, _schedule=timedelta(seconds=600))
 def monitor_api_users(self):
     monitor.ApiUsers(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570, schedule=timedelta(seconds=600))
+                 expires=570, _schedule=timedelta(seconds=600),
+                 _enabled=_ocid_import_enabled)
 def monitor_ocid_import(self):
     monitor.OcidImport(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=57, schedule=timedelta(seconds=60))
+                 expires=57, _schedule=timedelta(seconds=60))
 def monitor_queue_size(self):
     monitor.QueueSize(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
-                 expires=10, schedule=timedelta(seconds=6))
+                 expires=10, _schedule=timedelta(seconds=6))
 def schedule_export_reports(self):
     export.ExportScheduler(self)(export_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
-                 countdown=2, expires=10, schedule=timedelta(seconds=5))
+                 _countdown=2, expires=10, _schedule=timedelta(seconds=5))
 def update_incoming(self, batch=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -80,7 +93,7 @@ def update_incoming(self, batch=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
-                 countdown=1, expires=300)
+                 _countdown=1, expires=300)
 def export_reports(self, export_queue_key, queue_key=None):
     if not export_queue_key.startswith('queue_export_'):  # pragma: no cover
         # BBB
@@ -104,8 +117,8 @@ def upload_reports(self, export_queue_key, data, queue_key=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
-                 countdown=5, expires=30, schedule=timedelta(seconds=18),
-                 shard_model=models.BlueShard)
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=18),
+                 _shard_model=models.BlueShard)
 def update_blue(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -113,8 +126,8 @@ def update_blue(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
-                 countdown=5, expires=30, schedule=timedelta(seconds=11),
-                 shard_model=models.CellShard)
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=11),
+                 _shard_model=models.CellShard)
 def update_cell(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -122,8 +135,8 @@ def update_cell(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi',
-                 countdown=5, expires=30, schedule=timedelta(seconds=10),
-                 shard_model=models.WifiShard)
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=10),
+                 _shard_model=models.WifiShard)
 def update_wifi(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -131,22 +144,22 @@ def update_wifi(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
-                 countdown=5, expires=20, schedule=timedelta(seconds=14))
+                 _countdown=5, expires=20, _schedule=timedelta(seconds=14))
 def update_cellarea(self, batch=None):
     # BBB batch argument
     area.CellAreaUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 countdown=5, expires=20, schedule=timedelta(seconds=15))
+                 _countdown=5, expires=20, _schedule=timedelta(seconds=15))
 def update_cellarea_ocid(self, batch=None):
     # BBB batch argument
     area.CellAreaOCIDUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 countdown=2, expires=30, schedule=timedelta(seconds=14),
-                 shard_model=models.DataMap)
+                 _countdown=2, expires=30, _schedule=timedelta(seconds=14),
+                 _shard_model=models.DataMap)
 def update_datamap(self, batch=None, shard_id=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -154,7 +167,7 @@ def update_datamap(self, batch=None, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 countdown=2, expires=10, schedule=timedelta(seconds=9))
+                 _countdown=2, expires=10, _schedule=timedelta(seconds=9))
 def update_score(self, batch=None):
     # BBB batch argument
     with self.redis_pipeline() as pipe:
@@ -162,13 +175,13 @@ def update_score(self, batch=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=18000, schedule=timedelta(seconds=21600))
+                 expires=18000, _schedule=timedelta(seconds=21600))
 def update_statregion(self):
     stats.StatRegion(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=2700, schedule=crontab(minute=3))
+                 expires=2700, _schedule=crontab(minute=3))
 def update_statcounter(self, ago=1):
     with self.redis_pipeline() as pipe:
         stats.StatCounterUpdater(self, pipe)(ago=ago)

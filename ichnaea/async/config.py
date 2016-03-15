@@ -8,7 +8,6 @@ from kombu import Queue
 from kombu.serialization import register
 import simplejson
 
-from ichnaea.async.schedule import celerybeat_schedule
 from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
 from ichnaea.db import configure_db
@@ -57,12 +56,16 @@ def configure_celery(celery_app):
     :mod:`ichnaea.async.settings`.
     """
 
-    conf = read_config()
-    if conf.has_section('celery'):
-        section = conf.get_map('celery')
-    else:  # pragma: no cover
-        # happens while building docs locally
+    # This happens at module import time and depends on a properly
+    # set ICHNAEA_CFG.
+    app_config = read_config()
+    if not app_config.has_section('celery'):  # pragma: no cover
+        # Happens while building docs locally.
         return
+
+    # Make config file settings available.
+    celery_app.app_config = app_config
+    celery_app.settings = app_config.asdict()
 
     # testing settings
     always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
@@ -72,15 +75,15 @@ def configure_celery(celery_app):
         broker_url = redis_uri
         result_url = redis_uri
     else:  # pragma: no cover
-        broker_url = section['broker_url']
-        result_url = section['result_url']
+        celery_section = app_config.get_map('celery')
+        broker_url = celery_section['broker_url']
+        result_url = celery_section['result_url']
 
     celery_app.config_from_object('ichnaea.async.settings')
     celery_app.conf.update(
         BROKER_URL=broker_url,
         CELERY_RESULT_BACKEND=result_url,
         CELERY_QUEUES=CELERY_QUEUES,
-        CELERYBEAT_SCHEDULE=celerybeat_schedule(conf),
     )
 
 
@@ -89,7 +92,7 @@ def configure_data(redis_client):
     Configure fixed set of data queues.
     """
     data_queues = {
-        # needs to be the exact same as webapp.config
+        # update_incoming needs to be the exact same as in webapp.config
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
         'update_score': DataQueue('update_score', redis_client,
@@ -127,7 +130,17 @@ def configure_export(redis_client, app_config):
     return export_queues
 
 
-def init_worker(celery_app, app_config,
+def init_beat(beat, celery_app):
+    """
+    Configure the passed in celery beat app, usually stored in
+    :data:`ichnaea.async.app.celery_app`.
+    """
+    # Ensure we import all tasks in the context of the beat process,
+    # as these configure their own beat schedule.
+    celery_app.loader.import_default_modules()
+
+
+def init_worker(celery_app,
                 _db_rw=None, _db_ro=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
     """
@@ -145,26 +158,23 @@ def init_worker(celery_app, app_config,
     :param _db_ro: Ignored, read-only database connection isn't used.
     """
 
-    # make config file settings available
-    celery_app.settings = app_config.asdict()
-
     # configure outside connections
     celery_app.db_rw = configure_db(
-        app_config.get('database', 'rw_url'), _db=_db_rw)
+        celery_app.app_config.get('database', 'rw_url'), _db=_db_rw)
 
     celery_app.raven_client = raven_client = configure_raven(
-        app_config.get('sentry', 'dsn'),
+        celery_app.app_config.get('sentry', 'dsn'),
         transport='threaded', _client=_raven_client)
 
     celery_app.redis_client = redis_client = configure_redis(
-        app_config.get('cache', 'cache_url'), _client=_redis_client)
+        celery_app.app_config.get('cache', 'cache_url'), _client=_redis_client)
 
     celery_app.stats_client = configure_stats(
-        app_config, _client=_stats_client)
+        celery_app.app_config, _client=_stats_client)
 
     celery_app.geoip_db = configure_geoip(
-        app_config.get('geoip', 'db_path'), raven_client=raven_client,
-        _client=_geoip_db)
+        celery_app.app_config.get('geoip', 'db_path'),
+        raven_client=raven_client, _client=_geoip_db)
 
     # configure data / export queues
     celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
@@ -174,7 +184,9 @@ def init_worker(celery_app, app_config,
         if queue.monitor_name:
             all_queues.add(queue.monitor_name)
 
-    celery_app.export_queues = configure_export(redis_client, app_config)
+    celery_app.export_queues = configure_export(
+        redis_client, celery_app.app_config)
+
     for queue in celery_app.export_queues.values():
         if queue.monitor_name:
             all_queues.add(queue.monitor_name)
@@ -200,3 +212,4 @@ def shutdown_worker(celery_app):
     del celery_app.data_queues
     del celery_app.export_queues
     del celery_app.settings
+    del celery_app.app_config

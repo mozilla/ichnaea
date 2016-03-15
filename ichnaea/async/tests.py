@@ -1,14 +1,12 @@
+from inspect import getmembers
 import os
 import shutil
 import tempfile
 
-from ichnaea.async.app import celery_app
-from ichnaea.async import schedule
-from ichnaea.config import (
-    DummyConfig,
-    read_config,
-)
-from ichnaea.tests.base import CeleryTestCase, TestCase
+from celery import signals
+
+from ichnaea.async.task import BaseTask
+from ichnaea.tests.base import CeleryTestCase
 
 
 class TestBeat(CeleryTestCase):
@@ -16,60 +14,52 @@ class TestBeat(CeleryTestCase):
     def test_tasks(self):
         tmpdir = tempfile.mkdtemp()
         filename = os.path.join(tmpdir, 'celerybeat-schedule')
-        beat_app = celery_app.Beat()
-        app_config = read_config()
+        beat_app = self.celery_app.Beat()
         try:
-            beat = beat_app.Service(app=celery_app, schedule_filename=filename)
+            beat = beat_app.Service(
+                app=self.celery_app, schedule_filename=filename)
+            signals.beat_init.send(sender=beat)
             # parses the schedule as a side-effect
             scheduler = beat.get_scheduler()
             registered_tasks = set(scheduler._store['entries'].keys())
-            configured_tasks = set(schedule.celerybeat_schedule(app_config))
-            self.assertEqual(registered_tasks, configured_tasks)
         finally:
             shutil.rmtree(tmpdir)
 
-    def test_schedule(self):
-        app_config = DummyConfig({
-            'assets': {
-                'bucket': 'bucket',
-            },
-            'export:internal': {
-                'url': 'internal://',
-                'batch': '1000',
-            },
-            'export:backup': {
-                'url': 's3://bucket/directory/{api_key}/{year}/{month}/{day}',
-                'skip_keys': 'test',
-                'batch': '10000',
-            },
-            'export:outside': {
-                'url': 'https://localhost:9/some/api/url?key=export',
-                'skip_keys': 'test',
-                'batch': '10000',
-            },
-            'import:ocid': {
-                'url': 'https://localhost:9/downloads/',
-                'apikey': 'some_key',
-            },
-        })
+        # Import tasks after beat startup, to ensure beat_init
+        # loads configured CELERY_IMPORTS correctly.
+        from ichnaea.data import tasks
+        all_tasks = set([m[1].shortname() for m in getmembers(tasks)
+                         if isinstance(m[1], BaseTask)])
 
-        tasks = set(schedule.celerybeat_schedule(app_config))
+        self.assertEqual(
+            all_tasks - registered_tasks,
+            set(['data.update_blue', 'data.update_cell',
+                 'data.update_datamap', 'data.update_wifi',
+                 'data.export_reports', 'data.upload_reports']))
+
+        self.assertEqual(
+            set(['_'.join(name.split('_')[:-1]) for name in
+                 registered_tasks - all_tasks]),
+            set(['data.update_blue', 'data.update_cell',
+                 'data.update_datamap', 'data.update_wifi']))
+
         for name in ('data.cell_export_full', 'data.cell_export_diff'):
-            self.assertTrue(name in tasks)
+            self.assertTrue(name in registered_tasks)
         for name in ('data.cell_import_external', 'data.monitor_ocid_import'):
-            self.assertTrue(name in tasks)
+            self.assertTrue(name in registered_tasks)
         for i in range(16):
-            self.assertTrue('data.update_blue_%x' % i in tasks)
+            self.assertTrue('data.update_blue_%x' % i in registered_tasks)
         for name in ('gsm', 'wcdma', 'lte'):
-            self.assertTrue('data.update_cell_' + name in tasks)
+            self.assertTrue('data.update_cell_' + name in registered_tasks)
         for name in ('ne', 'nw', 'se', 'sw'):
-            self.assertTrue('data.update_datamap_' + name in tasks)
+            self.assertTrue('data.update_datamap_' + name in registered_tasks)
         for i in range(16):
-            self.assertTrue('data.update_wifi_%x' % i in tasks)
+            self.assertTrue('data.update_wifi_%x' % i in registered_tasks)
 
 
-class TestWorkerConfig(TestCase):
+class TestWorkerConfig(CeleryTestCase):
 
     def test_config(self):
-        self.assertTrue(celery_app.conf['CELERY_ALWAYS_EAGER'])
-        self.assertTrue('redis' in celery_app.conf['CELERY_RESULT_BACKEND'])
+        self.assertTrue(self.celery_app.conf['CELERY_ALWAYS_EAGER'])
+        self.assertTrue(
+            'redis' in self.celery_app.conf['CELERY_RESULT_BACKEND'])
