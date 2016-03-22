@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #456: Deprecate weekly leaderboard.
+
 - Remove the implied metadata setting from the config file.
 
 - Enable extended metrics for all API keys.

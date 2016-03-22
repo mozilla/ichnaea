@@ -10,6 +10,7 @@ from boto.exception import S3ResponseError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
+from pyramid.httpexceptions import HTTPMovedPermanently
 from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
@@ -21,7 +22,6 @@ from ichnaea.content.stats import (
     global_stats,
     histogram,
     leaders,
-    leaders_weekly,
     regions,
 )
 from ichnaea.models.content import StatKey
@@ -70,6 +70,7 @@ def configure_content(config):
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=86400)
 
+    # BBB: leaders_weekly is an alias for leaders
     config.add_route('leaders_weekly', '/leaders/weekly')
     config.add_route('leaders', '/leaders')
     config.add_route('stats_regions', '/stats/regions')
@@ -237,32 +238,10 @@ class ContentViews(object):
             'leaders2': data[half:],
         }
 
-    @view_config(renderer='templates/leaders_weekly.pt',
-                 route_name='leaders_weekly', http_cache=3600)
+    @view_config(route_name='leaders_weekly')
     def leaders_weekly_view(self):
-        data = self._get_cache('leaders_weekly')
-        if data is None:
-            data = {
-                'new_cell': {'leaders1': [], 'leaders2': []},
-                'new_wifi': {'leaders1': [], 'leaders2': []},
-            }
-            for name, value in leaders_weekly(self.session).items():
-                value = [{
-                    'pos': l[0] + 1,
-                    'num': l[1]['num'],
-                    'nickname': l[1]['nickname'],
-                } for l in enumerate(value)]
-                half = len(value) // 2 + len(value) % 2
-                data[name] = {
-                    'leaders1': value[:half],
-                    'leaders2': value[half:],
-                }
-            self._set_cache('leaders_weekly', data)
-
-        return {
-            'page_title': 'Weekly Leaderboard',
-            'scores': data,
-        }
+        return HTTPMovedPermanently(
+            location=self.request.route_path('leaders'))
 
     @view_config(renderer='templates/map.pt', name='map', http_cache=3600)
     def map_view(self):

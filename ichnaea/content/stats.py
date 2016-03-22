@@ -130,40 +130,6 @@ def leaders(session):
     return result
 
 
-def leaders_weekly(session, batch=20):
-    result = {'new_cell': [], 'new_wifi': []}
-    today = util.utcnow().date()
-    one_week = today - timedelta(7)
-
-    score_rows = {}
-    userids = set()
-    for name in ('new_cell', 'new_wifi'):
-        score_rows[name] = (session.query(Score.userid, func.sum(Score.value))
-                                   .filter((Score.key == ScoreKey[name]),
-                                           (Score.time >= one_week))
-                                   .order_by(func.sum(Score.value).desc())
-                                   .group_by(Score.userid)
-                                   .limit(batch)).all()
-        userids.update(set([s[0] for s in score_rows[name]]))
-
-    if not userids:  # pragma: no cover
-        return result
-
-    user_rows = (session.query(User.id, User.nickname)
-                        .filter(User.id.in_(userids))).all()
-    users = dict(user_rows)
-
-    for name, value in score_rows.items():
-        for userid, value in value:
-            nickname = users.get(userid, 'anonymous')
-            if len(nickname) > 24:  # pragma: no cover
-                nickname = nickname[:24] + u'...'
-            result[name].append(
-                {'nickname': nickname, 'num': int(value)})
-
-    return result
-
-
 def regions(session):
     rows = session.query(RegionStat).all()
     regions = {}

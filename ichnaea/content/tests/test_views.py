@@ -76,6 +76,7 @@ class TestFunctionalContent(AppTestCase):
         self.app.get('/', status=200)
         self.app.get('/contact', status=200)
         self.app.get('/leaders', status=200)
+        self.app.get('/leaders/weekly', status=301)
         self.app.get('/map', status=200)
         self.app.get('/privacy', status=200)
         self.app.get('/stats', status=200)
@@ -260,40 +261,6 @@ class TestFunctionalContentViews(AppTestCase):
         inst = self._make_view(request)
         request.db_ro_session = None
         second_result = inst.leaders_view()
-        self.assertEqual(second_result, result)
-
-    def test_leaders_weekly(self):
-        today = util.utcnow().date()
-        for i in range(3):
-            user = User(nickname=u'%s' % i)
-            self.session.add(user)
-            self.session.flush()
-            score1 = Score(key=ScoreKey.new_cell,
-                           userid=user.id, time=today, value=i)
-            self.session.add(score1)
-            score2 = Score(key=ScoreKey.new_wifi,
-                           userid=user.id, time=today, value=i)
-            self.session.add(score2)
-        self.session.commit()
-        request = DummyRequest()
-        request.db_ro_session = self.session
-        request.registry.redis_client = self.redis_client
-        inst = self._make_view(request)
-        result = inst.leaders_weekly_view()
-        for score_name in ('new_cell', 'new_wifi'):
-            self.assertEqual(
-                result['scores'][score_name]['leaders1'],
-                [{'nickname': u'2', 'num': 2, 'pos': 1},
-                 {'nickname': u'1', 'num': 1, 'pos': 2}])
-            self.assertEqual(
-                result['scores'][score_name]['leaders2'],
-                [{'nickname': u'0', 'num': 0, 'pos': 3}])
-
-        # call the view again, without a working db session, so
-        # we can be sure to use the cached result
-        inst = self._make_view(request)
-        request.db_ro_session = None
-        second_result = inst.leaders_weekly_view()
         self.assertEqual(second_result, result)
 
     def test_stats(self):

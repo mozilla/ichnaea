@@ -15,7 +15,6 @@ from ichnaea.content.stats import (
     global_stats,
     histogram,
     leaders,
-    leaders_weekly,
     regions,
     transliterate,
 )
@@ -142,45 +141,6 @@ class TestStats(DBTestCase):
         self.assertEqual(result[0]['nickname'], highest[:24] + u'...')
         self.assertEqual(result[0]['num'], 40)
         self.assertTrue(lowest in [r['nickname'] for r in result])
-
-    def test_leaders_weekly(self):
-        session = self.session
-        today = util.utcnow().date()
-        test_data = []
-        for i in range(1, 11):
-            test_data.append((u'nick-%s' % i, i))
-        for nick, value in test_data:
-            user = User(nickname=nick)
-            session.add(user)
-            session.flush()
-            score = Score(key=ScoreKey.new_cell,
-                          userid=user.id, time=today, value=value)
-            session.add(score)
-            score = Score(key=ScoreKey.new_wifi,
-                          userid=user.id, time=today, value=21 - value)
-            session.add(score)
-        session.commit()
-
-        # check the result
-        result = leaders_weekly(session, batch=5)
-        self.assertEqual(len(result), 2)
-        self.assertEqual(set(result.keys()), set(['new_cell', 'new_wifi']))
-
-        # check the cell scores
-        scores = result['new_cell']
-        self.assertEqual(len(scores), 5)
-        self.assertEqual(scores[0]['nickname'], 'nick-10')
-        self.assertEqual(scores[0]['num'], 10)
-        self.assertEqual(scores[-1]['nickname'], 'nick-6')
-        self.assertEqual(scores[-1]['num'], 6)
-
-        # check the wifi scores
-        scores = result['new_wifi']
-        self.assertEqual(len(scores), 5)
-        self.assertEqual(scores[0]['nickname'], 'nick-1')
-        self.assertEqual(scores[0]['num'], 20)
-        self.assertEqual(scores[-1]['nickname'], 'nick-5')
-        self.assertEqual(scores[-1]['num'], 16)
 
     def test_regions(self):
         RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)

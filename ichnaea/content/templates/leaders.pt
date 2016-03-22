@@ -5,17 +5,26 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        This leaderboard shows the contributions of individual community
-        members, who are using one of the
-        <a href="/apps">client applications</a> and contribute back data
-        to us - we call this activity stumbling. Joining this competition
-        is optional and you can contribute data anonymously. You only show
-        up on the leaderboard if you have collected at least ten reports.
+        The leaderboard part of this service is being moved to a different
+        standalone service available at
+        <a href="https://location-leaderboard.services.mozilla.com/">
+            location-leaderboard.services.mozilla.com</a>.
+        The new service uses an actual account system based on Firefox
+        Accounts, which allows users to actually change their nickname.
+        The new service also features regional leaderboards.
     </p>
 
     <p>
-        A <a href="/leaders/weekly">weekly leaderboard</a> showing new
-        cell and WiFi discoveries is also available.
+        Participation in the new leaderboards will require upgrading
+        to a new version of the Mozilla Stumbler application, which
+        will be released soon.
+    </p>
+
+    <p>
+        Once the new Mozilla Stumbler application is available, this old
+        leaderboard will be frozen and its final state
+        <a href="https://wiki.mozilla.org/CloudServices/Location/Leaderboard">
+            archived on the Mozilla Wiki</a>.
     </p>
 
     <div class="half-left" id="leaderboard_start">
