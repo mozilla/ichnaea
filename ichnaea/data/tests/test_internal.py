@@ -10,7 +10,6 @@ from ichnaea.data.tests.test_export import BaseExportTest
 from ichnaea.models import (
     BlueShard,
     CellShard,
-    ScoreKey,
     User,
     WifiShard,
 )
@@ -249,15 +248,15 @@ class TestUploader(BaseExportTest):
         schedule_export_reports.delay().get()
 
         queue = self.celery_app.data_queues['update_score']
-        self.assertEqual(queue.size(), 2)
-        scores = queue.dequeue()
-        score_keys = set([ScoreKey(score['key']) for score in scores])
-        self.assertEqual(
-            score_keys, set([ScoreKey.location, ScoreKey.new_cell]))
+        self.assertEqual(queue.size(), 1)
 
         users = self.session.query(User).all()
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0].nickname, self.nickname)
+
+        scores = queue.dequeue()
+        self.assertEqual(
+            scores, [{'userid': users[0].id, 'key': 0, 'value': 1}])
 
     def test_nickname_too_short(self):
         self.add_reports(nickname=u'a')

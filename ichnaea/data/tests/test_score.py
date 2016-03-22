@@ -68,32 +68,21 @@ class TestScore(CeleryTestCase):
         self._add([
             (users['nick1'].id, ScoreKey.location, self.yesterday, 20),
             (users['nick1'].id, ScoreKey.location, self.today, 2),
-            (users['nick1'].id, ScoreKey.new_wifi, self.today, 4),
             (users['nick2'].id, ScoreKey.location, self.today, 7),
-            (users['nick2'].id, ScoreKey.new_cell, self.today, 12),
         ])
         self._queue([
             (users['nick2'].id, ScoreKey.location, 4),
             (users['nick1'].id, ScoreKey.location, 1),
             (users['nick1'].id, ScoreKey.location, 1),
-            (users['nick1'].id, ScoreKey.new_wifi, 2),
-            (users['nick1'].id, ScoreKey.new_cell, 3),
-            (users['nick2'].id, ScoreKey.new_cell, 1),
         ])
 
         update_score.delay().get()
-        scores = (self.session.query(Score)
-                              .filter(Score.time == self.today)).all()
-        self.assertEqual(len(scores), 5)
+        rows = (self.session.query(Score)
+                            .filter(Score.time == self.today)).all()
+        self.assertEqual(len(rows), 2)
 
-        grouped = {}
-        for score in scores:
-            grouped[(score.userid, score.key)] = score.value
-
-        self.assertEqual(grouped, {
-            (users['nick1'].id, ScoreKey.location): 4,
-            (users['nick1'].id, ScoreKey.new_cell): 3,
-            (users['nick1'].id, ScoreKey.new_wifi): 6,
-            (users['nick2'].id, ScoreKey.location): 11,
-            (users['nick2'].id, ScoreKey.new_cell): 13,
-        })
+        scores = set([(row.userid, row.key, row.value) for row in rows])
+        self.assertEqual(scores, set([
+            (users['nick1'].id, ScoreKey.location, 4),
+            (users['nick2'].id, ScoreKey.location, 11),
+        ]))

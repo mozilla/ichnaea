@@ -175,12 +175,7 @@ class InternalUploader(BaseReportUploader):
         for nickname in nicknames:
             userid = self.process_user(session, nickname)
             users[nickname] = userid
-            scores[userid] = {
-                'positions': 0,
-                'new_stations': {
-                    'blue': 0, 'cell': 0, 'wifi': 0
-                },
-            }
+            scores[userid] = 0
 
         metrics = {}
         for api_key in api_keys:
@@ -204,9 +199,8 @@ class InternalUploader(BaseReportUploader):
         for (api_key, nickname), reports in groups.items():
             userid = users.get(nickname)
 
-            obs_queue, malformed_reports, obs_count, positions, \
-                new_station_count = self.process_reports(
-                    session, reports, userid)
+            obs_queue, malformed_reports, obs_count, positions = \
+                self.process_reports(session, reports, userid)
 
             all_positions.extend(positions)
             for datatype, queued_obs in obs_queue.items():
@@ -220,13 +214,10 @@ class InternalUploader(BaseReportUploader):
                     metrics[api_key]['obs_count'][datatype][reason] += value
 
             if userid is not None:
-                scores[userid]['positions'] += len(positions)
-                for datatype, value in new_station_count.items():
-                    scores[userid]['new_stations'][datatype] += value
+                scores[userid] += len(positions)
 
-        for userid, values in scores.items():
-            self.process_score(
-                userid, values['positions'], values['new_stations'])
+        for userid, score_value in scores.items():
+            self.process_score(userid, score_value)
 
         for datatype, queued_obs in all_queued_obs.items():
             for queue_id, values in queued_obs.items():
@@ -274,29 +265,17 @@ class InternalUploader(BaseReportUploader):
                         count,
                         tags=tags + api_tag)
 
-    def new_stations(self, session, shard_key, observations):
-        # observations are pre-grouped per shard
-        shard = observations[0].shard_model
-        key_column = getattr(shard, shard_key)
-
-        keys = set([obs.unique_key for obs in observations])
-        query = (session.query(key_column)
-                        .filter(key_column.in_(keys)))
-        return len(keys) - query.count()
-
     def process_reports(self, session, reports, userid):
         malformed_reports = 0
         positions = set()
         observations = {}
         obs_count = {}
         obs_queue = {}
-        new_station_count = {}
 
         for name in ('blue', 'cell', 'wifi'):
             observations[name] = []
             obs_count[name] = {'upload': 0, 'drop': 0}
             obs_queue[name] = defaultdict(list)
-            new_station_count[name] = 0
 
         for report in reports:
             obs, malformed_obs = self.process_report(report)
@@ -329,13 +308,7 @@ class InternalUploader(BaseReportUploader):
                     obs_queue[name][queue_prefix + shard_id].extend(
                         [value.to_json() for value in values])
 
-                    # determine scores for stations
-                    if userid is not None:
-                        new_station_count[name] += self.new_stations(
-                            session, shard_key, values)
-
-        return (obs_queue, malformed_reports, obs_count,
-                positions, new_station_count)
+        return (obs_queue, malformed_reports, obs_count, positions)
 
     def process_report(self, data):
         report = Report.create(**data)
@@ -393,22 +366,15 @@ class InternalUploader(BaseReportUploader):
             queue = self.task.app.data_queues['update_datamap_' + shard_id]
             queue.enqueue(list(values), pipe=self.pipe)
 
-    def process_score(self, userid, pos_count, new_station_count):
+    def process_score(self, userid, pos_count):
         if userid is None or pos_count <= 0:
             return
 
-        scores = []
-        scores.append({
+        scores = [{
             'key': int(ScoreKey.location),
             'userid': userid,
             'value': pos_count,
-        })
-
-        for name, key in (('cell', int(ScoreKey.new_cell)),
-                          ('wifi', int(ScoreKey.new_wifi))):
-            value = new_station_count[name]
-            if value > 0:
-                scores.append({'key': key, 'userid': userid, 'value': value})
+        }]
 
         queue = self.task.app.data_queues['update_score']
         queue.enqueue(scores)
