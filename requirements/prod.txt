@@ -11,7 +11,7 @@ Chameleon==2.24
 colander==1.2
 configparser==3.5.0b2
 contextlib2==0.5.1 ; python_version < '3.2'
-cryptography==1.2.3
+cryptography==1.3.1
 datadog==0.10.0
 decorator==4.0.9
 enum34==1.0.4 ; python_version < '3.0'
@@ -22,7 +22,7 @@ gevent==1.1
 greenlet==0.4.9
 gunicorn==19.4.5
 hiredis==0.2.0
-idna==2.0
+idna==2.1
 importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
 ipaddress==1.0.16 ; python_version < '3.0'
@@ -40,11 +40,11 @@ PasteDeploy==1.5.2
 pyasn1==0.1.9
 pycparser==2.14
 PyMySQL==0.7.2
-pyopenssl==0.15.1
+pyopenssl==16.0.0
 pyramid==1.6.1
 pyramid-chameleon==0.3
 python-editor==0.5
-pytz==2015.7
+pytz==2016.2
 raven==5.11.1
 redis==2.10.5
 repoze.lru==0.6
