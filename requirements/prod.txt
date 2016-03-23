@@ -18,7 +18,8 @@ enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6
 genc==0.2
 geoip2==2.2.0
-gevent==1.1
+gevent==1.0.2 ; python_version < '3.0'
+gevent==1.1 ; python_version >= '3.0'
 greenlet==0.4.9
 gunicorn==19.4.5
 hiredis==0.2.0
@@ -27,7 +28,7 @@ importlib==1.0.3 ; python_version < '3.0'
 ipaddr==2.1.11 ; python_version < '3.0'
 ipaddress==1.0.16 ; python_version < '3.0'
 iso8601==0.1.11
-kombu==3.0.34
+kombu==3.0.35
 linecache2==1.0.0 ; python_version < '3.0'
 Mako==1.0.4
 MarkupSafe==0.23
