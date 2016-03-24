@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Prevent errors when receiving invalid timestamps.
 
 20160323102800
 **************

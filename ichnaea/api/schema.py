@@ -36,15 +36,16 @@ class BoundedFloat(colander.Float):
 
 class UnixTimeFromInteger(colander.Integer):
     """
-    A UnixTimeFromInteger will return an integer representing
+    A UnixTimeFromInteger will return a float representing
     a time value from a unixtime integer or default to now.
     """
 
     def deserialize(self, schema, cstruct):
         value = super(UnixTimeFromInteger, self).deserialize(schema, cstruct)
-        if not value:
+        if not value or value < 0 or value > 2 ** 43:
+            # Only allow dates between 1970 and 2248.
             value = time.time() * 1000.0
-        return value
+        return float(value)
 
 
 class UnixTimeFromString(colander.String):
@@ -55,13 +56,16 @@ class UnixTimeFromString(colander.String):
 
     def deserialize(self, schema, cstruct):
         value = super(UnixTimeFromString, self).deserialize(schema, cstruct)
-        timestamp = time.time() * 1000.0
+        timestamp = now = time.time() * 1000.0
         if value:
             try:
                 dt = iso8601.parse_date(value)
                 timestamp = calendar.timegm(dt.timetuple()) * 1000.0
             except (iso8601.ParseError, TypeError):  # pragma: no cover
                 pass
+        if timestamp < 0.0 or timestamp > 2.0 ** 43:
+            # Only allow dates between 1970 and 2248.
+            return now
         return timestamp
 
 

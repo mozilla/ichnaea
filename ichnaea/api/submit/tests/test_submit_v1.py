@@ -1,13 +1,42 @@
 import time
 
+import colander
+
 from ichnaea.models import Radio
+from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
-from ichnaea.tests.base import CeleryAppTestCase
+from ichnaea.tests.base import (
+    CeleryAppTestCase,
+    TestCase,
+)
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
+
+
+class TestSubmitSchema(TestCase):
+
+    schema = SUBMIT_V1_SCHEMA
+
+    def test_empty(self):
+        with self.assertRaises(colander.Invalid):
+            self.schema.deserialize({})
+
+    def test_timestamp(self):
+        wifi = WifiShardFactory.build()
+
+        data = self.schema.deserialize(
+            {'items': [{'timestamp': 1460000000000.0,
+                        'wifiAccessPoints': [{'macAddress': wifi.mac}]}]})
+        self.assertEqual(data['items'][0]['timestamp'], 1460000000000.0)
+
+        data = self.schema.deserialize(
+            {'items': [{'timestamp': -10000.0,
+                        'wifiAccessPoints': [{'macAddress': wifi.mac}]}]})
+        # 1710 was discarded and replaced by 'now'
+        self.assertTrue(data['items'][0]['timestamp'] > 0.0)
 
 
 class TestView(BaseSubmitTest, CeleryAppTestCase):
