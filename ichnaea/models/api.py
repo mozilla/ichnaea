@@ -6,6 +6,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
 )
+from sqlalchemy.orm import load_only
 
 from ichnaea.models.base import _Model
 
@@ -23,6 +24,16 @@ class ApiKey(_Model):
     allow_fallback = Column(Boolean)  #: Use the fallback source?
     allow_locate = Column(Boolean)  #: Allow locate queries?
     shortname = Column(String(40))  #: Short descriptive name.
+
+    _get_fields = (
+        'valid_key', 'maxreq', 'allow_fallback', 'allow_locate',
+    )
+
+    @classmethod
+    def get(cls, session, valid_key):
+        return (session.query(cls)
+                       .filter(cls.valid_key == valid_key)
+                       .options(load_only(*cls._get_fields))).first()
 
     def should_allow(self, api_type):
         # Region and submit are always allowed, even without an API key.

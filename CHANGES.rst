@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Limit the columns loaded for API keys.
+
 - Prevent errors when receiving invalid timestamps.
 
 20160323102800

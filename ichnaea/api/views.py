@@ -83,7 +83,7 @@ class BaseAPIView(BaseView):
         if api_key_text is not None:
             try:
                 session = self.request.db_ro_session
-                api_key = session.query(ApiKey).get(api_key_text)
+                api_key = ApiKey.get(session, api_key_text)
             except Exception:
                 # if we cannot connect to backend DB, skip api key check
                 skip_check = True

@@ -240,7 +240,7 @@ class InternalUploader(BaseReportUploader):
                    api_key=None):
         api_tag = []
         if api_key is not None:
-            api_key = session.query(ApiKey).get(api_key)
+            api_key = ApiKey.get(session, api_key)
 
         if api_key and api_key.should_log('submit'):
             api_tag = ['key:%s' % api_key.valid_key]

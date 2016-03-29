@@ -19,6 +19,22 @@ class TestApiKey(DBTestCase):
         self.assertEqual(result.allow_fallback, True)
         self.assertEqual(result.allow_locate, True)
 
+    def test_get(self):
+        key = uuid.uuid4().hex
+        self.session.add(ApiKey(valid_key=key, shortname='foo'))
+        self.session.flush()
+
+        result = ApiKey.get(self.session, key)
+        self.assertTrue(isinstance(result, ApiKey))
+        # shortname wasn't loaded at first
+        self.assertFalse('shortname' in result.__dict__)
+        # but is eagerly loaded
+        self.assertEqual(result.shortname, 'foo')
+
+    def test_get_miss(self):
+        result = ApiKey.get(self.session, 'unknown')
+        self.assertTrue(result is None)
+
     def test_should_allow(self):
         result = ApiKey(valid_key='foo',
                         allow_fallback=True, allow_locate=False)
