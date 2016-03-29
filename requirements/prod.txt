@@ -18,8 +18,7 @@ enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6
 genc==0.2
 geoip2==2.2.0
-gevent==1.0.2 ; python_version < '3.0'
-gevent==1.1 ; python_version >= '3.0'
+gevent==1.1
 greenlet==0.4.9
 gunicorn==19.4.5
 hiredis==0.2.0
@@ -35,7 +34,7 @@ MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
 ndg-httpsclient==0.4.0
-numpy==1.10.4
+numpy==1.11.0
 ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9
@@ -45,8 +44,8 @@ pyopenssl==16.0.0
 pyramid==1.6.1
 pyramid-chameleon==0.3
 python-editor==0.5
-pytz==2016.2
-raven==5.11.1
+pytz==2016.3
+raven==5.11.2
 redis==2.10.5
 repoze.lru==0.6
 requests==2.9.1
@@ -55,7 +54,7 @@ Rtree==0.8.2 ; python_version >= '2.7'
 scandir==1.2 ; python_version < '3.5'
 scipy==0.17.0
 setproctitle==1.1.9
-Shapely==1.5.13
+Shapely==1.5.14
 simplejson==3.8.2
 six==1.10.0
 SQLAlchemy==1.0.12

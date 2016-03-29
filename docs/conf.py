@@ -11,7 +11,7 @@ version = '1.5'
 release = '1.5'
 
 autoclass_content = 'class'
-exclude_patterns = ['build/html/README.rst']
+exclude_patterns = ['build/html/README.rst', '.DS_Store', 'Thumbs.db']
 html_static_path = []
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]

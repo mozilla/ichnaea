@@ -1,3 +1,4 @@
+# cython: emit_code_comments=False
 """
 Contains helper functions for various geo related calculations.
 
