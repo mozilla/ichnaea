@@ -22,14 +22,14 @@ from ichnaea.api.locate.result import (
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
-def _configure_searcher(klass, settings, geoip_db=None, raven_client=None,
+def _configure_searcher(klass, geoip_db=None, raven_client=None,
                         redis_client=None, stats_client=None, _searcher=None):
     if _searcher is not None:
         return _searcher
-    return klass(settings, geoip_db, raven_client, redis_client, stats_client)
+    return klass(geoip_db, raven_client, redis_client, stats_client)
 
 
-def configure_region_searcher(settings, geoip_db=None, raven_client=None,
+def configure_region_searcher(geoip_db=None, raven_client=None,
                               redis_client=None, stats_client=None,
                               _searcher=None):
     """
@@ -39,12 +39,12 @@ def configure_region_searcher(settings, geoip_db=None, raven_client=None,
     :param _searcher: Test-only hook to provide a pre-configured searcher.
     """
     return _configure_searcher(
-        RegionSearcher, settings, geoip_db=geoip_db,
+        RegionSearcher, geoip_db=geoip_db,
         raven_client=raven_client, redis_client=redis_client,
         stats_client=stats_client, _searcher=_searcher)
 
 
-def configure_position_searcher(settings, geoip_db=None, raven_client=None,
+def configure_position_searcher(geoip_db=None, raven_client=None,
                                 redis_client=None, stats_client=None,
                                 _searcher=None):
     """
@@ -54,7 +54,7 @@ def configure_position_searcher(settings, geoip_db=None, raven_client=None,
     :param _searcher: Test-only hook to provide a pre-configured searcher.
     """
     return _configure_searcher(
-        PositionSearcher, settings, geoip_db=geoip_db,
+        PositionSearcher, geoip_db=geoip_db,
         raven_client=raven_client, redis_client=redis_client,
         stats_client=stats_client, _searcher=_searcher)
 
@@ -71,13 +71,10 @@ class Searcher(object):
     sources = ()  #:
     source_classes = ()  #:
 
-    def __init__(self, settings,
-                 geoip_db, raven_client, redis_client, stats_client):
+    def __init__(self, geoip_db, raven_client, redis_client, stats_client):
         self.sources = []
         for name, source in self.source_classes:
-            source_settings = settings.get_map('locate:%s' % name, {})
             source_instance = source(
-                settings=source_settings,
                 geoip_db=geoip_db,
                 raven_client=raven_client,
                 redis_client=redis_client,

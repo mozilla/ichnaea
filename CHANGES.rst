@@ -11,8 +11,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- fdd0b256cecc: Add fallback options to API key table.
+
 Changes
 ~~~~~~~
+
+- #484: Allow per API key fallback configuration.
 
 - Document and forward age argument through all layers of abstraction.
 

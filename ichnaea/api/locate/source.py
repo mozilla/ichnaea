@@ -22,9 +22,7 @@ class Source(object):
     result_type = None  #:
     source = None  #:
 
-    def __init__(self, settings,
-                 geoip_db, raven_client, redis_client, stats_client):
-        self.settings = settings
+    def __init__(self, geoip_db, raven_client, redis_client, stats_client):
         self.geoip_db = geoip_db
         self.raven_client = raven_client
         self.redis_client = redis_client

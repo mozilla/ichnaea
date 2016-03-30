@@ -100,8 +100,7 @@ def main(app_config, ping_connections=False,
                                 ('region_searcher',
                                  configure_region_searcher,
                                  _region_searcher)):
-        searcher = func(app_config,
-                        geoip_db=geoip_db, raven_client=raven_client,
+        searcher = func(geoip_db=geoip_db, raven_client=raven_client,
                         redis_client=redis_client, stats_client=stats_client,
                         _searcher=default)
         setattr(registry, name, searcher)

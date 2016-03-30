@@ -370,7 +370,7 @@ class Query(object):
             return
 
         allow_fallback = str(bool(self.api_key and
-                                  self.api_key.should_allow('fallback') or
+                                  self.api_key.can_fallback() or
                                   False)).lower()
 
         if result is None:

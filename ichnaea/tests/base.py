@@ -398,7 +398,13 @@ class DBTestCase(LogTestCase):
             conn.execute(ApiKey.__table__.delete())
 
             key1 = ApiKey.__table__.insert().values(
-                valid_key='test', allow_fallback=False, allow_locate=True)
+                valid_key='test', allow_fallback=False, allow_locate=True,
+                fallback_name='test_fallback',
+                fallback_url='http://127.0.0.1:9/?api',
+                fallback_ratelimit=10,
+                fallback_ratelimit_interval=60,
+                fallback_cache_expire=60,
+            )
             conn.execute(key1)
             key2 = ApiKey.__table__.insert().values(
                 valid_key='export', allow_fallback=False, allow_locate=False)
@@ -487,7 +493,6 @@ class APITestCase(ConnectionTestCase):
         for name, func in (('position_searcher', configure_position_searcher),
                            ('region_searcher', configure_region_searcher)):
             searcher = func(
-                TEST_CONFIG,
                 geoip_db=cls.geoip_db, raven_client=cls.raven_client,
                 redis_client=cls.redis_client, stats_client=cls.stats_client)
             setattr(cls, name, searcher)

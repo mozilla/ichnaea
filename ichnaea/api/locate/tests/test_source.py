@@ -19,7 +19,6 @@ class SourceTest(object):
         super(SourceTest, cls).setUpClass()
         cls.api_key = ApiKeyFactory.build(valid_key='key')
         cls.source = cls.TestSource(
-            settings={'foo': '1'},
             geoip_db=cls.geoip_db,
             raven_client=cls.raven_client,
             redis_client=cls.redis_client,
@@ -34,7 +33,6 @@ class SourceTest(object):
             **kw)
 
     def test_init(self):
-        self.assertEqual(self.source.settings, {'foo': '1'})
         self.assertEqual(self.source.geoip_db, self.geoip_db)
         self.assertEqual(self.source.raven_client, self.raven_client)
         self.assertEqual(self.source.redis_client, self.redis_client)

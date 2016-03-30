@@ -149,12 +149,10 @@ class FallbackCache(object):
     caching portion of the fallback position source logic.
     """
 
-    def __init__(self, raven_client, redis_client, stats_client,
-                 cache_expire=0):
+    def __init__(self, raven_client, redis_client, stats_client):
         self.raven_client = raven_client
         self.redis_client = redis_client
         self.stats_client = stats_client
-        self.cache_expire = cache_expire
         self.cache_key_blue = redis_client.cache_keys['fallback_blue']
         self.cache_key_cell = redis_client.cache_keys['fallback_cell']
         self.cache_key_wifi = redis_client.cache_keys['fallback_wifi']
@@ -178,12 +176,13 @@ class FallbackCache(object):
         Queries with multiple cells or mixed blue, cell and wifi networks
         won't get cached.
         """
-        return ((not query.blue and not query.wifi and
-                 len(query.cell) == 1) or
-                (not query.blue and not query.cell and
-                 query.wifi and len(query.wifi) < 20) or
-                (not query.cell and not query.wifi and
-                 query.blue and len(query.blue) < 20))
+        return (query.api_key.fallback_cache_expire and
+                ((not query.blue and not query.wifi and
+                  len(query.cell) == 1) or
+                 (not query.blue and not query.cell and
+                  query.wifi and len(query.wifi) < 20) or
+                 (not query.cell and not query.wifi and
+                  query.blue and len(query.blue) < 20)))
 
     def _cache_keys(self, query):
         # Dependent on should_cache conditions.
@@ -290,7 +289,7 @@ class FallbackCache(object):
         self._stat_count('cache', tags=['status:inconsistent'])
         return None
 
-    def set(self, query, result):
+    def set(self, query, result, expire=3600):
         """
         Cache the given position for all networks present in the query.
 
@@ -299,6 +298,9 @@ class FallbackCache(object):
 
         :param result: The position result obtained for the query.
         :type result: :class:`~ichnaea.api.locate.fallback.ExternalResult`
+
+        :param expire: Time in seconds to cache the result.
+        :type expire: int
         """
         if not self._should_cache(query):
             return
@@ -316,23 +318,10 @@ class FallbackCache(object):
             with self.redis_client.pipeline() as pipe:
                 pipe.mset(cache_values)
                 for cache_key in cache_keys:
-                    pipe.expire(cache_key, self.cache_expire)
+                    pipe.expire(cache_key, expire)
                 pipe.execute()
         except (simplejson.JSONDecodeError, RedisError):
             self.raven_client.captureException()
-
-
-class DisabledCache(object):
-    """
-    A DisabledCache implements a no-cache version of the
-    :class:`~ichnaea.api.locate.fallback.FallbackCache`.
-    """
-
-    def get(self, query):
-        return None
-
-    def set(self, query, result):
-        pass
 
 
 class FallbackPositionSource(PositionSource):
@@ -345,22 +334,13 @@ class FallbackPositionSource(PositionSource):
     result_schema = RESULT_SCHEMA
     source = DataSource.fallback
 
-    def __init__(self, settings, *args, **kw):
-        super(FallbackPositionSource, self).__init__(settings, *args, **kw)
-        self.url = settings.get('url')
-        self.ratelimit = int(settings.get('ratelimit', 0))
-        self.ratelimit_expire = int(settings.get('ratelimit_expire', 0))
-        self.ratelimit_interval = int(settings.get('ratelimit_interval', 1))
-        cache_expire = int(settings.get('cache_expire', 0))
-        if not cache_expire:
-            self.cache = DisabledCache()
-        else:
-            self.cache = FallbackCache(
-                self.raven_client,
-                self.redis_client,
-                self.stats_client,
-                cache_expire=cache_expire,
-            )
+    def __init__(self, *args, **kw):
+        super(FallbackPositionSource, self).__init__(*args, **kw)
+        self.cache = FallbackCache(
+            self.raven_client,
+            self.redis_client,
+            self.stats_client,
+        )
 
     def _stat_count(self, stat, tags):
         self.stats_client.incr('locate.fallback.' + stat, tags=tags)
@@ -368,16 +348,22 @@ class FallbackPositionSource(PositionSource):
     def _stat_timed(self, stat, tags):
         return self.stats_client.timed('locate.fallback.' + stat, tags=tags)
 
-    def _ratelimit_key(self):
+    def _ratelimit_key(self, name, interval):
         now = int(time.time())
-        return 'fallback_ratelimit:%s' % (now // self.ratelimit_interval)
+        return 'fallback_ratelimit:%s:%s' % (name, now // interval)
 
-    def _ratelimit_reached(self):
-        return self.ratelimit and rate_limit_exceeded(
+    def _ratelimit_reached(self, query):
+        api_key = query.api_key
+        name = api_key.fallback_name or ''
+        limit = api_key.fallback_ratelimit or 0
+        interval = api_key.fallback_ratelimit_interval or 1
+        ratelimit_key = self._ratelimit_key(name, interval)
+
+        return limit and rate_limit_exceeded(
             self.redis_client,
-            self._ratelimit_key(),
-            maxreq=self.ratelimit,
-            expire=self.ratelimit_expire,
+            ratelimit_key,
+            maxreq=limit,
+            expire=interval * 5,
             on_error=True,
         )
 
@@ -395,7 +381,7 @@ class FallbackPositionSource(PositionSource):
         try:
             with self._stat_timed('lookup', tags=None):
                 response = query.http_session.post(
-                    self.url,
+                    query.api_key.fallback_url,
                     headers={'User-Agent': 'ichnaea'},
                     json=outbound,
                     timeout=5.0,
@@ -428,7 +414,7 @@ class FallbackPositionSource(PositionSource):
 
     def should_search(self, query, results):
         return (
-            query.api_key.should_allow('fallback') and
+            query.api_key.can_fallback() and
             (bool(query.blue) or bool(query.cell) or bool(query.wifi)) and
             not results.satisfies(query)
         )
@@ -441,12 +427,13 @@ class FallbackPositionSource(PositionSource):
         if cached_result:
             # use our own cache, without checking the rate limit
             result_data = cached_result
-        elif not self._ratelimit_reached():
+        elif not self._ratelimit_reached(query):
             # only rate limit the external call
             result_data = self._make_external_call(query)
             if result_data is not None:
                 # we got a new possibly not_found answer
-                self.cache.set(query, result_data)
+                self.cache.set(query, result_data,
+                               expire=query.api_key.fallback_cache_expire or 1)
 
         if result_data is not None and not result_data.not_found():
             results.add(self.result_type(

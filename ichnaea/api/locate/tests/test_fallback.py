@@ -7,7 +7,6 @@ from requests.exceptions import RequestException
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.fallback import (
-    DisabledCache,
     ExternalResult,
     FallbackCache,
     FallbackPositionSource,
@@ -207,20 +206,16 @@ class TestCache(QueryTest):
 
     def setUp(self):
         super(TestCache, self).setUp()
+        self.api_key = ApiKeyFactory(fallback_cache_expire=60)
         self.cache = FallbackCache(
-            self.raven_client, self.redis_client, self.stats_client,
-            cache_expire=600)
+            self.raven_client, self.redis_client, self.stats_client)
 
-    def test_disabled(self):
-        cache = DisabledCache()
-        query = Query()
-        self.assertEqual(
-            cache.set(query, ExternalResult(None, None, None, None)), None)
-        self.assertEqual(cache.get(query), None)
+    def _query(self, **kwargs):
+        return Query(api_key=self.api_key, **kwargs)
 
     def test_get_blue(self):
         blues = BlueShardFactory.build_batch(2)
-        query = Query(blue=self.blue_model_query(blues))
+        query = self._query(blue=self.blue_model_query(blues))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
@@ -229,7 +224,7 @@ class TestCache(QueryTest):
     def test_set_blue(self):
         blues = BlueShardFactory.build_batch(2)
         blue = blues[0]
-        query = Query(blue=self.blue_model_query(blues))
+        query = self._query(blue=self.blue_model_query(blues))
         result = ExternalResult(blue.lat, blue.lon, blue.radius, None)
         self.cache.set(query, result)
         self.assertEqual(self.cache.get(query), result)
@@ -239,7 +234,7 @@ class TestCache(QueryTest):
 
     def test_get_cell(self):
         cells = CellShardFactory.build_batch(1)
-        query = Query(cell=self.cell_model_query(cells))
+        query = self._query(cell=self.cell_model_query(cells))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
@@ -247,12 +242,12 @@ class TestCache(QueryTest):
 
     def test_set_cell(self):
         cell = CellShardFactory.build()
-        query = Query(cell=self.cell_model_query([cell]))
+        query = self._query(cell=self.cell_model_query([cell]))
         result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
-        self.cache.set(query, result)
+        self.cache.set(query, result, expire=60)
         keys = self.redis_client.keys('cache:fallback:cell:*')
         self.assertEqual(len(keys), 1)
-        self.assertTrue(500 < self.redis_client.ttl(keys[0]) <= 600)
+        self.assertTrue(50 < self.redis_client.ttl(keys[0]) <= 60)
         self.assertEqual(self.cache.get(query), result)
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
@@ -260,7 +255,7 @@ class TestCache(QueryTest):
 
     def test_set_cell_not_found(self):
         cell = CellShardFactory.build()
-        query = Query(cell=self.cell_model_query([cell]))
+        query = self._query(cell=self.cell_model_query([cell]))
         result = ExternalResult(None, None, None, None)
         self.cache.set(query, result)
         keys = self.redis_client.keys('cache:fallback:cell:*')
@@ -273,7 +268,7 @@ class TestCache(QueryTest):
 
     def test_get_cell_multi(self):
         cells = CellShardFactory.build_batch(2)
-        query = Query(cell=self.cell_model_query(cells))
+        query = self._query(cell=self.cell_model_query(cells))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:bypassed']),
@@ -281,7 +276,7 @@ class TestCache(QueryTest):
 
     def test_get_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
-        query = Query(wifi=self.wifi_model_query(wifis))
+        query = self._query(wifi=self.wifi_model_query(wifis))
         self.assertEqual(self.cache.get(query), None)
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
@@ -290,7 +285,7 @@ class TestCache(QueryTest):
     def test_set_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
         wifi = wifis[0]
-        query = Query(wifi=self.wifi_model_query(wifis))
+        query = self._query(wifi=self.wifi_model_query(wifis))
         result = ExternalResult(wifi.lat, wifi.lon, wifi.radius, None)
         self.cache.set(query, result)
         self.assertEqual(self.cache.get(query), result)
@@ -301,18 +296,18 @@ class TestCache(QueryTest):
     def test_set_wifi_inconsistent(self):
         wifis1 = WifiShardFactory.build_batch(2)
         self.cache.set(
-            Query(wifi=self.wifi_model_query(wifis1)),
+            self._query(wifi=self.wifi_model_query(wifis1)),
             ExternalResult(wifis1[0].lat, wifis1[0].lon, 100, None))
 
         # similar lat/lon, worse accuracy
         wifis2 = WifiShardFactory.build_batch(
             2, lat=wifis1[0].lat + 0.0001, lon=wifis1[0].lon)
         self.cache.set(
-            Query(wifi=self.wifi_model_query(wifis2)),
+            self._query(wifi=self.wifi_model_query(wifis2)),
             ExternalResult(wifis2[0].lat, wifis2[0].lon, 200, None))
 
         # check combined query, avg lat/lon, max accuracy
-        query = Query(wifi=self.wifi_model_query(wifis1 + wifis2))
+        query = self._query(wifi=self.wifi_model_query(wifis1 + wifis2))
         cached = self.cache.get(query)
         self.assertAlmostEqual(cached[0], (wifis1[0].lat + wifis2[0].lat) / 2)
         self.assertAlmostEqual(cached[1], wifis1[0].lon)
@@ -322,11 +317,12 @@ class TestCache(QueryTest):
         # different lat/lon
         wifis3 = WifiShardFactory.build_batch(2, lat=wifis1[0].lat + 10.0)
         self.cache.set(
-            Query(wifi=self.wifi_model_query(wifis3)),
+            self._query(wifi=self.wifi_model_query(wifis3)),
             ExternalResult(wifis3[0].lat, wifis3[0].lon, 300, None))
 
         # check combined query, inconsistent result
-        query = Query(wifi=self.wifi_model_query(wifis1 + wifis2 + wifis3))
+        query = self._query(
+            wifi=self.wifi_model_query(wifis1 + wifis2 + wifis3))
         self.assertEqual(self.cache.get(query), None)
 
         self.check_stats(counter=[
@@ -339,16 +335,16 @@ class TestCache(QueryTest):
         cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(2)
 
-        query = Query(cell=self.cell_model_query(cells),
-                      wifi=self.wifi_model_query(wifis))
+        query = self._query(cell=self.cell_model_query(cells),
+                            wifi=self.wifi_model_query(wifis))
         self.assertEqual(self.cache.get(query), None)
 
-        query = Query(blue=self.blue_model_query(blues),
-                      cell=self.cell_model_query(cells))
+        query = self._query(blue=self.blue_model_query(blues),
+                            cell=self.cell_model_query(cells))
         self.assertEqual(self.cache.get(query), None)
 
-        query = Query(blue=self.blue_model_query(blues),
-                      wifi=self.wifi_model_query(wifis))
+        query = self._query(blue=self.blue_model_query(blues),
+                            wifi=self.wifi_model_query(wifis))
         self.assertEqual(self.cache.get(query), None)
 
         self.check_stats(counter=[
@@ -359,13 +355,6 @@ class TestCache(QueryTest):
 class TestSource(BaseSourceTest):
 
     TestSource = FallbackPositionSource
-    settings = {
-        'url': 'https://localhost:9/?api',
-        'ratelimit': '3',
-        'ratelimit_expire': '60',
-        'ratelimit_interval': '2',
-        'cache_expire': '60',
-    }
 
     def setUp(self):
         super(TestSource, self).setUp()
@@ -400,27 +389,6 @@ class TestSource(BaseSourceTest):
         client.set.return_value = mock.Mock()
         client.mset.return_value = mock.Mock()
         return client
-
-    def test_cache(self):
-        source = self.TestSource(
-            settings={'cache_expire': '60'},
-            geoip_db=self.geoip_db,
-            raven_client=self.raven_client,
-            redis_client=self.redis_client,
-            stats_client=self.stats_client,
-        )
-        self.assertTrue(isinstance(source.cache, FallbackCache))
-        self.assertEqual(source.cache.cache_expire, 60)
-
-    def test_no_cache(self):
-        source = self.TestSource(
-            settings={'cache_expire': '0'},
-            geoip_db=self.geoip_db,
-            raven_client=self.raven_client,
-            redis_client=self.redis_client,
-            stats_client=self.stats_client,
-        )
-        self.assertTrue(isinstance(source.cache, DisabledCache))
 
     def test_success(self):
         cell = CellShardFactory.build()
@@ -611,7 +579,7 @@ class TestSource(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            for _ in range(self.source.ratelimit):
+            for _ in range(self.api_key.fallback_ratelimit):
                 query = self.model_query(cells=[cell])
                 results = self.source.search(query)
                 self.check_model_results(results, [self.fallback_model])
@@ -623,8 +591,12 @@ class TestSource(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            ratelimit_key = self.source._ratelimit_key()
-            self.redis_client.set(ratelimit_key, self.source.ratelimit)
+            ratelimit_key = self.source._ratelimit_key(
+                self.api_key.fallback_name,
+                self.api_key.fallback_ratelimit_interval,
+            )
+            self.redis_client.set(ratelimit_key,
+                                  self.api_key.fallback_ratelimit)
 
             query = self.model_query(cells=[cell])
             results = self.source.search(query)

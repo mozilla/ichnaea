@@ -79,7 +79,6 @@ def bound_model_accuracy(model, accuracy):
 class BaseSourceTest(ConnectionTestCase):
 
     api_type = 'locate'
-    settings = None
     TestSource = None
 
     @classmethod
@@ -106,7 +105,6 @@ class BaseSourceTest(ConnectionTestCase):
     def setUp(self):
         super(BaseSourceTest, self).setUp()
         self.source = self.TestSource(
-            settings=self.settings,
             geoip_db=self.geoip_db,
             raven_client=self.raven_client,
             redis_client=self.redis_client,
