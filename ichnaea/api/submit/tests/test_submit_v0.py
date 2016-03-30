@@ -12,6 +12,7 @@ from ichnaea.tests.base import (
     TestCase,
 )
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -25,6 +26,13 @@ class TestSubmitSchema(TestCase):
     def test_empty(self):
         with self.assertRaises(colander.Invalid):
             self.schema.deserialize({})
+
+    def test_empty_blue_entry(self):
+        blue = BlueShardFactory.build()
+        data = self.schema.deserialize({'items': [
+            {'lat': blue.lat, 'lon': blue.lon, 'blue': [{}]},
+        ]})
+        self.assertEqual(data, {'items': []})
 
     def test_empty_wifi_entry(self):
         wifi = WifiShardFactory.build()
@@ -73,6 +81,34 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             query['cell'][0]['radio'] = cell.radio.name
         return (cell, query)
 
+    def test_blue(self):
+        blue = BlueShardFactory.build()
+        res = self._post([{
+            'lat': blue.lat,
+            'lon': blue.lon,
+            'blue': [{
+                'key': blue.mac,
+                'age': 3000,
+                'name': 'beacon',
+                'signal': -101,
+            }]},
+        ])
+        self.assertEqual(res.body, b'')
+
+        self._assert_queue_size(1)
+        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self.assertEqual(item['api_key'], None)
+        report = item['report']
+        position = report['position']
+        self.assertEqual(position['latitude'], blue.lat)
+        self.assertEqual(position['longitude'], blue.lon)
+        blues = item['report']['bluetoothBeacons']
+        self.assertEqual(len(blues), 1)
+        self.assertEqual(blues[0]['macAddress'], blue.mac)
+        self.assertEqual(blues[0]['age'], 3000),
+        self.assertEqual(blues[0]['name'], 'beacon'),
+        self.assertEqual(blues[0]['signalStrength'], -101),
+
     def test_cell(self):
         now = util.utcnow()
         today = now.replace(hour=0, minute=0, second=0)
@@ -84,10 +120,15 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'accuracy': 10.6,
             'altitude': 123.1,
             'altitude_accuracy': 7.0,
+            'heading': 45.2,
+            'pressure': 1020.23,
+            'speed': 3.6,
             'radio': cell.radio.name,
             'cell': [{
                 'radio': 'umts', 'mcc': cell.mcc,
-                'mnc': cell.mnc, 'lac': cell.lac, 'cid': cell.cid}],
+                'mnc': cell.mnc, 'lac': cell.lac, 'cid': cell.cid,
+                'age': 1000, 'asu': 3, 'psc': 7, 'serving': 1,
+                'signal': -85, 'ta': 2}],
         }], api_key='test')
         self.assertEqual(res.body, b'')
 
@@ -99,17 +140,26 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         timestamp = timestamp.replace(microsecond=0, tzinfo=pytz.UTC)
         self.assertEqual(timestamp, today)
         position = report['position']
-        self.assertEqual(position['latitude'], cell.lat)
-        self.assertEqual(position['longitude'], cell.lon)
-        self.assertEqual(position['accuracy'], 10.6)
-        self.assertEqual(position['altitude'], 123.1)
-        self.assertEqual(position['altitudeAccuracy'], 7.0)
+        self.assertAlmostEqual(position['latitude'], cell.lat)
+        self.assertAlmostEqual(position['longitude'], cell.lon)
+        self.assertAlmostEqual(position['accuracy'], 10.6)
+        self.assertAlmostEqual(position['altitude'], 123.1)
+        self.assertAlmostEqual(position['altitudeAccuracy'], 7.0)
+        self.assertAlmostEqual(position['heading'], 45.2)
+        self.assertAlmostEqual(position['pressure'], 1020.23)
+        self.assertAlmostEqual(position['speed'], 3.6)
         cells = report['cellTowers']
         self.assertEqual(cells[0]['radioType'], 'wcdma')
         self.assertEqual(cells[0]['mobileCountryCode'], cell.mcc)
         self.assertEqual(cells[0]['mobileNetworkCode'], cell.mnc)
         self.assertEqual(cells[0]['locationAreaCode'], cell.lac)
         self.assertEqual(cells[0]['cellId'], cell.cid)
+        self.assertEqual(cells[0]['age'], 1000)
+        self.assertEqual(cells[0]['asu'], 3)
+        self.assertEqual(cells[0]['primaryScramblingCode'], 7)
+        self.assertEqual(cells[0]['serving'], 1)
+        self.assertEqual(cells[0]['signalStrength'], -85)
+        self.assertEqual(cells[0]['timingAdvance'], 2)
 
     def test_wifi(self):
         wifi = WifiShardFactory.build()
@@ -118,6 +168,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'lon': wifi.lon,
             'accuracy': 17.1,
             'wifi': [{'key': wifi.mac.upper(),
+                      'age': 2500,
                       'frequency': 2437,
                       'signal': -70,
                       'signalToNoiseRatio': 5,
@@ -137,6 +188,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertFalse('altitudeAccuracy' in position)
         wifis = report['wifiAccessPoints']
         self.assertEqual(wifis[0]['macAddress'], wifi.mac.upper())
+        self.assertEqual(wifis[0]['age'], 2500)
         self.assertFalse('channel' in wifis[0])
         self.assertEqual(wifis[0]['frequency'], 2437)
         self.assertEqual(wifis[0]['signalStrength'], -70)

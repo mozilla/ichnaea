@@ -20,16 +20,24 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
     strength and quality.
     """
 
+    age = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_AGE, constants.MAX_AGE))
+
     channel = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
             constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
+
     signal = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
             constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
+
     snr = DefaultNode(
         colander.Integer(),
         missing=None,

@@ -32,6 +32,14 @@ with a JSON body:
         "heading": 45.0,
         "speed": 13.88,
         "radio": "gsm",
+        "blue": [
+            {
+                "key": "ff:74:27:89:5a:77",
+                "age": 2000,
+                "name": "beacon",
+                "signal": -110
+            }
+        ],
         "cell": [
             {
                 "radio": "umts",
@@ -39,12 +47,14 @@ with a JSON body:
                 "mnc": 123,
                 "lac": 12345,
                 "cid": 12345,
+                "age": 3000,
                 "signal": -60
             }
         ],
         "wifi": [
             {
                 "key": "01:23:45:67:89:ab",
+                "age": 2000,
                 "channel": 11,
                 "frequency": 2412,
                 "signal": -51
@@ -61,9 +71,9 @@ Field Definition
 The record fields have the same meaning and requirements as explained
 in the :ref:`api_search`.
 
-The only required fields are `lat` and `lon` and at least one cell or WiFi
-entry. If either `lat` or `lon` are not included, the record will
-not be accepted.
+The only required fields are `lat` and `lon` and at least one Bluetooth,
+cell or WiFi entry. If neither `lat` nor `lon` are included, the record
+will be discarded.
 
 The altitude, accuracy and altitude_accuracy fields are all measured in
 meters. Altitude measures the height above or below the mean sea level,

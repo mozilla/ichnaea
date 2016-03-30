@@ -20,6 +20,12 @@ class ValidBlueSignalSchema(colander.MappingSchema, ValidatorNode):
     strength and quality.
     """
 
+    age = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_AGE, constants.MAX_AGE))
+
     signal = DefaultNode(
         colander.Integer(),
         missing=None,

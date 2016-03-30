@@ -21,6 +21,7 @@ class BluesSchema(colander.SequenceSchema):
 
         key = colander.SchemaNode(
             colander.String(), missing=None, to_name='mac')
+        age = colander.SchemaNode(colander.Integer(), missing=None)
         signal = colander.SchemaNode(colander.Integer(), missing=None)
         name = colander.SchemaNode(colander.String(), missing=None)
 
@@ -38,6 +39,7 @@ class CellsSchema(colander.SequenceSchema):
         lac = colander.SchemaNode(colander.Integer(), missing=None)
         cid = colander.SchemaNode(colander.Integer(), missing=None)
 
+        age = colander.SchemaNode(colander.Integer(), missing=None)
         asu = colander.SchemaNode(colander.Integer(), missing=None)
         psc = colander.SchemaNode(colander.Integer(), missing=None)
         signal = colander.SchemaNode(colander.Integer(), missing=None)
@@ -51,6 +53,7 @@ class WifisSchema(colander.SequenceSchema):
 
         key = colander.SchemaNode(
             colander.String(), missing=None, to_name='mac')
+        age = colander.SchemaNode(colander.Integer(), missing=None)
         frequency = colander.SchemaNode(colander.Integer(), missing=None)
         channel = colander.SchemaNode(colander.Integer(), missing=None)
         signal = colander.SchemaNode(colander.Integer(), missing=None)

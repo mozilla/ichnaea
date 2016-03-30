@@ -103,8 +103,9 @@ class OutboundSchema(OptionalMappingSchema):
         class SequenceItem(OptionalMappingSchema):
 
             mac = OptionalNode(colander.String(), to_name='macAddress')
-            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
+            age = OptionalNode(colander.Integer())
             name = OptionalNode(colander.String())
+            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
 
     @colander.instantiate(missing=colander.drop,
                           to_name='cellTowers')  # NOQA
@@ -118,6 +119,9 @@ class OutboundSchema(OptionalMappingSchema):
             mnc = OptionalNode(colander.Integer(), to_name='mobileNetworkCode')
             lac = OptionalNode(colander.Integer(), to_name='locationAreaCode')
             cid = OptionalNode(colander.Integer(), to_name='cellId')
+            psc = OptionalNode(
+                colander.Integer(), to_name='primaryScramblingCode')
+            age = OptionalNode(colander.Integer())
             signal = OptionalNode(colander.Integer(), to_name='signalStrength')
             ta = OptionalNode(colander.Integer(), to_name='timingAdvance')
 
@@ -129,6 +133,7 @@ class OutboundSchema(OptionalMappingSchema):
         class SequenceItem(OptionalMappingSchema):
 
             mac = OptionalNode(colander.String(), to_name='macAddress')
+            age = OptionalNode(colander.Integer())
             channel = OptionalNode(colander.Integer(), to_name='channel')
             signal = OptionalNode(colander.Integer(), to_name='signalStrength')
             snr = OptionalNode(

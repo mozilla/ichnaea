@@ -37,6 +37,18 @@ from ichnaea.models.wifi import (
 class BaseReport(HashableDict, CreationMixin, ValidationMixin):
     """A base class for reports."""
 
+    _comparators = ()
+
+    def better(self, other):
+        """Is self better than the other?"""
+        for field, better_than in self._comparators:
+            old_value = getattr(self, field, None)
+            new_value = getattr(other, field, None)
+            if (None not in (old_value, new_value) and
+                    better_than(old_value, new_value)):
+                return True
+        return False
+
 
 class BaseObservation(object):
     """A base class for observations."""
@@ -156,17 +168,13 @@ class BlueReport(BaseReport):
     _valid_schema = ValidBlueReportSchema()
     _fields = (
         'mac',
+        'age',
         'signal',
     )
-
-    def better(self, other):
-        """Is self better than the other?"""
-        old_value = getattr(self, 'signal', None)
-        new_value = getattr(other, 'signal', None)
-        if (None not in (old_value, new_value) and
-                old_value > new_value):
-            return True
-        return False
+    _comparators = (
+        ('signal', operator.gt),
+        ('age', operator.lt),
+    )
 
     @property
     def unique_key(self):
@@ -231,25 +239,17 @@ class CellReport(BaseReport):
         'lac',
         'cid',
         'psc',
+        'age',
         'asu',
         'signal',
         'ta',
     )
-
-    def better(self, other):
-        """Is self better than the other?"""
-        comparators = [
-            ('ta', operator.lt),
-            ('signal', operator.gt),
-            ('asu', operator.gt),
-        ]
-        for field, better_than in comparators:
-            old_value = getattr(self, field, None)
-            new_value = getattr(other, field, None)
-            if (None not in (old_value, new_value) and
-                    better_than(old_value, new_value)):
-                return True
-        return False
+    _comparators = (
+        ('ta', operator.lt),
+        ('signal', operator.gt),
+        ('asu', operator.gt),
+        ('age', operator.lt),
+    )
 
     @property
     def unique_key(self):
@@ -351,19 +351,16 @@ class WifiReport(BaseReport):
     _valid_schema = ValidWifiReportSchema()
     _fields = (
         'mac',
+        'age',
         'channel',
         'signal',
         'snr',
     )
-
-    def better(self, other):
-        """Is self better than the other?"""
-        old_value = getattr(self, 'signal', None)
-        new_value = getattr(other, 'signal', None)
-        if (None not in (old_value, new_value) and
-                old_value > new_value):
-            return True
-        return False
+    _comparators = (
+        ('signal', operator.gt),
+        ('snr', operator.gt),
+        ('age', operator.lt),
+    )
 
     @property
     def unique_key(self):

@@ -33,6 +33,7 @@ class QueryTest(ConnectionTestCase):
         for blue in blues:
             query.append({
                 'mac': blue.mac,
+                'age': 10,
                 'signal': -85,
             })
         return query
@@ -45,6 +46,7 @@ class QueryTest(ConnectionTestCase):
                 'mcc': cell.mcc,
                 'mnc': cell.mnc,
                 'lac': cell.lac,
+                'age': 20,
                 'signal': -90,
                 'ta': 1,
             }
@@ -59,9 +61,11 @@ class QueryTest(ConnectionTestCase):
         for wifi in wifis:
             query.append({
                 'mac': wifi.mac,
+                'age': 30,
                 'channel': 11,
                 'signal': -85,
                 'snr': 13,
+                'ssid': 'wifi',
             })
         return query
 
@@ -117,6 +121,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.expected_accuracy, DataAccuracy.high)
 
         for blue in query.blue:
+            self.assertEqual(blue.age, 10)
             self.assertEqual(blue.signal, -85)
             self.assertTrue(blue.mac in macs)
 
@@ -255,10 +260,12 @@ class TestQuery(QueryTest, ConnectionTestCase):
         self.assertEqual(query.expected_accuracy, DataAccuracy.high)
 
         for wifi in query.wifi:
+            self.assertEqual(wifi.age, 30)
             self.assertEqual(wifi.channel, 11)
             self.assertEqual(wifi.signal, -85)
             self.assertEqual(wifi.snr, 13)
             self.assertTrue(wifi.mac in macs)
+            self.assertEqual(wifi.ssid, 'wifi')
 
     def test_wifi_single(self):
         wifi = WifiShardFactory.build()

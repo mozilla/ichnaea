@@ -15,6 +15,21 @@ from ichnaea.api.schema import (
 )
 
 
+class BlueV0Schema(OptionalMappingSchema):
+
+    key = OptionalStringNode(to_name='macAddress')
+
+    age = OptionalIntNode()
+    name = OptionalStringNode()
+    signal = OptionalIntNode(to_name='signalStrength')
+
+    def deserialize(self, data):
+        data = super(BlueV0Schema, self).deserialize(data)
+        if 'macAddress' not in data:
+            return colander.drop
+        return data
+
+
 class CellV0Schema(OptionalMappingSchema):
 
     radio = OptionalStringNode(to_name='radioType')
@@ -83,6 +98,10 @@ class ReportV0Schema(BaseReportV0Schema):
         'source',
     )
 
+    @colander.instantiate(to_name='bluetoothBeacons', missing=())
+    class blue(OptionalSequenceSchema):  # NOQA
+        sequence_item = BlueV0Schema()
+
     @colander.instantiate(to_name='cellTowers', missing=())
     class cell(OptionalSequenceSchema):  # NOQA
         sequence_item = CellV0Schema()
@@ -97,7 +116,8 @@ class ReportV0Schema(BaseReportV0Schema):
                 data is colander.null):  # pragma: no cover
             return colander.drop
 
-        if not (data.get('cellTowers') or data.get('wifiAccessPoints')):
+        if not (data.get('bluetoothBeacons') or data.get('cellTowers') or
+                data.get('wifiAccessPoints')):
             return colander.drop
 
         top_radio = data.get('radioType', None)

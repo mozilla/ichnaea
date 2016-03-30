@@ -140,17 +140,20 @@ class TestOutboundSchema(TestCase):
     def test_blue(self):
         blues = BlueShardFactory.build_batch(2)
         query = Query(blue=[
-            {'mac': blue.mac, 'signal': -90, 'name': 'my'} for blue in blues])
+            {'mac': blue.mac, 'age': 1500, 'name': 'beacon', 'signal': -90}
+            for blue in blues])
         data = self.schema.deserialize(query.internal_query())
         self.assertEqual(data, {
             'bluetoothBeacons': [{
                 'macAddress': blues[0].mac,
+                'age': 1500,
+                'name': 'beacon',
                 'signalStrength': -90,
-                'name': 'my',
             }, {
                 'macAddress': blues[1].mac,
+                'age': 1500,
+                'name': 'beacon',
                 'signalStrength': -90,
-                'name': 'my',
             }],
             'fallbacks': {'lacf': True},
         })
@@ -159,7 +162,8 @@ class TestOutboundSchema(TestCase):
         cell = CellShardFactory.build(radio=Radio.lte)
         query = Query(cell=[
             {'radio': cell.radio, 'mcc': cell.mcc, 'mnc': cell.mnc,
-             'lac': cell.lac, 'cid': cell.cid, 'signal': -70, 'ta': 15,
+             'lac': cell.lac, 'cid': cell.cid,
+             'age': 1200, 'psc': 5, 'signal': -70, 'ta': 15,
              'unknown_field': 'foo'}])
         data = self.schema.deserialize(query.internal_query())
         self.assertEqual(data, {
@@ -169,6 +173,8 @@ class TestOutboundSchema(TestCase):
                 'mobileNetworkCode': cell.mnc,
                 'locationAreaCode': cell.lac,
                 'cellId': cell.cid,
+                'primaryScramblingCode': 5,
+                'age': 1200,
                 'signalStrength': -70,
                 'timingAdvance': 15,
             }],
@@ -178,17 +184,20 @@ class TestOutboundSchema(TestCase):
     def test_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'mac': wifi.mac, 'signal': -90, 'ssid': 'my'} for wifi in wifis])
+            {'mac': wifi.mac, 'age': 2000, 'signal': -90, 'ssid': 'wifi'}
+            for wifi in wifis])
         data = self.schema.deserialize(query.internal_query())
         self.assertEqual(data, {
             'wifiAccessPoints': [{
                 'macAddress': wifis[0].mac,
+                'age': 2000,
                 'signalStrength': -90,
-                'ssid': 'my',
+                'ssid': 'wifi',
             }, {
                 'macAddress': wifis[1].mac,
+                'age': 2000,
                 'signalStrength': -90,
-                'ssid': 'my',
+                'ssid': 'wifi',
             }],
             'fallbacks': {'lacf': True},
         })

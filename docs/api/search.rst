@@ -30,6 +30,7 @@ A example of a well formed JSON search request :
         "blue": [
             {
                 "key": "ff:23:45:67:89:ab",
+                "age": 1000,
                 "signal": -110
             },
             {
@@ -45,12 +46,14 @@ A example of a well formed JSON search request :
                 "lac": 12345,
                 "cid": 12345,
                 "signal": -61,
+                "age": 1500,
                 "asu": 26
             }
         ],
         "wifi": [
             {
                 "key": "01:23:45:67:89:ab",
+                "age": 3000,
                 "channel": 11,
                 "frequency": 2412,
                 "signal": -50
@@ -76,6 +79,9 @@ For `blue` entries, the `key` field is required.
 key **(required)**
     The `key` is the mac address of the Bluetooth network. So for example
     a valid key would look similar to `ff:23:45:67:89:ab`.
+
+age
+    The number of milliseconds since this BLE beacon was last seen.
 
 signal
     The received signal strength (RSSI) in dBm, typically in the range of
@@ -103,6 +109,9 @@ lac
 
 cid
     The cell id or cell identity.
+
+age
+    The number of milliseconds since this networks was last detected.
 
 psc
     The primary scrambling code for WCDMA and physical cell id for LTE.
@@ -134,6 +143,9 @@ key **(required)**
     The `key` is the BSSID of the WiFi network. So for example
     a valid key would look similar to `01:23:45:67:89:ab`.
 
+age
+    The number of milliseconds since this network was last detected.
+
 frequency
     The frequency in MHz of the channel over which the client is
     communicating with the access point.
@@ -159,6 +171,7 @@ An example of a valid WiFi record is below:
 
     {
         "key": "01:23:45:67:89:ab",
+        "age": 1500,
         "channel": 11,
         "frequency": 2412,
         "signal": -51,

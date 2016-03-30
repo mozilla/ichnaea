@@ -30,10 +30,17 @@ class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
 
     _valid_schema = None  #:
     _fields = ()  #:
+    _comparators = ()  #:
 
     def better(self, other):
         """Is self better than the other?"""
-        raise NotImplementedError()
+        for field, better_than in self._comparators:
+            old_value = getattr(self, field, None)
+            new_value = getattr(other, field, None)
+            if (None not in (old_value, new_value) and
+                    better_than(old_value, new_value)):
+                return True
+        return False
 
 
 class ValidBlueLookupSchema(ValidBlueSignalSchema):
@@ -49,18 +56,14 @@ class BlueLookup(BaseLookup):
     _valid_schema = ValidBlueLookupSchema()
     _fields = (
         'mac',
+        'age',
         'signal',
         'name',
     )
-
-    def better(self, other):
-        """Is self better than the other?"""
-        old_value = getattr(self, 'signal', None)
-        new_value = getattr(other, 'signal', None)
-        if (None not in (old_value, new_value) and
-                old_value > new_value):
-            return True
-        return False
+    _comparators = (
+        ('signal', operator.gt),
+        ('age', operator.lt),
+    )
 
 
 class BaseCellLookup(BaseLookup):
@@ -73,11 +76,19 @@ class BaseCellLookup(BaseLookup):
         'lac',
     )  #:
     _signal_fields = (
+        'age',
         'asu',
         'signal',
         'ta',
     )  #:
     _fields = _key_fields + _signal_fields  #:
+
+    _comparators = (
+        ('ta', operator.lt),
+        ('signal', operator.gt),
+        ('asu', operator.gt),
+        ('age', operator.lt),
+    )
 
     @property
     def areaid(self):
@@ -89,6 +100,7 @@ class BaseCellLookup(BaseLookup):
             ('ta', operator.lt),
             ('signal', operator.gt),
             ('asu', operator.gt),
+            ('age', operator.lt),
         ]
         for field, better_than in comparators:
             old_value = getattr(self, field, None)
@@ -154,20 +166,17 @@ class WifiLookup(BaseLookup):
     _valid_schema = ValidWifiLookupSchema()
     _fields = (
         'mac',
+        'age',
         'channel',
         'signal',
         'snr',
         'ssid',
     )
-
-    def better(self, other):
-        """Is self better than the other?"""
-        old_value = getattr(self, 'signal', None)
-        new_value = getattr(other, 'signal', None)
-        if (None not in (old_value, new_value) and
-                old_value > new_value):
-            return True
-        return False
+    _comparators = (
+        ('signal', operator.gt),
+        ('snr', operator.gt),
+        ('age', operator.lt),
+    )
 
 
 class FallbackSchema(colander.MappingSchema):

@@ -25,6 +25,8 @@ class Radio(IntEnum):
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 
+MIN_AGE = 0  # Minimum relative age.
+MAX_AGE = 3600000  #: Maximum relative age in ms bounded to an hour.
 MAX_ACCURACY = 1000000.0  #: Accuracy is arbitrarily bounded to (0, 1000km).
 MAX_ACCURACY_BLUE = 100.0  #: Maximum accepted accuracy for Bluetooth.
 MAX_ACCURACY_CELL = 200.0  #: Maximum accepted accuracy for cells.

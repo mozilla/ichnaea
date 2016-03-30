@@ -257,6 +257,12 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
 
 class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
 
+    age = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_AGE, constants.MAX_AGE))
+
     asu = DefaultNode(
         colander.Integer(),
         missing=None, validator=colander.Range(

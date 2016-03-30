@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Document and forward age argument through all layers of abstraction.
+
 - Limit the columns loaded for API keys.
 
 - Prevent errors when receiving invalid timestamps.
