@@ -379,7 +379,9 @@ class FallbackPositionSource(PositionSource):
             return None
 
         try:
-            with self._stat_timed('lookup', tags=None):
+            fallback_tag = 'name:%s' % (query.api_key.fallback_name or 'none')
+
+            with self._stat_timed('lookup', tags=[fallback_tag]):
                 response = query.http_session.post(
                     query.api_key.fallback_url,
                     headers={'User-Agent': 'ichnaea'},
@@ -388,7 +390,8 @@ class FallbackPositionSource(PositionSource):
                 )
 
             self._stat_count(
-                'lookup', tags=['status:' + str(response.status_code)])
+                'lookup', tags=[fallback_tag,
+                                'status:' + str(response.status_code)])
 
             if response.status_code == 404:
                 # don't log exceptions for normal not found responses

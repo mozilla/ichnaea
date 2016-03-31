@@ -223,14 +223,16 @@ performance of outbound network calls and the effectiveness of its cache.
     If the cached values didn't agree on a consistent position,
     a `inconsistent` status is used.
 
-``locate.fallback.lookup`` : timer
+``locate.fallback.lookup#name:<fallback_name>`` : timer
 
     Measures the time it takes to do each outbound network request.
+    The fallback name tag specifies which fallback service is used.
 
-``locate.fallback.lookup#status:<code>`` : counter
+``locate.fallback.lookup#name:<fallback_name>,status:<code>`` : counter
 
-    Counts the HTTP response codes for all outbound requests. There is
-    one counter per HTTP response code, for example `200`.
+    Counts the HTTP response codes for all outbound requests per named
+    fallback service. There is one counter per HTTP response code,
+    for example `200`.
 
 
 Data Pipeline Metrics

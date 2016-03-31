@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Tag location fallback metrics with the fallback name.
+
 - #484: Allow per API key fallback configuration.
 
 - Document and forward age argument through all layers of abstraction.

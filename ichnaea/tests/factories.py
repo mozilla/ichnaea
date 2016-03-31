@@ -96,7 +96,7 @@ class ApiKeyFactory(BaseSQLFactory):
     allow_fallback = False
     allow_locate = True
 
-    fallback_name = 'test_fallback'
+    fallback_name = 'fall'
     fallback_url = 'http://127.0.0.1:9/?api'
     fallback_ratelimit = 10
     fallback_ratelimit_interval = 60
