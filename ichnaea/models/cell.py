@@ -44,7 +44,6 @@ from ichnaea.models.station import (
     ValidTimeTrackingSchema,
 )
 
-
 CELLAREA_STRUCT = struct.Struct('!bHHH')
 """
 A compact representation of a full cell area id as a byte sequence.
@@ -63,6 +62,7 @@ integer for the cid part.
 """
 
 CELL_SHARDS = {}
+CELL_SHARDS_OCID = {}
 
 
 def decode_cellarea(value, codec=None):
@@ -503,20 +503,22 @@ class CellOCID(BaseCell, _Model):
     )
 
     @classmethod
-    def shard_id(cls, radio):
+    def shard_id(cls, radio):  # pragma: no cover
         return 'ocid'
 
     @classmethod
-    def shard_model(cls, radio):
+    def shard_model(cls, radio):  # pragma: no cover
         return cls
 
     @classmethod
-    def shards(cls):
+    def shards(cls):  # pragma: no cover
         return {'ocid': cls}
 
 
 class CellShard(BaseCell):
     """Cell shard."""
+
+    _shards = CELL_SHARDS
 
     @declared_attr
     def __table_args__(cls):  # NOQA
@@ -567,14 +569,18 @@ class CellShard(BaseCell):
         """
         Given a radio type return the correct DB model class.
         """
-        global CELL_SHARDS
-        return CELL_SHARDS.get(cls.shard_id(radio), None)
+        return cls._shards.get(cls.shard_id(radio), None)
 
     @classmethod
     def shards(cls):
         """Return a dict of shard id to model classes."""
-        global CELL_SHARDS
-        return CELL_SHARDS
+        return cls._shards
+
+
+class CellShardOCID(CellShard):
+    """Cell OCID shard."""
+
+    _shards = CELL_SHARDS_OCID
 
 
 class CellShardGsm(CellShard, _Model):
@@ -585,6 +591,14 @@ class CellShardGsm(CellShard, _Model):
 CELL_SHARDS[Radio.gsm.name] = CellShardGsm
 
 
+class CellShardGsmOCID(CellShardOCID, _Model):
+    """Shard for GSM OCID cells."""
+
+    __tablename__ = 'cell_gsm_ocid'
+
+CELL_SHARDS_OCID[Radio.gsm.name] = CellShardGsmOCID
+
+
 class CellShardWcdma(CellShard, _Model):
     """Shard for WCDMA cells."""
 
@@ -593,9 +607,25 @@ class CellShardWcdma(CellShard, _Model):
 CELL_SHARDS[Radio.wcdma.name] = CellShardWcdma
 
 
+class CellShardWcdmaOCID(CellShardOCID, _Model):
+    """Shard for WCDMA OCID cells."""
+
+    __tablename__ = 'cell_wcdma_ocid'
+
+CELL_SHARDS_OCID[Radio.wcdma.name] = CellShardWcdmaOCID
+
+
 class CellShardLte(CellShard, _Model):
     """Shard for LTE cells."""
 
     __tablename__ = 'cell_lte'
 
 CELL_SHARDS[Radio.lte.name] = CellShardLte
+
+
+class CellShardLteOCID(CellShardOCID, _Model):
+    """Shard for LTE OCID cells."""
+
+    __tablename__ = 'cell_lte_ocid'
+
+CELL_SHARDS_OCID[Radio.lte.name] = CellShardLteOCID

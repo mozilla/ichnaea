@@ -15,6 +15,7 @@ from ichnaea.models.cell import (  # NOQA
     CellAreaOCID,
     CellOCID,
     CellShard,
+    CellShardOCID,
     decode_cellarea,
     decode_cellid,
     encode_cellarea,

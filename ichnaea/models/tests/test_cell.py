@@ -6,9 +6,10 @@ from ichnaea.models import StationSource
 from ichnaea.models.cell import (
     CellArea,
     CellAreaOCID,
-    CellOCID,
     CellShard,
+    CellShardOCID,
     CellShardGsm,
+    CellShardGsmOCID,
     CellShardWcdma,
     CellShardLte,
     decode_cellarea,
@@ -201,28 +202,29 @@ class TestCellShard(DBTestCase):
         self.assertAlmostEqual(cell.score(now), 0.1, 2)
 
 
-class TestCellOCID(DBTestCase):
+class TestCellShardOCID(DBTestCase):
 
     def test_areaid(self):
         cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
-        self.session.add(CellOCID.create(
+        self.session.add(CellShardOCID.create(
             cellid=cellid,
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
         self.session.flush()
 
-        result = self.session.query(CellOCID).first()
+        result = self.session.query(CellShardGsmOCID).first()
         self.assertEqual(result.areaid, cellid[:7])
 
     def test_cellid(self):
-        query = self.session.query(CellOCID).filter(CellOCID.cellid == (1, 2))
+        query = (self.session.query(CellShardGsmOCID)
+                             .filter(CellShardGsmOCID.cellid == (1, 2)))
         self.assertRaises(Exception, query.first)
 
     def test_cellid_null(self):
-        result = (self.session.query(CellOCID)
-                              .filter(CellOCID.cellid.is_(None))).all()
+        result = (self.session.query(CellShardGsmOCID)
+                              .filter(CellShardGsmOCID.cellid.is_(None))).all()
         self.assertEqual(result, [])
 
-        self.session.add(CellOCID(
+        self.session.add(CellShardGsmOCID(
             cellid=None,
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
         with self.assertRaises(Exception):
@@ -230,18 +232,18 @@ class TestCellOCID(DBTestCase):
 
     def test_region(self):
         cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
-        self.session.add(CellOCID.create(
+        self.session.add(CellShardOCID.create(
             cellid=cellid, lat=GB_LAT, lon=GB_LON, region=None,
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
         self.session.flush()
 
-        result = self.session.query(CellOCID).first()
+        result = self.session.query(CellShardGsmOCID).first()
         self.assertEqual(result.region, 'GB')
 
     def test_fields(self):
         now = util.utcnow()
         cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
-        self.session.add(CellOCID.create(
+        self.session.add(CellShardOCID.create(
             cellid=cellid, created=now, modified=now,
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345, psc=1,
             lat=GB_LAT, lon=GB_LON,
@@ -252,8 +254,9 @@ class TestCellOCID(DBTestCase):
             block_first=now.date(), block_last=now.date(), block_count=1))
         self.session.flush()
 
-        result = (self.session.query(CellOCID)
-                              .filter(CellOCID.cellid == cellid)).first()
+        query = (self.session.query(CellShardGsmOCID)
+                             .filter(CellShardGsmOCID.cellid == cellid))
+        result = query.first()
         self.assertEqual(result.areaid, cellid[:7])
         self.assertEqual(encode_cellid(*result.cellid), cellid)
         self.assertEqual(result.radio, Radio.gsm)
@@ -278,7 +281,7 @@ class TestCellOCID(DBTestCase):
 
     def test_score(self):
         now = util.utcnow()
-        cell = CellOCID.create(
+        cell = CellShardOCID.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
             created=now, modified=now, radius=10, samples=2)
         self.assertAlmostEqual(cell.score(now), 0.1, 2)

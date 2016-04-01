@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- e23ba53ab89b: Add sharded OCID cell tables.
+
 - fdd0b256cecc: Add fallback options to API key table.
 
 Changes
