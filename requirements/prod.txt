@@ -34,7 +34,7 @@ MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
 ndg-httpsclient==0.4.0
-numpy==1.11.0
+numpy==1.10.4
 ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9

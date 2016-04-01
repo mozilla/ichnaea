@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Downgrade numpy to 1.10.4 due to build failures.
 
 20160401110200
 **************
