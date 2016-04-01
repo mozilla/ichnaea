@@ -48,8 +48,7 @@ def cell_export_full(self, _bucket=None):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
                  expires=2700, _schedule=crontab(minute=52),
                  _enabled=_ocid_import_enabled)
-def cell_import_external(self, diff=None):
-    # BBB diff argument
+def cell_import_external(self):
     ocid.ImportExternal(self)()
 
 
@@ -86,8 +85,7 @@ def schedule_export_reports(self):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
                  _countdown=2, expires=10, _schedule=timedelta(seconds=5))
-def update_incoming(self, batch=None):
-    # BBB batch argument
+def update_incoming(self):
     with self.redis_pipeline() as pipe:
         export.IncomingQueue(self, pipe)()
 
@@ -95,20 +93,12 @@ def update_incoming(self, batch=None):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  _countdown=1, expires=300)
 def export_reports(self, export_queue_key, queue_key=None):
-    if not export_queue_key.startswith('queue_export_'):  # pragma: no cover
-        # BBB
-        export_queue_key = 'queue_export_' + 'queue_export_'
-
     export.ReportExporter(
         self, export_queue_key, queue_key)(upload_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
 def upload_reports(self, export_queue_key, data, queue_key=None):
-    if not export_queue_key.startswith('queue_export_'):  # pragma: no cover
-        # BBB
-        export_queue_key = 'queue_export_' + export_queue_key
-
     export_queue = self.app.export_queues[export_queue_key]
     uploader_type = export_queue.uploader_type
     if uploader_type is not None:
@@ -119,8 +109,7 @@ def upload_reports(self, export_queue_key, data, queue_key=None):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
                  _countdown=5, expires=30, _schedule=timedelta(seconds=18),
                  _shard_model=models.BlueShard)
-def update_blue(self, batch=None, shard_id=None):
-    # BBB batch argument
+def update_blue(self, shard_id=None):
     with self.redis_pipeline() as pipe:
         station.BlueUpdater(self, pipe, shard_id=shard_id)()
 
@@ -128,8 +117,7 @@ def update_blue(self, batch=None, shard_id=None):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
                  _countdown=5, expires=30, _schedule=timedelta(seconds=11),
                  _shard_model=models.CellShard)
-def update_cell(self, batch=None, shard_id=None):
-    # BBB batch argument
+def update_cell(self, shard_id=None):
     with self.redis_pipeline() as pipe:
         station.CellUpdater(self, pipe, shard_id=shard_id)()
 
@@ -137,39 +125,34 @@ def update_cell(self, batch=None, shard_id=None):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi',
                  _countdown=5, expires=30, _schedule=timedelta(seconds=10),
                  _shard_model=models.WifiShard)
-def update_wifi(self, batch=None, shard_id=None):
-    # BBB batch argument
+def update_wifi(self, shard_id=None):
     with self.redis_pipeline() as pipe:
         station.WifiUpdater(self, pipe, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
                  _countdown=5, expires=20, _schedule=timedelta(seconds=14))
-def update_cellarea(self, batch=None):
-    # BBB batch argument
+def update_cellarea(self):
     area.CellAreaUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
                  _countdown=5, expires=20, _schedule=timedelta(seconds=15))
-def update_cellarea_ocid(self, batch=None):
-    # BBB batch argument
+def update_cellarea_ocid(self):
     area.CellAreaOCIDUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  _countdown=2, expires=30, _schedule=timedelta(seconds=14),
                  _shard_model=models.DataMap)
-def update_datamap(self, batch=None, shard_id=None):
-    # BBB batch argument
+def update_datamap(self, shard_id=None):
     with self.redis_pipeline() as pipe:
         DataMapUpdater(self, pipe, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  _countdown=2, expires=10, _schedule=timedelta(seconds=9))
-def update_score(self, batch=None):
-    # BBB batch argument
+def update_score(self):
     with self.redis_pipeline() as pipe:
         ScoreUpdater(self, pipe)()
 

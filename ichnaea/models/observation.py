@@ -145,14 +145,6 @@ class ValidBlueReportSchema(ValidBlueSignalSchema):
 
     mac = MacNode(colander.String())
 
-    def deserialize(self, data):
-        if 'key' in data and 'mac' not in data:  # pragma: no cover
-            # BBB
-            data = data.copy()
-            mac = data.pop('key')
-            data['mac'] = mac
-        return super(ValidBlueReportSchema, self).deserialize(data)
-
     def validator(self, node, cstruct):
         super(ValidBlueReportSchema, self).validator(node, cstruct)
 
@@ -203,13 +195,6 @@ class BlueObservation(BlueReport, Report, BaseObservation):
     def weight(self):
         signal_weight = 1.0
         return signal_weight * self.accuracy_weight
-
-    @classmethod
-    def _from_json_value(cls, dct):
-        # BBB
-        if 'key' in dct and 'mac' not in dct:  # pragma: no cover
-            dct['mac'] = dct['key']
-        return super(BlueObservation, cls)._from_json_value(dct)
 
 
 class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
@@ -328,14 +313,6 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
 
     mac = MacNode(colander.String())
 
-    def deserialize(self, data):
-        if 'key' in data and 'mac' not in data:  # pragma: no cover
-            # BBB
-            data = data.copy()
-            mac = data.pop('key')
-            data['mac'] = mac
-        return super(ValidWifiReportSchema, self).deserialize(data)
-
     def validator(self, node, cstruct):
         super(ValidWifiReportSchema, self).validator(node, cstruct)
 
@@ -392,10 +369,3 @@ class WifiObservation(WifiReport, Report, BaseObservation):
         # Maps -100: ~0.5, -80: 1.0, -60: 2.4, -30: 16, -10: ~123
         signal_weight = ((1.0 / (signal - 20.0) ** 2) * 10000) ** 2
         return signal_weight * self.accuracy_weight
-
-    @classmethod
-    def _from_json_value(cls, dct):
-        # BBB
-        if 'key' in dct and 'mac' not in dct:  # pragma: no cover
-            dct['mac'] = dct['key']
-        return super(WifiObservation, cls)._from_json_value(dct)
