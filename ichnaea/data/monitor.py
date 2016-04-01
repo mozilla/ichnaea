@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from sqlalchemy import func
 
-from ichnaea.models import CellOCID
+from ichnaea.models import CellShardOCID
 from ichnaea import util
 
 
@@ -71,7 +71,13 @@ class OcidImport(object):
         age = -1
 
         with self.task.db_session(commit=False) as session:
-            max_created = session.query(func.max(CellOCID.created)).first()[0]
+            for model in CellShardOCID.shards().values():
+                max_ = session.query(func.max(model.created)).first()[0]
+                if max_ is not None:
+                    if max_created is None:
+                        max_created = max_
+                    else:
+                        max_created = max(max_, max_created)
 
         if max_created:
             # diff between now and the value, in milliseconds

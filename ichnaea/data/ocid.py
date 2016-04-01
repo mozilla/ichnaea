@@ -12,8 +12,8 @@ from sqlalchemy.sql import text
 from ichnaea import geocalc
 from ichnaea.models import (
     encode_cellarea,
-    CellOCID,
     CellShard,
+    CellShardOCID,
     Radio,
     StatCounter,
     StatKey,
@@ -155,7 +155,7 @@ class ImportBase(object):
         self.task = task
         self.cell_type = cell_type
         if cell_type == 'ocid':
-            self.cell_model = CellOCID
+            self.cell_model = CellShardOCID
             self.area_queue = task.app.data_queues['update_cellarea_ocid']
             self.stat_key = StatKey.unique_cell_ocid
         elif cell_type == 'cell':

@@ -11,8 +11,8 @@ from ichnaea.models import (
     decode_cellarea,
     CellArea,
     CellAreaOCID,
-    CellOCID,
     CellShard,
+    CellShardOCID,
 )
 from ichnaea import util
 
@@ -160,5 +160,5 @@ class CellAreaUpdater(object):
 class CellAreaOCIDUpdater(CellAreaUpdater):
 
     area_model = CellAreaOCID
-    cell_model = CellOCID
+    cell_model = CellShardOCID
     queue_name = 'update_cellarea_ocid'

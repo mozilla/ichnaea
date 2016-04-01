@@ -26,8 +26,8 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     CellArea,
     CellAreaOCID,
-    CellOCID,
     CellShard,
+    CellShardOCID,
     Radio,
     Stat,
     StatKey,
@@ -203,7 +203,7 @@ class TestImport(CeleryAppTestCase):
 
     def test_import_local_ocid(self):
         self.import_csv()
-        cells = self.session.query(CellOCID).all()
+        cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
         self.assertEqual(len(cells), 9)
 
         areaids = set([cell.areaid for cell in cells])
@@ -220,7 +220,7 @@ class TestImport(CeleryAppTestCase):
         new_date = datetime.utcfromtimestamp(new_time).replace(tzinfo=UTC)
 
         self.import_csv(time=old_time)
-        cells = self.session.query(CellOCID).all()
+        cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
         self.assertEqual(len(cells), 9)
         update_statcounter.delay(ago=0).get()
         self.check_stat(StatKey.unique_cell_ocid, 9)
@@ -233,8 +233,9 @@ class TestImport(CeleryAppTestCase):
         self.import_csv(lo=5, hi=13, time=new_time)
         self.session.commit()
 
-        cells = (self.session.query(CellOCID)
-                             .order_by(CellOCID.modified).all())
+        model = CellShardOCID.shards()['wcdma']
+        cells = (self.session.query(model)
+                             .order_by(model.modified).all())
         self.assertEqual(len(cells), 12)
 
         for i in range(0, 4):
@@ -258,8 +259,10 @@ class TestImport(CeleryAppTestCase):
                     cell_import_external.delay().get()
 
         update_cellarea_ocid.delay().get()
-        cells = (self.session.query(CellOCID)
-                             .order_by(CellOCID.modified).all())
+
+        model = CellShardOCID.shards()['wcdma']
+        cells = (self.session.query(model)
+                             .order_by(model.modified).all())
         self.assertEqual(len(cells), 9)
 
         areaids = set([cell.areaid for cell in cells])

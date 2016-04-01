@@ -30,8 +30,8 @@ from ichnaea.models import (
     BlueShard,
     CellArea,
     CellAreaOCID,
-    CellOCID,
     CellShard,
+    CellShardOCID,
     WifiShard,
     Radio,
 )
@@ -41,6 +41,7 @@ from ichnaea.tests.factories import (
     BlueShardFactory,
     CellAreaFactory,
     CellShardFactory,
+    CellShardOCIDFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -64,7 +65,7 @@ def bound_model_accuracy(model, accuracy):
     if isinstance(model, BlueShard):
         accuracy = min(max(accuracy, BLUE_MIN_ACCURACY),
                        BLUE_MAX_ACCURACY)
-    elif isinstance(model, (CellOCID, CellShard)):
+    elif isinstance(model, (CellShard, CellShardOCID)):
         accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
                        CELL_MAX_ACCURACY)
     elif isinstance(model, (CellArea, CellAreaOCID)):
@@ -753,12 +754,15 @@ class CommonLocateErrorTest(BaseLocateTest):
     def test_database_error(self, db_errors=0):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
+            CellShardOCIDFactory.build(radio=Radio.gsm),
             CellShardFactory.build(radio=Radio.wcdma),
+            CellShardOCIDFactory.build(radio=Radio.wcdma),
             CellShardFactory.build(radio=Radio.lte),
+            CellShardOCIDFactory.build(radio=Radio.lte),
         ]
         wifis = WifiShardFactory.build_batch(2)
 
-        for model in (CellArea, CellOCID, CellAreaOCID):
+        for model in (CellArea, CellAreaOCID):
             self.session.execute(text('drop table %s;' % model.__tablename__))
         for name in set([cell.__tablename__ for cell in cells]):
             self.session.execute(text('drop table %s;' % name))

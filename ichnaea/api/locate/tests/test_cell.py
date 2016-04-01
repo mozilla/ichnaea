@@ -11,7 +11,7 @@ from ichnaea.tests.factories import (
     CellAreaFactory,
     CellAreaOCIDFactory,
     CellShardFactory,
-    CellOCIDFactory,
+    CellShardOCIDFactory,
 )
 from ichnaea import util
 
@@ -124,7 +124,7 @@ class TestOCIDPositionSource(BaseSourceTest):
 
     def test_cell(self):
         now = util.utcnow()
-        cell = CellOCIDFactory(samples=10)
+        cell = CellShardOCIDFactory(samples=10)
         self.session.flush()
         query = self.model_query(cells=[cell])
         results = self.source.search(query)

@@ -489,6 +489,7 @@ class BaseCell(StationMixin):
 
 class CellOCID(BaseCell, _Model):
     """Cell OCID model."""
+    # BBB
 
     __tablename__ = 'cell_ocid'
 

@@ -14,8 +14,8 @@ from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellAreaOCIDFactory,
-    CellOCIDFactory,
     CellShardFactory,
+    CellShardOCIDFactory,
 )
 from ichnaea import util
 
@@ -168,7 +168,7 @@ class TestAreaOCID(BaseTest, CeleryTestCase):
 
     area_model = CellAreaOCID
     area_factory = CellAreaOCIDFactory
-    cell_factory = CellOCIDFactory
+    cell_factory = CellShardOCIDFactory
     task = update_cellarea_ocid
 
     def setUp(self):

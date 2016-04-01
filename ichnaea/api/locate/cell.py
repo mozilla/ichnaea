@@ -32,8 +32,8 @@ from ichnaea.models import (
     encode_cellid,
     CellArea,
     CellAreaOCID,
-    CellOCID,
     CellShard,
+    CellShardOCID,
 )
 from ichnaea.models.constants import MIN_CELL_SIGNAL
 from ichnaea import util
@@ -168,15 +168,10 @@ def query_cells(query, lookups, model, raven_client):
     today = util.utcnow().date()
     temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
 
-    if model == CellOCID:
-        # non sharded OCID table
-        return query_cell_table(query.session, model, cellids,
-                                temp_blocked, load_fields, raven_client)
-
     result = []
     shards = defaultdict(list)
     for lookup in lookups:
-        shards[CellShard.shard_model(lookup.radio)].append(lookup.cellid)
+        shards[model.shard_model(lookup.radio)].append(lookup.cellid)
 
     for shard, shard_cellids in shards.items():
         result.extend(
@@ -338,7 +333,7 @@ class CellPositionSource(CellPositionMixin, PositionSource):
 class OCIDPositionSource(CellPositionSource):
     """Implements a search using the :term:`OCID` cell data."""
 
-    cell_model = CellOCID
+    cell_model = CellShardOCID
     area_model = CellAreaOCID
     fallback_field = None  #:
     source = DataSource.ocid  #:

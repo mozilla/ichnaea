@@ -7,8 +7,9 @@ from ichnaea.data.tasks import (
     monitor_ocid_import,
     monitor_queue_size,
 )
+from ichnaea.models import Radio
 from ichnaea.tests.base import CeleryTestCase
-from ichnaea.tests.factories import CellOCIDFactory
+from ichnaea.tests.factories import CellShardOCIDFactory
 from ichnaea import util
 
 
@@ -58,12 +59,15 @@ class TestMonitor(CeleryTestCase):
 
     def test_monitor_ocid_import(self):
         now = util.utcnow()
-        for i in range(16, 5, -5):
-            CellOCIDFactory(created=now - timedelta(hours=i), cid=i)
+        for radio, i in [(Radio.gsm, 21),
+                         (Radio.wcdma, 16),
+                         (Radio.gsm, 20),
+                         (Radio.lte, 1)]:
+            CellShardOCIDFactory(radio=radio, created=now - timedelta(hours=i))
             self.session.flush()
             monitor_ocid_import.delay().get()
 
-        self.check_stats(gauge=[('table', 3, ['table:cell_ocid_age'])])
+        self.check_stats(gauge=[('table', 4, ['table:cell_ocid_age'])])
 
     def test_monitor_queue_size(self):
         data = {}

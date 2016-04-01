@@ -19,8 +19,8 @@ from ichnaea.models import (
     CellArea,
     CellAreaOCID,
     CellObservation,
-    CellOCID,
     CellShard,
+    CellShardOCID,
     Radio,
     RegionStat,
     WifiShard,
@@ -176,7 +176,7 @@ class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
     psc = fuzzy.FuzzyInteger(1, 500)
 
 
-class CellShardFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
+class BaseCellShardFactory(CellPositionFactory, BboxFactory):
 
     radius = CELL_MIN_ACCURACY / 2.0
     region = 'GB'
@@ -185,23 +185,18 @@ class CellShardFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
     created = util.utcnow()
     modified = util.utcnow()
     last_seen = util.utcnow().date()
+
+
+class CellShardFactory(BaseCellShardFactory, BaseSQLFactory):
 
     class Meta:
         model = CellShard.create
 
 
-class CellOCIDFactory(CellPositionFactory, BboxFactory, BaseSQLFactory):
-
-    radius = CELL_MIN_ACCURACY / 2.0
-    region = 'GB'
-    samples = 1
-    weight = 1.0
-    created = util.utcnow()
-    modified = util.utcnow()
-    last_seen = util.utcnow().date()
+class CellShardOCIDFactory(BaseCellShardFactory, BaseSQLFactory):
 
     class Meta:
-        model = CellOCID.create
+        model = CellShardOCID.create
 
 
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):

@@ -202,4 +202,4 @@ class TestError(LocateV1Base, CommonLocateErrorTest):
         super(TestError, self).test_apikey_error(db_errors=1)
 
     def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=7)
+        super(TestError, self).test_database_error(db_errors=9)
