@@ -9,9 +9,8 @@ from ichnaea import util
 
 class DataMapUpdater(object):
 
-    def __init__(self, task, pipe, shard_id=None):
+    def __init__(self, task, shard_id=None):
         self.task = task
-        self.pipe = pipe
         self.shard_id = shard_id
         self.shard = DataMap.shards().get(shard_id)
 

@@ -43,9 +43,8 @@ class StationUpdater(object):
     _retries = 3
     _retry_wait = 1.0
 
-    def __init__(self, task, pipe, shard_id=None):
+    def __init__(self, task, shard_id=None):
         self.task = task
-        self.pipe = pipe
         self.shard_id = shard_id
         self.utcnow = util.utcnow()
         self.today = self.utcnow.date()
@@ -65,15 +64,15 @@ class StationUpdater(object):
     def add_area_update(self, updated_areas, key):
         pass
 
-    def queue_area_updates(self, updated_areas):  # pragma: no cover
+    def queue_area_updates(self, pipe, updated_areas):  # pragma: no cover
         pass
 
-    def emit_stats(self, stats_counter, drop_counter):
+    def emit_stats(self, pipe, stats_counter, drop_counter):
         day = self.today
         StatCounter(self.stat_obs_key, day).incr(
-            self.pipe, stats_counter['obs'])
+            pipe, stats_counter['obs'])
         StatCounter(self.stat_station_key, day).incr(
-            self.pipe, stats_counter['new_station'])
+            pipe, stats_counter['new_station'])
 
         self.stat_count('insert', stats_counter['obs'])
         for reason, count in drop_counter.items():
@@ -382,10 +381,11 @@ class StationUpdater(object):
                 break
 
         if success:
-            if updated_areas:
-                self.queue_area_updates(updated_areas)
+            with self.task.redis_pipeline() as pipe:
+                if updated_areas:
+                    self.queue_area_updates(pipe, updated_areas)
 
-            self.emit_stats(stats_counter, drop_counter)
+                self.emit_stats(pipe, stats_counter, drop_counter)
 
             if self.data_queue.ready():  # pragma: no cover
                 self.task.apply_countdown(kwargs={'shard_id': self.shard_id})
@@ -423,9 +423,9 @@ class CellUpdater(StationUpdater):
     def add_area_update(self, updated_areas, key):
         updated_areas.add(encode_cellarea(*decode_cellid(key)[:4]))
 
-    def queue_area_updates(self, updated_areas):
+    def queue_area_updates(self, pipe, updated_areas):
         data_queue = self.data_queues['update_cellarea']
-        data_queue.enqueue(list(updated_areas), pipe=self.pipe)
+        data_queue.enqueue(list(updated_areas), pipe=pipe)
 
     def _base_station_values(self, station_key, observations):
         radio, mcc, mnc, lac, cid = decode_cellid(station_key)

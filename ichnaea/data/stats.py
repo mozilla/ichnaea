@@ -16,18 +16,18 @@ from ichnaea import util
 
 class StatCounterUpdater(object):
 
-    def __init__(self, task, pipe):
+    def __init__(self, task):
         self.task = task
-        self.pipe = pipe
 
     def __call__(self, ago=1):
         today = util.utcnow().date()
         day = today - timedelta(days=ago)
-        with self.task.db_session() as session:
-            for stat_key in StatKey:
-                self.update_key(session, stat_key, day)
+        with self.task.redis_pipeline() as pipe:
+            with self.task.db_session() as session:
+                for stat_key in StatKey:
+                    self.update_key(session, pipe, stat_key, day)
 
-    def update_key(self, session, stat_key, day):
+    def update_key(self, session, pipe, stat_key, day):
         # determine the value from the day before
         query = (session.query(Stat)
                         .filter((Stat.key == stat_key),
@@ -56,7 +56,7 @@ class StatCounterUpdater(object):
             session.execute(stmt)
 
         # queue the redis value to be decreased
-        stat_counter.decr(self.pipe, value)
+        stat_counter.decr(pipe, value)
 
 
 class StatRegion(object):

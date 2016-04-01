@@ -9,9 +9,8 @@ from ichnaea import util
 
 class ScoreUpdater(object):
 
-    def __init__(self, task, pipe):
+    def __init__(self, task):
         self.task = task
-        self.pipe = pipe
         self.queue = self.task.app.data_queues['update_score']
 
     def _update_scores(self, session, score_values):

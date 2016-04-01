@@ -182,8 +182,8 @@ class TestImport(CeleryAppTestCase):
         task = FakeTask(self.celery_app)
         with self.get_csv(lo=lo, hi=hi, time=time) as path:
             with redis_pipeline(self.redis_client) as pipe:
-                ImportLocal(task, pipe, cell_type=cell_type)(
-                    self.session, filename=path)
+                ImportLocal(task, cell_type=cell_type)(
+                    pipe, self.session, filename=path)
         if cell_type == 'ocid':
             update_cellarea_ocid.delay().get()
         else:

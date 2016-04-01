@@ -201,7 +201,7 @@ class ImportBase(object):
 
         return validated
 
-    def import_stations(self, session, pipe, filename):
+    def import_stations(self, pipe, session, filename):
         today = util.utcnow().date()
         shards = self.cell_model.shards()
 
@@ -303,14 +303,13 @@ class ImportExternal(ImportBase):
 
                 with self.task.redis_pipeline() as pipe:
                     with self.task.db_session() as session:
-                        self.import_stations(session, pipe, path)
+                        self.import_stations(pipe, session, path)
 
 
 class ImportLocal(ImportBase):
 
-    def __init__(self, task, pipe, cell_type='ocid'):
+    def __init__(self, task, cell_type='ocid'):
         super(ImportLocal, self).__init__(task, cell_type=cell_type)
-        self.pipe = pipe
 
-    def __call__(self, session, filename=None):
-        self.import_stations(session, self.pipe, filename)
+    def __call__(self, pipe, session, filename=None):
+        self.import_stations(pipe, session, filename)

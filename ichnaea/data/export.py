@@ -150,9 +150,8 @@ class ExportScheduler(object):
 
 class IncomingQueue(object):
 
-    def __init__(self, task, pipe):
+    def __init__(self, task):
         self.task = task
-        self.pipe = pipe
         self.data_queue = task.app.data_queues['update_incoming']
         self.export_queues = task.app.export_queues
 
@@ -167,11 +166,12 @@ class IncomingQueue(object):
                 'report': item['report'],
             })
 
-        for api_key, items in grouped.items():
-            for queue in self.export_queues.values():
-                if queue.export_allowed(api_key):
-                    queue_key = queue.queue_key(api_key)
-                    queue.enqueue(items, queue_key, pipe=self.pipe)
+        with self.task.redis_pipeline() as pipe:
+            for api_key, items in grouped.items():
+                for queue in self.export_queues.values():
+                    if queue.export_allowed(api_key):
+                        queue_key = queue.queue_key(api_key)
+                        queue.enqueue(items, queue_key, pipe=pipe)
 
         if self.data_queue.ready():  # pragma: no cover
             self.task.apply_countdown()

@@ -139,9 +139,9 @@ class InternalUploader(BaseReportUploader):
 
     transform = InternalTransform()
 
-    def __init__(self, task, pipe, export_queue_key, queue_key):
+    def __init__(self, task, export_queue_key, queue_key):
         super(InternalUploader, self).__init__(
-            task, pipe, export_queue_key, queue_key)
+            task, export_queue_key, queue_key)
         self.data_queues = self.task.app.data_queues
 
     def _format_report(self, item):
@@ -200,7 +200,7 @@ class InternalUploader(BaseReportUploader):
             userid = users.get(nickname)
 
             obs_queue, malformed_reports, obs_count, positions = \
-                self.process_reports(session, reports, userid)
+                self.process_reports(reports, userid)
 
             all_positions.extend(positions)
             for datatype, queued_obs in obs_queue.items():
@@ -219,13 +219,14 @@ class InternalUploader(BaseReportUploader):
         for userid, score_value in scores.items():
             self.process_score(userid, score_value)
 
-        for datatype, queued_obs in all_queued_obs.items():
-            for queue_id, values in queued_obs.items():
-                queue = self.data_queues[queue_id]
-                queue.enqueue(values, pipe=self.pipe)
+        with self.task.redis_pipeline() as pipe:
+            for datatype, queued_obs in all_queued_obs.items():
+                for queue_id, values in queued_obs.items():
+                    queue = self.data_queues[queue_id]
+                    queue.enqueue(values, pipe=pipe)
 
-        if all_positions:
-            self.process_datamap(all_positions)
+            if all_positions:
+                self.process_datamap(pipe, all_positions)
 
         for api_key, values in metrics.items():
             self.emit_stats(
@@ -265,7 +266,7 @@ class InternalUploader(BaseReportUploader):
                         count,
                         tags=tags + api_tag)
 
-    def process_reports(self, session, reports, userid):
+    def process_reports(self, reports, userid):
         malformed_reports = 0
         positions = set()
         observations = {}
@@ -351,7 +352,7 @@ class InternalUploader(BaseReportUploader):
         }
         return (obs, malformed)
 
-    def process_datamap(self, positions):
+    def process_datamap(self, pipe, positions):
         grids = set()
         for lat, lon in positions:
             if lat is not None and lon is not None:
@@ -364,7 +365,7 @@ class InternalUploader(BaseReportUploader):
 
         for shard_id, values in shards.items():
             queue = self.task.app.data_queues['update_datamap_' + shard_id]
-            queue.enqueue(list(values), pipe=self.pipe)
+            queue.enqueue(list(values), pipe=pipe)
 
     def process_score(self, userid, pos_count):
         if userid is None or pos_count <= 0:

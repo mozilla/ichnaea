@@ -36,7 +36,7 @@ def load_file(db, redis_client, datatype, filename):  # pragma: no cover
     with redis_pipeline(redis_client) as pipe:
         with db_worker_session(db) as session:
             ocid.ImportLocal(
-                task, pipe, cell_type=datatype)(session, filename=filename)
+                task, cell_type=datatype)(pipe, session, filename=filename)
 
 
 def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover

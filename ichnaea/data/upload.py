@@ -10,9 +10,8 @@ from ichnaea import util
 
 class BaseReportUploader(object):
 
-    def __init__(self, task, pipe, export_queue_key, queue_key):
+    def __init__(self, task, export_queue_key, queue_key):
         self.task = task
-        self.pipe = pipe
         self.export_queue = task.app.export_queues[export_queue_key]
         self.stats_prefix = 'data.export.'
         self.stats_tags = ['key:' + self.export_queue.metric_tag()]
@@ -57,9 +56,9 @@ class GeosubmitUploader(BaseReportUploader):
 
 class S3Uploader(BaseReportUploader):
 
-    def __init__(self, task, pipe, export_queue_key, queue_key):
+    def __init__(self, task, export_queue_key, queue_key):
         super(S3Uploader, self).__init__(
-            task, pipe, export_queue_key, queue_key)
+            task, export_queue_key, queue_key)
         _, self.bucket, path = urlparse(self.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')

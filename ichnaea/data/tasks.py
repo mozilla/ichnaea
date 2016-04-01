@@ -86,15 +86,13 @@ def schedule_export_reports(self):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
                  _countdown=2, expires=10, _schedule=timedelta(seconds=5))
 def update_incoming(self):
-    with self.redis_pipeline() as pipe:
-        export.IncomingQueue(self, pipe)()
+    export.IncomingQueue(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  _countdown=1, expires=300)
 def export_reports(self, export_queue_key, queue_key=None):
-    export.ReportExporter(
-        self, export_queue_key, queue_key)(upload_reports)
+    export.ReportExporter(self, export_queue_key, queue_key)(upload_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
@@ -102,32 +100,28 @@ def upload_reports(self, export_queue_key, data, queue_key=None):
     export_queue = self.app.export_queues[export_queue_key]
     uploader_type = export_queue.uploader_type
     if uploader_type is not None:
-        with self.redis_pipeline() as pipe:
-            uploader_type(self, pipe, export_queue_key, queue_key)(data)
+        uploader_type(self, export_queue_key, queue_key)(data)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
                  _countdown=5, expires=30, _schedule=timedelta(seconds=18),
                  _shard_model=models.BlueShard)
 def update_blue(self, shard_id=None):
-    with self.redis_pipeline() as pipe:
-        station.BlueUpdater(self, pipe, shard_id=shard_id)()
+    station.BlueUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
                  _countdown=5, expires=30, _schedule=timedelta(seconds=11),
                  _shard_model=models.CellShard)
 def update_cell(self, shard_id=None):
-    with self.redis_pipeline() as pipe:
-        station.CellUpdater(self, pipe, shard_id=shard_id)()
+    station.CellUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi',
                  _countdown=5, expires=30, _schedule=timedelta(seconds=10),
                  _shard_model=models.WifiShard)
 def update_wifi(self, shard_id=None):
-    with self.redis_pipeline() as pipe:
-        station.WifiUpdater(self, pipe, shard_id=shard_id)()
+    station.WifiUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
@@ -146,15 +140,13 @@ def update_cellarea_ocid(self):
                  _countdown=2, expires=30, _schedule=timedelta(seconds=14),
                  _shard_model=models.DataMap)
 def update_datamap(self, shard_id=None):
-    with self.redis_pipeline() as pipe:
-        DataMapUpdater(self, pipe, shard_id=shard_id)()
+    DataMapUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  _countdown=2, expires=10, _schedule=timedelta(seconds=9))
 def update_score(self):
-    with self.redis_pipeline() as pipe:
-        ScoreUpdater(self, pipe)()
+    ScoreUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
@@ -166,5 +158,4 @@ def update_statregion(self):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  expires=2700, _schedule=crontab(minute=3))
 def update_statcounter(self, ago=1):
-    with self.redis_pipeline() as pipe:
-        stats.StatCounterUpdater(self, pipe)(ago=ago)
+    stats.StatCounterUpdater(self)(ago=ago)
