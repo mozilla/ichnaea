@@ -71,13 +71,13 @@ class TestStatsTags(LogTestCase):
             counter=[('metric.t2_v2.t1_v1', 1, 1)])
 
 
-class TestStatsPrefix(LogTestCase):
+class TestStatsNamespace(LogTestCase):
 
     def _make_client(self, **kw):
         return DebugStatsClient(**kw)
 
-    def test_metric_prefix(self):
-        client = self._make_client(metric_prefix='pre')
+    def test_namespace(self):
+        client = self._make_client(namespace='pre')
         client.incr('metric.one', 1)
         client.gauge('metric', 1)
         client.timing('metric.two.two', 2)

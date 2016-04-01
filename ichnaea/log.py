@@ -87,17 +87,17 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
     if not app_config:
         host = 'localhost'
         port = 8125
-        metric_prefix = 'location'
+        namespace = 'location'
         tag_support = False
     else:
         section = app_config.get_map('statsd', {})
         host = section.get('host', 'localhost').strip()
         port = int(section.get('port', 8125))
-        metric_prefix = section.get('metric_prefix', 'location').strip()
+        namespace = section.get('metric_prefix', 'location').strip()
         tag_support = asbool(section.get('tag_support', 'false').strip())
 
     client = StatsClient(
-        host=host, port=port, metric_prefix=metric_prefix,
+        host=host, port=port, namespace=namespace,
         tag_support=tag_support)
 
     return set_stats_client(client)
@@ -193,34 +193,35 @@ class StatsClient(DogStatsd):
     """A statsd client."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 constant_tags=None, use_ms=False,
-                 metric_prefix=None, tag_support=False):
+                 namespace=None, constant_tags=None, use_ms=False,
+                 tag_support=False):
         super(StatsClient, self).__init__(
             host=host, port=port,
             max_buffer_size=max_buffer_size,
+            namespace=namespace,
             constant_tags=constant_tags,
             use_ms=True)  # always enable this to be standards compliant
-        self.metric_prefix = metric_prefix
         self.tag_support = tag_support
 
     def _report(self, metric, metric_type, value, tags, sample_rate):
+        if value is None:  # pragma: no cover
+            return
+
         if sample_rate != 1 and random() > sample_rate:  # pragma: no cover
             return
 
         payload = []
-        if self.metric_prefix:
-            # add support for custom metric prefix
-            payload.append(self.metric_prefix + '.')
 
-        if not tags:
-            tags = []
-
-        # Append all client level tags to every metric
+        # Resolve the full tag list
         if self.constant_tags:  # pragma: no cover
             if tags:
-                tags += self.constant_tags
+                tags = tags + self.constant_tags
             else:
                 tags = self.constant_tags
+
+        # Create/format the metric packet
+        if self.namespace:
+            payload.append(self.namespace + '.')
 
         if tags and not self.tag_support:
             # append tags to the metric name
@@ -238,6 +239,8 @@ class StatsClient(DogStatsd):
             payload.extend(['|#', ','.join(tags)])
 
         encoded = ''.join(imap(str, payload))
+
+        # Send it
         self._send(encoded)
 
     def incr(self, *args, **kw):
@@ -248,10 +251,15 @@ class DebugStatsClient(StatsClient):
     """An in-memory statsd client with an inspectable message queue."""
 
     def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 metric_prefix=None, tag_support=False):
+                 namespace=None, constant_tags=None, use_ms=False,
+                 tag_support=False):
         super(DebugStatsClient, self).__init__(
-            host=host, port=port, max_buffer_size=max_buffer_size,
-            metric_prefix=metric_prefix, tag_support=tag_support)
+            host=host, port=port,
+            max_buffer_size=max_buffer_size,
+            namespace=namespace,
+            constant_tags=constant_tags,
+            use_ms=use_ms,
+            tag_support=tag_support)
         self.msgs = deque(maxlen=100)
 
     def _clear(self):
