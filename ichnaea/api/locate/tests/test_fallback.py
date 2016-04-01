@@ -412,9 +412,9 @@ class TestSource(BaseSourceTest):
 
         self.assertEqual(request_json['fallbacks'], {'lacf': True})
         self.check_stats(counter=[
-            ('locate.fallback.lookup', ['name:fall', 'status:200']),
+            ('locate.fallback.lookup', ['fallback_name:fall', 'status:200']),
         ], timer=[
-            ('locate.fallback.lookup', ['name:fall']),
+            ('locate.fallback.lookup', ['fallback_name:fall']),
         ])
 
     def test_failed_call(self):
@@ -466,7 +466,7 @@ class TestSource(BaseSourceTest):
 
         self.check_raven([('HTTPError', 1)])
         self.check_stats(counter=[
-            ('locate.fallback.lookup', ['name:fall', 'status:403']),
+            ('locate.fallback.lookup', ['fallback_name:fall', 'status:403']),
         ])
 
     def test_404_response(self):
@@ -484,7 +484,7 @@ class TestSource(BaseSourceTest):
 
         self.check_raven([('HTTPError', 0)])
         self.check_stats(counter=[
-            ('locate.fallback.lookup', ['name:fall', 'status:404']),
+            ('locate.fallback.lookup', ['fallback_name:fall', 'status:404']),
         ])
 
     def test_500_response(self):
@@ -500,9 +500,9 @@ class TestSource(BaseSourceTest):
 
         self.check_raven([('HTTPError', 1)])
         self.check_stats(counter=[
-            ('locate.fallback.lookup', ['name:fall', 'status:500']),
+            ('locate.fallback.lookup', ['fallback_name:fall', 'status:500']),
         ], timer=[
-            ('locate.fallback.lookup', ['name:fall']),
+            ('locate.fallback.lookup', ['fallback_name:fall']),
         ])
 
     def test_api_key_disallows(self):
@@ -684,9 +684,10 @@ class TestSource(BaseSourceTest):
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:miss']),
-                ('locate.fallback.lookup', ['name:fall', 'status:200']),
+                ('locate.fallback.lookup',
+                    ['fallback_name:fall', 'status:200']),
             ], timer=[
-                ('locate.fallback.lookup', ['name:fall']),
+                ('locate.fallback.lookup', ['fallback_name:fall']),
             ])
 
             # vary the signal strength, not part of cache key
@@ -698,9 +699,10 @@ class TestSource(BaseSourceTest):
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:hit']),
-                ('locate.fallback.lookup', ['name:fall', 'status:200']),
+                ('locate.fallback.lookup',
+                    ['fallback_name:fall', 'status:200']),
             ], timer=[
-                ('locate.fallback.lookup', ['name:fall']),
+                ('locate.fallback.lookup', ['fallback_name:fall']),
             ])
 
     def test_cache_empty_result(self):
@@ -721,7 +723,8 @@ class TestSource(BaseSourceTest):
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:miss']),
-                ('locate.fallback.lookup', ['name:fall', 'status:404']),
+                ('locate.fallback.lookup',
+                    ['fallback_name:fall', 'status:404']),
             ])
 
             query = self.model_query(cells=[cell])
@@ -731,7 +734,8 @@ class TestSource(BaseSourceTest):
             self.assertEqual(mock_request.call_count, 1)
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:hit']),
-                ('locate.fallback.lookup', ['name:fall', 'status:404']),
+                ('locate.fallback.lookup',
+                    ['fallback_name:fall', 'status:404']),
             ])
 
     def test_dont_recache(self):

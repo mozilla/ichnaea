@@ -379,7 +379,8 @@ class FallbackPositionSource(PositionSource):
             return None
 
         try:
-            fallback_tag = 'name:%s' % (query.api_key.fallback_name or 'none')
+            fallback_tag = 'fallback_name:%s' % (
+                query.api_key.fallback_name or 'none')
 
             with self._stat_timed('lookup', tags=[fallback_tag]):
                 response = query.http_session.post(
