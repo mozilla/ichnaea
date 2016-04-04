@@ -80,28 +80,15 @@ class ExportScheduler(object):
         self.task = task
 
     def __call__(self, export_task):
-        triggered = 0
         for export_queue in self.task.app.export_queues.values():
-            if isinstance(export_queue, S3ExportQueue):
-                triggered += self.schedule_multiple(export_queue, export_task)
+            if not isinstance(export_queue, S3ExportQueue):
+                if export_queue.ready():
+                    export_task.delay(export_queue.key)
             else:
-                triggered += self.schedule_one(export_queue, export_task)
-        return triggered
-
-    def schedule_one(self, export_queue, export_task):
-        triggered = 0
-        if export_queue.ready():
-            export_task.delay(export_queue.key)
-            triggered += 1
-        return triggered
-
-    def schedule_multiple(self, export_queue, export_task):
-        triggered = 0
-        for queue_key in export_queue.partitions():
-            if export_queue.ready(queue_key):
-                export_task.delay(export_queue.key, queue_key=queue_key)
-                triggered += 1
-        return triggered
+                for queue_key in export_queue.partitions():
+                    if export_queue.ready(queue_key):
+                        export_task.delay(export_queue.key,
+                                          queue_key=queue_key)
 
 
 class ExportQueue(object):
