@@ -96,7 +96,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(res.body, b'')
 
         self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         self.assertEqual(item['api_key'], None)
         report = item['report']
         position = report['position']
@@ -132,8 +132,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         }], api_key='test')
         self.assertEqual(res.body, b'')
 
-        self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self._assert_queue_size(1, 'test')
+        item = self.queue.dequeue(self.queue.queue_key('test'))[0]
         self.assertEqual(item['api_key'], 'test')
         report = item['report']
         timestamp = datetime.utcfromtimestamp(report['timestamp'] / 1000.0)
@@ -177,7 +177,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         }])
 
         self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         self.assertEqual(item['api_key'], None)
         report = item['report']
         position = report['position']

@@ -25,8 +25,9 @@ class BaseSubmitTest(object):
         self.data_queue = self.celery_app.data_queues['update_incoming']
         self.queue = self.celery_app.export_queues['queue_export_internal']
 
-    def _assert_queue_size(self, expected):
-        self.assertEqual(self.queue.size(self.queue.queue_key()), expected)
+    def _assert_queue_size(self, expected, api_key=None):
+        self.assertEqual(
+            self.queue.size(self.queue.queue_key(api_key)), expected)
 
     def _one_cell_query(self, radio=True):
         raise NotImplementedError()
@@ -111,7 +112,7 @@ class BaseSubmitTest(object):
 
     def test_headers_nickname(self):
         self._post_one_cell(nickname=self.nickname)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         self.assertEqual(item['nickname'], self.nickname)
 
     def test_log_api_key_none(self):
@@ -165,7 +166,7 @@ class BaseSubmitTest(object):
         query[self.radio_id] = Radio.gsm.name
         query[self.cells_id][0][self.radio_id] = Radio.lte.name
         self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         cells = item['report']['cellTowers']
         self.assertEqual(cells[0]['radioType'], Radio.lte.name)
 
@@ -173,27 +174,27 @@ class BaseSubmitTest(object):
         cell, query = self._one_cell_query(radio=False)
         query[self.cells_id][0][self.radio_id] = '18'
         self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         cells = item['report']['cellTowers']
         self.assertEqual(cells[0]['radioType'], '18')
 
     def test_radio_missing(self):
         cell, query = self._one_cell_query(radio=False)
         self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         self.assertFalse('radioType' in item['report']['cellTowers'])
 
     def test_radio_missing_in_observation(self):
         cell, query = self._one_cell_query(radio=False)
         query[self.radio_id] = cell.radio.name
         self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         cells = item['report']['cellTowers']
         self.assertEqual(cells[0]['radioType'], cell.radio.name)
 
     def test_radio_missing_top_level(self):
         cell, query = self._one_cell_query()
         self._post([query])
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         cells = item['report']['cellTowers']
         self.assertEqual(cells[0]['radioType'], cell.radio.name)

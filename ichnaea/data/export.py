@@ -153,18 +153,20 @@ class ExportQueue(object):
         return self.name
 
     def partitions(self):
-        return [None]
+        return [self.name]
 
-    def queue_key(self, api_key=None):
+    def queue_key(self, api_key):
         return self.name
 
-    def ready(self, queue_key=None):
-        if queue_key is None:
+    def ready(self, queue_key):
+        if queue_key is None:  # pragma: no cover
+            # BBB
             queue_key = self.name
         return self._data_queue(queue_key).ready()
 
-    def size(self, queue_key=None):
-        if queue_key is None:
+    def size(self, queue_key):
+        if queue_key is None:  # pragma: no cover
+            # BBB
             queue_key = self.name
         return self.redis_client.llen(queue_key)
 
@@ -201,8 +203,9 @@ class ReportExporter(object):
         self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         self.queue_key = queue_key
-        if not self.queue_key:
-            self.queue_key = self.export_queue.queue_key()
+        if not self.queue_key:  # pragma: no cover
+            # BBB
+            self.queue_key = self.export_queue.queue_key(None)
 
     def __call__(self, upload_task):
         items = self.export_queue.dequeue(self.queue_key)

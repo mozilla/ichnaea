@@ -78,7 +78,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         ])
 
         self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         self.assertEqual(item['api_key'], None)
         report = item['report']
         self.assertTrue('timestamp' in report)
@@ -131,8 +131,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.json, {})
 
-        self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        self._assert_queue_size(1, 'test')
+        item = self.queue.dequeue(self.queue.queue_key('test'))[0]
         self.assertEqual(item['api_key'], 'test')
         report = item['report']
         self.assertEqual(report['timestamp'], now_ms)
@@ -186,7 +186,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         ])
 
         self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         self.assertEqual(item['api_key'], None)
         report = item['report']
         self.assertTrue('timestamp' in report)
@@ -242,7 +242,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         }])
 
         self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key())[0]
+        item = self.queue.dequeue(self.queue.queue_key(None))[0]
         position = item['report']['position']
         self.assertFalse('accuracy' in position)
         self.assertFalse('altitude' in position)
