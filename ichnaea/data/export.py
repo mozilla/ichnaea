@@ -81,14 +81,10 @@ class ExportScheduler(object):
 
     def __call__(self, export_task):
         for export_queue in self.task.app.export_queues.values():
-            if not isinstance(export_queue, S3ExportQueue):
-                if export_queue.ready():
-                    export_task.delay(export_queue.key)
-            else:
-                for queue_key in export_queue.partitions():
-                    if export_queue.ready(queue_key):
-                        export_task.delay(export_queue.key,
-                                          queue_key=queue_key)
+            for queue_key in export_queue.partitions():
+                if export_queue.ready(queue_key):
+                    export_task.delay(export_queue.name,
+                                      queue_key=queue_key)
 
 
 class ExportQueue(object):
@@ -103,10 +99,10 @@ class ExportQueue(object):
 
     metadata = False
 
-    def __init__(self, key, redis_client,
+    def __init__(self, name, redis_client,
                  url=None, batch=0, skip_keys=(),
                  uploader_type=None, compress=False):
-        self.key = key
+        self.name = name
         self.redis_client = redis_client
         self.batch = batch
         self.url = url
@@ -150,23 +146,26 @@ class ExportQueue(object):
 
     def metric_tag(self):
         # strip away queue_export_ prefix
-        return self.key[13:]
+        return self.name[13:]
 
     @property
     def monitor_name(self):
-        return self.key
+        return self.name
+
+    def partitions(self):
+        return [None]
 
     def queue_key(self, api_key=None):
-        return self.key
+        return self.name
 
     def ready(self, queue_key=None):
         if queue_key is None:
-            queue_key = self.key
+            queue_key = self.name
         return self._data_queue(queue_key).ready()
 
     def size(self, queue_key=None):
         if queue_key is None:
-            queue_key = self.key
+            queue_key = self.name
         return self.redis_client.llen(queue_key)
 
 
@@ -187,20 +186,20 @@ class S3ExportQueue(ExportQueue):
 
     def partitions(self):
         # e.g. ['queue_export_something:api_key']
-        return self.redis_client.scan_iter(match=self.key + ':*', count=100)
+        return self.redis_client.scan_iter(match=self.name + ':*', count=100)
 
     def queue_key(self, api_key=None):
         if not api_key:
             api_key = 'no_key'
-        return self.key + ':' + api_key
+        return self.name + ':' + api_key
 
 
 class ReportExporter(object):
 
-    def __init__(self, task, export_queue_key, queue_key):
+    def __init__(self, task, export_queue_name, queue_key):
         self.task = task
-        self.export_queue_key = export_queue_key
-        self.export_queue = task.app.export_queues[export_queue_key]
+        self.export_queue_name = export_queue_name
+        self.export_queue = task.app.export_queues[export_queue_name]
         self.queue_key = queue_key
         if not self.queue_key:
             self.queue_key = self.export_queue.queue_key()
@@ -216,7 +215,7 @@ class ReportExporter(object):
             reports = {'items': [item['report'] for item in items]}
 
         upload_task.delay(
-            self.export_queue_key,
+            self.export_queue_name,
             simplejson.dumps(reports),
             queue_key=self.queue_key)
 
@@ -224,15 +223,15 @@ class ReportExporter(object):
         # schedule another job, but give it a second before it runs
         if self.export_queue.ready(self.queue_key):
             self.task.apply_countdown(
-                args=[self.export_queue_key],
+                args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key})
 
 
 class BaseReportUploader(object):
 
-    def __init__(self, task, export_queue_key, queue_key):
+    def __init__(self, task, export_queue_name, queue_key):
         self.task = task
-        self.export_queue = task.app.export_queues[export_queue_key]
+        self.export_queue = task.app.export_queues[export_queue_name]
         self.stats_tags = ['key:' + self.export_queue.metric_tag()]
         self.queue_key = queue_key
 

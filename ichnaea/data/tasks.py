@@ -91,16 +91,16 @@ def update_incoming(self):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  _countdown=1, expires=300)
-def export_reports(self, export_queue_key, queue_key=None):
-    export.ReportExporter(self, export_queue_key, queue_key)(upload_reports)
+def export_reports(self, export_queue_name, queue_key=None):
+    export.ReportExporter(self, export_queue_name, queue_key)(upload_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
-def upload_reports(self, export_queue_key, data, queue_key=None):
-    export_queue = self.app.export_queues[export_queue_key]
+def upload_reports(self, export_queue_name, data, queue_key=None):
+    export_queue = self.app.export_queues[export_queue_name]
     uploader_type = export_queue.uploader_type
     if uploader_type is not None:
-        uploader_type(self, export_queue_key, queue_key)(data)
+        uploader_type(self, export_queue_name, queue_key)(data)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
