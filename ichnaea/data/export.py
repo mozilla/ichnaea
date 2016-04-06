@@ -285,7 +285,10 @@ class BaseReportUploader(object):
                 kwargs={'queue_key': self.queue_key})
 
     def upload(self, reports):
-        self.send(self.export_queue.url, reports)
+        with self.task.stats_client.timed('data.export.upload',
+                                          tags=self.stats_tags):
+            self.send(self.export_queue.url, reports)
+
         self.task.stats_client.incr(
             'data.export.batch', tags=self.stats_tags)
 
@@ -319,15 +322,13 @@ class GeosubmitUploader(BaseReportUploader):
             'User-Agent': 'ichnaea',
         }
 
-        with self.task.stats_client.timed('data.export.upload',
-                                          tags=self.stats_tags):
-            response = requests.post(
-                url,
-                data=util.encode_gzip(simplejson.dumps(reports),
-                                      compresslevel=5),
-                headers=headers,
-                timeout=60.0,
-            )
+        response = requests.post(
+            url,
+            data=util.encode_gzip(simplejson.dumps(reports),
+                                  compresslevel=5),
+            headers=headers,
+            timeout=60.0,
+        )
 
         # log upload_status and trigger exception for bad responses
         # this causes the task to be re-tried
@@ -361,17 +362,15 @@ class S3Uploader(BaseReportUploader):
         key_name += uuid.uuid1().hex + '.json.gz'
 
         try:
-            with self.task.stats_client.timed('data.export.upload',
-                                              tags=self.stats_tags):
-                conn = boto.connect_s3()
-                bucket = conn.get_bucket(self.bucket)
-                with closing(boto.s3.key.Key(bucket)) as key:
-                    key.key = key_name
-                    key.content_encoding = 'gzip'
-                    key.content_type = 'application/json'
-                    key.set_contents_from_string(
-                        util.encode_gzip(simplejson.dumps(reports),
-                                         compresslevel=7))
+            conn = boto.connect_s3()
+            bucket = conn.get_bucket(self.bucket)
+            with closing(boto.s3.key.Key(bucket)) as key:
+                key.key = key_name
+                key.content_encoding = 'gzip'
+                key.content_type = 'application/json'
+                key.set_contents_from_string(
+                    util.encode_gzip(simplejson.dumps(reports),
+                                     compresslevel=7))
 
             self.task.stats_client.incr(
                 'data.export.upload',
