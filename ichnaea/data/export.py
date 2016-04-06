@@ -362,7 +362,7 @@ class InternalExporter(ReportExporter):
 
     def send(self, queue_items):
         api_keys = set()
-        api_key_models = {}
+        api_keys_found = {}
         metrics = {}
         nicknames = set()
         scores = {}
@@ -396,7 +396,7 @@ class InternalExporter(ReportExporter):
                                 .filter(ApiKey.valid_key.in_(keys)))
 
                 for row in query.all():
-                    api_key_models[row.valid_key] = True
+                    api_keys_found[row.valid_key] = True
 
         positions = []
         observations = {'blue': [], 'cell': [], 'wifi': []}
@@ -433,40 +433,30 @@ class InternalExporter(ReportExporter):
             if positions:
                 self.process_datamap(pipe, positions)
 
-        self.emit_metrics(api_key_models, metrics)
+        self.emit_metrics(api_keys_found, metrics)
 
     def queue_observations(self, pipe, observations):
-        all_queued_obs = {
-            'blue': defaultdict(list),
-            'cell': defaultdict(list),
-            'wifi': defaultdict(list),
-        }
-
         for datatype, shard_model, shard_key, queue_prefix in (
                 ('blue', BlueShard, 'mac', 'update_blue_'),
                 ('cell', CellShard, 'cellid', 'update_cell_'),
                 ('wifi', WifiShard, 'mac', 'update_wifi_')):
 
-            if observations[datatype]:
-                sharded_obs = defaultdict(list)
-                for ob in observations[datatype]:
-                    shard_id = shard_model.shard_id(getattr(ob, shard_key))
-                    sharded_obs[shard_id].append(ob)
+            queued_obs = defaultdict(list)
+            for obs in observations[datatype]:
+                # group by sharded queue
+                shard_id = shard_model.shard_id(getattr(obs, shard_key))
+                queue_id = queue_prefix + shard_id
+                queued_obs[queue_id].append(obs.to_json())
 
-                for shard_id, values in sharded_obs.items():
-                    all_queued_obs[datatype][queue_prefix + shard_id].extend(
-                        [value.to_json() for value in values])
-
-        for datatype, queued_obs in all_queued_obs.items():
             for queue_id, values in queued_obs.items():
+                # enqueue values for each queue
                 queue = self.task.app.data_queues[queue_id]
                 queue.enqueue(values, pipe=pipe)
 
-    def emit_metrics(self, api_key_models, metrics):
+    def emit_metrics(self, api_keys_found, metrics):
         for api_key, key_metrics in metrics.items():
-
             api_tag = []
-            if api_key and api_key_models.get(api_key, False):
+            if api_key and api_keys_found.get(api_key, False):
                 api_tag = ['key:%s' % api_key]
 
             for name, count in key_metrics.items():
