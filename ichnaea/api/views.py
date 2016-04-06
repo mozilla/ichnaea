@@ -55,7 +55,7 @@ class BaseAPIView(BaseView):
                 pipe.expire(redis_key, 691200)  # 8 days
                 pipe.execute()
 
-    def log_count(self, valid_key, should_log):
+    def log_count(self, valid_key, log_ip):
         if valid_key is None:
             valid_key = 'none'
 
@@ -64,7 +64,7 @@ class BaseAPIView(BaseView):
             tags=['path:' + self.metric_path,
                   'key:' + valid_key])
 
-        if self.request.client_addr and should_log:
+        if self.request.client_addr and log_ip:
             try:
                 self.log_unique_ip(valid_key)
             except Exception:  # pragma: no cover
@@ -90,8 +90,7 @@ class BaseAPIView(BaseView):
                 self.raven_client.captureException()
 
         if api_key is not None and api_key.allowed(self.view_type):
-            self.log_count(api_key.valid_key,
-                           api_key.should_log(self.view_type))
+            self.log_count(api_key.valid_key, True)
 
             rate_key = 'apilimit:{key}:{path}:{time}'.format(
                 key=api_key_text,

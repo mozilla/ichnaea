@@ -326,8 +326,7 @@ class Query(object):
 
     def collect_metrics(self):
         """Should detailed metrics be collected for this query?"""
-        allowed = bool(self.api_key and
-                       self.api_key.should_log(self.api_type))
+        allowed = bool(self.api_key and self.api_key.valid_key)
         # don't report stats if there is no data at all in the query
         possible_result = bool(self.expected_accuracy != DataAccuracy.none)
         return (allowed and possible_result)

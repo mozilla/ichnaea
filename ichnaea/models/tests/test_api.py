@@ -79,18 +79,6 @@ class TestApiKey(DBTestCase):
         self.assertTrue(ApiKeyFactory(
             allow_fallback=True, fallback_cache_expire=0).can_fallback())
 
-    def test_should_log(self):
-        result = ApiKey(valid_key='foo')
-        self.assertTrue(result.should_log('locate'))
-        self.assertTrue(result.should_log('region'))
-        self.assertTrue(result.should_log('submit'))
-
-    def test_should_not_log(self):
-        result = ApiKey(valid_key=None)
-        self.assertFalse(result.should_log('locate'))
-        self.assertFalse(result.should_log('region'))
-        self.assertFalse(result.should_log('submit'))
-
     def test_str(self):
         result = ApiKey(valid_key='foo')
         self.assertTrue('foo' in str(result))

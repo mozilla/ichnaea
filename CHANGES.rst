@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 27400b0c8b42: Drop api_key log columns.
+
 - 88d1704f1aef: Drop cell_ocid table.
 
 Changes
