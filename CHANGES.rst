@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove intermediate upload_report task.
 
 20160401185900
 **************

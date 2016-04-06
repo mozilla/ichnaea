@@ -2,13 +2,18 @@ from collections import defaultdict
 from contextlib import closing
 from datetime import datetime
 import re
+import time
 import uuid
 
 import boto
+import boto.exception
+import redis.exceptions
 import requests
+import requests.exceptions
 import pytz
 import simplejson
 from six.moves.urllib.parse import urlparse
+import sqlalchemy.exc
 
 from ichnaea.models import (
     ApiKey,
@@ -124,6 +129,7 @@ class ExportQueue(object):
         skip_keys = tuple([skip_key for skip_key in skip_keys if skip_key])
 
         queue_types = {
+            'dummy': (DummyExportQueue, DummyUploader),
             'http': (HTTPSExportQueue, GeosubmitUploader),
             'https': (HTTPSExportQueue, GeosubmitUploader),
             'internal': (InternalExportQueue, InternalUploader),
@@ -171,6 +177,10 @@ class ExportQueue(object):
         return self.redis_client.llen(queue_key)
 
 
+class DummyExportQueue(ExportQueue):
+    pass
+
+
 class HTTPSExportQueue(ExportQueue):
     pass
 
@@ -196,7 +206,8 @@ class S3ExportQueue(ExportQueue):
         return self.name + ':' + api_key
 
 
-class ReportExporter(object):
+class ReportExporter(object):  # pragma: no cover
+    # BBB
 
     def __init__(self, task, export_queue_name, queue_key):
         self.task = task
@@ -232,13 +243,50 @@ class ReportExporter(object):
 
 class BaseReportUploader(object):
 
+    _retriable = (IOError, )
+    _retries = 3
+    _retry_wait = 1.0
+
     def __init__(self, task, export_queue_name, queue_key):
         self.task = task
+        self.export_queue_name = export_queue_name
         self.export_queue = task.app.export_queues[export_queue_name]
         self.stats_tags = ['key:' + self.export_queue.metric_tag()]
         self.queue_key = queue_key
+        if not self.queue_key:  # pragma: no cover
+            # BBB
+            self.queue_key = self.export_queue.queue_key(None)
 
-    def __call__(self, data):
+    def __call__(self):
+        items = self.export_queue.dequeue(self.queue_key)
+        if not items:  # pragma: no cover
+            return
+
+        reports = items
+        if not self.export_queue.metadata:
+            # ignore metadata
+            reports = {'items': [item['report'] for item in items]}
+
+        data = simplejson.dumps(reports)
+
+        success = False
+        for i in range(self._retries):
+            try:
+                self.upload(data)
+                success = True
+            except self._retriable:
+                success = False
+                time.sleep(self._retry_wait * (i ** 2 + 1))
+
+            if success:
+                break
+
+        if success and self.export_queue.ready(self.queue_key):
+            self.task.apply_countdown(
+                args=[self.export_queue_name],
+                kwargs={'queue_key': self.queue_key})
+
+    def upload(self, data):
         self.send(self.export_queue.url, data)
         self.task.stats_client.incr(
             'data.export.batch', tags=self.stats_tags)
@@ -247,7 +295,18 @@ class BaseReportUploader(object):
         raise NotImplementedError()
 
 
+class DummyUploader(BaseReportUploader):
+
+    def send(self, url, data):
+        pass
+
+
 class GeosubmitUploader(BaseReportUploader):
+
+    _retriable = (
+        IOError,
+        requests.exceptions.RequestException,
+    )
 
     def send(self, url, data):
         headers = {
@@ -273,6 +332,12 @@ class GeosubmitUploader(BaseReportUploader):
 
 
 class S3Uploader(BaseReportUploader):
+
+    _retriable = (
+        IOError,
+        boto.exception.BotoClientError,
+        boto.exception.BotoServerError,
+    )
 
     def send(self, url, data):
         _, self.bucket, path = urlparse(url)[:3]
@@ -424,6 +489,11 @@ class InternalTransform(object):
 
 class InternalUploader(BaseReportUploader):
 
+    _retriable = (
+        IOError,
+        redis.exceptions.RedisError,
+        sqlalchemy.exc.InternalError,
+    )
     transform = InternalTransform()
 
     def _format_report(self, item):

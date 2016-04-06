@@ -8,6 +8,7 @@ import simplejson
 
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
+from ichnaea.data.export import DummyUploader
 from ichnaea.data.tasks import (
     update_blue,
     update_cell,
@@ -123,25 +124,18 @@ class TestExporter(BaseExportTest):
         super(TestExporter, self).setUp()
         config = DummyConfig({
             'export:test': {
-                'url': None,
+                'url': 'dummy://',
                 'skip_keys': 'export_source',
                 'batch': '3',
             },
             'export:everything': {
-                'url': '',
+                'url': 'dummy://',
                 'batch': '5',
             },
             'export:no_test': {
+                'url': 'dummy://',
                 'skip_keys': 'test_1 test\ntest:-1',
                 'batch': '2',
-            },
-            'export:invalid_ftp': {
-                'url': 'ftp://127.0.0.1:9/',
-                'batch': '5',
-            },
-            'export:invalid': {
-                'url': 'no_url',
-                'batch': '5',
             },
         })
         self.celery_app.export_queues = self.export_queues = configure_export(
@@ -180,6 +174,26 @@ class TestExporter(BaseExportTest):
         self.add_reports(10)
         schedule_export_reports.delay().get()
         self.assertEqual(self.queue_length('queue_export_test'), 1)
+
+    def test_retry(self):
+        self.add_reports(3)
+
+        num = [0]
+        orig_wait = DummyUploader._retry_wait
+
+        def mock_send(self, url, data, num=num):
+            num[0] += 1
+            if num[0] == 1:
+                raise IOError()
+
+        with mock.patch('ichnaea.data.export.DummyUploader.send', mock_send):
+            try:
+                DummyUploader._retry_wait = 0.001
+                schedule_export_reports.delay().get()
+            finally:
+                DummyUploader._retry_wait = orig_wait
+
+        self.assertEqual(self.queue_length('queue_export_test'), 0)
 
 
 class TestGeosubmitUploader(BaseExportTest):
