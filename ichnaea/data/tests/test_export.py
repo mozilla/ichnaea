@@ -8,7 +8,7 @@ import simplejson
 
 from ichnaea.async.config import configure_export
 from ichnaea.config import DummyConfig
-from ichnaea.data.export import DummyUploader
+from ichnaea.data.export import DummyExporter
 from ichnaea.data.tasks import (
     update_blue,
     update_cell,
@@ -179,27 +179,27 @@ class TestExporter(BaseExportTest):
         self.add_reports(3)
 
         num = [0]
-        orig_wait = DummyUploader._retry_wait
+        orig_wait = DummyExporter._retry_wait
 
         def mock_send(self, url, data, num=num):
             num[0] += 1
             if num[0] == 1:
                 raise IOError()
 
-        with mock.patch('ichnaea.data.export.DummyUploader.send', mock_send):
+        with mock.patch('ichnaea.data.export.DummyExporter.send', mock_send):
             try:
-                DummyUploader._retry_wait = 0.001
+                DummyExporter._retry_wait = 0.001
                 schedule_export_reports.delay().get()
             finally:
-                DummyUploader._retry_wait = orig_wait
+                DummyExporter._retry_wait = orig_wait
 
         self.assertEqual(self.queue_length('queue_export_test'), 0)
 
 
-class TestGeosubmitUploader(BaseExportTest):
+class TestGeosubmit(BaseExportTest):
 
     def setUp(self):
-        super(TestGeosubmitUploader, self).setUp()
+        super(TestGeosubmit, self).setUp()
         config = DummyConfig({
             'export:test': {
                 'url': 'http://127.0.0.1:9/v2/geosubmit?key=external',
@@ -249,10 +249,10 @@ class TestGeosubmitUploader(BaseExportTest):
         ])
 
 
-class TestS3Uploader(BaseExportTest):
+class TestS3(BaseExportTest):
 
     def setUp(self):
-        super(TestS3Uploader, self).setUp()
+        super(TestS3, self).setUp()
         config = DummyConfig({
             'export:backup': {
                 'url': 's3://bucket/backups/{api_key}/{year}/{month}/{day}',
@@ -316,12 +316,12 @@ class TestS3Uploader(BaseExportTest):
         ])
 
 
-class TestInternalUploader(BaseExportTest):
+class TestInternal(BaseExportTest):
 
     nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
 
     def setUp(self):
-        super(TestInternalUploader, self).setUp()
+        super(TestInternal, self).setUp()
         config = DummyConfig({
             'export:internal': {
                 'url': 'internal://',

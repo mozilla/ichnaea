@@ -93,9 +93,9 @@ def update_incoming(self):
                  _countdown=1, expires=300)
 def export_reports(self, export_queue_name, queue_key=None):
     export_queue = self.app.export_queues[export_queue_name]
-    uploader_type = export_queue.uploader_type
-    if uploader_type is not None:
-        uploader_type(self, export_queue_name, queue_key)()
+    exporter_type = export_queue.exporter_type
+    if exporter_type is not None:
+        exporter_type(self, export_queue_name, queue_key)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
@@ -103,9 +103,9 @@ def upload_reports(self, export_queue_name, data,
                    queue_key=None):  # pragma: no cover
     # BBB
     export_queue = self.app.export_queues[export_queue_name]
-    uploader_type = export_queue.uploader_type
-    if uploader_type is not None:
-        uploader_type(self, export_queue_name, queue_key).upload_data(data)
+    exporter_type = export_queue.exporter_type
+    if exporter_type is not None:
+        exporter_type(self, export_queue_name, queue_key).send_data(data)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',

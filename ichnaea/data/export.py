@@ -106,13 +106,13 @@ class ExportQueue(object):
 
     def __init__(self, name, redis_client,
                  url=None, batch=0, skip_keys=(),
-                 uploader_type=None, compress=False):
+                 exporter_type=None, compress=False):
         self.name = name
         self.redis_client = redis_client
         self.batch = batch
         self.url = url
         self.skip_keys = skip_keys
-        self.uploader_type = uploader_type
+        self.exporter_type = exporter_type
         self.compress = compress
 
     def _data_queue(self, queue_key):
@@ -129,17 +129,17 @@ class ExportQueue(object):
         skip_keys = tuple([skip_key for skip_key in skip_keys if skip_key])
 
         queue_types = {
-            'dummy': (DummyExportQueue, DummyUploader),
-            'http': (HTTPSExportQueue, GeosubmitUploader),
-            'https': (HTTPSExportQueue, GeosubmitUploader),
-            'internal': (InternalExportQueue, InternalUploader),
-            's3': (S3ExportQueue, S3Uploader),
+            'dummy': (DummyExportQueue, DummyExporter),
+            'http': (HTTPSExportQueue, GeosubmitExporter),
+            'https': (HTTPSExportQueue, GeosubmitExporter),
+            'internal': (InternalExportQueue, InternalExporter),
+            's3': (S3ExportQueue, S3Exporter),
         }
-        klass, uploader_type = queue_types.get(scheme, (cls, None))
+        klass, exporter_type = queue_types.get(scheme, (cls, None))
 
         return klass(key, redis_client,
                      url=url, batch=batch, skip_keys=skip_keys,
-                     uploader_type=uploader_type, compress=compress)
+                     exporter_type=exporter_type, compress=compress)
 
     def dequeue(self, queue_key):
         return self._data_queue(queue_key).dequeue()
@@ -206,42 +206,7 @@ class S3ExportQueue(ExportQueue):
         return self.name + ':' + api_key
 
 
-class ReportExporter(object):  # pragma: no cover
-    # BBB
-
-    def __init__(self, task, export_queue_name, queue_key):
-        self.task = task
-        self.export_queue_name = export_queue_name
-        self.export_queue = task.app.export_queues[export_queue_name]
-        self.queue_key = queue_key
-        if not self.queue_key:  # pragma: no cover
-            # BBB
-            self.queue_key = self.export_queue.queue_key(None)
-
-    def __call__(self, upload_task):
-        items = self.export_queue.dequeue(self.queue_key)
-        if not items:  # pragma: no cover
-            return
-
-        reports = items
-        if not self.export_queue.metadata:
-            # ignore metadata
-            reports = {'items': [item['report'] for item in items]}
-
-        upload_task.delay(
-            self.export_queue_name,
-            simplejson.dumps(reports),
-            queue_key=self.queue_key)
-
-        # check the queue at the end, if there's still enough to do
-        # schedule another job, but give it a second before it runs
-        if self.export_queue.ready(self.queue_key):
-            self.task.apply_countdown(
-                args=[self.export_queue_name],
-                kwargs={'queue_key': self.queue_key})
-
-
-class BaseReportUploader(object):
+class ReportExporter(object):
 
     _retriable = (IOError, )
     _retries = 3
@@ -270,13 +235,19 @@ class BaseReportUploader(object):
         success = False
         for i in range(self._retries):
             try:
-                self.upload(reports)
+
+                with self.task.stats_client.timed('data.export.upload',
+                                                  tags=self.stats_tags):
+                    self.send(self.export_queue.url, reports)
+
                 success = True
             except self._retriable:
                 success = False
                 time.sleep(self._retry_wait * (i ** 2 + 1))
 
             if success:
+                self.task.stats_client.incr(
+                    'data.export.batch', tags=self.stats_tags)
                 break
 
         if success and self.export_queue.ready(self.queue_key):
@@ -284,31 +255,22 @@ class BaseReportUploader(object):
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key})
 
-    def upload(self, reports):
-        with self.task.stats_client.timed('data.export.upload',
-                                          tags=self.stats_tags):
-            self.send(self.export_queue.url, reports)
-
-        self.task.stats_client.incr(
-            'data.export.batch', tags=self.stats_tags)
-
-    def upload_data(self, data):  # pragma: no cover
+    def send_data(self, data):  # pragma: no cover
+        # BBB
         reports = simplejson.loads(data)
         self.send(self.export_queue.url, reports)
-        self.task.stats_client.incr(
-            'data.export.batch', tags=self.stats_tags)
 
     def send(self, url, reports):
         raise NotImplementedError()
 
 
-class DummyUploader(BaseReportUploader):
+class DummyExporter(ReportExporter):
 
     def send(self, url, reports):
         pass
 
 
-class GeosubmitUploader(BaseReportUploader):
+class GeosubmitExporter(ReportExporter):
 
     _retriable = (
         IOError,
@@ -338,7 +300,7 @@ class GeosubmitUploader(BaseReportUploader):
         response.raise_for_status()
 
 
-class S3Uploader(BaseReportUploader):
+class S3Exporter(ReportExporter):
 
     _retriable = (
         IOError,
@@ -493,7 +455,7 @@ class InternalTransform(object):
         return {}
 
 
-class InternalUploader(BaseReportUploader):
+class InternalExporter(ReportExporter):
 
     _retriable = (
         IOError,
