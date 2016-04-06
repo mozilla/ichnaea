@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 88d1704f1aef: Drop cell_ocid table.
+
 Changes
 ~~~~~~~
 

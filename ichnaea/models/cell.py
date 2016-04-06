@@ -442,8 +442,10 @@ class ValidCellShardSchema(ValidCellKeySchema, ValidStationSchema):
         validator=colander.Range(0, constants.CELL_MAX_RADIUS))
 
 
-class BaseCell(StationMixin):
+class CellShard(StationMixin):
+    """Cell shard."""
 
+    _shards = CELL_SHARDS
     _valid_schema = ValidCellShardSchema()
 
     cellid = Column(CellIdColumn(11))
@@ -455,9 +457,30 @@ class BaseCell(StationMixin):
     cid = Column(Integer(unsigned=True), autoincrement=False, nullable=False)
     psc = Column(SmallInteger, autoincrement=False)
 
+    @declared_attr
+    def __table_args__(cls):  # NOQA
+        _indices = (
+            PrimaryKeyConstraint('cellid'),
+            UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
+                             name='%s_cellid_unique' % cls.__tablename__),
+            Index('%s_region_idx' % cls.__tablename__, 'region'),
+            Index('%s_created_idx' % cls.__tablename__, 'created'),
+            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
+            Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
+        )
+        return _indices + (cls._settings, )
+
+    @property
+    def areaid(self):
+        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+
+    @property
+    def unique_key(self):
+        return encode_cellid(*self.cellid)
+
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
-        validated = super(BaseCell, cls).validate(
+        validated = super(CellShard, cls).validate(
             entry, _raise_invalid=_raise_invalid, **kw)
 
         if validated is not None:
@@ -477,62 +500,6 @@ class BaseCell(StationMixin):
                     validated['lat'], validated['lon'], validated['mcc'])
 
         return validated
-
-    @property
-    def areaid(self):
-        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
-
-    @property
-    def unique_key(self):
-        return encode_cellid(*self.cellid)
-
-
-class CellOCID(BaseCell, _Model):
-    """Cell OCID model."""
-    # BBB
-
-    __tablename__ = 'cell_ocid'
-
-    _indices = (
-        PrimaryKeyConstraint('cellid'),
-        UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
-                         name='cell_ocid_cellid_unique'),
-        Index('cell_ocid_region_radio_idx', 'region', 'radio'),
-        Index('cell_ocid_created_idx', 'created'),
-        Index('cell_ocid_modified_idx', 'modified'),
-        Index('cell_ocid_latlon_idx', 'lat', 'lon'),
-    )
-
-    @classmethod
-    def shard_id(cls, radio):  # pragma: no cover
-        return 'ocid'
-
-    @classmethod
-    def shard_model(cls, radio):  # pragma: no cover
-        return cls
-
-    @classmethod
-    def shards(cls):  # pragma: no cover
-        return {'ocid': cls}
-
-
-class CellShard(BaseCell):
-    """Cell shard."""
-
-    _shards = CELL_SHARDS
-
-    @declared_attr
-    def __table_args__(cls):  # NOQA
-        _indices = (
-            PrimaryKeyConstraint('cellid'),
-            UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
-                             name='%s_cellid_unique' % cls.__tablename__),
-            Index('%s_region_idx' % cls.__tablename__, 'region'),
-            Index('%s_created_idx' % cls.__tablename__, 'created'),
-            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
-            Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
-        )
-        return _indices + (cls._settings, )
 
     @classmethod
     def create(cls, _raise_invalid=False, **kw):

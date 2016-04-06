@@ -37,9 +37,9 @@ DATAMAP_SHARDS = {}
 
 class ScoreKey(IntEnum):
     location = 0
-    # 1 was new_location, denoting 10x10m areas
-    new_cell = 2
-    new_wifi = 3
+    # new_location = 1
+    # new_cell = 2
+    # new_wifi = 3
 
 
 class StatKey(IntEnum):
