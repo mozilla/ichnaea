@@ -113,10 +113,10 @@ class ReportExporter(object):
         if not items:  # pragma: no cover
             return
 
-        reports = items
+        queue_items = items
         if not self.export_queue.metadata:
             # ignore metadata
-            reports = {'items': [item['report'] for item in items]}
+            queue_items = {'items': [item['report'] for item in items]}
 
         success = False
         for i in range(self._retries):
@@ -124,7 +124,7 @@ class ReportExporter(object):
 
                 with self.task.stats_client.timed('data.export.upload',
                                                   tags=self.stats_tags):
-                    self.send(reports)
+                    self.send(queue_items)
 
                 success = True
             except self._retriable:
@@ -143,16 +143,16 @@ class ReportExporter(object):
 
     def send_data(self, data):  # pragma: no cover
         # BBB
-        reports = simplejson.loads(data)
-        self.send(reports)
+        queue_items = simplejson.loads(data)
+        self.send(queue_items)
 
-    def send(self, reports):
+    def send(self, queue_items):
         raise NotImplementedError()
 
 
 class DummyExporter(ReportExporter):
 
-    def send(self, reports):
+    def send(self, queue_items):
         pass
 
 
@@ -163,7 +163,7 @@ class GeosubmitExporter(ReportExporter):
         requests.exceptions.RequestException,
     )
 
-    def send(self, reports):
+    def send(self, queue_items):
         headers = {
             'Content-Encoding': 'gzip',
             'Content-Type': 'application/json',
@@ -172,7 +172,7 @@ class GeosubmitExporter(ReportExporter):
 
         response = requests.post(
             self.export_queue.url,
-            data=util.encode_gzip(simplejson.dumps(reports),
+            data=util.encode_gzip(simplejson.dumps(queue_items),
                                   compresslevel=5),
             headers=headers,
             timeout=60.0,
@@ -194,7 +194,7 @@ class S3Exporter(ReportExporter):
         boto.exception.BotoServerError,
     )
 
-    def send(self, reports):
+    def send(self, queue_items):
         _, bucket, path = urlparse(self.export_queue.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
@@ -217,7 +217,7 @@ class S3Exporter(ReportExporter):
                 key.content_encoding = 'gzip'
                 key.content_type = 'application/json'
                 key.set_contents_from_string(
-                    util.encode_gzip(simplejson.dumps(reports),
+                    util.encode_gzip(simplejson.dumps(queue_items),
                                      compresslevel=7))
 
             self.task.stats_client.incr(
@@ -360,82 +360,114 @@ class InternalExporter(ReportExporter):
 
         return report
 
-    def send(self, reports):
-        with self.task.db_session() as session:
-            self._send(session, reports)
-
-    def _send(self, session, reports):
-        groups = defaultdict(list)
+    def send(self, queue_items):
         api_keys = set()
+        api_key_models = {}
+        metrics = {}
         nicknames = set()
+        scores = {}
+        users = {}
 
-        for item in reports:
-            report = self._format_report(item['report'])
-            if report:
-                groups[(item['api_key'], item['nickname'])].append(report)
+        items = []
+        for item in queue_items:
+            # preprocess items and extract set of API keys and nicknames
+            item['report'] = self._format_report(item['report'])
+            if item['report']:
+                items.append(item)
                 api_keys.add(item['api_key'])
                 nicknames.add(item['nickname'])
 
-        scores = {}
-        users = {}
-        for nickname in nicknames:
-            userid = self.process_user(session, nickname)
-            users[nickname] = userid
-            scores[userid] = 0
-
-        metrics = {}
         for api_key in api_keys:
             metrics[api_key] = {}
             for type_ in ('report', 'blue', 'cell', 'wifi'):
                 for action in ('drop', 'upload'):
                     metrics[api_key]['%s_%s' % (type_, action)] = 0
 
-        all_positions = []
+        with self.task.db_session() as session:
+            # limit database session to get API keys and user ids
+            for nickname in nicknames:
+                userid = self.process_user(session, nickname)
+                users[nickname] = userid
+                scores[userid] = 0
+
+            keys = [key for key in api_keys if key]
+            if keys:
+                query = (session.query(ApiKey.valid_key)
+                                .filter(ApiKey.valid_key.in_(keys)))
+
+                for row in query.all():
+                    api_key_models[row.valid_key] = True
+
+        positions = []
+        observations = {'blue': [], 'cell': [], 'wifi': []}
+
+        for item in items:
+            api_key = item['api_key']
+            report = item['report']
+
+            obs, malformed_obs = self.process_report(report)
+
+            any_data = False
+            for name in ('blue', 'cell', 'wifi'):
+                if obs.get(name):
+                    observations[name].extend(obs[name])
+                    metrics[api_key][name + '_upload'] += len(obs[name])
+                    any_data = True
+                metrics[api_key][name + '_drop'] += malformed_obs.get(name, 0)
+
+            metrics[api_key]['report_upload'] += 1
+            if any_data:
+                positions.append((report['lat'], report['lon']))
+            else:
+                metrics[api_key]['report_drop'] += 1
+
+            userid = users.get(item['nickname'])
+            if userid is not None:
+                scores[userid] += 1
+
+        for userid, score_value in scores.items():
+            self.process_score(userid, score_value)
+
+        with self.task.redis_pipeline() as pipe:
+            self.queue_observations(pipe, observations)
+            if positions:
+                self.process_datamap(pipe, positions)
+
+        self.emit_metrics(api_key_models, metrics)
+
+    def queue_observations(self, pipe, observations):
         all_queued_obs = {
             'blue': defaultdict(list),
             'cell': defaultdict(list),
             'wifi': defaultdict(list),
         }
 
-        for (api_key, nickname), reports in groups.items():
-            userid = users.get(nickname)
+        for datatype, shard_model, shard_key, queue_prefix in (
+                ('blue', BlueShard, 'mac', 'update_blue_'),
+                ('cell', CellShard, 'cellid', 'update_cell_'),
+                ('wifi', WifiShard, 'mac', 'update_wifi_')):
 
-            obs_queue, key_metrics, positions = \
-                self.process_reports(reports, userid)
+            if observations[datatype]:
+                sharded_obs = defaultdict(list)
+                for ob in observations[datatype]:
+                    shard_id = shard_model.shard_id(getattr(ob, shard_key))
+                    sharded_obs[shard_id].append(ob)
 
-            all_positions.extend(positions)
-            for datatype, queued_obs in obs_queue.items():
-                for queue_id, values in queued_obs.items():
-                    all_queued_obs[datatype][queue_id].extend(values)
+                for shard_id, values in sharded_obs.items():
+                    all_queued_obs[datatype][queue_prefix + shard_id].extend(
+                        [value.to_json() for value in values])
 
-            for metric, value in key_metrics.items():
-                metrics[api_key][metric] += value
+        for datatype, queued_obs in all_queued_obs.items():
+            for queue_id, values in queued_obs.items():
+                queue = self.task.app.data_queues[queue_id]
+                queue.enqueue(values, pipe=pipe)
 
-            if userid is not None:
-                scores[userid] += len(positions)
-
-        for userid, score_value in scores.items():
-            self.process_score(userid, score_value)
-
-        with self.task.redis_pipeline() as pipe:
-            for datatype, queued_obs in all_queued_obs.items():
-                for queue_id, values in queued_obs.items():
-                    queue = self.task.app.data_queues[queue_id]
-                    queue.enqueue(values, pipe=pipe)
-
-            if all_positions:
-                self.process_datamap(pipe, all_positions)
-
-        self.emit_metrics(session, metrics)
-
-    def emit_metrics(self, session, metrics):
+    def emit_metrics(self, api_key_models, metrics):
         for api_key, key_metrics in metrics.items():
-            api_tag = []
-            if api_key is not None:
-                api_key = ApiKey.get(session, api_key)
 
-            if api_key and api_key.should_log('submit'):
-                api_tag = ['key:%s' % api_key.valid_key]
+            api_tag = []
+            if api_key and api_key_models.get(api_key, False):
+                api_tag = ['key:%s' % api_key]
 
             for name, count in key_metrics.items():
                 if not count:
@@ -451,55 +483,6 @@ class InternalExporter(ReportExporter):
 
                 self.task.stats_client.incr(
                     'data.%s.%s' % (suffix, action), count, tags=tags)
-
-    def process_reports(self, reports, userid):
-        positions = set()
-        observations = {}
-        obs_queue = {}
-
-        metrics = {
-            'report_drop': 0,
-            'report_upload': len(reports),
-        }
-
-        for name in ('blue', 'cell', 'wifi'):
-            metrics[name + '_drop'] = 0
-            metrics[name + '_upload'] = 0
-            observations[name] = []
-            obs_queue[name] = defaultdict(list)
-
-        for report in reports:
-            obs, malformed_obs = self.process_report(report)
-
-            any_data = False
-            for name in ('blue', 'cell', 'wifi'):
-                if obs.get(name):
-                    observations[name].extend(obs[name])
-                    metrics[name + '_upload'] += len(obs[name])
-                    any_data = True
-                metrics[name + '_drop'] += malformed_obs.get(name, 0)
-
-            if any_data:
-                positions.add((report['lat'], report['lon']))
-            else:
-                metrics['report_drop'] += 1
-
-        for name, shard_model, shard_key, queue_prefix in (
-                ('blue', BlueShard, 'mac', 'update_blue_'),
-                ('cell', CellShard, 'cellid', 'update_cell_'),
-                ('wifi', WifiShard, 'mac', 'update_wifi_')):
-
-            if observations[name]:
-                sharded_obs = defaultdict(list)
-                for ob in observations[name]:
-                    shard_id = shard_model.shard_id(getattr(ob, shard_key))
-                    sharded_obs[shard_id].append(ob)
-
-                for shard_id, values in sharded_obs.items():
-                    obs_queue[name][queue_prefix + shard_id].extend(
-                        [value.to_json() for value in values])
-
-        return (obs_queue, metrics, positions)
 
     def process_report(self, data):
         report = Report.create(**data)
