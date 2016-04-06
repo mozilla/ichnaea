@@ -181,7 +181,7 @@ class TestExporter(BaseExportTest):
         num = [0]
         orig_wait = DummyExporter._retry_wait
 
-        def mock_send(self, url, data, num=num):
+        def mock_send(self, data, num=num):
             num[0] += 1
             if num[0] == 1:
                 raise IOError()

@@ -126,7 +126,7 @@ class CellExport(object):
 
     def write_stations_to_s3(self, path, bucketname):
         conn = boto.connect_s3()
-        bucket = conn.get_bucket(bucketname)
+        bucket = conn.get_bucket(bucketname, validate=False)
         with closing(boto.s3.key.Key(bucket)) as key:
             key.key = 'export/' + os.path.split(path)[-1]
             key.set_contents_from_filename(path, reduced_redundancy=True)

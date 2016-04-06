@@ -92,120 +92,6 @@ class ExportScheduler(object):
                                       queue_key=queue_key)
 
 
-class ExportQueue(object):
-    """
-    A Redis based queue which stores binary or JSON encoded items
-    in lists. The queue supports dynamic queue keys and partitioned
-    queues with a common queue key prefix.
-
-    The lists maintain a TTL value corresponding to the time data has
-    been last put into the queue.
-    """
-
-    metadata = False
-
-    def __init__(self, name, redis_client,
-                 url=None, batch=0, skip_keys=(),
-                 exporter_type=None, compress=False):
-        self.name = name
-        self.redis_client = redis_client
-        self.batch = batch
-        self.url = url
-        self.skip_keys = skip_keys
-        self.exporter_type = exporter_type
-        self.compress = compress
-
-    def _data_queue(self, queue_key):
-        return DataQueue(queue_key, self.redis_client,
-                         batch=self.batch, compress=self.compress, json=True)
-
-    @classmethod
-    def configure_queue(cls, key, redis_client, settings, compress=False):
-        url = settings.get('url', '') or ''
-        scheme = urlparse(url).scheme
-        batch = int(settings.get('batch', 0))
-
-        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
-        skip_keys = tuple([skip_key for skip_key in skip_keys if skip_key])
-
-        queue_types = {
-            'dummy': (DummyExportQueue, DummyExporter),
-            'http': (HTTPSExportQueue, GeosubmitExporter),
-            'https': (HTTPSExportQueue, GeosubmitExporter),
-            'internal': (InternalExportQueue, InternalExporter),
-            's3': (S3ExportQueue, S3Exporter),
-        }
-        klass, exporter_type = queue_types.get(scheme, (cls, None))
-
-        return klass(key, redis_client,
-                     url=url, batch=batch, skip_keys=skip_keys,
-                     exporter_type=exporter_type, compress=compress)
-
-    def dequeue(self, queue_key):
-        return self._data_queue(queue_key).dequeue()
-
-    def enqueue(self, items, queue_key, pipe=None):
-        self._data_queue(queue_key).enqueue(items, pipe=pipe)
-
-    def export_allowed(self, api_key):
-        return (api_key not in self.skip_keys)
-
-    def metric_tag(self):
-        # strip away queue_export_ prefix
-        return self.name[13:]
-
-    @property
-    def monitor_name(self):
-        return self.name
-
-    def partitions(self):
-        return [self.name]
-
-    def queue_key(self, api_key):
-        return self.name
-
-    def ready(self, queue_key):
-        if queue_key is None:  # pragma: no cover
-            # BBB
-            queue_key = self.name
-        return self._data_queue(queue_key).ready()
-
-    def size(self, queue_key):
-        if queue_key is None:  # pragma: no cover
-            # BBB
-            queue_key = self.name
-        return self.redis_client.llen(queue_key)
-
-
-class DummyExportQueue(ExportQueue):
-    pass
-
-
-class HTTPSExportQueue(ExportQueue):
-    pass
-
-
-class InternalExportQueue(ExportQueue):
-
-    metadata = True
-
-
-class S3ExportQueue(ExportQueue):
-
-    @property
-    def monitor_name(self):
-        return None
-
-    def partitions(self):
-        # e.g. ['queue_export_something:api_key']
-        return self.redis_client.scan_iter(match=self.name + ':*', count=100)
-
-    def queue_key(self, api_key=None):
-        if not api_key:
-            api_key = 'no_key'
-        return self.name + ':' + api_key
-
-
 class ReportExporter(object):
 
     _retriable = (IOError, )
@@ -238,7 +124,7 @@ class ReportExporter(object):
 
                 with self.task.stats_client.timed('data.export.upload',
                                                   tags=self.stats_tags):
-                    self.send(self.export_queue.url, reports)
+                    self.send(reports)
 
                 success = True
             except self._retriable:
@@ -258,15 +144,15 @@ class ReportExporter(object):
     def send_data(self, data):  # pragma: no cover
         # BBB
         reports = simplejson.loads(data)
-        self.send(self.export_queue.url, reports)
+        self.send(reports)
 
-    def send(self, url, reports):
+    def send(self, reports):
         raise NotImplementedError()
 
 
 class DummyExporter(ReportExporter):
 
-    def send(self, url, reports):
+    def send(self, reports):
         pass
 
 
@@ -277,7 +163,7 @@ class GeosubmitExporter(ReportExporter):
         requests.exceptions.RequestException,
     )
 
-    def send(self, url, reports):
+    def send(self, reports):
         headers = {
             'Content-Encoding': 'gzip',
             'Content-Type': 'application/json',
@@ -285,7 +171,7 @@ class GeosubmitExporter(ReportExporter):
         }
 
         response = requests.post(
-            url,
+            self.export_queue.url,
             data=util.encode_gzip(simplejson.dumps(reports),
                                   compresslevel=5),
             headers=headers,
@@ -308,8 +194,8 @@ class S3Exporter(ReportExporter):
         boto.exception.BotoServerError,
     )
 
-    def send(self, url, reports):
-        _, self.bucket, path = urlparse(url)[:3]
+    def send(self, reports):
+        _, bucket, path = urlparse(self.export_queue.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
         if not path.endswith('/'):
@@ -325,7 +211,7 @@ class S3Exporter(ReportExporter):
 
         try:
             conn = boto.connect_s3()
-            bucket = conn.get_bucket(self.bucket)
+            bucket = conn.get_bucket(bucket, validate=False)
             with closing(boto.s3.key.Key(bucket)) as key:
                 key.key = key_name
                 key.content_encoding = 'gzip'
@@ -474,7 +360,7 @@ class InternalExporter(ReportExporter):
 
         return report
 
-    def send(self, url, reports):
+    def send(self, reports):
         with self.task.db_session() as session:
             self._send(session, reports)
 
@@ -717,3 +603,125 @@ class InternalExporter(ReportExporter):
                 userid = old.id
 
         return userid
+
+
+class ExportQueue(object):
+    """
+    A Redis based queue which stores binary or JSON encoded items
+    in lists. The queue supports dynamic queue keys and partitioned
+    queues with a common queue key prefix.
+
+    The lists maintain a TTL value corresponding to the time data has
+    been last put into the queue.
+    """
+
+    exporter_type = None
+    metadata = False
+
+    def __init__(self, name, redis_client,
+                 url=None, batch=0, skip_keys=(), compress=False):
+        self.name = name
+        self.redis_client = redis_client
+        self.batch = batch
+        self.url = url
+        self.skip_keys = skip_keys
+        self.compress = compress
+
+    def _data_queue(self, queue_key):
+        return DataQueue(queue_key, self.redis_client,
+                         batch=self.batch, compress=self.compress, json=True)
+
+    @classmethod
+    def configure_queue(cls, key, redis_client, settings, compress=False):
+        url = settings.get('url', '') or ''
+        scheme = urlparse(url).scheme
+        batch = int(settings.get('batch', 0))
+
+        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
+        skip_keys = tuple([skip_key for skip_key in skip_keys if skip_key])
+
+        queue_types = {
+            'dummy': DummyExportQueue,
+            'http': HTTPSExportQueue,
+            'https': HTTPSExportQueue,
+            'internal': InternalExportQueue,
+            's3': S3ExportQueue,
+        }
+        klass = queue_types.get(scheme, cls)
+
+        return klass(key, redis_client,
+                     url=url, batch=batch, skip_keys=skip_keys,
+                     compress=compress)
+
+    def dequeue(self, queue_key):
+        return self._data_queue(queue_key).dequeue()
+
+    def enqueue(self, items, queue_key, pipe=None):
+        self._data_queue(queue_key).enqueue(items, pipe=pipe)
+
+    def export(self, task, queue_key):
+        if self.exporter_type is not None:
+            self.exporter_type(task, self.name, queue_key)()
+
+    def export_allowed(self, api_key):
+        return (api_key not in self.skip_keys)
+
+    def metric_tag(self):
+        # strip away queue_export_ prefix
+        return self.name[13:]
+
+    @property
+    def monitor_name(self):
+        return self.name
+
+    def partitions(self):
+        return [self.name]
+
+    def queue_key(self, api_key):
+        return self.name
+
+    def ready(self, queue_key):
+        if queue_key is None:  # pragma: no cover
+            # BBB
+            queue_key = self.name
+        return self._data_queue(queue_key).ready()
+
+    def size(self, queue_key):
+        if queue_key is None:  # pragma: no cover
+            # BBB
+            queue_key = self.name
+        return self.redis_client.llen(queue_key)
+
+
+class DummyExportQueue(ExportQueue):
+
+    exporter_type = DummyExporter
+
+
+class HTTPSExportQueue(ExportQueue):
+
+    exporter_type = GeosubmitExporter
+
+
+class InternalExportQueue(ExportQueue):
+
+    exporter_type = InternalExporter
+    metadata = True
+
+
+class S3ExportQueue(ExportQueue):
+
+    exporter_type = S3Exporter
+
+    @property
+    def monitor_name(self):
+        return None
+
+    def partitions(self):
+        # e.g. ['queue_export_something:api_key']
+        return self.redis_client.scan_iter(match=self.name + ':*', count=100)
+
+    def queue_key(self, api_key=None):
+        if not api_key:
+            api_key = 'no_key'
+        return self.name + ':' + api_key
