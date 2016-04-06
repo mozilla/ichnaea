@@ -462,9 +462,8 @@ class TestInternal(BaseExportTest):
 
         self.check_stats(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
-            ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
-            ('data.observation.drop', 1, 1,
-                ['type:cell', 'reason:malformed', 'key:test']),
+            ('data.report.drop', 1, 1, ['key:test']),
+            ('data.observation.drop', 1, 1, ['type:cell', 'key:test']),
         ])
 
     def test_wifi(self):
@@ -509,9 +508,8 @@ class TestInternal(BaseExportTest):
 
         self.check_stats(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
-            ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
-            ('data.observation.drop', 1, 1,
-                ['type:wifi', 'reason:malformed', 'key:test']),
+            ('data.report.drop', 1, 1, ['key:test']),
+            ('data.observation.drop', 1, 1, ['type:wifi', 'key:test']),
         ])
 
     def test_position_invalid(self):
@@ -525,7 +523,7 @@ class TestInternal(BaseExportTest):
         self.assertEqual(self.session.query(shard).count(), 1)
         self.check_stats(counter=[
             ('data.report.upload', 1, 2, ['key:test']),
-            ('data.report.drop', 1, 1, ['reason:malformed', 'key:test']),
+            ('data.report.drop', 1, 1, ['key:test']),
             ('data.observation.insert', 1, 1, ['type:wifi']),
             ('data.observation.upload', 1, 1, ['type:wifi', 'key:test']),
         ])

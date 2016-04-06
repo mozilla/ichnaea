@@ -265,8 +265,8 @@ Along the way several counters measure the steps involved:
     pipeline. The metric is either emitted per tracked API key, or for
     everything else without a key tag.
 
-``data.report.drop#reason:malformed``,
-``data.report.drop#reason:malformed,key:<apikey>`` : counter
+``data.report.drop``,
+``data.report.drop#key:<apikey>`` : counter
 
     Count incoming :term:`reports` that were discarded due to some internal
     consistency, range or validity-condition error.
@@ -287,12 +287,12 @@ Along the way several counters measure the steps involved:
     The metrics are either emitted per tracked API key, or for everything
     else without a key tag.
 
-``data.observation.drop#type:blue,reason:malformed``,
-``data.observation.drop#type:blue,reason:malformed,key:<apikey>``,
-``data.observation.drop#type:cell,reason:malformed``,
-``data.observation.drop#type:cell,reason:malformed,key:<apikey>``,
-``data.observation.drop#type:wifi,reason:malformed``
-``data.observation.drop#type:wifi,reason:malformed,key:<apikey>`` : counters
+``data.observation.drop#type:blue``,
+``data.observation.drop#type:blue,key:<apikey>``,
+``data.observation.drop#type:cell``,
+``data.observation.drop#type:cell,key:<apikey>``,
+``data.observation.drop#type:wifi``
+``data.observation.drop#type:wifi,key:<apikey>`` : counters
 
     Count incoming Bluetooth, cell or WiFi :term:`observations` that were
     discarded before integration due to some internal consistency, range or

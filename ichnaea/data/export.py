@@ -385,15 +385,10 @@ class InternalExporter(ReportExporter):
 
         metrics = {}
         for api_key in api_keys:
-            metrics[api_key] = {
-                'reports': 0,
-                'malformed_reports': 0,
-                'obs_count': {
-                    'blue': {'upload': 0, 'drop': 0},
-                    'cell': {'upload': 0, 'drop': 0},
-                    'wifi': {'upload': 0, 'drop': 0},
-                }
-            }
+            metrics[api_key] = {}
+            for type_ in ('report', 'blue', 'cell', 'wifi'):
+                for action in ('drop', 'upload'):
+                    metrics[api_key]['%s_%s' % (type_, action)] = 0
 
         all_positions = []
         all_queued_obs = {
@@ -405,7 +400,7 @@ class InternalExporter(ReportExporter):
         for (api_key, nickname), reports in groups.items():
             userid = users.get(nickname)
 
-            obs_queue, malformed_reports, obs_count, positions = \
+            obs_queue, key_metrics, positions = \
                 self.process_reports(reports, userid)
 
             all_positions.extend(positions)
@@ -413,11 +408,8 @@ class InternalExporter(ReportExporter):
                 for queue_id, values in queued_obs.items():
                     all_queued_obs[datatype][queue_id].extend(values)
 
-            metrics[api_key]['reports'] += len(reports)
-            metrics[api_key]['malformed_reports'] += malformed_reports
-            for datatype, type_stats in obs_count.items():
-                for reason, value in type_stats.items():
-                    metrics[api_key]['obs_count'][datatype][reason] += value
+            for metric, value in key_metrics.items():
+                metrics[api_key][metric] += value
 
             if userid is not None:
                 scores[userid] += len(positions)
@@ -434,54 +426,46 @@ class InternalExporter(ReportExporter):
             if all_positions:
                 self.process_datamap(pipe, all_positions)
 
-        for api_key, values in metrics.items():
-            self.emit_stats(
-                session,
-                values['reports'],
-                values['malformed_reports'],
-                values['obs_count'],
-                api_key=api_key,
-            )
+        self.emit_metrics(session, metrics)
 
-    def emit_stats(self, session, reports, malformed_reports, obs_count,
-                   api_key=None):
-        api_tag = []
-        if api_key is not None:
-            api_key = ApiKey.get(session, api_key)
+    def emit_metrics(self, session, metrics):
+        for api_key, key_metrics in metrics.items():
+            api_tag = []
+            if api_key is not None:
+                api_key = ApiKey.get(session, api_key)
 
-        if api_key and api_key.should_log('submit'):
-            api_tag = ['key:%s' % api_key.valid_key]
+            if api_key and api_key.should_log('submit'):
+                api_tag = ['key:%s' % api_key.valid_key]
 
-        if reports > 0:
-            self.task.stats_client.incr(
-                'data.report.upload', reports, tags=api_tag)
+            for name, count in key_metrics.items():
+                if not count:
+                    continue
 
-        if malformed_reports > 0:
-            self.task.stats_client.incr(
-                'data.report.drop', malformed_reports,
-                tags=['reason:malformed'] + api_tag)
+                type_, action = name.split('_')
+                if type_ == 'report':
+                    suffix = 'report'
+                    tags = api_tag
+                else:
+                    suffix = 'observation'
+                    tags = ['type:%s' % type_] + api_tag
 
-        for name, stats in obs_count.items():
-            for action, count in stats.items():
-                if count > 0:
-                    tags = ['type:%s' % name]
-                    if action == 'drop':
-                        tags.append('reason:malformed')
-                    self.task.stats_client.incr(
-                        'data.observation.%s' % action,
-                        count,
-                        tags=tags + api_tag)
+                self.task.stats_client.incr(
+                    'data.%s.%s' % (suffix, action), count, tags=tags)
 
     def process_reports(self, reports, userid):
-        malformed_reports = 0
         positions = set()
         observations = {}
-        obs_count = {}
         obs_queue = {}
 
+        metrics = {
+            'report_drop': 0,
+            'report_upload': len(reports),
+        }
+
         for name in ('blue', 'cell', 'wifi'):
+            metrics[name + '_drop'] = 0
+            metrics[name + '_upload'] = 0
             observations[name] = []
-            obs_count[name] = {'upload': 0, 'drop': 0}
             obs_queue[name] = defaultdict(list)
 
         for report in reports:
@@ -491,14 +475,14 @@ class InternalExporter(ReportExporter):
             for name in ('blue', 'cell', 'wifi'):
                 if obs.get(name):
                     observations[name].extend(obs[name])
-                    obs_count[name]['upload'] += len(obs[name])
+                    metrics[name + '_upload'] += len(obs[name])
                     any_data = True
-                obs_count[name]['drop'] += malformed_obs.get(name, 0)
+                metrics[name + '_drop'] += malformed_obs.get(name, 0)
 
             if any_data:
                 positions.add((report['lat'], report['lon']))
             else:
-                malformed_reports += 1
+                metrics['report_drop'] += 1
 
         for name, shard_model, shard_key, queue_prefix in (
                 ('blue', BlueShard, 'mac', 'update_blue_'),
@@ -515,7 +499,7 @@ class InternalExporter(ReportExporter):
                     obs_queue[name][queue_prefix + shard_id].extend(
                         [value.to_json() for value in values])
 
-        return (obs_queue, malformed_reports, obs_count, positions)
+        return (obs_queue, metrics, positions)
 
     def process_report(self, data):
         report = Report.create(**data)
