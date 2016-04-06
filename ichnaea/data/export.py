@@ -267,12 +267,10 @@ class BaseReportUploader(object):
             # ignore metadata
             reports = {'items': [item['report'] for item in items]}
 
-        data = simplejson.dumps(reports)
-
         success = False
         for i in range(self._retries):
             try:
-                self.upload(data)
+                self.upload(reports)
                 success = True
             except self._retriable:
                 success = False
@@ -286,18 +284,24 @@ class BaseReportUploader(object):
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key})
 
-    def upload(self, data):
-        self.send(self.export_queue.url, data)
+    def upload(self, reports):
+        self.send(self.export_queue.url, reports)
         self.task.stats_client.incr(
             'data.export.batch', tags=self.stats_tags)
 
-    def send(self, url, data):
+    def upload_data(self, data):  # pragma: no cover
+        reports = simplejson.loads(data)
+        self.send(self.export_queue.url, reports)
+        self.task.stats_client.incr(
+            'data.export.batch', tags=self.stats_tags)
+
+    def send(self, url, reports):
         raise NotImplementedError()
 
 
 class DummyUploader(BaseReportUploader):
 
-    def send(self, url, data):
+    def send(self, url, reports):
         pass
 
 
@@ -308,17 +312,19 @@ class GeosubmitUploader(BaseReportUploader):
         requests.exceptions.RequestException,
     )
 
-    def send(self, url, data):
+    def send(self, url, reports):
         headers = {
             'Content-Encoding': 'gzip',
             'Content-Type': 'application/json',
             'User-Agent': 'ichnaea',
         }
+
         with self.task.stats_client.timed('data.export.upload',
                                           tags=self.stats_tags):
             response = requests.post(
                 url,
-                data=util.encode_gzip(data, compresslevel=5),
+                data=util.encode_gzip(simplejson.dumps(reports),
+                                      compresslevel=5),
                 headers=headers,
                 timeout=60.0,
             )
@@ -339,7 +345,7 @@ class S3Uploader(BaseReportUploader):
         boto.exception.BotoServerError,
     )
 
-    def send(self, url, data):
+    def send(self, url, reports):
         _, self.bucket, path = urlparse(url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
@@ -364,7 +370,8 @@ class S3Uploader(BaseReportUploader):
                     key.content_encoding = 'gzip'
                     key.content_type = 'application/json'
                     key.set_contents_from_string(
-                        util.encode_gzip(data, compresslevel=7))
+                        util.encode_gzip(simplejson.dumps(reports),
+                                         compresslevel=7))
 
             self.task.stats_client.incr(
                 'data.export.upload',
@@ -506,16 +513,16 @@ class InternalUploader(BaseReportUploader):
 
         return report
 
-    def send(self, url, data):
+    def send(self, url, reports):
         with self.task.db_session() as session:
-            self._send(session, url, data)
+            self._send(session, reports)
 
-    def _send(self, session, url, data):
+    def _send(self, session, reports):
         groups = defaultdict(list)
         api_keys = set()
         nicknames = set()
 
-        for item in simplejson.loads(data):
+        for item in reports:
             report = self._format_report(item['report'])
             if report:
                 groups[(item['api_key'], item['nickname'])].append(report)

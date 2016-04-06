@@ -105,7 +105,7 @@ def upload_reports(self, export_queue_name, data,
     export_queue = self.app.export_queues[export_queue_name]
     uploader_type = export_queue.uploader_type
     if uploader_type is not None:
-        uploader_type(self, export_queue_name, queue_key).upload(data)
+        uploader_type(self, export_queue_name, queue_key).upload_data(data)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
