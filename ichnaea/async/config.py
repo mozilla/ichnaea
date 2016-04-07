@@ -187,10 +187,6 @@ def init_worker(celery_app,
     celery_app.export_queues = configure_export(
         redis_client, celery_app.app_config)
 
-    for queue in celery_app.export_queues.values():
-        if queue.monitor_name:
-            all_queues.add(queue.monitor_name)
-
 
 def shutdown_worker(celery_app):
     """

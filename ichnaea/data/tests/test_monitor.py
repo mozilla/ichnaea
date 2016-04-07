@@ -70,7 +70,10 @@ class TestMonitor(CeleryTestCase):
         self.check_stats(gauge=[('table', 4, ['table:cell_ocid_age'])])
 
     def test_monitor_queue_size(self):
-        data = {}
+        data = {
+            'export_queue_internal': 3,
+            'export_queue_backup:abcd-ef-1234': 7,
+        }
         for name in self.celery_app.all_queues:
             data[name] = randint(1, 10)
 

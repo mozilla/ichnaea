@@ -627,10 +627,6 @@ class ExportQueue(object):
         # strip away queue_export_ prefix
         return self.name[13:]
 
-    @property
-    def monitor_name(self):
-        return self.name
-
     def partitions(self):
         return [self.name]
 
@@ -663,10 +659,6 @@ class InternalExportQueue(ExportQueue):
 class S3ExportQueue(ExportQueue):
 
     exporter_type = S3Exporter
-
-    @property
-    def monitor_name(self):
-        return None
 
     def partitions(self):
         # e.g. ['queue_export_something:api_key']

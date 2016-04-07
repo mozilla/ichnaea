@@ -262,10 +262,6 @@ class TestS3(BaseExportTest):
         self.celery_app.export_queues = configure_export(
             self.redis_client, config)
 
-    def test_no_monitoring(self):
-        export_queue = self.celery_app.export_queues['queue_export_backup']
-        self.assertFalse(export_queue.monitor_name)
-
     def test_upload(self):
         ApiKeyFactory(valid_key='e5444-794')
         self.session.flush()
