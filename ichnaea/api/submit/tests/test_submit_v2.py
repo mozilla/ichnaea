@@ -87,8 +87,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             }]},
         ])
 
-        self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key(None))[0]
+        self.assertEqual(self.queue.size(), 1)
+        item = self.queue.dequeue()[0]
         report = item['report']
         self.assertTrue('timestamp' in report)
         position = report['position']
@@ -145,8 +145,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.json, {})
 
-        self._assert_queue_size(1, 'test')
-        item = self.queue.dequeue(self.queue.queue_key('test'))[0]
+        self.assertEqual(self.queue.size(), 1)
+        item = self.queue.dequeue()[0]
         self.assertEqual(item['api_key'], 'test')
         report = item['report']
         self.assertEqual(report['timestamp'], now_ms)
@@ -202,8 +202,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             }]},
         ])
 
-        self._assert_queue_size(1)
-        item = self.queue.dequeue(self.queue.queue_key(None))[0]
+        self.assertEqual(self.queue.size(), 1)
+        item = self.queue.dequeue()[0]
         self.assertEqual(item['api_key'], None)
         report = item['report']
         self.assertTrue('timestamp' in report)
@@ -236,7 +236,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         # add a bad one, this will just be skipped
         items.append({'latitude': 10.0, 'longitude': 10.0, 'whatever': 'xx'})
         self._post(items)
-        self._assert_queue_size(batch)
+        self.assertEqual(self.queue.size(), batch)
 
     def test_error(self):
         wifi = WifiShardFactory.build()
@@ -249,4 +249,4 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'macAddress': 10,
             }],
         }], status=400)
-        self._assert_queue_size(0)
+        self.assertEqual(self.queue.size(), 0)

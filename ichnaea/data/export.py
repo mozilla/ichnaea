@@ -643,12 +643,6 @@ class ExportQueue(object):
             queue_key = self.name
         return self._data_queue(queue_key).ready()
 
-    def size(self, queue_key):
-        if queue_key is None:  # pragma: no cover
-            # BBB
-            queue_key = self.name
-        return self.redis_client.llen(queue_key)
-
 
 class DummyExportQueue(ExportQueue):
 
