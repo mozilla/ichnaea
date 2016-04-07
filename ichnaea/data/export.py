@@ -38,6 +38,29 @@ from ichnaea import util
 WHITESPACE = re.compile('\s', flags=re.UNICODE)
 
 
+def configure_export(redis_client, app_config, name=None):
+    """
+    Configure export queues, based on the `[export:*]` sections from
+    the application ini file.
+    """
+    if name is not None:
+        if name.startswith('queue_export_'):
+            name = name[13:]  # remove queue_export_ prefix
+        section = app_config.get_map('export:' + name)
+        return ExportQueue.configure_queue(
+            'queue_export_' + name, redis_client, section)
+
+    export_queues = {}
+    for section_name in app_config.sections():
+        if section_name.startswith('export:'):
+            section = app_config.get_map(section_name)
+            key = 'queue_export_' + section_name.split(':')[1]
+            export_queues[key] = ExportQueue.configure_queue(
+                key, redis_client, section)
+
+    return export_queues
+
+
 class IncomingQueue(object):
     """
     The incoming queue contains the data collected in the web application
@@ -62,7 +85,9 @@ class IncomingQueue(object):
                 'report': item['report'],
             })
 
-        export_queues = self.task.app.export_queues
+        export_queues = configure_export(
+            self.task.redis_client, self.task.app.app_config)
+
         with self.task.redis_pipeline() as pipe:
             for api_key, items in grouped.items():
                 for queue in export_queues.values():
@@ -85,7 +110,10 @@ class ExportScheduler(object):
         self.task = task
 
     def __call__(self, export_task):
-        for export_queue in self.task.app.export_queues.values():
+        export_queues = configure_export(
+            self.task.redis_client, self.task.app.app_config)
+
+        for export_queue in export_queues.values():
             for queue_key in export_queue.partitions():
                 if export_queue.ready(queue_key):
                     export_task.delay(export_queue.name,
@@ -101,7 +129,11 @@ class ReportExporter(object):
     def __init__(self, task, export_queue_name, queue_key):
         self.task = task
         self.export_queue_name = export_queue_name
-        self.export_queue = task.app.export_queues[export_queue_name]
+
+        self.export_queue = configure_export(
+            self.task.redis_client, self.task.app.app_config,
+            name=export_queue_name)
+
         self.stats_tags = ['key:' + self.export_queue.metric_tag()]
         self.queue_key = queue_key
         if not self.queue_key:  # pragma: no cover

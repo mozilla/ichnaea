@@ -89,11 +89,6 @@ class DataQueue(object):
             with redis_pipeline(self.redis_client) as pipe:
                 self._push(pipe, items, batch)
 
-    @property
-    def monitor_name(self):
-        """Queue name used in monitoring metrics."""
-        return self.key
-
     def ready(self, batch=None):
         """
         Returns True if the queue has either more than a certain

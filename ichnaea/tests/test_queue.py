@@ -51,10 +51,6 @@ class TestDataQueue(RedisTestCase):
         pipe.execute()
         self.assertEqual(queue.size(), 3)
 
-    def test_monitor_name(self):
-        queue = self._make_queue()
-        self.assertEqual(queue.monitor_name, queue.key)
-
     def test_ready(self):
         queue = self._make_queue(batch=4)
         self.assertFalse(queue.ready())

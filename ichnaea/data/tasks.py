@@ -92,17 +92,18 @@ def update_incoming(self):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  _countdown=1, expires=300)
 def export_reports(self, export_queue_name, queue_key=None):
-    self.app.export_queues[export_queue_name].export(self, queue_key)
+    from ichnaea.data.export import configure_export
+    export_queue = configure_export(
+        self.redis_client, self.app.app_config, name=export_queue_name)
+
+    export_queue.export(self, queue_key)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
 def upload_reports(self, export_queue_name, data,
                    queue_key=None):  # pragma: no cover
     # BBB
-    export_queue = self.app.export_queues[export_queue_name]
-    exporter_type = export_queue.exporter_type
-    if exporter_type is not None:
-        exporter_type(self, export_queue_name, queue_key).send_data(data)
+    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',

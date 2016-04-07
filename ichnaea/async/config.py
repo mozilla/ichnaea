@@ -23,7 +23,6 @@ from ichnaea.models import (
     WifiShard,
 )
 from ichnaea.queue import DataQueue
-from ichnaea.data.export import ExportQueue
 
 CELERY_QUEUES = (
     Queue('celery_blue', routing_key='celery_blue'),
@@ -115,21 +114,6 @@ def configure_data(redis_client):
     return data_queues
 
 
-def configure_export(redis_client, app_config):
-    """
-    Configure export queues, based on the `[export:*]` sections from
-    the application ini file.
-    """
-    export_queues = {}
-    for section_name in app_config.sections():
-        if section_name.startswith('export:'):
-            section = app_config.get_map(section_name)
-            key = 'queue_export_' + section_name.split(':')[1]
-            export_queues[key] = ExportQueue.configure_queue(
-                key, redis_client, section)
-    return export_queues
-
-
 def init_beat(beat, celery_app):
     """
     Configure the passed in celery beat app, usually stored in
@@ -176,16 +160,12 @@ def init_worker(celery_app,
         celery_app.app_config.get('geoip', 'db_path'),
         raven_client=raven_client, _client=_geoip_db)
 
-    # configure data / export queues
+    # configure data queues
     celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
 
     celery_app.data_queues = data_queues = configure_data(redis_client)
-    for queue in data_queues.values():
-        if queue.monitor_name:
-            all_queues.add(queue.monitor_name)
-
-    celery_app.export_queues = configure_export(
-        redis_client, celery_app.app_config)
+    all_queues = all_queues.union(
+        set([queue.key for queue in data_queues.values() if queue.key]))
 
 
 def shutdown_worker(celery_app):
@@ -206,6 +186,5 @@ def shutdown_worker(celery_app):
 
     del celery_app.all_queues
     del celery_app.data_queues
-    del celery_app.export_queues
     del celery_app.settings
     del celery_app.app_config
