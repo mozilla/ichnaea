@@ -35,7 +35,8 @@ class TestBeat(CeleryTestCase):
             all_tasks - registered_tasks,
             set(['data.update_blue', 'data.update_cell',
                  'data.update_datamap', 'data.update_wifi',
-                 'data.export_reports', 'data.upload_reports']))
+                 'data.export_reports', 'data.upload_reports',
+                 'data.update_score']))
 
         self.assertEqual(
             set(['_'.join(name.split('_')[:-1]) for name in
