@@ -36,29 +36,6 @@ from ichnaea import util
 WHITESPACE = re.compile('\s', flags=re.UNICODE)
 
 
-def configure_export(redis_client, app_config, name=None):
-    """
-    Configure export queues, based on the `[export:*]` sections from
-    the application ini file.
-    """
-    if name is not None:
-        if name.startswith('queue_export_'):
-            name = name[13:]  # remove queue_export_ prefix
-        section = app_config.get_map('export:' + name)
-        return ExportQueue.configure_queue(
-            'queue_export_' + name, redis_client, section)
-
-    export_queues = {}
-    for section_name in app_config.sections():
-        if section_name.startswith('export:'):
-            section = app_config.get_map(section_name)
-            key = 'queue_export_' + section_name.split(':')[1]
-            export_queues[key] = ExportQueue.configure_queue(
-                key, redis_client, section)
-
-    return export_queues
-
-
 class IncomingQueue(object):
     """
     The incoming queue contains the data collected in the web application
@@ -82,12 +59,12 @@ class IncomingQueue(object):
                 'report': item['report'],
             })
 
-        export_queues = configure_export(
+        export_queues = ExportQueue.configure_queues(
             self.task.redis_client, self.task.app.app_config)
 
         with self.task.redis_pipeline() as pipe:
             for api_key, items in grouped.items():
-                for queue in export_queues.values():
+                for queue in export_queues:
                     if queue.export_allowed(api_key):
                         queue_key = queue.queue_key(api_key)
                         queue.enqueue(items, queue_key, pipe=pipe)
@@ -107,10 +84,10 @@ class ExportScheduler(object):
         self.task = task
 
     def __call__(self, export_task):
-        export_queues = configure_export(
+        export_queues = ExportQueue.configure_queues(
             self.task.redis_client, self.task.app.app_config)
 
-        for export_queue in export_queues.values():
+        for export_queue in export_queues:
             for queue_key in export_queue.partitions():
                 if export_queue.ready(queue_key):
                     export_task.delay(export_queue.name,
@@ -127,9 +104,9 @@ class ReportExporter(object):
         self.task = task
         self.export_queue_name = export_queue_name
 
-        self.export_queue = configure_export(
+        self.export_queue = ExportQueue.configure(
             self.task.redis_client, self.task.app.app_config,
-            name=export_queue_name)
+            export_queue_name)
 
         self.stats_tags = ['key:' + self.export_queue.metric_tag()]
         self.queue_key = queue_key
@@ -138,14 +115,9 @@ class ReportExporter(object):
             self.queue_key = self.export_queue.queue_key(None)
 
     def __call__(self):
-        items = self.export_queue.dequeue(self.queue_key)
-        if not items:  # pragma: no cover
+        queue_items = self.export_queue.dequeue(self.queue_key)
+        if not queue_items:  # pragma: no cover
             return
-
-        queue_items = items
-        if not self.export_queue.metadata:
-            # ignore metadata
-            queue_items = {'items': [item['report'] for item in items]}
 
         success = False
         for i in range(self._retries):
@@ -170,11 +142,6 @@ class ReportExporter(object):
                 args=[self.export_queue_name],
                 kwargs={'queue_key': self.queue_key})
 
-    def send_data(self, data):  # pragma: no cover
-        # BBB
-        queue_items = simplejson.loads(data)
-        self.send(queue_items)
-
     def send(self, queue_items):
         raise NotImplementedError()
 
@@ -193,6 +160,9 @@ class GeosubmitExporter(ReportExporter):
     )
 
     def send(self, queue_items):
+        # ignore metadata
+        reports = [item['report'] for item in queue_items]
+
         headers = {
             'Content-Encoding': 'gzip',
             'Content-Type': 'application/json',
@@ -201,7 +171,7 @@ class GeosubmitExporter(ReportExporter):
 
         response = requests.post(
             self.export_queue.url,
-            data=util.encode_gzip(simplejson.dumps(queue_items),
+            data=util.encode_gzip(simplejson.dumps({'items': reports}),
                                   compresslevel=5),
             headers=headers,
             timeout=60.0,
@@ -224,6 +194,9 @@ class S3Exporter(ReportExporter):
     )
 
     def send(self, queue_items):
+        # ignore metadata
+        reports = [item['report'] for item in queue_items]
+
         _, bucket, path = urlparse(self.export_queue.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
@@ -246,7 +219,7 @@ class S3Exporter(ReportExporter):
                 key.content_encoding = 'gzip'
                 key.content_type = 'application/json'
                 key.set_contents_from_string(
-                    util.encode_gzip(simplejson.dumps(queue_items),
+                    util.encode_gzip(simplejson.dumps({'items': reports}),
                                      compresslevel=7))
 
             self.task.stats_client.incr(
@@ -359,7 +332,8 @@ class InternalTransform(object):
 
         timestamp = item.get('timestamp')
         if timestamp:
-            report['timestamp'] = timestamp
+            dt = datetime.utcfromtimestamp(timestamp / 1000.0)
+            report['time'] = dt.replace(microsecond=0, tzinfo=pytz.UTC)
 
         blues = self._parse_list(item, report, self.blue_id, self.blue_map)
         cells = self._parse_list(item, report, self.cell_id, self.cell_map)
@@ -379,25 +353,15 @@ class InternalExporter(ReportExporter):
     )
     transform = InternalTransform()
 
-    def _format_report(self, item):
-        report = self.transform(item)
-
-        timestamp = report.pop('timestamp', None)
-        if timestamp:
-            dt = datetime.utcfromtimestamp(timestamp / 1000.0)
-            report['time'] = dt.replace(microsecond=0, tzinfo=pytz.UTC)
-
-        return report
-
     def send(self, queue_items):
         api_keys = set()
-        api_keys_found = {}
+        api_keys_known = set()
         metrics = {}
 
         items = []
         for item in queue_items:
             # preprocess items and extract set of API keys
-            item['report'] = self._format_report(item['report'])
+            item['report'] = self.transform(item['report'])
             if item['report']:
                 items.append(item)
                 api_keys.add(item['api_key'])
@@ -416,7 +380,7 @@ class InternalExporter(ReportExporter):
                                 .filter(ApiKey.valid_key.in_(keys)))
 
                 for row in query.all():
-                    api_keys_found[row.valid_key] = True
+                    api_keys_known.add(row.valid_key)
 
         positions = []
         observations = {'blue': [], 'cell': [], 'wifi': []}
@@ -446,7 +410,7 @@ class InternalExporter(ReportExporter):
             if positions:
                 self.process_datamap(pipe, positions)
 
-        self.emit_metrics(api_keys_found, metrics)
+        self.emit_metrics(api_keys_known, metrics)
 
     def queue_observations(self, pipe, observations):
         for datatype, shard_model, shard_key, queue_prefix in (
@@ -466,10 +430,10 @@ class InternalExporter(ReportExporter):
                 queue = self.task.app.data_queues[queue_id]
                 queue.enqueue(values, pipe=pipe)
 
-    def emit_metrics(self, api_keys_found, metrics):
+    def emit_metrics(self, api_keys_known, metrics):
         for api_key, key_metrics in metrics.items():
             api_tag = []
-            if api_key and api_keys_found.get(api_key, False):
+            if api_key and api_key in api_keys_known:
                 api_tag = ['key:%s' % api_key]
 
             for name, count in key_metrics.items():
@@ -555,23 +519,35 @@ class ExportQueue(object):
     """
 
     exporter_type = None
-    metadata = False
 
     def __init__(self, name, redis_client,
-                 url=None, batch=0, skip_keys=(), compress=False):
+                 url=None, batch=0, skip_keys=()):
         self.name = name
         self.redis_client = redis_client
         self.batch = batch
         self.url = url
         self.skip_keys = skip_keys
-        self.compress = compress
 
     def _data_queue(self, queue_key):
         return DataQueue(queue_key, self.redis_client,
-                         batch=self.batch, compress=self.compress, json=True)
+                         batch=self.batch, compress=False, json=True)
 
     @classmethod
-    def configure_queue(cls, key, redis_client, settings, compress=False):
+    def configure_queues(cls, redis_client, app_config):
+        export_queues = []
+        for section_name in app_config.sections():
+            if section_name.startswith('export:'):
+                name = section_name[7:]  # remove export: prefix
+                export_queues.append(
+                    ExportQueue.configure(redis_client, app_config, name))
+        return export_queues
+
+    @classmethod
+    def configure(cls, redis_client, app_config, name):
+        if name.startswith('queue_export_'):
+            name = name[13:]  # remove queue_export_ prefix
+
+        settings = app_config.get_map('export:' + name)
         url = settings.get('url', '') or ''
         scheme = urlparse(url).scheme
         batch = int(settings.get('batch', 0))
@@ -586,21 +562,23 @@ class ExportQueue(object):
             'internal': InternalExportQueue,
             's3': S3ExportQueue,
         }
-        klass = queue_types.get(scheme, cls)
+        klass = queue_types[scheme]
+        return klass('queue_export_' + name, redis_client,
+                     url=url, batch=batch, skip_keys=skip_keys)
 
-        return klass(key, redis_client,
-                     url=url, batch=batch, skip_keys=skip_keys,
-                     compress=compress)
+    @classmethod
+    def export(cls, task, export_queue_name, queue_key):
+        queue = cls.configure(
+            task.redis_client, task.app.app_config, export_queue_name)
+
+        if queue.exporter_type is not None:
+            queue.exporter_type(task, queue.name, queue_key)()
 
     def dequeue(self, queue_key):
         return self._data_queue(queue_key).dequeue()
 
     def enqueue(self, items, queue_key, pipe=None):
         self._data_queue(queue_key).enqueue(items, pipe=pipe)
-
-    def export(self, task, queue_key):
-        if self.exporter_type is not None:
-            self.exporter_type(task, self.name, queue_key)()
 
     def export_allowed(self, api_key):
         return (api_key not in self.skip_keys)
@@ -635,7 +613,6 @@ class HTTPSExportQueue(ExportQueue):
 class InternalExportQueue(ExportQueue):
 
     exporter_type = InternalExporter
-    metadata = True
 
 
 class S3ExportQueue(ExportQueue):
@@ -644,7 +621,8 @@ class S3ExportQueue(ExportQueue):
 
     def partitions(self):
         # e.g. ['queue_export_something:api_key']
-        return self.redis_client.scan_iter(match=self.name + ':*', count=100)
+        return [key.decode('utf-8') for key in
+                self.redis_client.scan_iter(match=self.name + ':*', count=100)]
 
     def queue_key(self, api_key=None):
         if not api_key:

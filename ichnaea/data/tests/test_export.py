@@ -7,7 +7,6 @@ import requests_mock
 import simplejson
 
 from ichnaea.config import DummyConfig
-from ichnaea.data.export import configure_export
 from ichnaea.data.export import DummyExporter
 from ichnaea.data.tasks import (
     update_blue,
@@ -316,8 +315,14 @@ class TestInternal(BaseExportTest):
             },
         })
         self.celery_app.app_config = config
-        self.queue = configure_export(
-            self.redis_client, config, name='queue_export_internal')
+
+    def _pop_item(self):
+        return simplejson.loads(
+            self.redis_client.lpop('queue_export_internal'))
+
+    def _push_item(self, item):
+        self.redis_client.lpush(
+            'queue_export_internal', *[simplejson.dumps(item)])
 
     def _update_all(self):
         schedule_export_reports.delay().get()
@@ -380,15 +385,15 @@ class TestInternal(BaseExportTest):
     def test_blue_duplicated(self):
         self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
         # duplicate the Bluetooth entry inside the report
-        items = self.queue.dequeue(self.queue.name)
-        report = items[0]['report']
+        item = self._pop_item()
+        report = item['report']
         blue = report['bluetoothBeacons'][0]
         mac = blue['macAddress']
         report['bluetoothBeacons'].append(blue.copy())
         report['bluetoothBeacons'].append(blue.copy())
         report['bluetoothBeacons'][1]['signalStrength'] += 2
         report['bluetoothBeacons'][2]['signalStrength'] -= 2
-        self.queue.enqueue(items, self.queue.name)
+        self._push_item(item)
         self._update_all()
 
         shard = BlueShard.shard_model(mac)
@@ -426,15 +431,15 @@ class TestInternal(BaseExportTest):
     def test_cell_duplicated(self):
         self.add_reports(cell_factor=1, wifi_factor=0)
         # duplicate the cell entry inside the report
-        items = self.queue.dequeue(self.queue.name)
-        report = items[0]['report']
+        item = self._pop_item()
+        report = item['report']
         cell = report['cellTowers'][0]
         radio = cell['radioType']
         report['cellTowers'].append(cell.copy())
         report['cellTowers'].append(cell.copy())
         report['cellTowers'][1]['signalStrength'] += 2
         report['cellTowers'][2]['signalStrength'] -= 2
-        self.queue.enqueue(items, self.queue.name)
+        self._push_item(item)
         self._update_all()
 
         shard = CellShard.shard_model(radio)
@@ -471,15 +476,15 @@ class TestInternal(BaseExportTest):
     def test_wifi_duplicated(self):
         self.add_reports(cell_factor=0, wifi_factor=1)
         # duplicate the wifi entry inside the report
-        items = self.queue.dequeue(self.queue.name)
-        report = items[0]['report']
+        item = self._pop_item()
+        report = item['report']
         wifi = report['wifiAccessPoints'][0]
         mac = wifi['macAddress']
         report['wifiAccessPoints'].append(wifi.copy())
         report['wifiAccessPoints'].append(wifi.copy())
         report['wifiAccessPoints'][1]['signalStrength'] += 2
         report['wifiAccessPoints'][2]['signalStrength'] -= 2
-        self.queue.enqueue(items, self.queue.name)
+        self._push_item(item)
         self._update_all()
 
         shard = WifiShard.shard_model(mac)
