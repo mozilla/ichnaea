@@ -13,7 +13,6 @@ from ichnaea.data.tasks import (
     update_cell,
     update_incoming,
     update_wifi,
-    schedule_export_reports,
 )
 from ichnaea.models import (
     BlueShard,
@@ -49,7 +48,7 @@ class BaseExportTest(CeleryTestCase):
 
     def setUp(self):
         super(BaseExportTest, self).setUp()
-        self.incoming_queue = self.celery_app.data_queues['update_incoming']
+        self.queue = self.celery_app.data_queues['update_incoming']
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     blue_key=None, cell_mcc=None, wifi_key=None,
@@ -105,8 +104,7 @@ class BaseExportTest(CeleryTestCase):
 
         items = [{'api_key': api_key, 'report': rep} for rep in reports]
 
-        self.incoming_queue.enqueue(items)
-        update_incoming.delay().get()
+        self.queue.enqueue(items)
         return reports
 
     def queue_length(self, redis_key):
@@ -137,37 +135,17 @@ class TestExporter(BaseExportTest):
         ApiKeyFactory(valid_key='test2')
         self.session.flush()
 
-    def test_enqueue_reports(self):
-        self.add_reports(3)
+    def test_queues(self):
+        self.add_reports(4)
         self.add_reports(1, api_key='test2')
-        self.add_reports(1, api_key=None)
+        self.add_reports(2, api_key=None)
+        update_incoming.delay().get()
 
         for queue_key, num in [
-                ('queue_export_test', 5),
-                ('queue_export_everything', 5),
-                ('queue_export_no_test', 2)]:
+                ('queue_export_test', 1),
+                ('queue_export_everything', 2),
+                ('queue_export_no_test', 1)]:
             self.assertEqual(self.queue_length(queue_key), num)
-
-    def test_one_queue(self):
-        self.add_reports(3)
-        schedule_export_reports.delay().get()
-
-        # data from one queue was processed
-        for queue_key, num in [
-                ('queue_export_test', 0),
-                ('queue_export_everything', 3),
-                ('queue_export_no_test', 0)]:
-            self.assertEqual(self.queue_length(queue_key), num)
-
-    def test_one_batch(self):
-        self.add_reports(5)
-        schedule_export_reports.delay().get()
-        self.assertEqual(self.queue_length('queue_export_test'), 2)
-
-    def test_multiple_batches(self):
-        self.add_reports(10)
-        schedule_export_reports.delay().get()
-        self.assertEqual(self.queue_length('queue_export_test'), 1)
 
     def test_retry(self):
         self.add_reports(3)
@@ -183,7 +161,7 @@ class TestExporter(BaseExportTest):
         with mock.patch('ichnaea.data.export.DummyExporter.send', mock_send):
             try:
                 DummyExporter._retry_wait = 0.001
-                schedule_export_reports.delay().get()
+                update_incoming.delay().get()
             finally:
                 DummyExporter._retry_wait = orig_wait
 
@@ -213,7 +191,7 @@ class TestGeosubmit(BaseExportTest):
 
         with requests_mock.Mocker() as mock:
             mock.register_uri('POST', requests_mock.ANY, text='{}')
-            schedule_export_reports.delay().get()
+            update_incoming.delay().get()
 
         self.assertEqual(mock.call_count, 1)
         req = mock.request_history[0]
@@ -264,7 +242,7 @@ class TestS3(BaseExportTest):
 
         mock_keys = []
         with mock_s3(mock_keys):
-            schedule_export_reports.delay().get()
+            update_incoming.delay().get()
 
         self.assertEqual(len(mock_keys), 4)
 
@@ -317,15 +295,13 @@ class TestInternal(BaseExportTest):
         self.celery_app.app_config = config
 
     def _pop_item(self):
-        return simplejson.loads(
-            self.redis_client.lpop('queue_export_internal'))
+        return self.queue.dequeue()[0]
 
     def _push_item(self, item):
-        self.redis_client.lpush(
-            'queue_export_internal', *[simplejson.dumps(item)])
+        self.queue.enqueue([item])
 
     def _update_all(self):
-        schedule_export_reports.delay().get()
+        update_incoming.delay().get()
 
         for shard_id in BlueShard.shards().keys():
             update_blue.delay(shard_id=shard_id).get()
@@ -525,7 +501,7 @@ class TestInternal(BaseExportTest):
     def test_datamap(self):
         self.add_reports(1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)
         self.add_reports(2, cell_factor=0, wifi_factor=2, lat=20.0, lon=-10.0)
-        schedule_export_reports.delay().get()
+        update_incoming.delay().get()
         self.assertEqual(
             self.celery_app.data_queues['update_datamap_ne'].size(), 1)
         self.assertEqual(

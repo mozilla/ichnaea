@@ -42,13 +42,15 @@ class IncomingQueue(object):
     tier. It is the single entrypoint from which all other data pipelines
     get their data.
 
-    It distributes the data into the configured export queues.
+    It distributes the data into the configured export queues,
+    checks those queues and if they contain enough or old enough data
+    schedules an async export task to process the data in each queue.
     """
 
     def __init__(self, task):
         self.task = task
 
-    def __call__(self):
+    def __call__(self, export_task):
         data_queue = self.task.app.data_queues['update_incoming']
         data = data_queue.dequeue()
 
@@ -69,29 +71,16 @@ class IncomingQueue(object):
                         queue_key = queue.queue_key(api_key)
                         queue.enqueue(items, queue_key, pipe=pipe)
 
-        if data_queue.ready():  # pragma: no cover
-            self.task.apply_countdown()
-
-
-class ExportScheduler(object):
-    """
-    The export scheduler is periodically called, checks all export queues
-    and if they contain enough or old enough data schedules an async
-    export task to process the data in the export queue.
-    """
-
-    def __init__(self, task):
-        self.task = task
-
-    def __call__(self, export_task):
-        export_queues = ExportQueue.configure_queues(
-            self.task.redis_client, self.task.app.app_config)
-
         for export_queue in export_queues:
+            # Check all queues if they now contain enough data or
+            # old enough data to be ready for processing.
             for queue_key in export_queue.partitions():
                 if export_queue.ready(queue_key):
                     export_task.delay(export_queue.name,
                                       queue_key=queue_key)
+
+        if data_queue.ready():  # pragma: no cover
+            self.task.apply_countdown()
 
 
 class ReportExporter(object):

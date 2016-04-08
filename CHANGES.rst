@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove intermediate schedule_export_reports task.
+
 - #456: Retire old leaderboard.
 
 - Remove intermediate upload_report task.

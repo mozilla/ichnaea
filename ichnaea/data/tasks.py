@@ -76,16 +76,16 @@ def monitor_queue_size(self):
     monitor.QueueSize(self)()
 
 
-@celery_app.task(base=BaseTask, bind=True, queue='celery_export',
-                 expires=10, _schedule=timedelta(seconds=6))
-def schedule_export_reports(self):
-    export.ExportScheduler(self)(export_reports)
+@celery_app.task(base=BaseTask, bind=True, queue='celery_export')
+def schedule_export_reports(self):  # pragma: no cover
+    # BBB
+    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
                  _countdown=2, expires=10, _schedule=timedelta(seconds=5))
 def update_incoming(self):
-    export.IncomingQueue(self)()
+    export.IncomingQueue(self)(export_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
