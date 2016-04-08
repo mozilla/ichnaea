@@ -3,11 +3,8 @@ from ichnaea.models.content import (
     encode_datamap_grid,
     DataMap,
     RegionStat,
-    Score,
-    ScoreKey,
     Stat,
     StatKey,
-    User,
 )
 from ichnaea.tests.base import (
     DBTestCase,
@@ -138,32 +135,6 @@ class TestRegionStat(DBTestCase):
         self.assertEqual(result.wifi, 5)
 
 
-class TestScore(DBTestCase):
-
-    def test_fields(self):
-        utcday = util.utcnow().date()
-        self.session.add(Score(
-            key=ScoreKey.location, userid=3, time=utcday, value=15))
-        self.session.flush()
-
-        result = self.session.query(Score).first()
-        self.assertEqual(result.key, ScoreKey.location)
-        self.assertEqual(result.userid, 3)
-        self.assertEqual(result.time, utcday)
-        self.assertEqual(result.value, 15)
-
-    def test_enum(self):
-        utcday = util.utcnow().date()
-        self.session.add(Score(
-            key=ScoreKey.location, userid=3, time=utcday, value=13))
-        self.session.flush()
-
-        result = self.session.query(Score).first()
-        self.assertEqual(result.key, ScoreKey.location)
-        self.assertEqual(int(result.key), 0)
-        self.assertEqual(result.key.name, 'location')
-
-
 class TestStat(DBTestCase):
 
     def test_fields(self):
@@ -185,16 +156,3 @@ class TestStat(DBTestCase):
         self.assertEqual(result.key, StatKey.cell)
         self.assertEqual(int(result.key), 1)
         self.assertEqual(result.key.name, 'cell')
-
-
-class TestUser(DBTestCase):
-
-    def test_fields(self):
-        nickname = u'World Tr\xc3\xa4veler'
-        email = u'world_tr\xc3\xa4veler@email.com'
-        self.session.add(User(nickname=nickname, email=email))
-        self.session.flush()
-
-        result = self.session.query(User).first()
-        self.assertEqual(result.nickname, nickname)
-        self.assertEqual(result.email, email)

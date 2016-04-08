@@ -15,7 +15,7 @@
 ></div>
 
 <p class="italic">
-    Last updated February 3, 2016
+    Last updated April 8, 2016
 </p>
 
 <p class="text-justified">
@@ -91,17 +91,18 @@
         <hr />
 
         <p role="tab" id="data-anonymous">
-            You can send us data anonymously or under a nickname.
+            You can send us data anonymously or using a Firefox Account.
         </p>
         <ul role="tabpanel">
             <li class="text-justified">
                 If you participate in our crowd-sourced data project, you
                 can publicly share the quantity of your location
                 contributions by joining our
-                <a href="/leaders">leaderboard</a>.
-                Nicknames on the leaderboard are associated with a number
-                of "points" (for example, 500 points) only and are not
-                correlated with any reported location points.
+                <a href="https://location-leaderboard.services.mozilla.com">
+                    leaderboard</a>.
+                Accounts on the leaderboard are associated with a number
+                of "points" per day and per region (for example,
+                on January 1st, 2016: 500 points in India).
             </li>
 
             <li class="text-justified">

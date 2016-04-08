@@ -25,8 +25,6 @@ from ichnaea.models import (
     CellShard,
     DataMap,
     Report,
-    ScoreKey,
-    User,
     WifiObservation,
     WifiReport,
     WifiShard,
@@ -81,7 +79,6 @@ class IncomingQueue(object):
         for item in data:
             grouped[item['api_key']].append({
                 'api_key': item['api_key'],
-                'nickname': item['nickname'],
                 'report': item['report'],
             })
 
@@ -396,18 +393,14 @@ class InternalExporter(ReportExporter):
         api_keys = set()
         api_keys_found = {}
         metrics = {}
-        nicknames = set()
-        scores = {}
-        users = {}
 
         items = []
         for item in queue_items:
-            # preprocess items and extract set of API keys and nicknames
+            # preprocess items and extract set of API keys
             item['report'] = self._format_report(item['report'])
             if item['report']:
                 items.append(item)
                 api_keys.add(item['api_key'])
-                nicknames.add(item['nickname'])
 
         for api_key in api_keys:
             metrics[api_key] = {}
@@ -416,12 +409,7 @@ class InternalExporter(ReportExporter):
                     metrics[api_key]['%s_%s' % (type_, action)] = 0
 
         with self.task.db_session() as session:
-            # limit database session to get API keys and user ids
-            for nickname in nicknames:
-                userid = self.process_user(session, nickname)
-                users[nickname] = userid
-                scores[userid] = 0
-
+            # limit database session to get API keys
             keys = [key for key in api_keys if key]
             if keys:
                 query = (session.query(ApiKey.valid_key)
@@ -452,13 +440,6 @@ class InternalExporter(ReportExporter):
                 positions.append((report['lat'], report['lon']))
             else:
                 metrics[api_key]['report_drop'] += 1
-
-            userid = users.get(item['nickname'])
-            if userid is not None:
-                scores[userid] += 1
-
-        for userid, score_value in scores.items():
-            self.process_score(userid, score_value)
 
         with self.task.redis_pipeline() as pipe:
             self.queue_observations(pipe, observations)
@@ -561,37 +542,6 @@ class InternalExporter(ReportExporter):
         for shard_id, values in shards.items():
             queue = self.task.app.data_queues['update_datamap_' + shard_id]
             queue.enqueue(list(values), pipe=pipe)
-
-    def process_score(self, userid, pos_count):
-        if userid is None or pos_count <= 0:
-            return
-
-        scores = [{
-            'key': int(ScoreKey.location),
-            'userid': userid,
-            'value': pos_count,
-        }]
-
-        queue = self.task.app.data_queues['update_score']
-        queue.enqueue(scores)
-
-    def process_user(self, session, nickname):
-        userid = None
-        if nickname and (2 <= len(nickname) <= 128):
-            # automatically create user objects and update nickname
-            rows = session.query(User).filter(User.nickname == nickname)
-            old = rows.first()
-            if not old:
-                user = User(
-                    nickname=nickname,
-                )
-                session.add(user)
-                session.flush()
-                userid = user.id
-            else:  # pragma: no cover
-                userid = old.id
-
-        return userid
 
 
 class ExportQueue(object):

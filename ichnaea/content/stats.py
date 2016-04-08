@@ -7,11 +7,8 @@ from sqlalchemy import func
 
 from ichnaea.models.content import (
     RegionStat,
-    Score,
-    ScoreKey,
     Stat,
     StatKey,
-    User,
 )
 from ichnaea import util
 
@@ -104,30 +101,6 @@ def histogram(session, stat_key, days=365):
         day = timegm(next_month.timetuple()) * 1000
         result.append([day, num])
     return [result]
-
-
-def leaders(session):
-    rows = (session.query(Score.userid, func.sum(Score.value))
-                   .filter(Score.key == ScoreKey.location)
-                   .group_by(Score.userid)
-                   .having(func.sum(Score.value) >= 10)).all()
-    # sort descending by value
-    rows.sort(key=itemgetter(1), reverse=True)
-    userids = [s[0] for s in rows]
-    if not userids:
-        return []
-    user_rows = session.query(User.id, User.nickname).filter(
-        User.id.in_(userids)).all()
-    users = dict(user_rows)
-
-    result = []
-    for userid, value in rows:
-        nickname = users.get(userid, 'anonymous')
-        if len(nickname) > 24:
-            nickname = nickname[:24] + u'...'
-        result.append(
-            {'nickname': nickname, 'num': int(value)})
-    return result
 
 
 def regions(session):

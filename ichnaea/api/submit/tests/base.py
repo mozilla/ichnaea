@@ -17,8 +17,6 @@ class BaseSubmitTest(object):
     metric_type = 'submit'
     status = None
 
-    nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
-
     def setUp(self):
         super(BaseSubmitTest, self).setUp()
         self.queue = self.celery_app.data_queues['update_incoming']
@@ -36,12 +34,9 @@ class BaseSubmitTest(object):
             status=status, extra_environ=extra, **kw)
         return result
 
-    def _post_one_cell(self, nickname=None, status=status):
+    def _post_one_cell(self, status=status):
         cell, query = self._one_cell_query()
-        headers = {}
-        if nickname:
-            headers['X-Nickname'] = nickname.encode('utf-8')
-        return self._post([query], headers=headers, status=status)
+        return self._post([query], status=status)
 
     def test_gzip(self):
         cell, query = self._one_cell_query()
@@ -100,11 +95,6 @@ class BaseSubmitTest(object):
             ('data.batch.upload', 0),
             ('request', [self.metric_path, 'method:post', 'status:503']),
         ])
-
-    def test_headers_nickname(self):
-        self._post_one_cell(nickname=self.nickname)
-        item = self.queue.dequeue()[0]
-        self.assertEqual(item['nickname'], self.nickname)
 
     def test_log_api_key_none(self):
         cell, query = self._one_cell_query()

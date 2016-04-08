@@ -19,7 +19,6 @@ from ichnaea.data.tasks import (
 from ichnaea.models import (
     BlueShard,
     CellShard,
-    User,
     WifiShard,
 )
 from ichnaea.tests.base import CeleryTestCase
@@ -54,9 +53,8 @@ class BaseExportTest(CeleryTestCase):
         self.incoming_queue = self.celery_app.data_queues['update_incoming']
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
-                    api_key='test', nickname=None,
                     blue_key=None, cell_mcc=None, wifi_key=None,
-                    lat=None, lon=None):
+                    api_key='test', lat=None, lon=None):
         reports = []
         for i in range(num):
             pos = CellShardFactory.build()
@@ -106,9 +104,7 @@ class BaseExportTest(CeleryTestCase):
 
             reports.append(report)
 
-        items = [{'api_key': api_key,
-                  'nickname': nickname,
-                  'report': rep} for rep in reports]
+        items = [{'api_key': api_key, 'report': rep} for rep in reports]
 
         self.incoming_queue.enqueue(items)
         update_incoming.delay().get()
@@ -310,8 +306,6 @@ class TestS3(BaseExportTest):
 
 
 class TestInternal(BaseExportTest):
-
-    nickname = b'World Tr\xc3\xa4veler'.decode('utf-8')
 
     def setUp(self):
         super(TestInternal, self).setUp()
@@ -531,26 +525,3 @@ class TestInternal(BaseExportTest):
             self.celery_app.data_queues['update_datamap_ne'].size(), 1)
         self.assertEqual(
             self.celery_app.data_queues['update_datamap_sw'].size(), 1)
-
-    def test_nickname(self):
-        self.add_reports(wifi_factor=0, nickname=self.nickname)
-        schedule_export_reports.delay().get()
-
-        queue = self.celery_app.data_queues['update_score']
-        self.assertEqual(queue.size(), 1)
-
-        users = self.session.query(User).all()
-        self.assertEqual(len(users), 1)
-        self.assertEqual(users[0].nickname, self.nickname)
-
-        scores = queue.dequeue()
-        self.assertEqual(
-            scores, [{'userid': users[0].id, 'key': 0, 'value': 1}])
-
-    def test_nickname_too_short(self):
-        self.add_reports(nickname=u'a')
-        schedule_export_reports.delay().get()
-
-        queue = self.celery_app.data_queues['update_score']
-        self.assertEqual(queue.size(), 0)
-        self.assertEqual(self.session.query(User).count(), 0)

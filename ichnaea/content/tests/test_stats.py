@@ -5,16 +5,12 @@ from datetime import date, timedelta
 import genc
 
 from ichnaea.models.content import (
-    Score,
-    ScoreKey,
-    User,
     Stat,
     StatKey,
 )
 from ichnaea.content.stats import (
     global_stats,
     histogram,
-    leaders,
     regions,
     transliterate,
 )
@@ -115,32 +111,6 @@ class TestStats(DBTestCase):
         session.commit()
         result = histogram(session, StatKey.unique_cell)
         self.assertEqual(result, [[[unixtime(day), 9]]])
-
-    def test_leaders(self):
-        session = self.session
-        today = util.utcnow().date()
-        test_data = []
-        for i in range(20):
-            test_data.append((u'nick-%s' % i, 30))
-        highest = u'nick-high-too-long_'
-        highest += (128 - len(highest)) * u'x'
-        test_data.append((highest, 40))
-        lowest = u'nick-low'
-        test_data.append((lowest, 20))
-        for nick, value in test_data:
-            user = User(nickname=nick)
-            session.add(user)
-            session.flush()
-            score = Score(key=ScoreKey.location,
-                          userid=user.id, time=today, value=value)
-            session.add(score)
-        session.commit()
-        # check the result
-        result = leaders(session)
-        self.assertEqual(len(result), 22)
-        self.assertEqual(result[0]['nickname'], highest[:24] + u'...')
-        self.assertEqual(result[0]['num'], 40)
-        self.assertTrue(lowest in [r['nickname'] for r in result])
 
     def test_regions(self):
         RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)

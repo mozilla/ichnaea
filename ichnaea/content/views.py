@@ -21,7 +21,6 @@ from six.moves.urllib import parse as urlparse
 from ichnaea.content.stats import (
     global_stats,
     histogram,
-    leaders,
     regions,
 )
 from ichnaea.models.content import StatKey
@@ -70,7 +69,7 @@ def configure_content(config):
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=86400)
 
-    # BBB: leaders_weekly is an alias for leaders
+    # BBB: leaders/leaders_weekly redirect to new service
     config.add_route('leaders_weekly', '/leaders/weekly')
     config.add_route('leaders', '/leaders')
     config.add_route('stats_regions', '/stats/regions')
@@ -218,30 +217,15 @@ class ContentViews(object):
     def privacy_view(self):
         return {'page_title': 'Privacy Notice'}
 
-    @view_config(renderer='templates/leaders.pt', route_name='leaders',
-                 http_cache=3600)
+    @view_config(route_name='leaders')
     def leaders_view(self):
-        data = self._get_cache('leaders')
-        if data is None:
-            data = [{
-                'pos': lead[0] + 1,
-                'num': lead[1]['num'],
-                'nickname': lead[1]['nickname'],
-                'anchor': lead[1]['nickname'],
-            } for lead in enumerate(leaders(self.session))]
-            self._set_cache('leaders', data)
-
-        half = len(data) // 2 + len(data) % 2
-        return {
-            'page_title': 'Leaderboard',
-            'leaders1': data[:half],
-            'leaders2': data[half:],
-        }
+        return HTTPMovedPermanently(
+            location='https://location-leaderboard.services.mozilla.com')
 
     @view_config(route_name='leaders_weekly')
     def leaders_weekly_view(self):
         return HTTPMovedPermanently(
-            location=self.request.route_path('leaders'))
+            location='https://location-leaderboard.services.mozilla.com')
 
     @view_config(renderer='templates/map.pt', name='map', http_cache=3600)
     def map_view(self):
@@ -289,7 +273,7 @@ class ContentViews(object):
     def stats_view(self):
         data = self._get_cache('stats')
         if data is None:
-            data = {'leaders': [], 'metrics1': [], 'metrics2': []}
+            data = {'metrics1': [], 'metrics2': []}
             metric_names = [
                 ('1', StatKey.unique_blue.name, 'Bluetooth Networks'),
                 ('1', StatKey.blue.name, 'Bluetooth Observations'),
@@ -330,7 +314,6 @@ def touchicon_view(request):
 _robots_response = Response(content_type='text/plain', body='''\
 User-agent: *
 Disallow: /downloads
-Disallow: /leaders
 Disallow: /static/
 Disallow: /v1/
 Disallow: /v2/

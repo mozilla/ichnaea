@@ -16,7 +16,6 @@ from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
 from ichnaea.data import monitor
 from ichnaea.data import ocid
-from ichnaea.data.score import ScoreUpdater
 from ichnaea.data import station
 from ichnaea.data import stats
 from ichnaea import models
@@ -146,10 +145,10 @@ def update_datamap(self, shard_id=None):
     DataMapUpdater(self, shard_id=shard_id)()
 
 
-@celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 _countdown=2, expires=10, _schedule=timedelta(seconds=9))
-def update_score(self):
-    ScoreUpdater(self)()
+@celery_app.task(base=BaseTask, bind=True, queue='celery_content')
+def update_score(self):  # pragma: no cover
+    # BBB
+    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',

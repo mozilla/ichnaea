@@ -9,11 +9,8 @@ from pyramid import testing
 
 from ichnaea.content.views import ContentViews
 from ichnaea.models.content import (
-    Score,
-    ScoreKey,
     Stat,
     StatKey,
-    User,
 )
 from ichnaea.content.views import (
     LOCAL_TILES,
@@ -75,7 +72,7 @@ class TestFunctionalContent(AppTestCase):
     def test_content_pages(self):
         self.app.get('/', status=200)
         self.app.get('/contact', status=200)
-        self.app.get('/leaders', status=200)
+        self.app.get('/leaders', status=301)
         self.app.get('/leaders/weekly', status=301)
         self.app.get('/map', status=200)
         self.app.get('/privacy', status=200)
@@ -228,40 +225,6 @@ class TestFunctionalContentViews(AppTestCase):
 
     def _make_view(self, request):
         return ContentViews(request)
-
-    def test_leaders(self):
-        today = util.utcnow().date()
-        yesterday = today - timedelta(days=1)
-        for i in range(7, 1, -1):
-            user = User(nickname=u'%s' % i)
-            self.session.add(user)
-            self.session.flush()
-            score1 = Score(key=ScoreKey.location,
-                           userid=user.id, time=today, value=i)
-            self.session.add(score1)
-            score2 = Score(key=ScoreKey.location,
-                           userid=user.id, time=yesterday, value=i + 1)
-            self.session.add(score2)
-        self.session.commit()
-        request = DummyRequest()
-        request.db_ro_session = self.session
-        request.registry.redis_client = self.redis_client
-        inst = self._make_view(request)
-        result = inst.leaders_view()
-        self.assertEqual(
-            result['leaders1'],
-            [{'anchor': u'7', 'nickname': u'7', 'num': 15, 'pos': 1},
-             {'anchor': u'6', 'nickname': u'6', 'num': 13, 'pos': 2}])
-        self.assertEqual(
-            result['leaders2'],
-            [{'anchor': u'5', 'nickname': u'5', 'num': 11, 'pos': 3}])
-
-        # call the view again, without a working db session, so
-        # we can be sure to use the cached result
-        inst = self._make_view(request)
-        request.db_ro_session = None
-        second_result = inst.leaders_view()
-        self.assertEqual(second_result, result)
 
     def test_stats(self):
         day = util.utcnow().date() - timedelta(1)

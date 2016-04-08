@@ -94,8 +94,6 @@ def configure_data(redis_client):
         # update_incoming needs to be the exact same as in webapp.config
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
-        'update_score': DataQueue('update_score', redis_client,
-                                  batch=100),
     }
     for key in ('update_cellarea', 'update_cellarea_ocid'):
         data_queues[key] = DataQueue(key, redis_client, batch=100, json=False)

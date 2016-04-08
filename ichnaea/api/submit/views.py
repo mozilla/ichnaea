@@ -28,14 +28,7 @@ class BaseSubmitView(BaseAPIView):
 
     def __init__(self, request):
         super(BaseSubmitView, self).__init__(request)
-        self.nickname = self.decode_request_header('X-Nickname')
         self.queue = self.request.registry.data_queues['update_incoming']
-
-    def decode_request_header(self, header_name):
-        value = self.request.headers.get(header_name, None)
-        if isinstance(value, str):  # pragma: no cover
-            value = value.decode('utf-8', 'ignore')
-        return value
 
     def emit_upload_metrics(self, value, api_key):
         tags = None
@@ -63,10 +56,8 @@ class BaseSubmitView(BaseAPIView):
         request_data = self.preprocess()
 
         reports = request_data['items']
-        nickname = self.nickname
         valid_key = api_key.valid_key
         data = [{'api_key': valid_key,
-                 'nickname': nickname,
                  'report': report} for report in reports]
 
         self.queue.enqueue(data)

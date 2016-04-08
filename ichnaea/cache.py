@@ -66,7 +66,6 @@ class RedisClient(redis.StrictRedis):
         'fallback_blue': b'cache:fallback:blue:',
         'fallback_cell': b'cache:fallback:cell:',
         'fallback_wifi': b'cache:fallback:wifi:',
-        'leaders': b'cache:leaders:2',
         'stats': b'cache:stats:3',
         'stats_regions': b'cache:stats_regions:4',
         'stats_blue_json': b'cache:stats_blue_json:2',

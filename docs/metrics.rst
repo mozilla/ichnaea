@@ -380,7 +380,6 @@ Internal Monitoring
 ``queue#queue:update_datamap_nw``,
 ``queue#queue:update_datamap_se``,
 ``queue#queue:update_datamap_sw``,
-``queue#queue:update_score``,
 ``queue#queue:update_wifi_0``,
 ``queue#queue:update_wifi_f`` : gauges
 

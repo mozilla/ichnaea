@@ -36,6 +36,7 @@ DATAMAP_SHARDS = {}
 
 
 class ScoreKey(IntEnum):
+    # BBB
     location = 0
     # new_location = 1
     # new_cell = 2
@@ -218,6 +219,7 @@ class RegionStat(_Model):
 
 
 class Score(_Model):
+    # BBB
     __tablename__ = 'score'
 
     _indices = (
@@ -271,6 +273,7 @@ class Stat(_Model):
 
 
 class User(_Model):
+    # BBB
     __tablename__ = 'user'
 
     _indices = (

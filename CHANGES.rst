@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #456: Retire old leaderboard.
+
 - Remove intermediate upload_report task.
 
 20160401185900

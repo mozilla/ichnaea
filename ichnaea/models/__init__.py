@@ -23,12 +23,9 @@ from ichnaea.models.cell import (  # NOQA
 from ichnaea.models.content import (  # NOQA
     DataMap,
     RegionStat,
-    Score,
-    ScoreKey,
     Stat,
     StatCounter,
     StatKey,
-    User,
 )
 from ichnaea.models.mac import (  # NOQA
     decode_mac,
