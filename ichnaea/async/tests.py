@@ -35,8 +35,7 @@ class TestBeat(CeleryTestCase):
             all_tasks - registered_tasks,
             set(['data.update_blue', 'data.update_cell',
                  'data.update_datamap', 'data.update_wifi',
-                 'data.export_reports', 'data.upload_reports',
-                 'data.update_score', 'data.schedule_export_reports',  # BBB
+                 'data.export_reports',
                  ]))
 
         self.assertEqual(

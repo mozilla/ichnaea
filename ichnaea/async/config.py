@@ -34,7 +34,6 @@ CELERY_QUEUES = (
     Queue('celery_monitor', routing_key='celery_monitor'),
     Queue('celery_ocid', routing_key='celery_ocid'),
     Queue('celery_reports', routing_key='celery_reports'),
-    Queue('celery_upload', routing_key='celery_upload'),  # BBB
     Queue('celery_wifi', routing_key='celery_wifi'),
 )  #: List of :class:`kombu.Queue` instances.
 

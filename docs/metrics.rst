@@ -364,7 +364,6 @@ Internal Monitoring
 ``queue#queue:celery_monitor``,
 ``queue#queue:celery_ocid``,
 ``queue#queue:celery_reports``,
-``queue#queue:celery_upload``,
 ``queue#queue:celery_wifi`` : gauges
 
     These gauges measure the number of tasks in each of the Redis queues.
@@ -434,8 +433,8 @@ emits a timer indicating its execution time.
 
 For example:
 
+  - ``task#task:data.export_reports``
   - ``task#task:data.update_statcounter``
-  - ``task#task:data.upload_reports``
 
 
 Datamaps Timers

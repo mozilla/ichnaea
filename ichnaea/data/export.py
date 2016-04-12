@@ -93,9 +93,6 @@ class ReportExporter(object):
         self.queue = queue
         self.queue_key = queue_key
         self.stats_tags = ['key:' + self.queue.name]
-        if not queue_key:  # pragma: no cover
-            # BBB
-            self.queue_key = self.queue.queue_key(None)
 
     def __call__(self):
         queue_items = self.queue.dequeue(self.queue_key)
@@ -547,10 +544,6 @@ class ExportQueue(object):
 
     @classmethod
     def export(cls, task, name, queue_key):
-        if name.startswith('queue_export_'):  # pragma: no cover
-            # BBB, remove queue_export_ prefix
-            name = name[13:]
-
         queue = cls.configure(
             task.redis_client, task.app.app_config, name)
 
@@ -573,9 +566,6 @@ class ExportQueue(object):
         return 'queue_export_' + self.name
 
     def ready(self, queue_key):
-        if queue_key is None:  # pragma: no cover
-            # BBB
-            queue_key = 'queue_export_' + self.name
         return self._data_queue(queue_key).ready()
 
 

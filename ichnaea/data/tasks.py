@@ -76,12 +76,6 @@ def monitor_queue_size(self):
     monitor.QueueSize(self)()
 
 
-@celery_app.task(base=BaseTask, bind=True, queue='celery_export')
-def schedule_export_reports(self):  # pragma: no cover
-    # BBB
-    pass
-
-
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
                  _countdown=2, expires=20, _schedule=timedelta(seconds=32))
 def update_incoming(self):
@@ -92,13 +86,6 @@ def update_incoming(self):
                  _countdown=1, expires=300)
 def export_reports(self, name, queue_key):
     export.ExportQueue.export(self, name, queue_key)
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
-def upload_reports(self, export_queue_name, data,
-                   queue_key=None):  # pragma: no cover
-    # BBB
-    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
@@ -139,12 +126,6 @@ def update_cellarea_ocid(self):
                  _shard_model=models.DataMap)
 def update_datamap(self, shard_id=None):
     DataMapUpdater(self, shard_id=shard_id)()
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_content')
-def update_score(self):  # pragma: no cover
-    # BBB
-    pass
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
