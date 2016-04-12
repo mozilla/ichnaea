@@ -20,6 +20,9 @@ from ichnaea.models.cell import (  # NOQA
     encode_cellarea,
     encode_cellid,
 )
+from ichnaea.models.config import (  # NOQA
+    ExportConfig,
+)
 from ichnaea.models.content import (  # NOQA
     DataMap,
     RegionStat,

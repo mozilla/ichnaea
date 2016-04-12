@@ -10,6 +10,7 @@
    base
    blue
    cell
+   config
    constants
    content
    mac

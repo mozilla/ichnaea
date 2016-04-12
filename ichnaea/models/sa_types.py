@@ -3,6 +3,9 @@ import time
 
 from enum import IntEnum
 import pytz
+from sqlalchemy import (
+    String,
+)
 from sqlalchemy.dialects.mysql import (
     DATETIME as DateTime,
     TINYINT as TinyInteger,
@@ -10,8 +13,29 @@ from sqlalchemy.dialects.mysql import (
 from sqlalchemy.types import TypeDecorator
 
 
+class SetColumn(TypeDecorator):
+    """
+    A SetColumn stores a Python set of Unicode strings,
+    as a comma separated string.
+    """
+
+    impl = String
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            value = ','.join([v for v in frozenset(value)])
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value == '':
+            value = frozenset()
+        elif value is not None:
+            value = frozenset(value.split(','))
+        return value
+
+
 class TinyIntEnum(TypeDecorator):
-    """An IntEnum type storing values as tiny integers."""
+    """An IntEnum type stores enum values as tiny integers."""
 
     impl = TinyInteger
 
@@ -31,8 +55,10 @@ class TinyIntEnum(TypeDecorator):
 
 
 class TZDateTime(TypeDecorator):
-    """Safely coerce Python datetime with timezone data
-    before passing off to the database."""
+    """
+    Safely coerce Python datetime objects with timezone data
+    before passing them off to the database.
+    """
 
     impl = DateTime
 
