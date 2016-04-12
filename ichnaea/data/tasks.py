@@ -102,40 +102,40 @@ def upload_reports(self, export_queue_name, data,
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',
-                 _countdown=5, expires=30, _schedule=timedelta(seconds=18),
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=48),
                  _shard_model=models.BlueShard)
 def update_blue(self, shard_id=None):
     station.BlueUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
-                 _countdown=5, expires=30, _schedule=timedelta(seconds=11),
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=41),
                  _shard_model=models.CellShard)
 def update_cell(self, shard_id=None):
     station.CellUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_wifi',
-                 _countdown=5, expires=30, _schedule=timedelta(seconds=10),
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=40),
                  _shard_model=models.WifiShard)
 def update_wifi(self, shard_id=None):
     station.WifiUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_cell',
-                 _countdown=5, expires=20, _schedule=timedelta(seconds=14))
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=44))
 def update_cellarea(self):
     area.CellAreaUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 _countdown=5, expires=20, _schedule=timedelta(seconds=15))
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=45))
 def update_cellarea_ocid(self):
     area.CellAreaOCIDUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 _countdown=2, expires=30, _schedule=timedelta(seconds=14),
+                 _countdown=2, expires=30, _schedule=timedelta(seconds=47),
                  _shard_model=models.DataMap)
 def update_datamap(self, shard_id=None):
     DataMapUpdater(self, shard_id=shard_id)()
@@ -154,6 +154,6 @@ def update_statregion(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=2700, _schedule=crontab(minute=3))
+                 expires=2700, _schedule=crontab(minute=2))
 def update_statcounter(self, ago=1):
     stats.StatCounterUpdater(self)(ago=ago)
