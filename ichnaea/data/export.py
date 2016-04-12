@@ -76,8 +76,7 @@ class IncomingQueue(object):
             # old enough data to be ready for processing.
             for queue_key in export_queue.partitions():
                 if export_queue.ready(queue_key):
-                    export_task.delay(export_queue.name,
-                                      queue_key=queue_key)
+                    export_task.delay(export_queue.name, queue_key)
 
         if data_queue.ready():  # pragma: no cover
             self.task.apply_countdown()
@@ -89,22 +88,17 @@ class ReportExporter(object):
     _retries = 3
     _retry_wait = 1.0
 
-    def __init__(self, task, export_queue_name, queue_key):
+    def __init__(self, task, queue, queue_key):
         self.task = task
-        self.export_queue_name = export_queue_name
-
-        self.export_queue = ExportQueue.configure(
-            self.task.redis_client, self.task.app.app_config,
-            export_queue_name)
-
-        self.stats_tags = ['key:' + self.export_queue.metric_tag()]
+        self.queue = queue
         self.queue_key = queue_key
-        if not self.queue_key:  # pragma: no cover
+        self.stats_tags = ['key:' + self.queue.name]
+        if not queue_key:  # pragma: no cover
             # BBB
-            self.queue_key = self.export_queue.queue_key(None)
+            self.queue_key = self.queue.queue_key(None)
 
     def __call__(self):
-        queue_items = self.export_queue.dequeue(self.queue_key)
+        queue_items = self.queue.dequeue(self.queue_key)
         if not queue_items:  # pragma: no cover
             return
 
@@ -126,10 +120,9 @@ class ReportExporter(object):
                     'data.export.batch', tags=self.stats_tags)
                 break
 
-        if success and self.export_queue.ready(self.queue_key):
+        if success and self.queue.ready(self.queue_key):
             self.task.apply_countdown(
-                args=[self.export_queue_name],
-                kwargs={'queue_key': self.queue_key})
+                args=[self.queue.name, self.queue_key])
 
     def send(self, queue_items):
         raise NotImplementedError()
@@ -159,7 +152,7 @@ class GeosubmitExporter(ReportExporter):
         }
 
         response = requests.post(
-            self.export_queue.url,
+            self.queue.url,
             data=util.encode_gzip(simplejson.dumps({'items': reports}),
                                   compresslevel=5),
             headers=headers,
@@ -186,7 +179,7 @@ class S3Exporter(ReportExporter):
         # ignore metadata
         reports = [item['report'] for item in queue_items]
 
-        _, bucket, path = urlparse(self.export_queue.url)[:3]
+        _, bucket, path = urlparse(self.queue.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
         if not path.endswith('/'):
@@ -533,9 +526,6 @@ class ExportQueue(object):
 
     @classmethod
     def configure(cls, redis_client, app_config, name):
-        if name.startswith('queue_export_'):
-            name = name[13:]  # remove queue_export_ prefix
-
         settings = app_config.get_map('export:' + name)
         url = settings.get('url', '') or ''
         scheme = urlparse(url).scheme
@@ -552,16 +542,20 @@ class ExportQueue(object):
             's3': S3ExportQueue,
         }
         klass = queue_types[scheme]
-        return klass('queue_export_' + name, redis_client,
+        return klass(name, redis_client,
                      url=url, batch=batch, skip_keys=skip_keys)
 
     @classmethod
-    def export(cls, task, export_queue_name, queue_key):
+    def export(cls, task, name, queue_key):
+        if name.startswith('queue_export_'):  # pragma: no cover
+            # BBB, remove queue_export_ prefix
+            name = name[13:]
+
         queue = cls.configure(
-            task.redis_client, task.app.app_config, export_queue_name)
+            task.redis_client, task.app.app_config, name)
 
         if queue.exporter_type is not None:
-            queue.exporter_type(task, queue.name, queue_key)()
+            queue.exporter_type(task, queue, queue_key)()
 
     def dequeue(self, queue_key):
         return self._data_queue(queue_key).dequeue()
@@ -572,20 +566,16 @@ class ExportQueue(object):
     def export_allowed(self, api_key):
         return (api_key not in self.skip_keys)
 
-    def metric_tag(self):
-        # strip away queue_export_ prefix
-        return self.name[13:]
-
     def partitions(self):
-        return [self.name]
+        return ['queue_export_' + self.name]
 
     def queue_key(self, api_key):
-        return self.name
+        return 'queue_export_' + self.name
 
     def ready(self, queue_key):
         if queue_key is None:  # pragma: no cover
             # BBB
-            queue_key = self.name
+            queue_key = 'queue_export_' + self.name
         return self._data_queue(queue_key).ready()
 
 
@@ -611,9 +601,10 @@ class S3ExportQueue(ExportQueue):
     def partitions(self):
         # e.g. ['queue_export_something:api_key']
         return [key.decode('utf-8') for key in
-                self.redis_client.scan_iter(match=self.name + ':*', count=100)]
+                self.redis_client.scan_iter(
+                    match='queue_export_%s:*' % self.name, count=100)]
 
     def queue_key(self, api_key=None):
         if not api_key:
             api_key = 'no_key'
-        return self.name + ':' + api_key
+        return 'queue_export_%s:%s' % (self.name, api_key)

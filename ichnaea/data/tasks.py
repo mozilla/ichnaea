@@ -83,15 +83,15 @@ def schedule_export_reports(self):  # pragma: no cover
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
-                 _countdown=2, expires=10, _schedule=timedelta(seconds=5))
+                 _countdown=2, expires=20, _schedule=timedelta(seconds=32))
 def update_incoming(self):
     export.IncomingQueue(self)(export_reports)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  _countdown=1, expires=300)
-def export_reports(self, export_queue_name, queue_key=None):
-    export.ExportQueue.export(self, export_queue_name, queue_key)
+def export_reports(self, name, queue_key):
+    export.ExportQueue.export(self, name, queue_key)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_upload')
