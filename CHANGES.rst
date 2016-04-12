@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 4255b858a37e: Remove user/score tables.
+
 Changes
 ~~~~~~~
 

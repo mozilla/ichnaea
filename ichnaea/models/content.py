@@ -9,8 +9,6 @@ from sqlalchemy import (
     Index,
     PrimaryKeyConstraint,
     String,
-    Unicode,
-    UniqueConstraint,
 )
 from sqlalchemy.dialects.mysql import (
     BIGINT as BigInteger,
@@ -33,14 +31,6 @@ latitude and longitude each moved to the positive space by adding
 """
 
 DATAMAP_SHARDS = {}
-
-
-class ScoreKey(IntEnum):
-    # BBB
-    location = 0
-    # new_location = 1
-    # new_cell = 2
-    # new_wifi = 3
 
 
 class StatKey(IntEnum):
@@ -218,21 +208,6 @@ class RegionStat(_Model):
     wifi = Column(BigInteger(unsigned=True))  #:
 
 
-class Score(_Model):
-    # BBB
-    __tablename__ = 'score'
-
-    _indices = (
-        PrimaryKeyConstraint('key', 'userid', 'time'),
-    )
-
-    # this is a foreign key to user.id
-    userid = Column(Integer(unsigned=True), autoincrement=False)
-    key = Column(TinyIntEnum(ScoreKey), autoincrement=False)
-    time = Column(Date)
-    value = Column(Integer)
-
-
 class StatCounter(object):
 
     def __init__(self, stat_key, day):
@@ -270,17 +245,3 @@ class Stat(_Model):
     key = Column(TinyIntEnum(StatKey), autoincrement=False)  #:
     time = Column(Date)  #:
     value = Column(BigInteger(unsigned=True))  #:
-
-
-class User(_Model):
-    # BBB
-    __tablename__ = 'user'
-
-    _indices = (
-        UniqueConstraint('nickname', name='user_nickname_unique'),
-    )
-
-    # id serves as a foreign key for score.userid
-    id = Column(Integer(unsigned=True), primary_key=True, autoincrement=True)
-    nickname = Column(Unicode(128))
-    email = Column(Unicode(255))
