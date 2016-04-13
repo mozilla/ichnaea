@@ -16,8 +16,12 @@ from ichnaea.api.schema import (
     OptionalIntNode,
     OptionalSequenceSchema,
     OptionalStringNode,
+    OptionalStringVocabularyNode,
     UnixTimeFromInteger,
 )
+
+RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
+SOURCE_STRINGS = ['fixed', 'gnss', 'fused', 'query']
 
 
 class BluetoothBeaconSchema(OptionalMappingSchema):
@@ -42,7 +46,7 @@ class BluetoothBeaconsSchema(OptionalSequenceSchema):
 
 class CellTowerSchema(OptionalMappingSchema):
 
-    radioType = OptionalStringNode()
+    radioType = OptionalStringVocabularyNode(vocabulary=RADIO_STRINGS)
     mobileCountryCode = OptionalIntNode()
     mobileNetworkCode = OptionalIntNode()
     locationAreaCode = OptionalIntNode()
@@ -91,7 +95,7 @@ class PositionSchema(OptionalMappingSchema):
     heading = OptionalBoundedFloatNode()
     pressure = OptionalBoundedFloatNode()
     speed = OptionalBoundedFloatNode()
-    source = OptionalStringNode()
+    source = OptionalStringVocabularyNode(vocabulary=SOURCE_STRINGS)
 
 
 class ReportSchema(OptionalMappingSchema):
@@ -99,7 +103,7 @@ class ReportSchema(OptionalMappingSchema):
     carrier = OptionalStringNode()
     homeMobileCountryCode = OptionalIntNode()
     homeMobileNetworkCode = OptionalIntNode()
-    radioType = OptionalStringNode()
+    radioType = OptionalStringVocabularyNode(vocabulary=RADIO_STRINGS)
     timestamp = OptionalNode(UnixTimeFromInteger())
 
     bluetoothBeacons = BluetoothBeaconsSchema(missing=())
@@ -118,7 +122,8 @@ class ReportSchema(OptionalMappingSchema):
 
         top_radio = data.get('radioType', None)
         for cell in data.get('cellTowers', ()):
-            if 'radioType' not in cell or not cell['radioType'] and top_radio:
+            if top_radio and ('radioType' not in cell or
+                              not cell['radioType']):
                 cell['radioType'] = top_radio
             if cell.get('radioType') == 'umts':
                 cell['radioType'] = 'wcdma'

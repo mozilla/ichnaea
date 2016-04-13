@@ -11,8 +11,12 @@ from ichnaea.api.schema import (
     OptionalNode,
     OptionalSequenceSchema,
     OptionalStringNode,
+    OptionalStringVocabularyNode,
     UnixTimeFromString,
 )
+
+RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
+SOURCE_STRINGS = ['fixed', 'gnss', 'fused', 'query']
 
 
 class BlueV0Schema(OptionalMappingSchema):
@@ -32,7 +36,8 @@ class BlueV0Schema(OptionalMappingSchema):
 
 class CellV0Schema(OptionalMappingSchema):
 
-    radio = OptionalStringNode(to_name='radioType')
+    radio = OptionalStringVocabularyNode(
+        vocabulary=RADIO_STRINGS, to_name='radioType')
     mcc = OptionalIntNode(to_name='mobileCountryCode')
     mnc = OptionalIntNode(to_name='mobileNetworkCode')
     lac = OptionalIntNode(to_name='locationAreaCode')
@@ -78,9 +83,11 @@ class BaseReportV0Schema(OptionalMappingSchema):
         to_name='altitudeAccuracy')
     heading = OptionalBoundedFloatNode()
     pressure = OptionalBoundedFloatNode()
-    radio = OptionalStringNode(to_name='radioType')
+    radio = OptionalStringVocabularyNode(
+        vocabulary=RADIO_STRINGS, to_name='radioType')
     speed = OptionalBoundedFloatNode()
-    source = OptionalStringNode()
+    source = OptionalStringVocabularyNode(
+        vocabulary=SOURCE_STRINGS, validator=colander.OneOf(SOURCE_STRINGS))
 
 
 class ReportV0Schema(BaseReportV0Schema):
@@ -122,7 +129,8 @@ class ReportV0Schema(BaseReportV0Schema):
 
         top_radio = data.get('radioType', None)
         for cell in data.get('cellTowers', ()):
-            if 'radioType' not in cell or not cell['radioType'] and top_radio:
+            if top_radio and ('radioType' not in cell or
+                              not cell['radioType']):
                 cell['radioType'] = top_radio
             if cell.get('radioType') == 'umts':
                 cell['radioType'] = 'wcdma'

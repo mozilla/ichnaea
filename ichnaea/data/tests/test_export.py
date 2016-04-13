@@ -174,7 +174,7 @@ class TestGeosubmit(BaseExportTest):
         self.session.flush()
 
         reports = []
-        reports.extend(self.add_reports(1))
+        reports.extend(self.add_reports(1, source='gnss'))
         reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
         reports.extend(self.add_reports(1, api_key=None))
 
@@ -193,11 +193,11 @@ class TestGeosubmit(BaseExportTest):
         body = util.decode_gzip(req.body)
         send_reports = simplejson.loads(body)['items']
         self.assertEqual(len(send_reports), 3)
-        expect = [report['position']['accuracy'] for report in reports]
-        gotten = [report['position']['accuracy'] for report in send_reports]
-        self.assertEqual(set(expect), set(gotten))
 
-        self.assertEqual(send_reports[0]['timestamp'], self.timestamp)
+        for field in ('accuracy', 'source', 'timestamp'):
+            expect = [report['position'].get(field) for report in reports]
+            gotten = [report['position'].get(field) for report in send_reports]
+            self.assertEqual(set(expect), set(gotten))
 
         self.assertEqual(
             set([w['ssid'] for w in send_reports[0]['wifiAccessPoints']]),
@@ -225,7 +225,8 @@ class TestS3(BaseExportTest):
         self.session.flush()
 
         reports = self.add_reports(3)
-        self.add_reports(6, api_key='e5444-794')
+        self.add_reports(3, api_key='e5444-794', source='gnss')
+        self.add_reports(3, api_key='e5444-794', source='fused')
         self.add_reports(3, api_key=None)
 
         mock_keys = []
@@ -300,7 +301,8 @@ class TestInternal(BaseExportTest):
         self.session.flush()
 
         self.add_reports(3)
-        self.add_reports(6, api_key='e5444-794')
+        self.add_reports(3, api_key='e5444-794', source='gnss')
+        self.add_reports(3, api_key='e5444-794', source='query')
         self.add_reports(3, api_key=None)
         self._update_all()
 

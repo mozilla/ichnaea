@@ -18,7 +18,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Add stricter validation of timestamp field.
+- Add stricter validation of radio, source and timestamp fields.
 
 - Pass pressure and source data into internal data pipeline.
 

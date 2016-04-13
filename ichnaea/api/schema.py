@@ -17,6 +17,7 @@ import time
 
 import colander
 import iso8601
+from six import string_types
 
 from ichnaea.models.constants import (
     MIN_TIMESTAMP,
@@ -37,6 +38,24 @@ class BoundedFloat(colander.Float):
                 (math.isnan(value) or math.isinf(value)))):
             return colander.null
         return value
+
+
+class StringVocabularyNode(colander.String):
+    """
+    A StringVocabularyNode takes a string and checks it against a
+    vocabulary of known values. It removes the value if it isn't in
+    the vocabulary. It also lowercases all values.
+    """
+
+    def deserialize(self, schema, cstruct):
+        value = super(StringVocabularyNode, self).deserialize(schema, cstruct)
+        if not value:
+            return colander.null
+        if isinstance(value, string_types):
+            value = value.lower()
+        if value in schema.vocabulary:
+            return value
+        return colander.null
 
 
 class UnixTimeFromInteger(colander.Integer):
@@ -147,3 +166,8 @@ class OptionalIntNode(OptionalNode):
 class OptionalStringNode(OptionalNode):
 
     schema_type = colander.String  #:
+
+
+class OptionalStringVocabularyNode(OptionalNode):
+
+    schema_type = StringVocabularyNode  #:

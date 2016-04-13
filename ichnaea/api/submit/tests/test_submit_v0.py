@@ -34,6 +34,26 @@ class TestSubmitSchema(TestCase):
         ]})
         self.assertEqual(data, {'items': []})
 
+    def test_cell_radio(self):
+        cell = CellShardFactory.build()
+        data = self.schema.deserialize({'items': [
+            {'lat': cell.lat, 'lon': cell.lon, 'cell': [{
+                'radio': 'UMTS', 'mcc': cell.mcc, 'mnc': cell.mnc,
+                'lac': cell.lac, 'cid': cell.cid,
+            }]}
+        ]})
+        self.assertEqual(
+            data['items'][0]['cellTowers'][0]['radioType'], 'wcdma')
+
+        cell = CellShardFactory.build()
+        data = self.schema.deserialize({'items': [
+            {'lat': cell.lat, 'lon': cell.lon, 'cell': [{
+                'radio': 'foo', 'mcc': cell.mcc, 'mnc': cell.mnc,
+                'lac': cell.lac, 'cid': cell.cid,
+            }]}
+        ]})
+        self.assertTrue('radioType' not in data['items'][0]['cellTowers'][0])
+
     def test_empty_wifi_entry(self):
         wifi = WifiShardFactory.build()
         data = self.schema.deserialize({'items': [
@@ -86,6 +106,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         res = self._post([{
             'lat': blue.lat,
             'lon': blue.lon,
+            'source': '',
             'blue': [{
                 'key': blue.mac,
                 'age': 3000,
@@ -102,6 +123,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         position = report['position']
         self.assertEqual(position['latitude'], blue.lat)
         self.assertEqual(position['longitude'], blue.lon)
+        self.assertFalse('source' in position)
         blues = item['report']['bluetoothBeacons']
         self.assertEqual(len(blues), 1)
         self.assertEqual(blues[0]['macAddress'], blue.mac)
@@ -123,6 +145,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'heading': 45.2,
             'pressure': 1020.23,
             'speed': 3.6,
+            'source': 'gnss',
             'radio': cell.radio.name,
             'cell': [{
                 'radio': 'umts', 'mcc': cell.mcc,
@@ -148,6 +171,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertAlmostEqual(position['heading'], 45.2)
         self.assertAlmostEqual(position['pressure'], 1020.23)
         self.assertAlmostEqual(position['speed'], 3.6)
+        self.assertAlmostEqual(position['source'], 'gnss')
         cells = report['cellTowers']
         self.assertEqual(cells[0]['radioType'], 'wcdma')
         self.assertEqual(cells[0]['mobileCountryCode'], cell.mcc)
@@ -167,6 +191,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'lat': wifi.lat,
             'lon': wifi.lon,
             'accuracy': 17.1,
+            'source': '2',
             'wifi': [{'key': wifi.mac.upper(),
                       'age': 2500,
                       'frequency': 2437,
@@ -186,6 +211,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(position['accuracy'], 17.1)
         self.assertFalse('altitude' in position)
         self.assertFalse('altitudeAccuracy' in position)
+        self.assertFalse('source' in position)
         wifis = report['wifiAccessPoints']
         self.assertEqual(wifis[0]['macAddress'], wifi.mac.upper())
         self.assertEqual(wifis[0]['age'], 2500)

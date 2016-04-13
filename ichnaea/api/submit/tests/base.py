@@ -156,8 +156,7 @@ class BaseSubmitTest(object):
         query[self.cells_id][0][self.radio_id] = '18'
         self._post([query])
         item = self.queue.dequeue()[0]
-        cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], '18')
+        self.assertFalse('radioType' in item['report']['cellTowers'][0])
 
     def test_radio_missing(self):
         cell, query = self._one_cell_query(radio=False)
