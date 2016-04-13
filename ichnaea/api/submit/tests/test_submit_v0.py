@@ -55,13 +55,13 @@ class TestSubmitSchema(TestCase):
         data = self.schema.deserialize(
             {'items': [{'time': '2016-04-07T03:33:20',
                         'wifi': [{'key': wifi.mac}]}]})
-        self.assertEqual(data['items'][0]['timestamp'], 1460000000000.0)
+        self.assertEqual(data['items'][0]['timestamp'], 146 * 10 ** 10)
 
         data = self.schema.deserialize(
             {'items': [{'time': '1710-02-28',
                         'wifi': [{'key': wifi.mac}]}]})
         # 1710 was discarded and replaced by 'now'
-        self.assertTrue(data['items'][0]['timestamp'] > 0.0)
+        self.assertTrue(data['items'][0]['timestamp'] > 10 ** 12)
 
 
 class TestView(BaseSubmitTest, CeleryAppTestCase):

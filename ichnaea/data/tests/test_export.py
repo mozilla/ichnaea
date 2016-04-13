@@ -49,6 +49,7 @@ class BaseExportTest(CeleryTestCase):
     def setUp(self):
         super(BaseExportTest, self).setUp()
         self.queue = self.celery_app.data_queues['update_incoming']
+        self.timestamp = int(time.time() * 1000)
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     blue_key=None, cell_mcc=None, wifi_key=None,
@@ -57,7 +58,7 @@ class BaseExportTest(CeleryTestCase):
         for i in range(num):
             pos = CellShardFactory.build()
             report = {
-                'timestamp': time.time() * 1000.0,
+                'timestamp': self.timestamp,
                 'position': {},
                 'bluetoothBeacons': [],
                 'cellTowers': [],
@@ -195,6 +196,8 @@ class TestGeosubmit(BaseExportTest):
         expect = [report['position']['accuracy'] for report in reports]
         gotten = [report['position']['accuracy'] for report in send_reports]
         self.assertEqual(set(expect), set(gotten))
+
+        self.assertEqual(send_reports[0]['timestamp'], self.timestamp)
 
         self.assertEqual(
             set([w['ssid'] for w in send_reports[0]['wifiAccessPoints']]),

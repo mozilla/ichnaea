@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add stricter validation of timestamp field.
+
 - Pass pressure and source data into internal data pipeline.
 
 - Read export config from database instead of ini file.

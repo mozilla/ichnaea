@@ -97,6 +97,12 @@ class TestReport(BaseTest):
         self.compare(field, 100.1, 100.1)
         self.compare(field, constants.MAX_SPEED + 0.1, None)
 
+    def test_timestamp(self):
+        field = 'timestamp'
+        self.compare(field, constants.MIN_TIMESTAMP - 1, None)
+        self.compare(field, 1405602028568, 1405602028568)
+        self.compare(field, constants.MAX_TIMESTAMP + 1, None)
+
 
 class TestBlueObservation(BaseTest):
 
@@ -104,7 +110,8 @@ class TestBlueObservation(BaseTest):
         mac = '3680873e9b83'
         obs = BlueObservation.create(
             mac=mac, lat=GB_LAT, lon=GB_LON,
-            pressure=1010.2, signal=-45, source='fixed')
+            pressure=1010.2, source='fixed', timestamp=1405602028568,
+            signal=-45)
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
@@ -112,6 +119,7 @@ class TestBlueObservation(BaseTest):
         self.assertEqual(obs.pressure, 1010.2)
         self.assertEqual(obs.signal, -45)
         self.assertEqual(obs.source, ReportSource.fixed)
+        self.assertEqual(obs.timestamp, 1405602028568)
         self.assertEqual(obs.shard_id, '8')
 
     def test_json(self):
@@ -175,13 +183,15 @@ class TestCellObservation(BaseTest):
     def test_fields(self):
         obs = CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
-            lat=GB_LAT, lon=GB_LON, pressure=1010.2, source='gnss',
+            lat=GB_LAT, lon=GB_LON,
+            pressure=1010.2, source='gnss', timestamp=1405602028568,
             asu=26, signal=-61, ta=10)
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
         self.assertEqual(obs.pressure, 1010.2)
         self.assertEqual(obs.source, ReportSource.gnss)
+        self.assertEqual(obs.timestamp, 1405602028568)
         self.assertEqual(obs.radio, Radio.gsm)
         self.assertEqual(obs.mcc, GB_MCC)
         self.assertEqual(obs.mnc, 5)
@@ -409,6 +419,7 @@ class TestWifiObservation(BaseTest):
         obs = WifiObservation.create(
             mac=mac, lat=GB_LAT, lon=GB_LON,
             pressure=1010.2, source=ReportSource.query,
+            timestamp=1405602028568,
             channel=5, signal=-45)
 
         self.assertEqual(obs.lat, GB_LAT)
@@ -416,6 +427,7 @@ class TestWifiObservation(BaseTest):
         self.assertEqual(obs.mac, mac)
         self.assertEqual(obs.pressure, 1010.2)
         self.assertEqual(obs.source, ReportSource.query)
+        self.assertEqual(obs.timestamp, 1405602028568)
         self.assertEqual(obs.channel, 5)
         self.assertEqual(obs.signal, -45)
         self.assertEqual(obs.shard_id, '8')

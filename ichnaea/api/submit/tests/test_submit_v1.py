@@ -28,15 +28,15 @@ class TestSubmitSchema(TestCase):
         wifi = WifiShardFactory.build()
 
         data = self.schema.deserialize(
-            {'items': [{'timestamp': 1460000000000.0,
+            {'items': [{'timestamp': 146 * 10 ** 10,
                         'wifiAccessPoints': [{'macAddress': wifi.mac}]}]})
-        self.assertEqual(data['items'][0]['timestamp'], 1460000000000.0)
+        self.assertEqual(data['items'][0]['timestamp'], 146 * 10 ** 10)
 
         data = self.schema.deserialize(
-            {'items': [{'timestamp': -10000.0,
+            {'items': [{'timestamp': 146 * 10 ** 9,
                         'wifiAccessPoints': [{'macAddress': wifi.mac}]}]})
-        # 1710 was discarded and replaced by 'now'
-        self.assertTrue(data['items'][0]['timestamp'] > 0.0)
+        # value was discarded and replaced by 'now'
+        self.assertTrue(data['items'][0]['timestamp'] > 10 ** 12)
 
 
 class TestView(BaseSubmitTest, CeleryAppTestCase):

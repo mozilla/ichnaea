@@ -18,6 +18,11 @@ import time
 import colander
 import iso8601
 
+from ichnaea.models.constants import (
+    MIN_TIMESTAMP,
+    MAX_TIMESTAMP,
+)
+
 
 class BoundedFloat(colander.Float):
     """
@@ -36,35 +41,37 @@ class BoundedFloat(colander.Float):
 
 class UnixTimeFromInteger(colander.Integer):
     """
-    A UnixTimeFromInteger will return a float representing
-    a time value from a unixtime integer or default to now.
+    A UnixTimeFromInteger will return an integer representing
+    a time value in milliseconds from a unixtime integer
+    or default to now.
     """
 
     def deserialize(self, schema, cstruct):
         value = super(UnixTimeFromInteger, self).deserialize(schema, cstruct)
-        if not value or value < 0 or value > 2 ** 43:
-            # Only allow dates between 1970 and 2248.
-            value = time.time() * 1000.0
-        return float(value)
+        if not value or value <= MIN_TIMESTAMP or value >= MAX_TIMESTAMP:
+            # Only allow dates between 2001 and 2286.
+            value = time.time() * 1000
+        return int(value)
 
 
 class UnixTimeFromString(colander.String):
     """
     A UnixTimeFromString will return an integer representing
-    a time value from a ISO datetime string or default to now.
+    a time value in milliseconds from a ISO datetime string
+    or default to now.
     """
 
     def deserialize(self, schema, cstruct):
         value = super(UnixTimeFromString, self).deserialize(schema, cstruct)
-        timestamp = now = time.time() * 1000.0
+        timestamp = now = int(time.time() * 1000)
         if value:
             try:
                 dt = iso8601.parse_date(value)
-                timestamp = calendar.timegm(dt.timetuple()) * 1000.0
+                timestamp = int(calendar.timegm(dt.timetuple()) * 1000)
             except (iso8601.ParseError, TypeError):  # pragma: no cover
                 pass
-        if timestamp < 0.0 or timestamp > 2.0 ** 43:
-            # Only allow dates between 1970 and 2248.
+        if timestamp <= MIN_TIMESTAMP or timestamp >= MAX_TIMESTAMP:
+            # Only allow dates between 2001 and 2286.
             return now
         return timestamp
 

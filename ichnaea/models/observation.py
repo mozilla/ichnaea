@@ -114,6 +114,9 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
     speed = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             constants.MIN_SPEED, constants.MAX_SPEED))
+    timestamp = DefaultNode(
+        colander.Integer(), missing=None, validator=colander.Range(
+            constants.MIN_TIMESTAMP, constants.MAX_TIMESTAMP))
 
     def validator(self, node, cstruct):
         super(ValidReportSchema, self).validator(node, cstruct)
@@ -140,6 +143,7 @@ class Report(BaseReport):
         'pressure',
         'speed',
         'source',
+        'timestamp',
     )
 
     @classmethod

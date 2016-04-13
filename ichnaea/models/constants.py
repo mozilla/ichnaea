@@ -53,6 +53,8 @@ MIN_PRESSURE = 100.0  #: Minimum pressure in hPA.
 MAX_PRESSURE = 1200.0  #: Maximum pressure in hPA.
 MIN_SPEED = 0.0  #:
 MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second.
+MIN_TIMESTAMP = 10 ** 12  #: Minimum allowed time stamp, 2001.
+MAX_TIMESTAMP = 10 ** 13  #: Maximum allowed time stamp, 2286.
 
 BLUE_MAX_RADIUS = 100  #: Max radius of a single Bluetooth network.
 CELLAREA_MAX_RADIUS = 20000000  #: Max radius of a cell area.

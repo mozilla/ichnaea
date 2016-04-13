@@ -1,6 +1,5 @@
 from collections import defaultdict
 from contextlib import closing
-from datetime import datetime
 import re
 import time
 import uuid
@@ -10,7 +9,6 @@ import boto.exception
 import redis.exceptions
 import requests
 import requests.exceptions
-import pytz
 import simplejson
 from six.moves.urllib.parse import urlparse
 import sqlalchemy.exc
@@ -326,11 +324,6 @@ class InternalTransform(object):
     def __call__(self, item):
         report = {}
         self._parse_dict(item, report, self.position_id, self.position_map)
-
-        timestamp = item.get('timestamp')
-        if timestamp:
-            dt = datetime.utcfromtimestamp(timestamp / 1000.0)
-            report['time'] = dt.replace(microsecond=0, tzinfo=pytz.UTC)
 
         blues = self._parse_list(item, report, self.blue_id, self.blue_map)
         cells = self._parse_list(item, report, self.cell_id, self.cell_map)
