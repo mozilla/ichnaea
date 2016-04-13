@@ -6,7 +6,6 @@ import mock
 import requests_mock
 import simplejson
 
-from ichnaea.config import DummyConfig
 from ichnaea.data.export import DummyExporter
 from ichnaea.data.tasks import (
     update_blue,
@@ -24,6 +23,7 @@ from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
     CellShardFactory,
+    ExportConfigFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -115,24 +115,13 @@ class TestExporter(BaseExportTest):
 
     def setUp(self):
         super(TestExporter, self).setUp()
-        config = DummyConfig({
-            'export:test': {
-                'url': 'dummy://',
-                'skip_keys': 'export_source',
-                'batch': '3',
-            },
-            'export:everything': {
-                'url': 'dummy://',
-                'batch': '5',
-            },
-            'export:no_test': {
-                'url': 'dummy://',
-                'skip_keys': 'test_1 test\ntest:-1',
-                'batch': '2',
-            },
-        })
-        self.celery_app.app_config = config
         ApiKeyFactory(valid_key='test2')
+        ExportConfigFactory(name='test', batch=3,
+                            skip_keys=frozenset(['export_source']))
+        ExportConfigFactory(name='everything', batch=5)
+        ExportConfigFactory(name='no_test', batch=2,
+                            skip_keys=frozenset(['test', 'test_1']))
+
         self.session.flush()
 
     def test_queues(self):
@@ -172,13 +161,10 @@ class TestGeosubmit(BaseExportTest):
 
     def setUp(self):
         super(TestGeosubmit, self).setUp()
-        config = DummyConfig({
-            'export:test': {
-                'url': 'http://127.0.0.1:9/v2/geosubmit?key=external',
-                'batch': '3',
-            },
-        })
-        self.celery_app.app_config = config
+        ExportConfigFactory(
+            name='test', batch=3, schema='geosubmit',
+            url='http://127.0.0.1:9/v2/geosubmit?key=external')
+        self.session.flush()
 
     def test_upload(self):
         ApiKeyFactory(valid_key='e5444-794')
@@ -224,13 +210,10 @@ class TestS3(BaseExportTest):
 
     def setUp(self):
         super(TestS3, self).setUp()
-        config = DummyConfig({
-            'export:backup': {
-                'url': 's3://bucket/backups/{api_key}/{year}/{month}/{day}',
-                'batch': '3',
-            },
-        })
-        self.celery_app.app_config = config
+        ExportConfigFactory(
+            name='backup', batch=3, schema='s3',
+            url='s3://bucket/backups/{api_key}/{year}/{month}/{day}')
+        self.session.flush()
 
     def test_upload(self):
         ApiKeyFactory(valid_key='e5444-794')
@@ -286,13 +269,8 @@ class TestInternal(BaseExportTest):
 
     def setUp(self):
         super(TestInternal, self).setUp()
-        config = DummyConfig({
-            'export:internal': {
-                'url': 'internal://',
-                'batch': '0',
-            },
-        })
-        self.celery_app.app_config = config
+        ExportConfigFactory(name='internal', batch=0, schema='internal')
+        self.session.flush()
 
     def _pop_item(self):
         return self.queue.dequeue()[0]

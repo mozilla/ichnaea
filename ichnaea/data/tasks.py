@@ -85,7 +85,7 @@ def update_incoming(self):
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  _countdown=1, expires=300)
 def export_reports(self, name, queue_key):
-    export.ExportQueue.export(self, name, queue_key)
+    export.ReportExporter.export(self, name, queue_key)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_blue',

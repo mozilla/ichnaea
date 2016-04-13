@@ -21,6 +21,7 @@ from ichnaea.models import (
     CellObservation,
     CellShard,
     CellShardOCID,
+    ExportConfig,
     Radio,
     RegionStat,
     WifiShard,
@@ -244,6 +245,18 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
         if self.radio is Radio.lte:
             return -105
         return None
+
+
+class ExportConfigFactory(BaseSQLFactory):
+
+    class Meta:
+        model = ExportConfig
+
+    name = FuzzyUUID()
+    batch = 100
+    schema = 'dummy'
+    url = None
+    skip_keys = frozenset()
 
 
 class RegionStatFactory(BaseSQLFactory):

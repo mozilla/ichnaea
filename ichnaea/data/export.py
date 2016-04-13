@@ -24,13 +24,13 @@ from ichnaea.models import (
     CellReport,
     CellShard,
     DataMap,
+    ExportConfig,
     Report,
     WifiObservation,
     WifiReport,
     WifiShard,
 )
 from ichnaea.models.content import encode_datamap_grid
-from ichnaea.queue import DataQueue
 from ichnaea import util
 
 WHITESPACE = re.compile('\s', flags=re.UNICODE)
@@ -51,6 +51,7 @@ class IncomingQueue(object):
         self.task = task
 
     def __call__(self, export_task):
+        redis_client = self.task.redis_client
         data_queue = self.task.app.data_queues['update_incoming']
         data = data_queue.dequeue()
 
@@ -61,22 +62,24 @@ class IncomingQueue(object):
                 'report': item['report'],
             })
 
-        export_queues = ExportQueue.configure_queues(
-            self.task.redis_client, self.task.app.app_config)
+        with self.task.db_session(commit=False) as session:
+            export_configs = ExportConfig.all(session)
 
         with self.task.redis_pipeline() as pipe:
             for api_key, items in grouped.items():
-                for queue in export_queues:
-                    if queue.export_allowed(api_key):
-                        queue_key = queue.queue_key(api_key)
-                        queue.enqueue(items, queue_key, pipe=pipe)
+                for config in export_configs:
+                    if api_key not in config.skip_keys:
+                        queue_key = config.queue_key(api_key)
+                        queue = config.queue(queue_key, redis_client)
+                        queue.enqueue(items, pipe=pipe)
 
-        for export_queue in export_queues:
+        for config in export_configs:
             # Check all queues if they now contain enough data or
             # old enough data to be ready for processing.
-            for queue_key in export_queue.partitions():
-                if export_queue.ready(queue_key):
-                    export_task.delay(export_queue.name, queue_key)
+            for queue_key in config.partitions(redis_client):
+                queue = config.queue(queue_key, redis_client)
+                if queue.ready():
+                    export_task.delay(config.name, queue_key)
 
         if data_queue.ready():  # pragma: no cover
             self.task.apply_countdown()
@@ -88,21 +91,36 @@ class ReportExporter(object):
     _retries = 3
     _retry_wait = 1.0
 
-    def __init__(self, task, queue, queue_key):
+    def __init__(self, task, config, queue_key):
         self.task = task
-        self.queue = queue
+        self.config = config
         self.queue_key = queue_key
-        self.stats_tags = ['key:' + self.queue.name]
+        self.queue = config.queue(queue_key, task.redis_client)
+        self.stats_tags = ['key:' + self.config.name]
+
+    @staticmethod
+    def export(task, name, queue_key):
+        with task.db_session(commit=False) as session:
+            config = ExportConfig.get(session, name)
+
+        exporter_types = {
+            'dummy': DummyExporter,
+            'geosubmit': GeosubmitExporter,
+            'internal': InternalExporter,
+            's3': S3Exporter,
+        }
+        exporter_type = exporter_types.get(config.schema)
+        if exporter_type is not None:
+            exporter_type(task, config, queue_key)()
 
     def __call__(self):
-        queue_items = self.queue.dequeue(self.queue_key)
+        queue_items = self.queue.dequeue()
         if not queue_items:  # pragma: no cover
             return
 
         success = False
         for i in range(self._retries):
             try:
-
                 with self.task.stats_client.timed('data.export.upload',
                                                   tags=self.stats_tags):
                     self.send(queue_items)
@@ -117,9 +135,9 @@ class ReportExporter(object):
                     'data.export.batch', tags=self.stats_tags)
                 break
 
-        if success and self.queue.ready(self.queue_key):
+        if success and self.queue.ready():
             self.task.apply_countdown(
-                args=[self.queue.name, self.queue_key])
+                args=[self.config.name, self.queue_key])
 
     def send(self, queue_items):
         raise NotImplementedError()
@@ -149,7 +167,7 @@ class GeosubmitExporter(ReportExporter):
         }
 
         response = requests.post(
-            self.queue.url,
+            self.config.url,
             data=util.encode_gzip(simplejson.dumps({'items': reports}),
                                   compresslevel=5),
             headers=headers,
@@ -176,7 +194,7 @@ class S3Exporter(ReportExporter):
         # ignore metadata
         reports = [item['report'] for item in queue_items]
 
-        _, bucket, path = urlparse(self.queue.url)[:3]
+        _, bucket, path = urlparse(self.config.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
         if not path.endswith('/'):
@@ -351,7 +369,7 @@ class InternalExporter(ReportExporter):
                 for action in ('drop', 'upload'):
                     metrics[api_key]['%s_%s' % (type_, action)] = 0
 
-        with self.task.db_session() as session:
+        with self.task.db_session(commit=False) as session:
             # limit database session to get API keys
             keys = [key for key in api_keys if key]
             if keys:
@@ -485,116 +503,3 @@ class InternalExporter(ReportExporter):
         for shard_id, values in shards.items():
             queue = self.task.app.data_queues['update_datamap_' + shard_id]
             queue.enqueue(list(values), pipe=pipe)
-
-
-class ExportQueue(object):
-    """
-    A Redis based queue which stores binary or JSON encoded items
-    in lists. The queue supports dynamic queue keys and partitioned
-    queues with a common queue key prefix.
-
-    The lists maintain a TTL value corresponding to the time data has
-    been last put into the queue.
-    """
-
-    exporter_type = None
-
-    def __init__(self, name, redis_client,
-                 url=None, batch=0, skip_keys=()):
-        self.name = name
-        self.redis_client = redis_client
-        self.batch = batch
-        self.url = url
-        self.skip_keys = skip_keys
-
-    def _data_queue(self, queue_key):
-        return DataQueue(queue_key, self.redis_client,
-                         batch=self.batch, compress=False, json=True)
-
-    @classmethod
-    def configure_queues(cls, redis_client, app_config):
-        export_queues = []
-        for section_name in app_config.sections():
-            if section_name.startswith('export:'):
-                name = section_name[7:]  # remove export: prefix
-                export_queues.append(
-                    ExportQueue.configure(redis_client, app_config, name))
-        return export_queues
-
-    @classmethod
-    def configure(cls, redis_client, app_config, name):
-        settings = app_config.get_map('export:' + name)
-        url = settings.get('url', '') or ''
-        scheme = urlparse(url).scheme
-        batch = int(settings.get('batch', 0))
-
-        skip_keys = WHITESPACE.split(settings.get('skip_keys', ''))
-        skip_keys = tuple([skip_key for skip_key in skip_keys if skip_key])
-
-        queue_types = {
-            'dummy': DummyExportQueue,
-            'http': HTTPSExportQueue,
-            'https': HTTPSExportQueue,
-            'internal': InternalExportQueue,
-            's3': S3ExportQueue,
-        }
-        klass = queue_types[scheme]
-        return klass(name, redis_client,
-                     url=url, batch=batch, skip_keys=skip_keys)
-
-    @classmethod
-    def export(cls, task, name, queue_key):
-        queue = cls.configure(
-            task.redis_client, task.app.app_config, name)
-
-        if queue.exporter_type is not None:
-            queue.exporter_type(task, queue, queue_key)()
-
-    def dequeue(self, queue_key):
-        return self._data_queue(queue_key).dequeue()
-
-    def enqueue(self, items, queue_key, pipe=None):
-        self._data_queue(queue_key).enqueue(items, pipe=pipe)
-
-    def export_allowed(self, api_key):
-        return (api_key not in self.skip_keys)
-
-    def partitions(self):
-        return ['queue_export_' + self.name]
-
-    def queue_key(self, api_key):
-        return 'queue_export_' + self.name
-
-    def ready(self, queue_key):
-        return self._data_queue(queue_key).ready()
-
-
-class DummyExportQueue(ExportQueue):
-
-    exporter_type = DummyExporter
-
-
-class HTTPSExportQueue(ExportQueue):
-
-    exporter_type = GeosubmitExporter
-
-
-class InternalExportQueue(ExportQueue):
-
-    exporter_type = InternalExporter
-
-
-class S3ExportQueue(ExportQueue):
-
-    exporter_type = S3Exporter
-
-    def partitions(self):
-        # e.g. ['queue_export_something:api_key']
-        return [key.decode('utf-8') for key in
-                self.redis_client.scan_iter(
-                    match='queue_export_%s:*' % self.name, count=100)]
-
-    def queue_key(self, api_key=None):
-        if not api_key:
-            api_key = 'no_key'
-        return 'queue_export_%s:%s' % (self.name, api_key)

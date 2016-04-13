@@ -18,6 +18,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Read export config from database instead of ini file.
 
 20160412083700
 **************

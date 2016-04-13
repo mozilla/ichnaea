@@ -30,11 +30,22 @@ def _db_creds(connection):
     return DBCreds(*result)
 
 
-def add_test_api_key(conn):  # pragma: no cover
+def add_api_key(conn):  # pragma: no cover
     stmt = text('select valid_key from api_key')
     result = conn.execute(stmt).fetchall()
     if not ('test', ) in result:
         stmt = text('INSERT INTO api_key (valid_key) VALUES ("test")')
+        conn.execute(stmt)
+
+
+def add_export_config(conn):  # pragma: no cover
+    stmt = text('select name from export_config')
+    result = conn.execute(stmt).fetchall()
+    if not ('internal', ) in result:
+        stmt = text('''\
+INSERT INTO export_config (`name`, `batch`, `schema`, `skip_keys`)
+VALUES ("internal", 100, "internal", "test")
+''')
         conn.execute(stmt)
 
 
@@ -77,7 +88,8 @@ def create_schema(engine, alembic_cfg, location_cfg):  # pragma: no cover
         if not old_version:
             _Model.metadata.create_all(engine)
 
-        add_test_api_key(conn)
+        add_api_key(conn)
+        add_export_config(conn)
         add_users(conn, location_cfg)
 
         trans.commit()
