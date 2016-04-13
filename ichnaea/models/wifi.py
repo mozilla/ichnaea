@@ -41,7 +41,8 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
     snr = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(0, 100))
+        validator=colander.Range(
+            constants.MIN_WIFI_SNR, constants.MAX_WIFI_SNR))
 
     def deserialize(self, data):
         if data:
@@ -49,7 +50,7 @@ class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
             channel = channel is not None and int(channel) or None
 
             if (channel is None or not
-                    (constants.MIN_WIFI_CHANNEL < channel <
+                    (constants.MIN_WIFI_CHANNEL <= channel <=
                      constants.MAX_WIFI_CHANNEL)):
                 # shallow copy
                 data = dict(data)

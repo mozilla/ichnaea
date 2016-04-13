@@ -25,15 +25,21 @@ class Radio(IntEnum):
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 
-MIN_AGE = 0  # Minimum relative age.
+MIN_AGE = -3600000  # Minimum relative age.
 MAX_AGE = 3600000  #: Maximum relative age in ms bounded to an hour.
+MIN_ACCURACY = 0.0  #:
 MAX_ACCURACY = 1000000.0  #: Accuracy is arbitrarily bounded to (0, 1000km).
 MIN_ALTITUDE = -10911.0  #: Challenger Deep, Mariana Trench.
 MAX_ALTITUDE = 100000.0  #: Karman Line, edge of space.
 #: Combination of max/min altitude.
+MIN_ALTITUDE_ACCURACY = 0.0  #:
 MAX_ALTITUDE_ACCURACY = abs(MAX_ALTITUDE - MIN_ALTITUDE)
 
+MIN_HEADING = 0.0  #:
 MAX_HEADING = 360.0  #: Full 360 degrees.
+MIN_PRESSURE = 100.0  #: Minimum pressure in hPA.
+MAX_PRESSURE = 1200.0  #: Maximum pressure in hPA.
+MIN_SPEED = 0.0  #:
 MAX_SPEED = 300.0  #: A bit less than speed of sound, in meters per second.
 
 BLUE_MAX_RADIUS = 100  #: Max radius of a single Bluetooth network.
@@ -53,11 +59,14 @@ VALID_MAC_REGEX = re.compile('([0-9a-fA-F]{12})')
 
 VALID_APIKEY_REGEX = re.compile('^[-0-9a-z]+$', re.IGNORECASE | re.UNICODE)
 
-MIN_WIFI_CHANNEL = 0  #: Minimum accepted WiFi channel.
-MAX_WIFI_CHANNEL = 166  #: Maximum accepted WiFi channel.
+MIN_WIFI_CHANNEL = 1  #: Minimum accepted WiFi channel.
+MAX_WIFI_CHANNEL = 165  #: Maximum accepted WiFi channel.
 
 MIN_WIFI_SIGNAL = -100  #: Minimum accepted WiFi signal strength value.
 MAX_WIFI_SIGNAL = -10  #: Maximum accepted WiFi signal strength value.
+
+MIN_WIFI_SNR = 1  #: Minimum accepted WiFi signal to noise ratio.
+MAX_WIFI_SNR = 100  #: Maximum accepted WiFi signal to noise ratio.
 
 MIN_BLUE_SIGNAL = -127  #: Minimum accepted Bluetooth signal strength value.
 MAX_BLUE_SIGNAL = 0  #: Maximum accepted Bluetooth signal strength value.

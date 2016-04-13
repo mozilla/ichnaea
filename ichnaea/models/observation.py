@@ -85,19 +85,22 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
             constants.MIN_LON, constants.MAX_LON))
     accuracy = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0.0, constants.MAX_ACCURACY))
+            constants.MIN_ACCURACY, constants.MAX_ACCURACY))
     altitude = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             constants.MIN_ALTITUDE, constants.MAX_ALTITUDE))
     altitude_accuracy = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0.0, constants.MAX_ALTITUDE_ACCURACY))
+            constants.MIN_ALTITUDE_ACCURACY, constants.MAX_ALTITUDE_ACCURACY))
     heading = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0.0, constants.MAX_HEADING))
+            constants.MIN_HEADING, constants.MAX_HEADING))
+    pressure = DefaultNode(
+        colander.Float(), missing=None, validator=colander.Range(
+            constants.MIN_PRESSURE, constants.MAX_PRESSURE))
     speed = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
-            0.0, constants.MAX_SPEED))
+            constants.MIN_SPEED, constants.MAX_SPEED))
 
     def validator(self, node, cstruct):
         super(ValidReportSchema, self).validator(node, cstruct)
@@ -121,6 +124,7 @@ class Report(BaseReport):
         'altitude',
         'altitude_accuracy',
         'heading',
+        'pressure',
         'speed',
     )
 
