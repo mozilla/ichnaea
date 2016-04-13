@@ -28,9 +28,6 @@ REQUIRED = object()
 MIN_AGE = 0  # Minimum relative age.
 MAX_AGE = 3600000  #: Maximum relative age in ms bounded to an hour.
 MAX_ACCURACY = 1000000.0  #: Accuracy is arbitrarily bounded to (0, 1000km).
-MAX_ACCURACY_BLUE = 100.0  #: Maximum accepted accuracy for Bluetooth.
-MAX_ACCURACY_CELL = 200.0  #: Maximum accepted accuracy for cells.
-MAX_ACCURACY_WIFI = 100.0  #: Maximum accepted accuracy for WiFis.
 MIN_ALTITUDE = -10911.0  #: Challenger Deep, Mariana Trench.
 MAX_ALTITUDE = 100000.0  #: Karman Line, edge of space.
 #: Combination of max/min altitude.

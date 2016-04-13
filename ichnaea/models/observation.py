@@ -145,14 +145,6 @@ class ValidBlueReportSchema(ValidBlueSignalSchema):
 
     mac = MacNode(colander.String())
 
-    def validator(self, node, cstruct):
-        super(ValidBlueReportSchema, self).validator(node, cstruct)
-
-        accuracy = cstruct.get('accuracy', None)
-        if (accuracy is not None and
-                accuracy > constants.MAX_ACCURACY_BLUE):
-            raise colander.Invalid(node, 'Invalid accuracy.')
-
 
 class BlueReport(BaseReport):
     """A class for Bluetooth report data."""
@@ -206,11 +198,6 @@ class ValidCellReportSchema(ValidCellKeySchema, ValidCellSignalSchema):
             if (cstruct[field] is None or
                     cstruct[field] is colander.null):
                 raise colander.Invalid(node, 'Cell %s is required.' % field)
-
-        accuracy = cstruct.get('accuracy', None)
-        if (accuracy is not None and
-                accuracy > constants.MAX_ACCURACY_CELL):
-            raise colander.Invalid(node, 'Invalid accuracy.')
 
 
 class CellReport(BaseReport):
@@ -312,14 +299,6 @@ class ValidWifiReportSchema(ValidWifiSignalSchema):
     """A schema which validates the wifi specific fields in a report."""
 
     mac = MacNode(colander.String())
-
-    def validator(self, node, cstruct):
-        super(ValidWifiReportSchema, self).validator(node, cstruct)
-
-        accuracy = cstruct.get('accuracy', None)
-        if (accuracy is not None and
-                accuracy > constants.MAX_ACCURACY_WIFI):
-            raise colander.Invalid(node, 'Invalid accuracy.')
 
 
 class WifiReport(BaseReport):

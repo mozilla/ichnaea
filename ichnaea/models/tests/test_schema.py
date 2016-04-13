@@ -1,6 +1,5 @@
 from ichnaea.models import (
     Radio,
-    BlueObservation,
     CellObservation,
     WifiObservation,
 )
@@ -48,47 +47,6 @@ class ValidationTest(TestCase):
         return result
 
 
-class TestBlue(ValidationTest):
-
-    def check_normalized_blue(self, obs, blue, expect):
-        return self.check_normalized(
-            BlueObservation.validate,
-            obs, blue, expect)
-
-    def get_sample(self, **kwargs):
-        obs = {
-            'accuracy': constants.MAX_ACCURACY_BLUE,
-            'altitude': 220.1,
-            'altitude_accuracy': 10.0,
-            'lat': 49.25,
-            'lon': 123.10,
-            'time': self.time,
-        }
-        blue = {
-            'mac': '12:34:56:78:90:12',
-            'signal': -85,
-        }
-        for (k, v) in kwargs.items():
-            if k in obs:
-                obs[k] = v
-            else:
-                blue[k] = v
-        return (obs, blue)
-
-    def test_valid_accuracy(self):
-        for accuracy in [0.0, 1.6, 10.1, constants.MAX_ACCURACY_BLUE]:
-            obs, blue = self.get_sample(accuracy=accuracy)
-            self.check_normalized_blue(obs, blue, {'accuracy': accuracy})
-
-    def test_invalid_accuracy(self):
-        for accuracy in [-10.0, -1.2]:
-            obs, blue = self.get_sample(accuracy=accuracy)
-            self.check_normalized_blue(obs, blue, {'accuracy': None})
-
-        obs, blue = self.get_sample(accuracy=constants.MAX_ACCURACY_BLUE + 0.1)
-        self.check_normalized_blue(obs, blue, None)
-
-
 class TestCell(ValidationTest):
 
     def setUp(self):
@@ -106,9 +64,6 @@ class TestCell(ValidationTest):
 
     def get_sample(self, **kwargs):
         obs = {
-            'accuracy': constants.MAX_ACCURACY_CELL,
-            'altitude': 220.0,
-            'altitude_accuracy': 10.0,
             'lat': PARIS_LAT,
             'lon': PARIS_LON,
             'radio': Radio.gsm.name,
@@ -222,16 +177,6 @@ class TestCell(ValidationTest):
         for lon in [constants.MIN_LON - 0.1, constants.MAX_LON + 0.1]:
             obs, cell = self.get_sample(lon=lon)
             self.check_normalized_cell(obs, cell, None)
-
-    def test_valid_accuracy(self):
-        for accuracy in [0.0, 1.6, 10.1, constants.MAX_ACCURACY_CELL]:
-            obs, cell = self.get_sample(accuracy=accuracy)
-            self.check_normalized_cell(obs, cell, {'accuracy': accuracy})
-
-    def test_valid_altitude(self):
-        for altitude in [-100.0, -1.6, 0.0, 10.1, 100.0]:
-            obs, cell = self.get_sample(altitude=altitude)
-            self.check_normalized_cell(obs, cell, {'altitude': altitude})
 
     def test_valid_altitude_accuracy(self):
         for altitude_accuracy in [0.0, 1.6, 100.1, 1000.0]:
@@ -409,9 +354,6 @@ class TestWifi(ValidationTest):
 
     def get_sample(self, **kwargs):
         obs = {
-            'accuracy': constants.MAX_ACCURACY_WIFI,
-            'altitude': 220.1,
-            'altitude_accuracy': 10.0,
             'lat': 49.25,
             'lon': 123.10,
             'radio': '',
@@ -470,19 +412,6 @@ class TestWifi(ValidationTest):
         for mac in invalid_macs:
             obs, wifi = self.get_sample(mac=mac)
             self.check_normalized_wifi(obs, wifi, None)
-
-    def test_valid_accuracy(self):
-        for accuracy in [0.0, 1.6, 10.1, constants.MAX_ACCURACY_WIFI]:
-            obs, wifi = self.get_sample(accuracy=accuracy)
-            self.check_normalized_wifi(obs, wifi, {'accuracy': accuracy})
-
-    def test_invalid_accuracy(self):
-        for accuracy in [-10.0, -1.2]:
-            obs, wifi = self.get_sample(accuracy=accuracy)
-            self.check_normalized_wifi(obs, wifi, {'accuracy': None})
-
-        obs, wifi = self.get_sample(accuracy=constants.MAX_ACCURACY_WIFI + 0.1)
-        self.check_normalized_wifi(obs, wifi, None)
 
     def test_valid_frequency_channel(self):
         valid_frequency_channels = [
