@@ -4,7 +4,7 @@ from sqlalchemy.exc import (
 
 from ichnaea.models import (
     encode_mac,
-    StationSource,
+    ReportSource,
 )
 from ichnaea.models.blue import (
     BlueShard,
@@ -68,7 +68,7 @@ class TestBlueShard(DBTestCase):
             lat=GB_LAT, max_lat=GB_LAT, min_lat=GB_LAT,
             lon=GB_LON, max_lon=GB_LON, min_lon=GB_LON,
             radius=200, region='GB', samples=10,
-            source=StationSource.gnss, weight=1.5, last_seen=today,
+            source=ReportSource.gnss, weight=1.5, last_seen=today,
             block_first=today, block_last=today, block_count=1,
             _raise_invalid=True,
         ))
@@ -87,7 +87,7 @@ class TestBlueShard(DBTestCase):
         self.assertEqual(blue.radius, 200)
         self.assertEqual(blue.region, 'GB')
         self.assertEqual(blue.samples, 10)
-        self.assertEqual(blue.source, StationSource.gnss)
+        self.assertEqual(blue.source, ReportSource.gnss)
         self.assertEqual(blue.weight, 1.5)
         self.assertEqual(blue.last_seen, today)
         self.assertEqual(blue.block_first, today)

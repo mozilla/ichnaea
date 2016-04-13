@@ -8,6 +8,7 @@ from ichnaea.models import (
     constants,
     Radio,
     Report,
+    ReportSource,
     WifiObservation,
     WifiReport,
 )
@@ -82,6 +83,13 @@ class TestReport(BaseTest):
         self.compare(field, 1080.2, 1080.2)
         self.compare(field, constants.MAX_PRESSURE + 0.1, None)
 
+    def test_source(self):
+        field = 'source'
+        for source in (ReportSource.fixed, ReportSource.gnss,
+                       ReportSource.fused, ReportSource.query):
+            self.compare(field, source, source)
+        self.compare(field, 'gnss', ReportSource.gnss)
+
     def test_speed(self):
         field = 'speed'
         self.compare(field, constants.MIN_SPEED - 0.1, None)
@@ -96,17 +104,19 @@ class TestBlueObservation(BaseTest):
         mac = '3680873e9b83'
         obs = BlueObservation.create(
             mac=mac, lat=GB_LAT, lon=GB_LON,
-            pressure=1010.2, signal=-45)
+            pressure=1010.2, signal=-45, source='fixed')
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
         self.assertEqual(obs.mac, mac)
         self.assertEqual(obs.pressure, 1010.2)
         self.assertEqual(obs.signal, -45)
+        self.assertEqual(obs.source, ReportSource.fixed)
         self.assertEqual(obs.shard_id, '8')
 
     def test_json(self):
-        obs = BlueObservationFactory.build(accuracy=None)
+        obs = BlueObservationFactory.build(
+            accuracy=None, source=ReportSource.gnss)
         result = BlueObservation.from_json(simplejson.loads(
             simplejson.dumps(obs.to_json())))
         self.assertTrue(type(result), BlueObservation)
@@ -114,6 +124,8 @@ class TestBlueObservation(BaseTest):
         self.assertEqual(result.mac, obs.mac)
         self.assertEqual(result.lat, obs.lat)
         self.assertEqual(result.lon, obs.lon)
+        self.assertEqual(result.source, ReportSource.gnss)
+        self.assertEqual(type(result.source), ReportSource)
 
     def test_weight(self):
         obs_factory = BlueObservationFactory.build
@@ -163,12 +175,13 @@ class TestCellObservation(BaseTest):
     def test_fields(self):
         obs = CellObservation.create(
             radio=Radio.gsm, mcc=GB_MCC, mnc=5, lac=12345, cid=23456,
-            lat=GB_LAT, lon=GB_LON, pressure=1010.2,
+            lat=GB_LAT, lon=GB_LON, pressure=1010.2, source='gnss',
             asu=26, signal=-61, ta=10)
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
         self.assertEqual(obs.pressure, 1010.2)
+        self.assertEqual(obs.source, ReportSource.gnss)
         self.assertEqual(obs.radio, Radio.gsm)
         self.assertEqual(obs.mcc, GB_MCC)
         self.assertEqual(obs.mnc, 5)
@@ -186,7 +199,8 @@ class TestCellObservation(BaseTest):
         self.assertTrue(CellObservation.create(mcc=262, **sample) is None)
 
     def test_json(self):
-        obs = CellObservationFactory.build(accuracy=None)
+        obs = CellObservationFactory.build(
+            accuracy=None, source='fixed')
         result = CellObservation.from_json(simplejson.loads(
             simplejson.dumps(obs.to_json())))
         self.assertTrue(type(result), CellObservation)
@@ -199,6 +213,8 @@ class TestCellObservation(BaseTest):
         self.assertEqual(result.cid, obs.cid)
         self.assertEqual(result.lat, obs.lat)
         self.assertEqual(result.lon, obs.lon)
+        self.assertEqual(result.source, ReportSource.fixed)
+        self.assertEqual(type(result.source), ReportSource)
 
     def test_weight(self):
         obs_factory = CellObservationFactory.build
@@ -392,18 +408,21 @@ class TestWifiObservation(BaseTest):
         mac = '3680873e9b83'
         obs = WifiObservation.create(
             mac=mac, lat=GB_LAT, lon=GB_LON,
-            channel=5, pressure=1010.2, signal=-45)
+            pressure=1010.2, source=ReportSource.query,
+            channel=5, signal=-45)
 
         self.assertEqual(obs.lat, GB_LAT)
         self.assertEqual(obs.lon, GB_LON)
         self.assertEqual(obs.mac, mac)
         self.assertEqual(obs.pressure, 1010.2)
+        self.assertEqual(obs.source, ReportSource.query)
         self.assertEqual(obs.channel, 5)
         self.assertEqual(obs.signal, -45)
         self.assertEqual(obs.shard_id, '8')
 
     def test_json(self):
-        obs = WifiObservationFactory.build(accuracy=None)
+        obs = WifiObservationFactory.build(
+            accuracy=None, source=ReportSource.query)
         result = WifiObservation.from_json(simplejson.loads(
             simplejson.dumps(obs.to_json())))
         self.assertTrue(type(result), WifiObservation)
@@ -411,6 +430,8 @@ class TestWifiObservation(BaseTest):
         self.assertEqual(result.mac, obs.mac)
         self.assertEqual(result.lat, obs.lat)
         self.assertEqual(result.lon, obs.lon)
+        self.assertEqual(result.source, ReportSource.query)
+        self.assertEqual(type(result.source), ReportSource)
 
     def test_weight(self):
         obs_factory = WifiObservationFactory.build

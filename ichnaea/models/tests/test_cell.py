@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from sqlalchemy.exc import SQLAlchemyError
 
-from ichnaea.models import StationSource
+from ichnaea.models import ReportSource
 from ichnaea.models.cell import (
     CellArea,
     CellAreaOCID,
@@ -116,7 +116,7 @@ class TestCellShard(DBTestCase):
             max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
             max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
             radius=11, region='GB', samples=15,
-            source=StationSource.gnss, weight=1.5, last_seen=now.date(),
+            source=ReportSource.gnss, weight=1.5, last_seen=now.date(),
             block_first=now.date(), block_last=now.date(), block_count=1))
         self.session.flush()
 
@@ -137,7 +137,7 @@ class TestCellShard(DBTestCase):
         self.assertEqual(result.radius, 11)
         self.assertEqual(result.region, 'GB')
         self.assertEqual(result.samples, 15)
-        self.assertEqual(result.source, StationSource.gnss)
+        self.assertEqual(result.source, ReportSource.gnss)
         self.assertEqual(result.weight, 1.5)
         self.assertEqual(result.last_seen, now.date())
         self.assertEqual(result.block_first, now.date())
@@ -250,7 +250,7 @@ class TestCellShardOCID(DBTestCase):
             max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
             max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
             radius=11, region='GB', samples=15,
-            source=StationSource.gnss, weight=1.5, last_seen=now.date(),
+            source=ReportSource.gnss, weight=1.5, last_seen=now.date(),
             block_first=now.date(), block_last=now.date(), block_count=1))
         self.session.flush()
 
@@ -272,7 +272,7 @@ class TestCellShardOCID(DBTestCase):
         self.assertEqual(result.radius, 11)
         self.assertEqual(result.region, 'GB')
         self.assertEqual(result.samples, 15)
-        self.assertEqual(result.source, StationSource.gnss)
+        self.assertEqual(result.source, ReportSource.gnss)
         self.assertEqual(result.weight, 1.5)
         self.assertEqual(result.last_seen, now.date())
         self.assertEqual(result.block_first, now.date())

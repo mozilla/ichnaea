@@ -1,8 +1,6 @@
-from enum import IntEnum
 import math
 
 import colander
-from six import string_types
 from sqlalchemy import (
     Column,
     Date,
@@ -27,58 +25,11 @@ from ichnaea.models.sa_types import (
 from ichnaea.models.schema import (
     DateFromString,
     DateTimeFromString,
-    DefaultNode,
+    ReportSourceNode,
+    ReportSourceType,
     ValidatorNode,
 )
 from ichnaea import util
-
-
-class StationSource(IntEnum):
-    """
-    The :term:`station` source states on what kind of data the
-    :term:`station` record is based on. A lower integer value hints at
-    a better quality of the observation data that went into this
-    :term:`station` record.
-    """
-
-    fixed = 0  #: Outside knowledge about the true position of the station.
-    gnss = 3  #: Global navigation satellite system based data.
-    fused = 6  #: Observation data positioned based on fused data.
-    query = 9  #: Position estimate based on query data.
-
-
-class StationSourceNode(DefaultNode):
-    """A node containing a valid station source."""
-
-    def validator(self, node, cstruct):
-        super(StationSourceNode, self).validator(node, cstruct)
-
-        if type(cstruct) is StationSource:
-            return True
-
-        raise colander.Invalid(  # pragma: no cover
-            node, 'Invalid station source')
-
-
-class StationSourceType(colander.Integer):
-    """
-    A StationSourceType will return a StationSource IntEnum object.
-    """
-
-    def deserialize(self, node, cstruct):  # pragma: no cover
-        if cstruct is colander.null:
-            return None
-        if isinstance(cstruct, StationSource):
-            return cstruct
-        try:
-            if isinstance(cstruct, string_types):
-                cstruct = StationSource[cstruct]
-            else:
-                cstruct = StationSource(cstruct)
-        except (KeyError, ValueError):
-            raise colander.Invalid(node, (
-                '%r is not a valid station source' % cstruct))
-        return cstruct
 
 
 class ValidBboxSchema(colander.MappingSchema, ValidatorNode):
@@ -213,7 +164,7 @@ class ValidStationSchema(ValidBboxSchema,
     radius = colander.SchemaNode(colander.Integer(), missing=0)
     region = colander.SchemaNode(colander.String(), missing=None)
     samples = colander.SchemaNode(colander.Integer(), missing=0)
-    source = StationSourceNode(StationSourceType(), missing=None)
+    source = ReportSourceNode(ReportSourceType(), missing=None)
     weight = colander.SchemaNode(colander.Float(), missing=None)
 
     last_seen = colander.SchemaNode(DateFromString(), missing=None)
@@ -232,7 +183,7 @@ class StationMixin(BboxMixin,
     radius = Column(Integer(unsigned=True))  #:
     region = Column(String(2))  #:
     samples = Column(Integer(unsigned=True))  #:
-    source = Column(TinyIntEnum(StationSource))  #:
+    source = Column(TinyIntEnum(constants.ReportSource))  #:
     weight = Column(Double(asdecimal=False))  #:
 
     last_seen = Column(Date)  #:

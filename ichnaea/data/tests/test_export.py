@@ -52,7 +52,7 @@ class BaseExportTest(CeleryTestCase):
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     blue_key=None, cell_mcc=None, wifi_key=None,
-                    api_key='test', lat=None, lon=None):
+                    api_key='test', lat=None, lon=None, source=None):
         reports = []
         for i in range(num):
             pos = CellShardFactory.build()
@@ -66,6 +66,8 @@ class BaseExportTest(CeleryTestCase):
             report['position']['latitude'] = lat or pos.lat
             report['position']['longitude'] = lon or pos.lon
             report['position']['accuracy'] = 17.0 + i
+            if source is not None:
+                report['position']['source'] = source
 
             blues = BlueShardFactory.build_batch(blue_factor,
                                                  lat=pos.lat, lon=pos.lon)

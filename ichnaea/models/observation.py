@@ -4,6 +4,10 @@ import operator
 import colander
 
 from ichnaea.geocode import GEOCODER
+from ichnaea.models import (
+    Radio,
+    ReportSource,
+)
 from ichnaea.models.base import (
     CreationMixin,
     ValidationMixin,
@@ -15,7 +19,6 @@ from ichnaea.models.blue import (
 from ichnaea.models.cell import (
     CellShard,
     encode_cellid,
-    Radio,
     ValidCellKeySchema,
     ValidCellSignalSchema,
 )
@@ -26,8 +29,11 @@ from ichnaea.models.base import (
 from ichnaea.models.mac import MacNode
 from ichnaea.models.schema import (
     DefaultNode,
+    ReportSourceNode,
+    ReportSourceType,
     ValidatorNode,
 )
+
 from ichnaea.models.wifi import (
     ValidWifiSignalSchema,
     WifiShard,
@@ -54,12 +60,15 @@ class BaseObservation(object):
     """A base class for observations."""
 
     @classmethod
-    def _from_json_value(cls, value):
-        return cls(**value)
+    def _from_json_value(cls, dct):
+        if 'source' in dct and dct['source'] is not None and \
+           not type(dct['source']) == ReportSource:
+            dct['source'] = ReportSource(dct['source'])
+        return cls(**dct)
 
     @classmethod
-    def from_json(cls, value):
-        return cls._from_json_value(value)
+    def from_json(cls, dct):
+        return cls._from_json_value(dct)
 
     def _to_json_value(self):
         # create a sparse representation of this instance
@@ -67,7 +76,10 @@ class BaseObservation(object):
         for field in self._fields:
             value = getattr(self, field, None)
             if value is not None:
-                dct[field] = value
+                if field == 'source' and type(value) == ReportSource:
+                    dct[field] = int(value)
+                else:
+                    dct[field] = value
         return dct
 
     def to_json(self):
@@ -98,6 +110,7 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
     pressure = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             constants.MIN_PRESSURE, constants.MAX_PRESSURE))
+    source = ReportSourceNode(ReportSourceType(), missing=None)
     speed = DefaultNode(
         colander.Float(), missing=None, validator=colander.Range(
             constants.MIN_SPEED, constants.MAX_SPEED))
@@ -126,6 +139,7 @@ class Report(BaseReport):
         'heading',
         'pressure',
         'speed',
+        'source',
     )
 
     @classmethod

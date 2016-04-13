@@ -18,6 +18,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Pass pressure and source data into internal data pipeline.
+
 - Read export config from database instead of ini file.
 
 20160412083700

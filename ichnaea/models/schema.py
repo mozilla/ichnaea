@@ -1,6 +1,9 @@
 from datetime import date, datetime
 
 import colander
+from six import string_types
+
+from ichnaea.models.constants import ReportSource
 
 
 class DateFromString(colander.Date):
@@ -51,3 +54,37 @@ class DefaultNode(ValidatorNode):
             if self.missing is colander.required:
                 raise
             return self.missing
+
+
+class ReportSourceNode(DefaultNode):
+    """A node containing a valid report source."""
+
+    def validator(self, node, cstruct):
+        super(ReportSourceNode, self).validator(node, cstruct)
+
+        if type(cstruct) is ReportSource:
+            return True
+
+        raise colander.Invalid(  # pragma: no cover
+            node, 'Invalid station source')
+
+
+class ReportSourceType(colander.Integer):
+    """
+    A ReportSourceType will return a ReportSource IntEnum object.
+    """
+
+    def deserialize(self, node, cstruct):  # pragma: no cover
+        if cstruct is colander.null:
+            return None
+        if isinstance(cstruct, ReportSource):
+            return cstruct
+        try:
+            if isinstance(cstruct, string_types):
+                cstruct = ReportSource[cstruct]
+            else:
+                cstruct = ReportSource(cstruct)
+        except (KeyError, ValueError):
+            raise colander.Invalid(node, (
+                '%r is not a valid station source' % cstruct))
+        return cstruct

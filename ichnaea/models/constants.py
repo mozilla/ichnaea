@@ -22,6 +22,18 @@ class Radio(IntEnum):
     lte = 3  #: 3
 
 
+class ReportSource(IntEnum):
+    """
+    The report source states on what kind of data the record is based on.
+    A lower integer value hints at a better quality of the report data.
+    """
+
+    fixed = 0  #: Outside knowledge about the true position of the station.
+    gnss = 3  #: Global navigation satellite system based data.
+    fused = 6  #: Observation data positioned based on fused data.
+    query = 9  #: Position estimate based on query data.
+
+
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
 

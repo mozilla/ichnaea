@@ -6,6 +6,7 @@ from ichnaea.models.base import _Model
 
 # import all models, to make sure they are all registered
 from ichnaea.models.constants import Radio  # NOQA
+from ichnaea.models.constants import ReportSource  # NOQA
 from ichnaea.models.api import ApiKey  # NOQA
 from ichnaea.models.blue import (  # NOQA
     BlueShard,
@@ -43,7 +44,6 @@ from ichnaea.models.observation import (  # NOQA
     WifiObservation,
     WifiReport,
 )
-from ichnaea.models.station import StationSource  # NOQA
 from ichnaea.models.wifi import (  # NOQA
     WifiShard,
 )
