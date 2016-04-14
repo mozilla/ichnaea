@@ -58,6 +58,7 @@ class BaseSubmitView(BaseAPIView):
         reports = request_data['items']
         valid_key = api_key.valid_key
         data = [{'api_key': valid_key,
+                 'source': report['position'].get('source', 'gnss'),
                  'report': report} for report in reports]
 
         self.queue.enqueue(data)

@@ -26,6 +26,7 @@ class ExportConfig(_Model):
     schema = Column(String(32))  #: The export schema.
     url = Column(String(512))  #: Export URL.
     skip_keys = Column(SetColumn(1024))  #: Set of API keys to skip.
+    skip_sources = Column(SetColumn(64))  #: Set of export sources to skip.
 
     @classmethod
     def all(cls, session, detach=True):
@@ -43,6 +44,11 @@ class ExportConfig(_Model):
             session.expunge(row)
         return row
 
+    def allowed(self, api_key, source):
+        skip_keys = self.skip_keys or ()
+        skip_sources = self.skip_sources or ()
+        return api_key not in skip_keys and source not in skip_sources
+
     def partitions(self, redis_client):
         if self.schema == 's3':
             # e.g. ['queue_export_something:api_key']
@@ -51,11 +57,11 @@ class ExportConfig(_Model):
                         match='queue_export_%s:*' % self.name, count=100)]
         return ['queue_export_' + self.name]
 
-    def queue_key(self, api_key):
+    def queue_key(self, api_key, source='gnss'):
         if self.schema == 's3':
             if not api_key:
                 api_key = 'no_key'
-            return 'queue_export_%s:%s' % (self.name, api_key)
+            return 'queue_export_%s:%s:%s' % (self.name, source, api_key)
         return 'queue_export_' + self.name
 
     def queue(self, queue_key, redis_client):

@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 1bdf1028a085: Extend export config table.
+
 - 6ec824122610: Add export config table.
 
 - 4255b858a37e: Remove user/score tables.

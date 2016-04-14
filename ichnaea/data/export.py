@@ -55,7 +55,7 @@ class IncomingQueue(object):
 
         grouped = defaultdict(list)
         for item in data:
-            grouped[item['api_key']].append({
+            grouped[(item['api_key'], item.get('source', 'gnss'))].append({
                 'api_key': item['api_key'],
                 'report': item['report'],
             })
@@ -64,10 +64,10 @@ class IncomingQueue(object):
             export_configs = ExportConfig.all(session)
 
         with self.task.redis_pipeline() as pipe:
-            for api_key, items in grouped.items():
+            for (api_key, source), items in grouped.items():
                 for config in export_configs:
-                    if api_key not in config.skip_keys:
-                        queue_key = config.queue_key(api_key)
+                    if config.allowed(api_key, source):
+                        queue_key = config.queue_key(api_key, source)
                         queue = config.queue(queue_key, redis_client)
                         queue.enqueue(items, pipe=pipe)
 
@@ -199,11 +199,19 @@ class S3Exporter(ReportExporter):
             path += '/'
 
         year, month, day = util.utcnow().timetuple()[:3]
+
         # strip away queue prefix again
-        api_key = self.queue_key.split(':')[-1]
+        parts = self.queue_key.split(':')
+        if len(parts) == 3:
+            source = parts[1]
+            api_key = parts[2]
+        else:  # pragma: no cover
+            # BBB
+            source = 'gnss'
+            api_key = parts[-1]
 
         key_name = path.format(
-            api_key=api_key, year=year, month=month, day=day)
+            source=source, api_key=api_key, year=year, month=month, day=day)
         key_name += uuid.uuid1().hex + '.json.gz'
 
         try:

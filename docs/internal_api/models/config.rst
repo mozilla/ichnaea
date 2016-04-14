@@ -36,15 +36,15 @@ Bucket Export
 The Amazon S3 bucket export combines reports into a gzipped JSON file
 and uploads them to the specified bucket ``url``, for example:
 
-``s3://amazon_s3_bucket_name/directory/{api_key}/{year}/{month}/{day}``
+``s3://amazon_s3_bucket_name/directory/{source}{api_key}/{year}/{month}/{day}``
 
 The schema column must be set to `s3`.
 
 The url can contain any level of additional static directories under
 the bucket root. The ``{api_key}/{year}/{month}/{day}`` parts will
 be dynamically replaced by the `api_key` used to upload the data,
-and the date when the backup took place. The files use a random
-UUID4 as the filename.
+the source of the report (e.g. gnss) and the date when the backup took place.
+The files use a random UUID4 as the filename.
 
 An example filename might be:
 

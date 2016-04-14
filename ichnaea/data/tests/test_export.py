@@ -105,7 +105,9 @@ class BaseExportTest(CeleryTestCase):
 
             reports.append(report)
 
-        items = [{'api_key': api_key, 'report': rep} for rep in reports]
+        items = [{'api_key': api_key,
+                  'source': rep['position'].get('source', 'gnss'),
+                  'report': rep} for rep in reports]
 
         self.queue.enqueue(items)
         return reports
@@ -124,19 +126,22 @@ class TestExporter(BaseExportTest):
         ExportConfigFactory(name='everything', batch=5)
         ExportConfigFactory(name='no_test', batch=2,
                             skip_keys=frozenset(['test', 'test_1']))
-
+        ExportConfigFactory(name='query', batch=2,
+                            skip_sources=frozenset(['gnss']))
         self.session.flush()
 
     def test_queues(self):
         self.add_reports(4)
         self.add_reports(1, api_key='test2')
-        self.add_reports(2, api_key=None)
+        self.add_reports(2, api_key=None, source='gnss')
+        self.add_reports(1, api_key='test', source='query')
         update_incoming.delay().get()
 
         for queue_key, num in [
-                ('queue_export_test', 1),
-                ('queue_export_everything', 2),
-                ('queue_export_no_test', 1)]:
+                ('queue_export_test', 2),
+                ('queue_export_everything', 3),
+                ('queue_export_no_test', 1),
+                ('queue_export_query', 1)]:
             self.assertEqual(self.queue_length(queue_key), num)
 
     def test_retry(self):
@@ -176,7 +181,7 @@ class TestGeosubmit(BaseExportTest):
         reports = []
         reports.extend(self.add_reports(1, source='gnss'))
         reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
-        reports.extend(self.add_reports(1, api_key=None))
+        reports.extend(self.add_reports(1, api_key=None, source='fused'))
 
         with requests_mock.Mocker() as mock:
             mock.register_uri('POST', requests_mock.ANY, text='{}')
@@ -217,7 +222,7 @@ class TestS3(BaseExportTest):
         super(TestS3, self).setUp()
         ExportConfigFactory(
             name='backup', batch=3, schema='s3',
-            url='s3://bucket/backups/{api_key}/{year}/{month}/{day}')
+            url='s3://bucket/backups/{source}/{api_key}/{year}/{month}/{day}')
         self.session.flush()
 
     def test_upload(self):
@@ -248,9 +253,11 @@ class TestS3(BaseExportTest):
             if 'test' in mock_key.key:
                 test_export = mock_key
 
-        # extract second path segment from key names
-        queue_keys = [key.split('/')[1] for key in keys]
-        self.assertEqual(set(queue_keys), set(['test', 'no_key', 'e5444-794']))
+        # extract second and third path segment from key names
+        groups = [tuple(key.split('/')[1:3]) for key in keys]
+        self.assertEqual(set(groups),
+                         set([('gnss', 'test'), ('gnss', 'no_key'),
+                              ('gnss', 'e5444-794'), ('fused', 'e5444-794')]))
 
         # check uploaded content
         args, kw = test_export.set_contents_from_string.call_args
