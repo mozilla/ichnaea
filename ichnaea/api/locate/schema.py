@@ -9,20 +9,22 @@ import colander
 from ichnaea.api.schema import RenamingMappingSchema
 from ichnaea.models.base import (
     CreationMixin,
+    HashableDict,
     ValidationMixin,
 )
-from ichnaea.models.blue import ValidBlueSignalSchema
 from ichnaea.models.cell import (
     encode_cellarea,
     encode_cellid,
     ValidCellAreaKeySchema,
     ValidCellKeySchema,
-    ValidCellSignalSchema,
 )
-from ichnaea.models.base import HashableDict
+from ichnaea.models import constants
+from ichnaea.models.constants import Radio
 from ichnaea.models.mac import MacNode
-from ichnaea.models.schema import DefaultNode
-from ichnaea.models.wifi import ValidWifiSignalSchema
+from ichnaea.models.schema import (
+    DefaultNode,
+    ValidatorNode,
+)
 
 
 class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
@@ -43,11 +45,23 @@ class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
         return False
 
 
-class ValidBlueLookupSchema(ValidBlueSignalSchema):
+class ValidBlueLookupSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields in a Bluetooth lookup."""
 
     mac = MacNode(colander.String())
     name = DefaultNode(colander.String(), missing=None)
+
+    age = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_AGE, constants.MAX_AGE))
+
+    signal = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_BLUE_SIGNAL, constants.MAX_BLUE_SIGNAL))
 
 
 class BlueLookup(BaseLookup):
@@ -111,6 +125,87 @@ class BaseCellLookup(BaseLookup):
         return False
 
 
+class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
+
+    age = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_AGE, constants.MAX_AGE))
+
+    asu = DefaultNode(
+        colander.Integer(),
+        missing=None, validator=colander.Range(
+            min(constants.MIN_CELL_ASU.values()),
+            max(constants.MAX_CELL_ASU.values())))
+
+    signal = DefaultNode(
+        colander.Integer(),
+        missing=None, validator=colander.Range(
+            min(constants.MIN_CELL_SIGNAL.values()),
+            max(constants.MAX_CELL_SIGNAL.values())))
+
+    ta = DefaultNode(
+        colander.Integer(),
+        missing=None, validator=colander.Range(
+            constants.MIN_CELL_TA, constants.MAX_CELL_TA))
+
+    def _signal_from_asu(self, radio, value):
+        if radio is Radio.gsm:
+            return (value * 2) - 113
+        if radio is Radio.wcdma:
+            return value - 116
+        if radio is Radio.lte:
+            return value - 140
+
+    def deserialize(self, data):
+        if data:
+            # Sometimes the asu and signal fields are swapped
+            if (data.get('asu') is not None and
+                    data.get('asu', 0) < -5 and
+                    (data.get('signal') is None or
+                     data.get('signal', 0) >= 0)):
+                # shallow copy
+                data = dict(data)
+                data['signal'] = data['asu']
+                data['asu'] = None
+
+        data = super(ValidCellSignalSchema, self).deserialize(data)
+
+        if isinstance(data.get('radio'), Radio):
+            radio = data['radio']
+
+            # Radio type specific checks for ASU field
+            if data.get('asu') is not None:
+                if not (constants.MIN_CELL_ASU[radio] <=
+                        data['asu'] <=
+                        constants.MAX_CELL_ASU[radio]):
+                    data = dict(data)
+                    data['asu'] = None
+
+            # Radio type specific checks for signal field
+            if data.get('signal') is not None:
+                if not (constants.MIN_CELL_SIGNAL[radio] <=
+                        data['signal'] <=
+                        constants.MAX_CELL_SIGNAL[radio]):
+                    data = dict(data)
+                    data['signal'] = None
+
+            # Radio type specific checks for TA field
+            if data.get('ta') is not None and radio is Radio.wcdma:
+                data = dict(data)
+                data['ta'] = None
+
+            # Calculate signal from ASU field
+            if data.get('asu') is not None and data.get('signal') is None:
+                if (constants.MIN_CELL_ASU[radio] <= data['asu'] <=
+                        constants.MAX_CELL_ASU[radio]):
+                    data = dict(data)
+                    data['signal'] = self._signal_from_asu(radio, data['asu'])
+
+        return data
+
+
 class ValidCellAreaLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
     """A schema which validates the fields in a cell area lookup."""
 
@@ -153,11 +248,64 @@ class CellLookup(BaseCellLookup):
             self.radio, self.mcc, self.mnc, self.lac, self.cid)
 
 
-class ValidWifiLookupSchema(ValidWifiSignalSchema):
+class ValidWifiLookupSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields in a WiFi lookup."""
 
     mac = MacNode(colander.String())
     ssid = DefaultNode(colander.String(), missing=None)
+
+    age = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_AGE, constants.MAX_AGE))
+
+    channel = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
+
+    signal = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
+
+    snr = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_WIFI_SNR, constants.MAX_WIFI_SNR))
+
+    def deserialize(self, data):
+        if data:
+            channel = data.get('channel')
+            channel = channel is not None and int(channel) or None
+
+            if (channel is None or not
+                    (constants.MIN_WIFI_CHANNEL <= channel <=
+                     constants.MAX_WIFI_CHANNEL)):
+                # shallow copy
+                data = dict(data)
+
+                # if no explicit channel was given, calculate
+                freq = data.get('frequency', None)
+                if freq is None:
+                    freq = 0
+
+                if 2411 < freq < 2473:
+                    # 2.4 GHz band
+                    data['channel'] = (freq - 2407) // 5
+                elif freq == 2484:
+                    data['channel'] = 14
+                elif 5169 < freq < 5826:
+                    # 5 GHz band
+                    data['channel'] = (freq - 5000) // 5
+                else:
+                    data['channel'] = None
+
+        return super(ValidWifiLookupSchema, self).deserialize(data)
 
 
 class WifiLookup(BaseLookup):

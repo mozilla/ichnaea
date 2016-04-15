@@ -1,77 +1,10 @@
-import colander
-
-from ichnaea.models import constants
 from ichnaea.models.base import _Model
 from ichnaea.models.mac import (
     MacStationMixin,
     ValidMacStationSchema,
 )
-from ichnaea.models.schema import (
-    DefaultNode,
-    ValidatorNode,
-)
 
 WIFI_SHARDS = {}
-
-
-class ValidWifiSignalSchema(colander.MappingSchema, ValidatorNode):
-    """
-    A schema which validates the fields related to wifi signal
-    strength and quality.
-    """
-
-    age = DefaultNode(
-        colander.Integer(),
-        missing=None,
-        validator=colander.Range(
-            constants.MIN_AGE, constants.MAX_AGE))
-
-    channel = DefaultNode(
-        colander.Integer(),
-        missing=None,
-        validator=colander.Range(
-            constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
-
-    signal = DefaultNode(
-        colander.Integer(),
-        missing=None,
-        validator=colander.Range(
-            constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
-
-    snr = DefaultNode(
-        colander.Integer(),
-        missing=None,
-        validator=colander.Range(
-            constants.MIN_WIFI_SNR, constants.MAX_WIFI_SNR))
-
-    def deserialize(self, data):
-        if data:
-            channel = data.get('channel')
-            channel = channel is not None and int(channel) or None
-
-            if (channel is None or not
-                    (constants.MIN_WIFI_CHANNEL <= channel <=
-                     constants.MAX_WIFI_CHANNEL)):
-                # shallow copy
-                data = dict(data)
-
-                # if no explicit channel was given, calculate
-                freq = data.get('frequency', None)
-                if freq is None:
-                    freq = 0
-
-                if 2411 < freq < 2473:
-                    # 2.4 GHz band
-                    data['channel'] = (freq - 2407) // 5
-                elif freq == 2484:
-                    data['channel'] = 14
-                elif 5169 < freq < 5826:
-                    # 5 GHz band
-                    data['channel'] = (freq - 5000) // 5
-                else:
-                    data['channel'] = None
-
-        return super(ValidWifiSignalSchema, self).deserialize(data)
 
 
 class ValidWifiShardSchema(ValidMacStationSchema):

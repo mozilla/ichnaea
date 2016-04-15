@@ -1,36 +1,10 @@
-import colander
-
-from ichnaea.models import constants
 from ichnaea.models.base import _Model
 from ichnaea.models.mac import (
     MacStationMixin,
     ValidMacStationSchema,
 )
-from ichnaea.models.schema import (
-    DefaultNode,
-    ValidatorNode,
-)
 
 BLUE_SHARDS = {}
-
-
-class ValidBlueSignalSchema(colander.MappingSchema, ValidatorNode):
-    """
-    A schema which validates the fields related to Bluetooth signal
-    strength and quality.
-    """
-
-    age = DefaultNode(
-        colander.Integer(),
-        missing=None,
-        validator=colander.Range(
-            constants.MIN_AGE, constants.MAX_AGE))
-
-    signal = DefaultNode(
-        colander.Integer(),
-        missing=None,
-        validator=colander.Range(
-            constants.MIN_BLUE_SIGNAL, constants.MAX_BLUE_SIGNAL))
 
 
 class ValidBlueShardSchema(ValidMacStationSchema):
