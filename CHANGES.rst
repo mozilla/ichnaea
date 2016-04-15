@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Normalize age fields for internal observations to GPS time difference.
+
 - Add stricter validation of radio, source and timestamp fields.
 
 - Pass pressure and source data into internal data pipeline.

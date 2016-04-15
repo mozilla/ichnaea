@@ -6,7 +6,10 @@ import mock
 import requests_mock
 import simplejson
 
-from ichnaea.data.export import DummyExporter
+from ichnaea.data.export import (
+    DummyExporter,
+    InternalTransform,
+)
 from ichnaea.data.tasks import (
     update_blue,
     update_cell,
@@ -18,7 +21,10 @@ from ichnaea.models import (
     CellShard,
     WifiShard,
 )
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.base import (
+    CeleryTestCase,
+    TestCase,
+)
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -276,6 +282,139 @@ class TestS3(BaseExportTest):
         ], timer=[
             ('data.export.upload', 4, ['key:backup']),
         ])
+
+
+class TestInternalTransform(TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.transform = InternalTransform()
+        cls.timestamp = int(time.time() * 1000)
+
+    def test_empty(self):
+        self.assertEqual(self.transform({}), {})
+
+    def test_position(self):
+        self.assertEqual(self.transform({
+            'position': {'latitude': 1.0,
+                         'longitude': 2.0,
+                         'accuracy': 30.1,
+                         'altitude': 1100.3,
+                         'altitudeAccuracy': 50.7,
+                         'age': 6001,
+                         'heading': 270.1,
+                         'speed': 2.5,
+                         'pressure': 1020.2,
+                         'source': 'gnss',
+                         },
+            'timestamp': self.timestamp,
+            'wifiAccessPoints': [{'macAddress': 'abcdef123456'}],
+        }), {
+            'lat': 1.0,
+            'lon': 2.0,
+            'accuracy': 30.1,
+            'altitude': 1100.3,
+            'altitude_accuracy': 50.7,
+            'heading': 270.1,
+            'speed': 2.5,
+            'pressure': 1020.2,
+            'source': 'gnss',
+            'timestamp': self.timestamp - 6001,
+            'wifi': [{'mac': 'abcdef123456', 'age': -6001}],
+        })
+
+    def test_age(self):
+        self.assertEqual(self.transform({
+            'position': {'age': 1000},
+            'bluetoothBeacons': [{'age': 2000}, {'macAddress': 'ab'}],
+            'wifiAccessPoints': [{'age': -500}, {'age': 1500}],
+        }), {
+            'blue': [{'age': 1000}, {'age': -1000, 'mac': 'ab'}],
+            'wifi': [{'age': -1500}, {'age': 500}],
+        })
+
+    def test_timestamp(self):
+        self.assertEqual(self.transform({
+            'timestamp': 1460700010000,
+            'position': {'age': 2000},
+            'bluetoothBeacons': [{'age': -3000}, {'macAddress': 'ab'}],
+            'cellTowers': [{'age': 3000}, {'radioType': 'gsm'}],
+            'wifiAccessPoints': [{'age': 1500}, {'age': -2500}],
+        }), {
+            'timestamp': 1460700008000,
+            'blue': [{'age': -5000}, {'mac': 'ab', 'age': -2000}],
+            'cell': [{'age': 1000}, {'radio': 'gsm', 'age': -2000}],
+            'wifi': [{'age': -500}, {'age': -4500}],
+        })
+
+    def test_blue(self):
+        self.assertEqual(self.transform({
+            'bluetoothBeacons': [{
+                'macAddress': 'abcdef123456',
+                'age': 3001,
+                'signalStrength': -90,
+            }],
+        }), {
+            'blue': [{
+                'mac': 'abcdef123456',
+                'age': 3001,
+                'signal': -90,
+            }]
+        })
+
+    def test_cell(self):
+        self.assertEqual(self.transform({
+            'cellTowers': [{
+                'radioType': 'gsm',
+                'mobileCountryCode': 262,
+                'mobileNetworkCode': 1,
+                'locationAreaCode': 123,
+                'cellId': 4567,
+                'age': 3001,
+                'asu': 15,
+                'primaryScramblingCode': 120,
+                'serving': 1,
+                'signalStrength': -90,
+                'timingAdvance': 10,
+            }],
+        }), {
+            'cell': [{
+                'radio': 'gsm',
+                'mcc': 262,
+                'mnc': 1,
+                'lac': 123,
+                'cid': 4567,
+                'age': 3001,
+                'asu': 15,
+                'psc': 120,
+                'serving': 1,
+                'signal': -90,
+                'ta': 10,
+            }]
+        })
+
+    def test_wifi(self):
+        self.assertEqual(self.transform({
+            'wifiAccessPoints': [{
+                'macAddress': 'abcdef123456',
+                'age': 3001,
+                'channel': 1,
+                'frequency': 2412,
+                'radioType': '802.11ac',
+                'signalToNoiseRatio': 80,
+                'signalStrength': -90,
+            }],
+        }), {
+            'wifi': [{
+                'mac': 'abcdef123456',
+                'age': 3001,
+                'channel': 1,
+                'frequency': 2412,
+                'radio': '802.11ac',
+                'snr': 80,
+                'signal': -90,
+            }]
+        })
 
 
 class TestInternal(BaseExportTest):

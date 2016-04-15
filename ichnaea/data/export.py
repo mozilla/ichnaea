@@ -254,7 +254,6 @@ class InternalTransform(object):
         'accuracy',
         'altitude',
         ('altitudeAccuracy', 'altitude_accuracy'),
-        'age',
         'heading',
         'pressure',
         'speed',
@@ -286,11 +285,11 @@ class InternalTransform(object):
     wifi_id = ('wifiAccessPoints', 'wifi')
     wifi_map = [
         ('macAddress', 'mac'),
-        ('radioType', 'radio'),
         'age',
         'channel',
         'frequency',
-        'signalToNoiseRatio',
+        ('radioType', 'radio'),
+        ('signalToNoiseRatio', 'snr'),
         ('signalStrength', 'signal'),
     ]
 
@@ -336,6 +335,18 @@ class InternalTransform(object):
         blues = self._parse_list(item, report, self.blue_id, self.blue_map)
         cells = self._parse_list(item, report, self.cell_id, self.cell_map)
         wifis = self._parse_list(item, report, self.wifi_id, self.wifi_map)
+
+        gps_age = item.get('position', {}).get('age', 0)
+        timestamp = item.get('timestamp')
+        if timestamp:
+            # turn timestamp into GPS timestamp
+            report['timestamp'] = timestamp - gps_age
+
+        if gps_age:
+            # Normalize age fields to be relative to GPS time
+            for type_ in ('blue', 'cell', 'wifi'):
+                for record in report.get(type_, ()):
+                    record['age'] = record.get('age', 0) - gps_age
 
         if blues or cells or wifis:
             return report
