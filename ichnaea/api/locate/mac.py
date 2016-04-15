@@ -17,13 +17,14 @@ from ichnaea.constants import (
 from ichnaea.geocalc import (
     distance,
 )
+from ichnaea.models.mac import encode_mac
 from ichnaea import util
 
 NETWORK_DTYPE = numpy.dtype([
     ('lat', numpy.double),
     ('lon', numpy.double),
     ('radius', numpy.double),
-    ('signal', numpy.int32),
+    ('signalStrength', numpy.int32),
     ('score', numpy.double),
 ])
 
@@ -39,11 +40,11 @@ def cluster_networks(models, lookups,
     # Create a dict of macs mapped to their signal strength.
     signals = {}
     for lookup in lookups:
-        signals[lookup.mac] = lookup.signal or min_signal
+        signals[lookup.mac] = lookup.signalStrength or min_signal
 
     networks = numpy.array(
         [(model.lat, model.lon, model.radius or min_radius,
-          signals[model.mac], model.score(now))
+          signals[encode_mac(model.mac)], model.score(now))
          for model in models],
         dtype=NETWORK_DTYPE)
 
@@ -101,7 +102,7 @@ def aggregate_mac_position(networks, minimum_accuracy):
     def func(point, points):
         return numpy.array([
             distance(p['lat'], p['lon'], point[0], point[1]) /
-            math.pow(p['signal'], 2)
+            math.pow(p['signalStrength'], 2)
             for p in points])
 
     # Guess initial position as the weighted mean over all networks.
@@ -110,7 +111,7 @@ def aggregate_mac_position(networks, minimum_accuracy):
         dtype=numpy.double)
 
     weights = numpy.array([
-        net['score'] / math.pow(net['signal'], 2) for net in networks],
+        net['score'] / math.pow(net['signalStrength'], 2) for net in networks],
         dtype=numpy.double)
 
     initial = numpy.average(points, axis=0, weights=weights)

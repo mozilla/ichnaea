@@ -175,11 +175,11 @@ class Query(object):
         for value in values:
             valid_blue = BlueLookup.create(**value)
             if valid_blue:
-                existing = filtered.get(valid_blue.mac)
+                existing = filtered.get(valid_blue.macAddress)
                 if existing is not None and existing.better(valid_blue):
                     pass
                 else:
-                    filtered[valid_blue.mac] = valid_blue
+                    filtered[valid_blue.macAddress] = valid_blue
 
         if len(filtered) < MIN_BLUES_IN_QUERY:
             filtered = {}
@@ -263,11 +263,11 @@ class Query(object):
         for value in values:
             valid_wifi = WifiLookup.create(**value)
             if valid_wifi:
-                existing = filtered.get(valid_wifi.mac)
+                existing = filtered.get(valid_wifi.macAddress)
                 if existing is not None and existing.better(valid_wifi):
                     pass
                 else:
-                    filtered[valid_wifi.mac] = valid_wifi
+                    filtered[valid_wifi.macAddress] = valid_wifi
 
         if len(filtered) < MIN_WIFIS_IN_QUERY:
             filtered = {}
@@ -293,30 +293,30 @@ class Query(object):
         # return the best possible (smallest) accuracy
         return min(accuracies)
 
-    def internal_query(self):
-        """Returns a dictionary of this query in our internal format."""
+    def json(self):
+        """Returns a JSON representation of this query."""
         result = {}
         if self.blue:
-            result['blue'] = []
+            result['bluetoothBeacons'] = []
             for blue in self.blue:
                 blue_data = {}
                 for field in blue._fields:
                     blue_data[field] = getattr(blue, field)
-                result['blue'].append(blue_data)
+                result['bluetoothBeacons'].append(blue_data)
         if self.cell:
-            result['cell'] = []
+            result['cellTowers'] = []
             for cell in self.cell:
                 cell_data = {}
                 for field in cell._fields:
                     cell_data[field] = getattr(cell, field)
-                result['cell'].append(cell_data)
+                result['cellTowers'].append(cell_data)
         if self.wifi:
-            result['wifi'] = []
+            result['wifiAccessPoints'] = []
             for wifi in self.wifi:
                 wifi_data = {}
                 for field in wifi._fields:
                     wifi_data[field] = getattr(wifi, field)
-                result['wifi'].append(wifi_data)
+                result['wifiAccessPoints'].append(wifi_data)
         if self.fallback:
             fallback_data = {}
             for field in self.fallback._fields:

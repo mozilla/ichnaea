@@ -38,8 +38,8 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
-        query.wifi[0].signal = -60
-        query.wifi[1].signal = -80
+        query.wifi[0].signalStrength = -60
+        query.wifi[1].signalStrength = -80
         results = self.source.search(query)
         self.check_model_results(results, [wifi], lon=wifi.lon + 0.000004)
         self.assertTrue(results.best().score > 1.0)
@@ -142,10 +142,10 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
-        query.wifi[0].signal = -100
-        query.wifi[1].signal = -80
-        query.wifi[2].signal = -100
-        query.wifi[3].signal = -54
+        query.wifi[0].signalStrength = -100
+        query.wifi[1].signalStrength = -80
+        query.wifi[2].signalStrength = -100
+        query.wifi[3].signalStrength = -54
         results = self.source.search(query)
         self.check_model_results(results, [wifi11, wifi21])
 
@@ -204,7 +204,7 @@ class TestWifi(BaseSourceTest):
 
         query = self.model_query(wifis=wifis)
         for i, entry in enumerate(query.wifi):
-            entry.signal = -50 - i
+            entry.signalStrength = -50 - i
 
         results = self.source.search(query)
         result = results.best()
@@ -221,10 +221,10 @@ class TestWifi(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(wifis=wifis)
-        query.wifi[0].signal = -10
-        query.wifi[1].signal = -40
-        query.wifi[2].signal = -70
-        query.wifi[3].signal = -100
+        query.wifi[0].signalStrength = -10
+        query.wifi[1].signalStrength = -40
+        query.wifi[2].signalStrength = -70
+        query.wifi[3].signalStrength = -100
 
         results = self.source.search(query)
         result = results.best()

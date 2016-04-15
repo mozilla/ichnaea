@@ -26,11 +26,12 @@ class TestSchema(TestCase):
     def test_empty(self):
         data = self.schema.deserialize({})
         self.assertEqual(
-            data, {'blue': (), 'cell': (), 'fallbacks': None, 'wifi': ()})
+            data, {'bluetoothBeacons': (), 'cellTowers': (),
+                   'fallbacks': None, 'wifiAccessPoints': ()})
 
     def test_empty_cell_entry(self):
         data = self.schema.deserialize({'cell': [{}]})
-        self.assertTrue('cell' in data)
+        self.assertTrue('cellTowers' in data)
 
     def test_wrong_cell_data(self):
         with self.assertRaises(colander.Invalid):

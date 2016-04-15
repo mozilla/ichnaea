@@ -20,7 +20,10 @@ from ichnaea.models.cell import (
 )
 from ichnaea.models import constants
 from ichnaea.models.constants import Radio
-from ichnaea.models.mac import MacNode
+from ichnaea.models.mac import (
+    encode_mac,
+    MacNode,
+)
 from ichnaea.models.schema import (
     DefaultNode,
     ValidatorNode,
@@ -48,7 +51,7 @@ class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
 class ValidBlueLookupSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields in a Bluetooth lookup."""
 
-    mac = MacNode(colander.String())
+    macAddress = MacNode(colander.String())
     name = DefaultNode(colander.String(), missing=None)
 
     age = DefaultNode(
@@ -57,7 +60,7 @@ class ValidBlueLookupSchema(colander.MappingSchema, ValidatorNode):
         validator=colander.Range(
             constants.MIN_AGE, constants.MAX_AGE))
 
-    signal = DefaultNode(
+    signalStrength = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
@@ -69,15 +72,19 @@ class BlueLookup(BaseLookup):
 
     _valid_schema = ValidBlueLookupSchema()
     _fields = (
-        'mac',
+        'macAddress',
         'age',
-        'signal',
+        'signalStrength',
         'name',
     )
     _comparators = (
-        ('signal', operator.gt),
+        ('signalStrength', operator.gt),
         ('age', operator.lt),
     )
+
+    @property
+    def mac(self):
+        return encode_mac(self.macAddress)
 
 
 class BaseCellLookup(BaseLookup):
@@ -92,14 +99,14 @@ class BaseCellLookup(BaseLookup):
     _signal_fields = (
         'age',
         'asu',
-        'signal',
-        'ta',
+        'signalStrength',
+        'timingAdvance',
     )  #:
     _fields = _key_fields + _signal_fields  #:
 
     _comparators = (
-        ('ta', operator.lt),
-        ('signal', operator.gt),
+        ('timingAdvance', operator.lt),
+        ('signalStrength', operator.gt),
         ('asu', operator.gt),
         ('age', operator.lt),
     )
@@ -111,8 +118,8 @@ class BaseCellLookup(BaseLookup):
     def better(self, other):
         """Is self better than the other?"""
         comparators = [
-            ('ta', operator.lt),
-            ('signal', operator.gt),
+            ('timingAdvance', operator.lt),
+            ('signalStrength', operator.gt),
             ('asu', operator.gt),
             ('age', operator.lt),
         ]
@@ -139,13 +146,13 @@ class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
             min(constants.MIN_CELL_ASU.values()),
             max(constants.MAX_CELL_ASU.values())))
 
-    signal = DefaultNode(
+    signalStrength = DefaultNode(
         colander.Integer(),
         missing=None, validator=colander.Range(
             min(constants.MIN_CELL_SIGNAL.values()),
             max(constants.MAX_CELL_SIGNAL.values())))
 
-    ta = DefaultNode(
+    timingAdvance = DefaultNode(
         colander.Integer(),
         missing=None, validator=colander.Range(
             constants.MIN_CELL_TA, constants.MAX_CELL_TA))
@@ -163,11 +170,11 @@ class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
             # Sometimes the asu and signal fields are swapped
             if (data.get('asu') is not None and
                     data.get('asu', 0) < -5 and
-                    (data.get('signal') is None or
-                     data.get('signal', 0) >= 0)):
+                    (data.get('signalStrength') is None or
+                     data.get('signalStrength', 0) >= 0)):
                 # shallow copy
                 data = dict(data)
-                data['signal'] = data['asu']
+                data['signalStrength'] = data['asu']
                 data['asu'] = None
 
         data = super(ValidCellSignalSchema, self).deserialize(data)
@@ -184,24 +191,26 @@ class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
                     data['asu'] = None
 
             # Radio type specific checks for signal field
-            if data.get('signal') is not None:
+            if data.get('signalStrength') is not None:
                 if not (constants.MIN_CELL_SIGNAL[radio] <=
-                        data['signal'] <=
+                        data['signalStrength'] <=
                         constants.MAX_CELL_SIGNAL[radio]):
                     data = dict(data)
-                    data['signal'] = None
+                    data['signalStrength'] = None
 
             # Radio type specific checks for TA field
-            if data.get('ta') is not None and radio is Radio.wcdma:
+            if data.get('timingAdvance') is not None and radio is Radio.wcdma:
                 data = dict(data)
-                data['ta'] = None
+                data['timingAdvance'] = None
 
             # Calculate signal from ASU field
-            if data.get('asu') is not None and data.get('signal') is None:
+            if (data.get('asu') is not None and
+                    data.get('signalStrength') is None):
                 if (constants.MIN_CELL_ASU[radio] <= data['asu'] <=
                         constants.MAX_CELL_ASU[radio]):
                     data = dict(data)
-                    data['signal'] = self._signal_from_asu(radio, data['asu'])
+                    data['signalStrength'] = self._signal_from_asu(
+                        radio, data['asu'])
 
         return data
 
@@ -251,7 +260,7 @@ class CellLookup(BaseCellLookup):
 class ValidWifiLookupSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields in a WiFi lookup."""
 
-    mac = MacNode(colander.String())
+    macAddress = MacNode(colander.String())
     ssid = DefaultNode(colander.String(), missing=None)
 
     age = DefaultNode(
@@ -266,13 +275,13 @@ class ValidWifiLookupSchema(colander.MappingSchema, ValidatorNode):
         validator=colander.Range(
             constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
 
-    signal = DefaultNode(
+    signalStrength = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
             constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
 
-    snr = DefaultNode(
+    signalToNoiseRatio = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
@@ -313,18 +322,22 @@ class WifiLookup(BaseLookup):
 
     _valid_schema = ValidWifiLookupSchema()
     _fields = (
-        'mac',
+        'macAddress',
         'age',
         'channel',
-        'signal',
-        'snr',
+        'signalStrength',
+        'signalToNoiseRatio',
         'ssid',
     )
     _comparators = (
-        ('signal', operator.gt),
-        ('snr', operator.gt),
+        ('signalStrength', operator.gt),
+        ('signalToNoiseRatio', operator.gt),
         ('age', operator.lt),
     )
+
+    @property
+    def mac(self):
+        return encode_mac(self.macAddress)
 
 
 class FallbackSchema(colander.MappingSchema):
@@ -353,7 +366,7 @@ class BaseLocateSchema(RenamingMappingSchema):
         data = super(BaseLocateSchema, self).deserialize(data)
 
         if 'radio' in data:
-            for cell in data.get('cell', ()):
+            for cell in data.get('cellTowers', ()):
                 if 'radio' not in cell or not cell['radio']:
                     cell['radio'] = data['radio']
 

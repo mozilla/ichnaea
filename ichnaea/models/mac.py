@@ -57,6 +57,8 @@ class MacColumn(TypeDecorator):
     impl = BINARY
 
     def process_bind_param(self, value, dialect):
+        if value and len(value) == 6:
+            return value
         if not (value and len(value) == 12):
             raise ValueError('Invalid MAC: %r' % value)
         return b16decode(value.upper().encode('ascii'))

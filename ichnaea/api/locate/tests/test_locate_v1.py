@@ -25,14 +25,14 @@ class TestSchema(TestCase):
     def test_empty(self):
         data = self.schema.deserialize({})
         self.assertEqual(data, {
-            'blue': (),
+            'bluetoothBeacons': (),
             'carrier': None,
-            'cell': (),
+            'cellTowers': (),
             'considerIp': True,
             'fallbacks': {'ipf': True, 'lacf': True},
             'homeMobileCountryCode': None,
             'homeMobileNetworkCode': None,
-            'wifi': ()})
+            'wifiAccessPoints': ()})
 
     def test_consider_ip(self):
         data = self.schema.deserialize({'considerIp': False})
@@ -55,8 +55,8 @@ class TestSchema(TestCase):
             'radio': 'gsm',
             'radioType': 'wcdma',
         }]})
-        self.assertEqual(data['cell'][0]['radio'], 'wcdma')
-        self.assertFalse('radioType' in data['cell'][0])
+        self.assertEqual(data['cellTowers'][0]['radio'], 'wcdma')
+        self.assertFalse('radioType' in data['cellTowers'][0])
 
 
 class LocateV2Base(BaseLocateTest, AppTestCase):

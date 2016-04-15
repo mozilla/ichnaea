@@ -25,9 +25,9 @@ class BaseLocateView(BaseAPIView):
         query = Query(
             fallback=request_data.get('fallbacks'),
             ip=self.request.client_addr,
-            blue=request_data.get('blue'),
-            cell=request_data.get('cell'),
-            wifi=request_data.get('wifi'),
+            blue=request_data.get('bluetoothBeacons'),
+            cell=request_data.get('cellTowers'),
+            wifi=request_data.get('wifiAccessPoints'),
             api_key=api_key,
             api_type=self.view_type,
             session=self.request.db_ro_session,

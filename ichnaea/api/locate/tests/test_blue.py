@@ -36,8 +36,8 @@ class TestBlue(BaseSourceTest):
         self.session.flush()
 
         query = self.model_query(blues=[blue, blue2])
-        query.blue[0].signal = -80
-        query.blue[1].signal = -90
+        query.blue[0].signalStrength = -80
+        query.blue[1].signalStrength = -90
         results = self.source.search(query)
         self.check_model_results(results, [blue], lon=blue.lon + 0.0000048)
         self.assertTrue(results.best().score > 1.0)

@@ -133,15 +133,16 @@ class TestOutboundSchema(TestCase):
 
     def test_query(self):
         query = Query()
-        data = self.schema.deserialize(query.internal_query())
+        data = self.schema.deserialize(query.json())
         self.assertEqual(data, {'fallbacks': {'lacf': True}})
 
     def test_blue(self):
         blues = BlueShardFactory.build_batch(2)
         query = Query(blue=[
-            {'mac': blue.mac, 'age': 1500, 'name': 'beacon', 'signal': -90}
+            {'macAddress': blue.mac, 'age': 1500, 'name': 'beacon',
+             'signalStrength': -90}
             for blue in blues])
-        data = self.schema.deserialize(query.internal_query())
+        data = self.schema.deserialize(query.json())
         self.assertEqual(data, {
             'bluetoothBeacons': [{
                 'macAddress': blues[0].mac,
@@ -162,9 +163,10 @@ class TestOutboundSchema(TestCase):
         query = Query(cell=[
             {'radio': cell.radio, 'mcc': cell.mcc, 'mnc': cell.mnc,
              'lac': cell.lac, 'cid': cell.cid,
-             'age': 1200, 'psc': 5, 'signal': -70, 'ta': 15,
+             'age': 1200, 'psc': 5, 'signalStrength': -70,
+             'timingAdvance': 15,
              'unknown_field': 'foo'}])
-        data = self.schema.deserialize(query.internal_query())
+        data = self.schema.deserialize(query.json())
         self.assertEqual(data, {
             'cellTowers': [{
                 'radioType': cell.radio.name,
@@ -183,9 +185,10 @@ class TestOutboundSchema(TestCase):
     def test_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'mac': wifi.mac, 'age': 2000, 'signal': -90, 'ssid': 'wifi'}
+            {'macAddress': wifi.mac, 'age': 2000,
+             'signalStrength': -90, 'ssid': 'wifi'}
             for wifi in wifis])
-        data = self.schema.deserialize(query.internal_query())
+        data = self.schema.deserialize(query.json())
         self.assertEqual(data, {
             'wifiAccessPoints': [{
                 'macAddress': wifis[0].mac,
@@ -676,7 +679,7 @@ class TestSource(BaseSourceTest):
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
             query = self.model_query(cells=[cell])
-            query.cell[0].signal = -77
+            query.cell[0].signalStrength = -77
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
             self.assertAlmostEqual(results.best().score, 5.0, 4)
@@ -691,7 +694,7 @@ class TestSource(BaseSourceTest):
             ])
 
             # vary the signal strength, not part of cache key
-            query.cell[0].signal = -82
+            query.cell[0].signalStrength = -82
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
             self.assertAlmostEqual(results.best().score, 5.0, 4)

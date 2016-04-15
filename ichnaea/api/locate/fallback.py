@@ -23,13 +23,7 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea import floatjson
 from ichnaea.geocalc import distance
-from ichnaea.models.cell import (
-    encode_cellid,
-    Radio,
-)
-from ichnaea.models import (
-    encode_mac,
-)
+from ichnaea.models.cell import Radio
 
 LOCATION_NOT_FOUND = '404'  #: Magic constant to cache not found.
 
@@ -95,21 +89,19 @@ class OutboundSchema(OptionalMappingSchema):
 
         lacf = OptionalNode(colander.Boolean())
 
-    @colander.instantiate(missing=colander.drop,
-                          to_name='bluetoothBeacons')  # NOQA
-    class blue(OptionalSequenceSchema):
+    @colander.instantiate(missing=colander.drop)
+    class bluetoothBeacons(OptionalSequenceSchema):  # NOQA
 
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            mac = OptionalNode(colander.String(), to_name='macAddress')
+            macAddress = OptionalNode(colander.String())
             age = OptionalNode(colander.Integer())
             name = OptionalNode(colander.String())
-            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
+            signalStrength = OptionalNode(colander.Integer())
 
-    @colander.instantiate(missing=colander.drop,
-                          to_name='cellTowers')  # NOQA
-    class cell(OptionalSequenceSchema):
+    @colander.instantiate(missing=colander.drop)
+    class cellTowers(OptionalSequenceSchema):  # NOQA
 
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
@@ -122,22 +114,20 @@ class OutboundSchema(OptionalMappingSchema):
             psc = OptionalNode(
                 colander.Integer(), to_name='primaryScramblingCode')
             age = OptionalNode(colander.Integer())
-            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
-            ta = OptionalNode(colander.Integer(), to_name='timingAdvance')
+            signalStrength = OptionalNode(colander.Integer())
+            timingAdvance = OptionalNode(colander.Integer())
 
-    @colander.instantiate(missing=colander.drop,
-                          to_name='wifiAccessPoints')  # NOQA
-    class wifi(OptionalSequenceSchema):
+    @colander.instantiate(missing=colander.drop)
+    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
 
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            mac = OptionalNode(colander.String(), to_name='macAddress')
+            macAddress = OptionalNode(colander.String())
             age = OptionalNode(colander.Integer())
-            channel = OptionalNode(colander.Integer(), to_name='channel')
-            signal = OptionalNode(colander.Integer(), to_name='signalStrength')
-            snr = OptionalNode(
-                colander.Integer(), to_name='signalToNoiseRatio')
+            channel = OptionalNode(colander.Integer())
+            signalStrength = OptionalNode(colander.Integer())
+            signalToNoiseRatio = OptionalNode(colander.Integer())
             ssid = OptionalNode(colander.String())
 
 OUTBOUND_SCHEMA = OutboundSchema()
@@ -195,20 +185,19 @@ class FallbackCache(object):
     def _cache_keys_blue(self, blue_query):
         keys = []
         for blue in blue_query:
-            keys.append(self.cache_key_blue + encode_mac(blue.mac))
+            keys.append(self.cache_key_blue + blue.mac)
         return keys
 
     def _cache_keys_cell(self, cell_query):
         keys = []
         for cell in cell_query:
-            keys.append(self.cache_key_cell + encode_cellid(
-                cell.radio, cell.mcc, cell.mnc, cell.lac, cell.cid))
+            keys.append(self.cache_key_cell + cell.cellid)
         return keys
 
     def _cache_keys_wifi(self, wifi_query):
         keys = []
         for wifi in wifi_query:
-            keys.append(self.cache_key_wifi + encode_mac(wifi.mac))
+            keys.append(self.cache_key_wifi + wifi.mac)
         return keys
 
     def get(self, query):
@@ -370,8 +359,7 @@ class FallbackPositionSource(PositionSource):
     def _make_external_call(self, query):
         outbound = None
         try:
-            internal_query = query.internal_query()
-            outbound = self.outbound_schema.deserialize(internal_query)
+            outbound = self.outbound_schema.deserialize(query.json())
         except colander.Invalid:  # pragma: no cover
             self.raven_client.captureException()
 

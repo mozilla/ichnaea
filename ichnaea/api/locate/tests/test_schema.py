@@ -31,22 +31,22 @@ class TestValidCellAreaLookupSchema(TestCase):
         self.compare('asu', max_lte_asu, None, 'gsm')
         self.compare('asu', max_lte_asu, max_lte_asu, 'lte')
         self.assertEqual(
-            self.sample({'radio': 'gsm', 'asu': 15})['signal'], -83)
+            self.sample({'radio': 'gsm', 'asu': 15})['signalStrength'], -83)
         self.assertEqual(
-            self.sample({'radio': 'wcdma', 'asu': 15})['signal'], -101)
+            self.sample({'radio': 'wcdma', 'asu': 15})['signalStrength'], -101)
         self.assertEqual(
-            self.sample({'radio': 'lte', 'asu': 15})['signal'], -125)
+            self.sample({'radio': 'lte', 'asu': 15})['signalStrength'], -125)
 
     def test_asu_signal(self):
-        self.compare('signal', -80, -80)
+        self.compare('signalStrength', -80, -80)
         item = self.sample({'asu': -80})
         self.assertEqual(item['asu'], None)
-        self.assertEqual(item['signal'], -80)
+        self.assertEqual(item['signalStrength'], -80)
 
     def test_signal(self):
         max_lte_signal = constants.MAX_CELL_SIGNAL[Radio.lte]
-        self.compare('signal', max_lte_signal, None, 'gsm')
-        self.compare('signal', max_lte_signal, max_lte_signal, 'lte')
+        self.compare('signalStrength', max_lte_signal, None, 'gsm')
+        self.compare('signalStrength', max_lte_signal, max_lte_signal, 'lte')
 
 
 class TestValidWifiLookupSchema(TestCase):
@@ -58,7 +58,7 @@ class TestValidWifiLookupSchema(TestCase):
 
     def sample(self, **values):
         value = {
-            'mac': 'abcdef123456',
+            'macAddress': 'abcdef123456',
         }
         value.update(values)
         return self._schema.deserialize(value)

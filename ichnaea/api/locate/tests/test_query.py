@@ -32,9 +32,9 @@ class QueryTest(ConnectionTestCase):
         query = []
         for blue in blues:
             query.append({
-                'mac': blue.mac,
+                'macAddress': blue.mac,
                 'age': 10,
-                'signal': -85,
+                'signalStrength': -85,
             })
         return query
 
@@ -47,8 +47,8 @@ class QueryTest(ConnectionTestCase):
                 'mnc': cell.mnc,
                 'lac': cell.lac,
                 'age': 20,
-                'signal': -90,
-                'ta': 1,
+                'signalStrength': -90,
+                'timingAdvance': 1,
             }
             if getattr(cell, 'cid', None):
                 cell_query['cid'] = cell.cid
@@ -60,11 +60,11 @@ class QueryTest(ConnectionTestCase):
         query = []
         for wifi in wifis:
             query.append({
-                'mac': wifi.mac,
+                'macAddress': wifi.mac,
                 'age': 30,
                 'channel': 11,
-                'signal': -85,
-                'snr': 13,
+                'signalStrength': -85,
+                'signalToNoiseRatio': 13,
                 'ssid': 'wifi',
             })
         return query
@@ -122,40 +122,41 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
         for blue in query.blue:
             self.assertEqual(blue.age, 10)
-            self.assertEqual(blue.signal, -85)
-            self.assertTrue(blue.mac in macs)
+            self.assertEqual(blue.signalStrength, -85)
+            self.assertTrue(blue.macAddress in macs)
 
     def test_blue_single(self):
         blue = BlueShardFactory.build()
-        blue_query = {'mac': blue.mac}
+        blue_query = {'macAddress': blue.mac}
         query = Query(blue=[blue_query])
         self.assertEqual(len(query.blue), 0)
 
     def test_blue_duplicates(self):
         blue = BlueShardFactory.build()
         query = Query(blue=[
-            {'mac': blue.mac, 'signal': -90},
-            {'mac': blue.mac, 'signal': -82},
-            {'mac': blue.mac, 'signal': -85},
+            {'macAddress': blue.mac, 'signalStrength': -90},
+            {'macAddress': blue.mac, 'signalStrength': -82},
+            {'macAddress': blue.mac, 'signalStrength': -85},
         ])
         self.assertEqual(len(query.blue), 0)
 
     def test_blue_better(self):
         blues = BlueShardFactory.build_batch(2)
         query = Query(blue=[
-            {'mac': blues[0].mac, 'signal': -90, 'name': 'my-beacon'},
-            {'mac': blues[0].mac, 'signal': -82},
-            {'mac': blues[0].mac, 'signal': -85},
-            {'mac': blues[1].mac, 'signal': -70},
+            {'macAddress': blues[0].mac, 'signalStrength': -90,
+             'name': 'my-beacon'},
+            {'macAddress': blues[0].mac, 'signalStrength': -82},
+            {'macAddress': blues[0].mac, 'signalStrength': -85},
+            {'macAddress': blues[1].mac, 'signalStrength': -70},
         ])
         self.assertEqual(len(query.blue), 2)
         self.assertEqual(
-            set([blue.signal for blue in query.blue]), set([-70, -82]))
+            set([blue.signalStrength for blue in query.blue]), set([-70, -82]))
 
     def test_blue_malformed(self):
         blue = BlueShardFactory.build()
-        blue_query = {'mac': blue.mac}
-        query = Query(blue=[blue_query, {'mac': 'foo'}])
+        blue_query = {'macAddress': blue.mac}
+        query = Query(blue=[blue_query, {'macAddress': 'foo'}])
         self.assertEqual(len(query.blue), 0)
 
     def test_blue_region(self):
@@ -198,12 +199,12 @@ class TestQuery(QueryTest, ConnectionTestCase):
     def test_cell_duplicated(self):
         cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell, cell, cell])
-        cell_query[0]['signal'] = -95
-        cell_query[1]['signal'] = -90
-        cell_query[2]['signal'] = -92
+        cell_query[0]['signalStrength'] = -95
+        cell_query[1]['signalStrength'] = -90
+        cell_query[2]['signalStrength'] = -92
         query = Query(cell=cell_query)
         self.assertEqual(len(query.cell), 1)
-        self.assertEqual(query.cell[0].signal, -90)
+        self.assertEqual(query.cell[0].signalStrength, -90)
 
     def test_cell_region(self):
         cell = CellShardFactory.build()
@@ -262,42 +263,42 @@ class TestQuery(QueryTest, ConnectionTestCase):
         for wifi in query.wifi:
             self.assertEqual(wifi.age, 30)
             self.assertEqual(wifi.channel, 11)
-            self.assertEqual(wifi.signal, -85)
-            self.assertEqual(wifi.snr, 13)
-            self.assertTrue(wifi.mac in macs)
+            self.assertEqual(wifi.signalStrength, -85)
+            self.assertEqual(wifi.signalToNoiseRatio, 13)
+            self.assertTrue(wifi.macAddress in macs)
             self.assertEqual(wifi.ssid, 'wifi')
 
     def test_wifi_single(self):
         wifi = WifiShardFactory.build()
-        wifi_query = {'mac': wifi.mac}
+        wifi_query = {'macAddress': wifi.mac}
         query = Query(wifi=[wifi_query])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_duplicates(self):
         wifi = WifiShardFactory.build()
         query = Query(wifi=[
-            {'mac': wifi.mac, 'signal': -90},
-            {'mac': wifi.mac, 'signal': -82},
-            {'mac': wifi.mac, 'signal': -85},
+            {'macAddress': wifi.mac, 'signalStrength': -90},
+            {'macAddress': wifi.mac, 'signalStrength': -82},
+            {'macAddress': wifi.mac, 'signalStrength': -85},
         ])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_better(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'mac': wifis[0].mac, 'signal': -90, 'channel': 1},
-            {'mac': wifis[0].mac, 'signal': -82},
-            {'mac': wifis[0].mac, 'signal': -85},
-            {'mac': wifis[1].mac, 'signal': -70},
+            {'macAddress': wifis[0].mac, 'signalStrength': -90, 'channel': 1},
+            {'macAddress': wifis[0].mac, 'signalStrength': -82},
+            {'macAddress': wifis[0].mac, 'signalStrength': -85},
+            {'macAddress': wifis[1].mac, 'signalStrength': -70},
         ])
         self.assertEqual(len(query.wifi), 2)
         self.assertEqual(
-            set([wifi.signal for wifi in query.wifi]), set([-70, -82]))
+            set([wifi.signalStrength for wifi in query.wifi]), set([-70, -82]))
 
     def test_wifi_malformed(self):
         wifi = WifiShardFactory.build()
-        wifi_query = {'mac': wifi.mac}
-        query = Query(wifi=[wifi_query, {'mac': 'foo'}])
+        wifi_query = {'macAddress': wifi.mac}
+        query = Query(wifi=[wifi_query, {'macAddress': 'foo'}])
         self.assertEqual(len(query.wifi), 0)
 
     def test_wifi_region(self):

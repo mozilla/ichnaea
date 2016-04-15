@@ -169,7 +169,7 @@ class TestPositionResultList(TestCase):
 
     def test_satisfies(self):
         wifis = WifiShardFactory.build_batch(2)
-        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
+        wifi_query = [{'macAddress': wifi.mac} for wifi in wifis]
         positions = PositionResultList([
             Position(lat=1.0, lon=1.0, accuracy=100.0, score=0.5),
             Position(lat=1.0, lon=1.0, accuracy=10000.0, score=0.6)])
@@ -178,14 +178,14 @@ class TestPositionResultList(TestCase):
 
     def test_satisfies_empty(self):
         wifis = WifiShardFactory.build_batch(2)
-        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
+        wifi_query = [{'macAddress': wifi.mac} for wifi in wifis]
         positions = PositionResultList()
         query = Query(api_type='locate', wifi=wifi_query)
         self.assertFalse(positions.satisfies(query))
 
     def test_satisfies_fail(self):
         wifis = WifiShardFactory.build_batch(2)
-        wifi_query = [{'mac': wifi.mac} for wifi in wifis]
+        wifi_query = [{'macAddress': wifi.mac} for wifi in wifis]
         positions = PositionResultList(
             Position(lat=1.0, lon=1.0, accuracy=2500.0, score=2.0))
         query = Query(api_type='locate', wifi=wifi_query)

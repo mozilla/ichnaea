@@ -42,7 +42,7 @@ NETWORK_DTYPE = numpy.dtype([
     ('lat', numpy.double),
     ('lon', numpy.double),
     ('radius', numpy.double),
-    ('signal', numpy.int32),
+    ('signalStrength', numpy.int32),
     ('score', numpy.double),
 ])
 
@@ -56,7 +56,7 @@ def cluster_cells(cells, lookups):
     # Create a dict of cell ids mapped to their signal strength.
     signals = {}
     for lookup in lookups:
-        signals[lookup.cellid] = (lookup.signal or
+        signals[lookup.cellid] = (lookup.signalStrength or
                                   MIN_CELL_SIGNAL[lookup.radio])
 
     areas = defaultdict(list)
@@ -83,7 +83,7 @@ def cluster_areas(areas, lookups):
     # Create a dict of area ids mapped to their signal strength.
     signals = {}
     for lookup in lookups:
-        signals[lookup.areaid] = (lookup.signal or
+        signals[lookup.areaid] = (lookup.signalStrength or
                                   MIN_CELL_SIGNAL[lookup.radio])
 
     clusters = []
@@ -116,7 +116,7 @@ def aggregate_cell_position(networks, min_accuracy, max_accuracy):
         dtype=numpy.double)
 
     weights = numpy.array([
-        net['score'] / math.pow(net['signal'], 2) for net in networks],
+        net['score'] / math.pow(net['signalStrength'], 2) for net in networks],
         dtype=numpy.double)
 
     lat, lon = numpy.average(points, axis=0, weights=weights)

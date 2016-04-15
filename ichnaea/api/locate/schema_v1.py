@@ -21,11 +21,9 @@ class BluetoothBeaconsSchema(colander.SequenceSchema):
     @colander.instantiate()
     class SequenceItem(RenamingMappingSchema):
 
-        macAddress = colander.SchemaNode(
-            colander.String(), missing=None, to_name='mac')
+        macAddress = colander.SchemaNode(colander.String(), missing=None)
         age = colander.SchemaNode(colander.Integer(), missing=None)
-        signalStrength = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='signal')
+        signalStrength = colander.SchemaNode(colander.Integer(), missing=None)
         name = colander.SchemaNode(colander.String(), missing=None)
 
 
@@ -56,10 +54,8 @@ class CellTowersSchema(colander.SequenceSchema):
 
         age = colander.SchemaNode(colander.Integer(), missing=None)
         psc = colander.SchemaNode(colander.Integer(), missing=None)
-        signalStrength = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='signal')
-        timingAdvance = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='ta')
+        signalStrength = colander.SchemaNode(colander.Integer(), missing=None)
+        timingAdvance = colander.SchemaNode(colander.Integer(), missing=None)
 
 
 class WifiAccessPointsSchema(colander.SequenceSchema):
@@ -67,15 +63,13 @@ class WifiAccessPointsSchema(colander.SequenceSchema):
     @colander.instantiate()
     class SequenceItem(RenamingMappingSchema):
 
-        macAddress = colander.SchemaNode(
-            colander.String(), missing=None, to_name='mac')
+        macAddress = colander.SchemaNode(colander.String(), missing=None)
         age = colander.SchemaNode(colander.Integer(), missing=None)
         channel = colander.SchemaNode(colander.Integer(), missing=None)
         frequency = colander.SchemaNode(colander.Integer(), missing=None)
-        signalStrength = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='signal')
+        signalStrength = colander.SchemaNode(colander.Integer(), missing=None)
         signalToNoiseRatio = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='snr')
+            colander.Integer(), missing=None)
         ssid = colander.SchemaNode(colander.String(), missing=None)
 
 
@@ -91,9 +85,9 @@ class LocateV1Schema(BaseLocateSchema):
         colander.String(), validator=colander.OneOf(RADIO_STRINGS),
         missing=colander.drop, to_name='radio')
 
-    bluetoothBeacons = BluetoothBeaconsSchema(missing=(), to_name='blue')
-    cellTowers = CellTowersSchema(missing=(), to_name='cell')
-    wifiAccessPoints = WifiAccessPointsSchema(missing=(), to_name='wifi')
+    bluetoothBeacons = BluetoothBeaconsSchema(missing=())
+    cellTowers = CellTowersSchema(missing=())
+    wifiAccessPoints = WifiAccessPointsSchema(missing=())
     fallbacks = FallbackSchema(missing=None)
 
     def __init__(self, *args, **kw):

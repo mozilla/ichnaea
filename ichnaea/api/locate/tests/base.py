@@ -127,7 +127,7 @@ class BaseSourceTest(ConnectionTestCase):
         query_blue = []
         if blues:
             for blue in blues:
-                query_blue.append({'mac': blue.mac})
+                query_blue.append({'macAddress': blue.mac})
 
         query_cell = []
         if cells:
@@ -145,7 +145,7 @@ class BaseSourceTest(ConnectionTestCase):
         query_wifi = []
         if wifis:
             for wifi in wifis:
-                query_wifi.append({'mac': wifi.mac})
+                query_wifi.append({'macAddress': wifi.mac})
 
         return self.make_query(
             blue=query_blue,
