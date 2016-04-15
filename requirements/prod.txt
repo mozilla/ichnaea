@@ -1,4 +1,4 @@
-alembic==0.8.5
+alembic==0.8.6
 amqp==1.4.9
 anyjson==0.3.3
 argparse==1.4.0 ; python_version < '2.7'
