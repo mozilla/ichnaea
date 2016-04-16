@@ -297,31 +297,13 @@ class Query(object):
         """Returns a JSON representation of this query."""
         result = {}
         if self.blue:
-            result['bluetoothBeacons'] = []
-            for blue in self.blue:
-                blue_data = {}
-                for field in blue._fields:
-                    blue_data[field] = getattr(blue, field)
-                result['bluetoothBeacons'].append(blue_data)
+            result['bluetoothBeacons'] = [blue.json() for blue in self.blue]
         if self.cell:
-            result['cellTowers'] = []
-            for cell in self.cell:
-                cell_data = {}
-                for field in cell._fields:
-                    cell_data[field] = getattr(cell, field)
-                result['cellTowers'].append(cell_data)
+            result['cellTowers'] = [cell.json() for cell in self.cell]
         if self.wifi:
-            result['wifiAccessPoints'] = []
-            for wifi in self.wifi:
-                wifi_data = {}
-                for field in wifi._fields:
-                    wifi_data[field] = getattr(wifi, field)
-                result['wifiAccessPoints'].append(wifi_data)
+            result['wifiAccessPoints'] = [wifi.json() for wifi in self.wifi]
         if self.fallback:
-            fallback_data = {}
-            for field in self.fallback._fields:
-                fallback_data[field] = getattr(self.fallback, field)
-            result['fallbacks'] = fallback_data
+            result['fallbacks'] = self.fallback.json()
         return result
 
     def collect_metrics(self):

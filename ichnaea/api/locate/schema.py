@@ -46,6 +46,14 @@ class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
                 return True
         return False
 
+    def json(self):
+        result = {}
+        for field in self._fields:
+            value = getattr(self, field, None)
+            if value is not None:
+                result[field] = value
+        return result
+
 
 class ValidBlueLookupSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields in a Bluetooth lookup."""
@@ -133,6 +141,17 @@ class BaseCellLookup(BaseLookup):
                     better_than(old_value, new_value)):
                 return True
         return False
+
+    def json(self):
+        result = {}
+        for field in self._fields:
+            value = getattr(self, field, None)
+            if value is not None:
+                if field == 'radioType':
+                    result[field] = value.name
+                else:
+                    result[field] = value
+        return result
 
 
 class ValidCellAreaKeySchema(colander.MappingSchema, ValidatorNode):
@@ -413,7 +432,7 @@ class FallbackSchema(colander.MappingSchema):
     ipf = DefaultNode(colander.Boolean(), missing=True)
 
 
-class FallbackLookup(HashableDict, CreationMixin, ValidationMixin):
+class FallbackLookup(BaseLookup):
     """A model class representing fallback lookup options."""
 
     _valid_schema = FallbackSchema()

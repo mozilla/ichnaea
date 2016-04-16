@@ -167,6 +167,7 @@ class TestOutboundSchema(TestCase):
              'locationAreaCode': cell.lac,
              'cellId': cell.cid,
              'age': 1200,
+             'asu': None,
              'primaryScramblingCode': 5,
              'signalStrength': -70,
              'timingAdvance': 15,

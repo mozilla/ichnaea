@@ -23,20 +23,8 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea import floatjson
 from ichnaea.geocalc import distance
-from ichnaea.models.cell import Radio
 
 LOCATION_NOT_FOUND = '404'  #: Magic constant to cache not found.
-
-
-class RadioStringType(colander.String):
-    """A RadioType will return a Radio IntEnum as a string."""
-
-    def deserialize(self, node, cstruct):
-        if isinstance(cstruct, Radio):
-            return cstruct.name
-
-        raise colander.Invalid(  # pragma: no cover
-            node, ('%r is not a valid radio type' % cstruct))
 
 
 class ExternalResult(namedtuple('ExternalResult',
@@ -106,7 +94,7 @@ class OutboundSchema(OptionalMappingSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            radioType = OptionalNode(RadioStringType())
+            radioType = OptionalNode(colander.String())
             mobileCountryCode = OptionalNode(colander.Integer())
             mobileNetworkCode = OptionalNode(colander.Integer())
             locationAreaCode = OptionalNode(colander.Integer())
