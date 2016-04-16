@@ -7,9 +7,6 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionMixin
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-)
 from ichnaea.tests.factories import WifiShardFactory
 from ichnaea import util
 
@@ -33,8 +30,7 @@ class TestWifi(BaseSourceTest):
     def test_wifi(self):
         wifi = WifiShardFactory(radius=5, samples=50)
         wifi2 = WifiShardFactory(
-            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=5,
-            block_count=1, block_last=None, samples=100)
+            lat=wifi.lat, lon=wifi.lon + 0.00001, radius=5, samples=100)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
@@ -55,12 +51,15 @@ class TestWifi(BaseSourceTest):
         self.check_model_results(results, [wifi])
 
     def test_wifi_temp_blocked(self):
-        today = util.utcnow().date()
+        today = util.utcnow()
         yesterday = today - timedelta(days=1)
         wifi = WifiShardFactory(radius=200)
         wifi2 = WifiShardFactory(
             lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
-            block_count=1, block_last=yesterday)
+            created=yesterday, modified=today,
+            block_first=yesterday.date(),
+            block_last=yesterday.date(),
+            block_count=1)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])
@@ -68,10 +67,18 @@ class TestWifi(BaseSourceTest):
         self.check_model_results(results, None)
 
     def test_wifi_permanent_blocked(self):
+        now = util.utcnow()
+        last_week = now - timedelta(days=7)
+        three_months = now - timedelta(days=90)
+        four_months = now - timedelta(days=120)
+
         wifi = WifiShardFactory(radius=200)
         wifi2 = WifiShardFactory(
             lat=wifi.lat, lon=wifi.lon + 0.00001, radius=300,
-            block_count=PERMANENT_BLOCKLIST_THRESHOLD, block_last=None)
+            created=four_months, modified=now,
+            block_first=three_months.date(),
+            block_last=last_week.date(),
+            block_count=4)
         self.session.flush()
 
         query = self.model_query(wifis=[wifi, wifi2])

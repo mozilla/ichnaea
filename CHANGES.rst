@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Allow stations to be blocklisted once per 30 days of their lifespan.
+
 - Normalize age fields for internal observations to GPS time difference.
 
 - Add stricter validation of radio, source and timestamp fields.

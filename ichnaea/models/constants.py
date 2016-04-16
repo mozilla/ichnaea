@@ -2,6 +2,7 @@
 Contains model and schemata specific constants.
 """
 
+from datetime import timedelta
 from enum import IntEnum
 import re
 
@@ -36,6 +37,12 @@ class ReportSource(IntEnum):
 
 # Symbolic constant used in specs passed to normalization functions.
 REQUIRED = object()
+
+TEMPORARY_BLOCKLIST_DURATION = timedelta(days=2)
+"""
+Time during which each temporary blocklisting (detection of
+:term:`station` movement) causes observations to be dropped on the floor.
+"""
 
 MIN_AGE = -3600000  # Minimum relative age.
 MAX_AGE = 3600000  #: Maximum relative age in ms bounded to an hour.

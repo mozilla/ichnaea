@@ -186,13 +186,28 @@ class TestCellShard(DBTestCase):
             self.session.flush()
 
     def test_blocked(self):
-        today = util.utcnow().date()
+        today = util.utcnow()
         two_weeks = today - timedelta(days=14)
         self.assertFalse(CellShardGsm().blocked())
-        self.assertTrue(CellShardGsm(block_count=100).blocked())
-        self.assertTrue(CellShardGsm(block_last=today).blocked())
-        self.assertFalse(CellShardGsm(block_last=two_weeks).blocked())
-        self.assertTrue(CellShardGsm(block_last=two_weeks).blocked(two_weeks))
+
+        self.assertTrue(CellShardGsm(
+            created=two_weeks, block_count=1).blocked())
+        self.assertTrue(CellShardGsm(
+            created=today - timedelta(30), block_count=1).blocked())
+        self.assertFalse(CellShardGsm(
+            created=today - timedelta(45), block_count=1).blocked())
+        self.assertTrue(CellShardGsm(
+            created=today - timedelta(45), block_count=2).blocked())
+        self.assertFalse(CellShardGsm(
+            created=today - timedelta(105), block_count=3).blocked())
+
+        self.assertTrue(CellShardGsm(
+            created=two_weeks, block_last=today.date()).blocked())
+        self.assertFalse(CellShardGsm(
+            created=two_weeks, block_last=two_weeks.date()).blocked())
+        self.assertTrue(CellShardGsm(
+            created=two_weeks, block_last=two_weeks.date()).blocked(
+            two_weeks.date()))
 
     def test_score(self):
         now = util.utcnow()

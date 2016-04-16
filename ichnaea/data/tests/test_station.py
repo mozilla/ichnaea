@@ -4,10 +4,6 @@ from datetime import timedelta
 import mock
 from sqlalchemy import text
 
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
 from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import (
     update_blue,
@@ -22,6 +18,7 @@ from ichnaea.models import (
     StatKey,
     WifiShard,
 )
+from ichnaea.models.constants import TEMPORARY_BLOCKLIST_DURATION
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     BlueObservationFactory,
@@ -528,6 +525,7 @@ class TestWifi(StationTest):
     def test_temp_blocked_admitted_again(self):
         now = util.utcnow()
         last_week = now - TEMPORARY_BLOCKLIST_DURATION - timedelta(days=1)
+        two_months = now - timedelta(days=46)
 
         obs = WifiObservationFactory()
         WifiShardFactory(
@@ -536,7 +534,7 @@ class TestWifi(StationTest):
             lon=None,
             samples=None,
             weight=None,
-            created=last_week,
+            created=two_months,
             modified=last_week,
             block_first=last_week.date(),
             block_last=last_week.date(),
@@ -552,7 +550,7 @@ class TestWifi(StationTest):
         wifi = wifis[0]
         self.assertEqual(wifi.block_first, last_week.date())
         self.assertEqual(wifi.block_last, last_week.date())
-        self.assertEqual(wifi.created.date(), last_week.date())
+        self.assertEqual(wifi.created.date(), two_months.date())
         self.assertAlmostEqual(wifi.lat, obs.lat)
         self.assertAlmostEqual(wifi.lon, obs.lon)
         self.assertEqual(wifi.region, 'GB')
@@ -626,8 +624,10 @@ class TestWifi(StationTest):
         # a permanently blocked wifi
         wifi = wifis[4]
         wifi_lat, wifi_lon = (wifi.lat, wifi.lon)
+        wifi.created = now - timedelta(days=57)
+        wifi.block_first = (now - timedelta(days=35)).date()
         wifi.block_last = now.date() - 2 * TEMPORARY_BLOCKLIST_DURATION
-        wifi.block_count = PERMANENT_BLOCKLIST_THRESHOLD
+        wifi.block_count = 2
         for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
             setattr(wifi, col, None)
         obs.extend([
@@ -637,8 +637,9 @@ class TestWifi(StationTest):
         # a no longer blocked wifi
         wifi = wifis[5]
         wifi_lat, wifi_lon = (wifi.lat, wifi.lon)
+        wifi.created = now - timedelta(days=46)
         wifi.block_last = now.date() - 2 * TEMPORARY_BLOCKLIST_DURATION
-        wifi.block_count = 2
+        wifi.block_count = 1
         for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
             setattr(wifi, col, None)
         obs.extend([
@@ -647,8 +648,9 @@ class TestWifi(StationTest):
         # a no longer blocked wifi with disagreeing observations
         wifi = wifis[6]
         wifi_lat, wifi_lon = (wifi.lat, wifi.lon)
+        wifi.created = now - timedelta(days=55)
         wifi.block_last = now.date() - 2 * TEMPORARY_BLOCKLIST_DURATION
-        wifi.block_count = 2
+        wifi.block_count = 1
         for col in ('lat', 'lon', 'max_lat', 'min_lat', 'max_lon', 'min_lon'):
             setattr(wifi, col, None)
         obs.extend([
@@ -665,7 +667,7 @@ class TestWifi(StationTest):
         blocks = []
         for shard in shards:
             for row in self.session.query(shard).all():
-                if row.blocked():
+                if row.blocked(today=now.date()):
                     blocks.append(row)
         self.assertEqual(set([b.mac for b in blocks]), moving)
 

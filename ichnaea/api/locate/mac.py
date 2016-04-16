@@ -8,15 +8,8 @@ import numpy
 from scipy.cluster import hierarchy
 from scipy.optimize import leastsq
 from sqlalchemy.orm import load_only
-from sqlalchemy.sql import or_
 
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
-from ichnaea.geocalc import (
-    distance,
-)
+from ichnaea.geocalc import distance
 from ichnaea.models.mac import encode_mac
 from ichnaea import util
 
@@ -154,15 +147,15 @@ def query_macs(query, lookups, raven_client, db_model):
     if not macs:  # pragma: no cover
         return []
 
+    # load all fields used in score calculation and those we
+    # need for the position or region
+    load_fields = ('lat', 'lon', 'radius', 'region', 'samples',
+                   'created', 'modified', 'last_seen',
+                   'block_last', 'block_count')
     result = []
     today = util.utcnow().date()
-    temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
 
     try:
-        # load all fields used in score calculation and those we
-        # need for the position or region
-        load_fields = ('lat', 'lon', 'radius', 'region', 'samples',
-                       'created', 'modified', 'last_seen', 'block_last')
         shards = defaultdict(list)
         for mac in macs:
             shards[db_model.shard_model(mac)].append(mac)
@@ -172,15 +165,10 @@ def query_macs(query, lookups, raven_client, db_model):
                 query.session.query(shard)
                              .filter(shard.mac.in_(shard_macs),
                                      shard.lat.isnot(None),
-                                     shard.lon.isnot(None),
-                                     or_(shard.block_count.is_(None),
-                                         shard.block_count <
-                                         PERMANENT_BLOCKLIST_THRESHOLD),
-                                     or_(shard.block_last.is_(None),
-                                         shard.block_last < temp_blocked))
+                                     shard.lon.isnot(None))
                              .options(load_only(*load_fields))
             ).all()
-            result.extend(list(rows))
+            result.extend([row for row in rows if not row.blocked(today)])
     except Exception:
         raven_client.captureException()
     return result

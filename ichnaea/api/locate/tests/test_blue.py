@@ -32,7 +32,7 @@ class TestBlue(BaseSourceTest):
         blue = BlueShardFactory(radius=10, samples=50)
         blue2 = BlueShardFactory(
             lat=blue.lat, lon=blue.lon + 0.00001, radius=100,
-            block_count=1, block_last=None, samples=100)
+            block_last=None, samples=100)
         self.session.flush()
 
         query = self.model_query(blues=[blue, blue2])

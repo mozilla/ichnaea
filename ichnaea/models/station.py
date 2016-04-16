@@ -12,12 +12,9 @@ from sqlalchemy.dialects.mysql import (
     TINYINT as TinyInteger,
 )
 
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
 from ichnaea.models.base import CreationMixin
 from ichnaea.models import constants
+from ichnaea.models.constants import TEMPORARY_BLOCKLIST_DURATION
 from ichnaea.models.sa_types import (
     TinyIntEnum,
     TZDateTime as DateTime,
@@ -193,15 +190,21 @@ class StationMixin(BboxMixin,
 
     def blocked(self, today=None):
         """Is the station currently blocked?"""
-        if (self.block_count and
-                self.block_count >= PERMANENT_BLOCKLIST_THRESHOLD):
-            return True
+        if today is None:
+            today = util.utcnow().date()
 
-        temporary = False
         if self.block_last:
-            if today is None:
-                today = util.utcnow().date()
+            # Block the station if it has been at most X days since
+            # the last time it has been blocked.
             age = today - self.block_last
-            temporary = age < TEMPORARY_BLOCKLIST_DURATION
+            if bool(age < TEMPORARY_BLOCKLIST_DURATION):
+                return True
 
-        return bool(temporary)
+        if (self.created and self.block_count):
+            # Allow the station to be blocked once for each 30 day
+            # period of the time it has been known to us.
+            age = abs((self.created.date() - today).days)
+            if self.block_count >= int(round(age / 30.0)):
+                return True
+
+        return False

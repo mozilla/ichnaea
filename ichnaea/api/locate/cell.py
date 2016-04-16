@@ -5,7 +5,6 @@ import math
 
 import numpy
 from sqlalchemy.orm import load_only
-from sqlalchemy.sql import or_
 
 from ichnaea.api.locate.constants import (
     DataSource,
@@ -21,10 +20,6 @@ from ichnaea.api.locate.result import (
     RegionResultList,
 )
 from ichnaea.api.locate.source import PositionSource
-from ichnaea.constants import (
-    PERMANENT_BLOCKLIST_THRESHOLD,
-    TEMPORARY_BLOCKLIST_DURATION,
-)
 from ichnaea.geocalc import distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
@@ -133,26 +128,6 @@ def aggregate_cell_position(networks, min_accuracy, max_accuracy):
     return (float(lat), float(lon), float(accuracy), float(score))
 
 
-def query_cell_table(session, model, cellids, temp_blocked,
-                     load_fields, raven_client):
-    try:
-        return (
-            session.query(model)
-                   .filter(model.cellid.in_(cellids),
-                           model.lat.isnot(None),
-                           model.lon.isnot(None),
-                           or_(model.block_count.is_(None),
-                               model.block_count <
-                               PERMANENT_BLOCKLIST_THRESHOLD),
-                           or_(model.block_last.is_(None),
-                               model.block_last < temp_blocked))
-                   .options(load_only(*load_fields))
-        ).all()
-    except Exception:
-        raven_client.captureException()
-    return []
-
-
 def query_cells(query, lookups, model, raven_client):
     # Given a location query and a list of lookup instances, query the
     # database and return a list of model objects.
@@ -163,20 +138,27 @@ def query_cells(query, lookups, model, raven_client):
     # load all fields used in score calculation and those we
     # need for the position
     load_fields = ('lat', 'lon', 'radius', 'region', 'samples',
-                   'created', 'modified', 'last_seen', 'block_last')
-
-    today = util.utcnow().date()
-    temp_blocked = today - TEMPORARY_BLOCKLIST_DURATION
-
+                   'created', 'modified', 'last_seen',
+                   'block_last', 'block_count')
     result = []
-    shards = defaultdict(list)
-    for lookup in lookups:
-        shards[model.shard_model(lookup.radio)].append(lookup.cellid)
+    today = util.utcnow().date()
 
-    for shard, shard_cellids in shards.items():
-        result.extend(
-            query_cell_table(query.session, shard, shard_cellids,
-                             temp_blocked, load_fields, raven_client))
+    try:
+        shards = defaultdict(list)
+        for lookup in lookups:
+            shards[model.shard_model(lookup.radio)].append(lookup.cellid)
+
+        for shard, shard_cellids in shards.items():
+            rows = (
+                query.session.query(shard)
+                             .filter(shard.cellid.in_(shard_cellids),
+                                     shard.lat.isnot(None),
+                                     shard.lon.isnot(None))
+                             .options(load_only(*load_fields))
+            ).all()
+            result.extend([row for row in rows if not row.blocked(today)])
+    except Exception:
+        raven_client.captureException()
 
     return result
 
