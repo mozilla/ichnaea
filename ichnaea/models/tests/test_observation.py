@@ -345,7 +345,7 @@ class TestCellReport(BaseTest):
                 radio=radio, cid=constants.MAX_PSC + 1)['psc'], None)
 
         self.assertEqual(self.sample(
-            radio=Radio.lte, psc=constants.MAX_PSC_LTE + 1), None)
+            radio=Radio.lte, psc=constants.MAX_PSC_LTE + 1)['psc'], None)
 
     def test_age(self):
         field = 'age'

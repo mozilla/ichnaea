@@ -106,13 +106,12 @@ class OutboundSchema(OptionalMappingSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            radio = OptionalNode(RadioStringType(), to_name='radioType')
-            mcc = OptionalNode(colander.Integer(), to_name='mobileCountryCode')
-            mnc = OptionalNode(colander.Integer(), to_name='mobileNetworkCode')
-            lac = OptionalNode(colander.Integer(), to_name='locationAreaCode')
-            cid = OptionalNode(colander.Integer(), to_name='cellId')
-            psc = OptionalNode(
-                colander.Integer(), to_name='primaryScramblingCode')
+            radioType = OptionalNode(RadioStringType())
+            mobileCountryCode = OptionalNode(colander.Integer())
+            mobileNetworkCode = OptionalNode(colander.Integer())
+            locationAreaCode = OptionalNode(colander.Integer())
+            cellId = OptionalNode(colander.Integer())
+            primaryScramblingCode = OptionalNode(colander.Integer())
             age = OptionalNode(colander.Integer())
             signalStrength = OptionalNode(colander.Integer())
             timingAdvance = OptionalNode(colander.Integer())

@@ -42,17 +42,17 @@ class QueryTest(ConnectionTestCase):
         query = []
         for cell in cells:
             cell_query = {
-                'radio': cell.radio.name,
-                'mcc': cell.mcc,
-                'mnc': cell.mnc,
-                'lac': cell.lac,
+                'radioType': cell.radio.name,
+                'mobileCountryCode': cell.mcc,
+                'mobileNetworkCode': cell.mnc,
+                'locationAreaCode': cell.lac,
                 'age': 20,
                 'signalStrength': -90,
                 'timingAdvance': 1,
             }
             if getattr(cell, 'cid', None):
-                cell_query['cid'] = cell.cid
-                cell_query['psc'] = cell.psc
+                cell_query['cellId'] = cell.cid
+                cell_query['primaryScramblingCode'] = cell.psc
             query.append(cell_query)
         return query
 
@@ -176,7 +176,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query_cell = query.cell[0]
         for key, value in cell_query[0].items():
             query_value = getattr(query_cell, key, None)
-            if key == 'radio':
+            if key == 'radioType':
                 self.assertEqual(query_value, cell.radio)
             else:
                 self.assertEqual(query_value, value)
@@ -185,15 +185,15 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query_area = query.cell_area[0]
         for key, value in cell_query[0].items():
             query_value = getattr(query_area, key, None)
-            if key == 'radio':
+            if key == 'radioType':
                 self.assertEqual(query_value, cell.radio)
-            elif key in ('cid', 'psc'):
+            elif key in ('cellId', 'primaryScramblingCode'):
                 pass
             else:
                 self.assertEqual(query_value, value)
 
     def test_cell_malformed(self):
-        query = Query(cell=[{'radio': 'foo', 'mcc': 'ab'}])
+        query = Query(cell=[{'radioType': 'foo', 'mobileCountryCode': 'ab'}])
         self.assertEqual(len(query.cell), 0)
 
     def test_cell_duplicated(self):
@@ -224,8 +224,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
     def test_cell_area_duplicated(self):
         cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell, cell, cell])
-        cell_query[1]['cid'] += 2
-        cell_query[2]['cid'] += 1
+        cell_query[1]['cellId'] += 2
+        cell_query[2]['cellId'] += 1
         query = Query(cell=cell_query)
         self.assertEqual(len(query.cell), 3)
         self.assertEqual(len(query.cell_area), 1)

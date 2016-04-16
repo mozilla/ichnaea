@@ -161,9 +161,14 @@ class TestOutboundSchema(TestCase):
     def test_cell(self):
         cell = CellShardFactory.build(radio=Radio.lte)
         query = Query(cell=[
-            {'radio': cell.radio, 'mcc': cell.mcc, 'mnc': cell.mnc,
-             'lac': cell.lac, 'cid': cell.cid,
-             'age': 1200, 'psc': 5, 'signalStrength': -70,
+            {'radioType': cell.radio,
+             'mobileCountryCode': cell.mcc,
+             'mobileNetworkCode': cell.mnc,
+             'locationAreaCode': cell.lac,
+             'cellId': cell.cid,
+             'age': 1200,
+             'primaryScramblingCode': 5,
+             'signalStrength': -70,
              'timingAdvance': 15,
              'unknown_field': 'foo'}])
         data = self.schema.deserialize(query.json())

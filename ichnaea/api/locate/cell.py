@@ -52,7 +52,7 @@ def cluster_cells(cells, lookups):
     signals = {}
     for lookup in lookups:
         signals[lookup.cellid] = (lookup.signalStrength or
-                                  MIN_CELL_SIGNAL[lookup.radio])
+                                  MIN_CELL_SIGNAL[lookup.radioType])
 
     areas = defaultdict(list)
     for cell in cells:
@@ -79,7 +79,7 @@ def cluster_areas(areas, lookups):
     signals = {}
     for lookup in lookups:
         signals[lookup.areaid] = (lookup.signalStrength or
-                                  MIN_CELL_SIGNAL[lookup.radio])
+                                  MIN_CELL_SIGNAL[lookup.radioType])
 
     clusters = []
     for area in areas:
@@ -146,7 +146,7 @@ def query_cells(query, lookups, model, raven_client):
     try:
         shards = defaultdict(list)
         for lookup in lookups:
-            shards[model.shard_model(lookup.radio)].append(lookup.cellid)
+            shards[model.shard_model(lookup.radioType)].append(lookup.cellid)
 
         for shard, shard_cellids in shards.items():
             rows = (
@@ -251,7 +251,7 @@ class CellRegionMixin(object):
         ambiguous_cells = []
         regions = []
         for cell in list(query.cell) + list(query.cell_area):
-            code = cell.mcc
+            code = cell.mobileCountryCode
             mcc_regions = GEOCODER.regions_for_mcc(code, metadata=True)
             # Divide score by number of possible regions for the mcc
             score = 1.0 / (len(mcc_regions) or 1.0)

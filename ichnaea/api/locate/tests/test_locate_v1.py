@@ -55,8 +55,8 @@ class TestSchema(TestCase):
             'radio': 'gsm',
             'radioType': 'wcdma',
         }]})
-        self.assertEqual(data['cellTowers'][0]['radio'], 'wcdma')
-        self.assertFalse('radioType' in data['cellTowers'][0])
+        self.assertEqual(data['cellTowers'][0]['radioType'], 'wcdma')
+        self.assertFalse('radio' in data['cellTowers'][0])
 
 
 class LocateV2Base(BaseLocateTest, AppTestCase):

@@ -34,15 +34,21 @@ class CellsSchema(colander.SequenceSchema):
 
         radio = colander.SchemaNode(
             colander.String(),
-            validator=colander.OneOf(RADIO_STRINGS), missing=None)
-        mcc = colander.SchemaNode(colander.Integer(), missing=None)
-        mnc = colander.SchemaNode(colander.Integer(), missing=None)
-        lac = colander.SchemaNode(colander.Integer(), missing=None)
-        cid = colander.SchemaNode(colander.Integer(), missing=None)
+            validator=colander.OneOf(RADIO_STRINGS), missing=None,
+            to_name='radioType')
+        mcc = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='mobileCountryCode')
+        mnc = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='mobileNetworkCode')
+        lac = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='locationAreaCode')
+        cid = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='cellId')
 
         age = colander.SchemaNode(colander.Integer(), missing=None)
         asu = colander.SchemaNode(colander.Integer(), missing=None)
-        psc = colander.SchemaNode(colander.Integer(), missing=None)
+        psc = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='primaryScramblingCode')
         signal = colander.SchemaNode(
             colander.Integer(), missing=None, to_name='signalStrength')
         ta = colander.SchemaNode(
@@ -70,7 +76,8 @@ class LocateV0Schema(BaseLocateSchema):
 
     radio = colander.SchemaNode(
         colander.String(),
-        validator=colander.OneOf(RADIO_STRINGS), missing=None)
+        validator=colander.OneOf(RADIO_STRINGS), missing=None,
+        to_name='radioType')
     blue = BluesSchema(missing=(), to_name='bluetoothBeacons')
     cell = CellsSchema(missing=(), to_name='cellTowers')
     wifi = WifisSchema(missing=(), to_name='wifiAccessPoints')

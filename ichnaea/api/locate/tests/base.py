@@ -133,13 +133,13 @@ class BaseSourceTest(ConnectionTestCase):
         if cells:
             for cell in cells:
                 cell_query = {
-                    'radio': cell.radio,
-                    'mcc': cell.mcc,
-                    'mnc': cell.mnc,
-                    'lac': cell.lac,
+                    'radioType': cell.radio,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
                 }
                 if getattr(cell, 'cid', None) is not None:
-                    cell_query['cid'] = cell.cid
+                    cell_query['cellId'] = cell.cid
                 query_cell.append(cell_query)
 
         query_wifi = []
@@ -304,7 +304,7 @@ class BaseLocateTest(object):
                 if getattr(cell, 'cid', None) is not None:
                     cell_query['cellId'] = cell.cid
                 if getattr(cell, 'psc', None) is not None:
-                    cell_query['psc'] = cell.cid
+                    cell_query['primaryScramblingCode'] = cell.cid
                 query['cellTowers'].append(cell_query)
         if wifis:
             query['wifiAccessPoints'] = []

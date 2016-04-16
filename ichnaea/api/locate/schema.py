@@ -15,8 +15,7 @@ from ichnaea.models.base import (
 from ichnaea.models.cell import (
     encode_cellarea,
     encode_cellid,
-    ValidCellAreaKeySchema,
-    ValidCellKeySchema,
+    RadioType,
 )
 from ichnaea.models import constants
 from ichnaea.models.constants import Radio
@@ -91,10 +90,10 @@ class BaseCellLookup(BaseLookup):
     """A base class for cell related lookup models."""
 
     _key_fields = (
-        'radio',
-        'mcc',
-        'mnc',
-        'lac',
+        'radioType',
+        'mobileCountryCode',
+        'mobileNetworkCode',
+        'locationAreaCode',
     )  #:
     _signal_fields = (
         'age',
@@ -113,7 +112,11 @@ class BaseCellLookup(BaseLookup):
 
     @property
     def areaid(self):
-        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+        return encode_cellarea(
+            self.radioType,
+            self.mobileCountryCode,
+            self.mobileNetworkCode,
+            self.locationAreaCode)
 
     def better(self, other):
         """Is self better than the other?"""
@@ -130,6 +133,28 @@ class BaseCellLookup(BaseLookup):
                     better_than(old_value, new_value)):
                 return True
         return False
+
+
+class ValidCellAreaKeySchema(colander.MappingSchema, ValidatorNode):
+
+    radioType = DefaultNode(RadioType())
+    mobileCountryCode = colander.SchemaNode(colander.Integer())
+    mobileNetworkCode = colander.SchemaNode(colander.Integer())
+    locationAreaCode = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LAC, constants.MAX_LAC))
+
+    def validator(self, node, cstruct):
+        super(ValidCellAreaKeySchema, self).validator(node, cstruct)
+
+        if cstruct['mobileCountryCode'] not in constants.ALL_VALID_MCCS:
+            raise colander.Invalid(node, (
+                'Check against the list of all known valid mccs'))
+
+        if (not (constants.MIN_MNC <= cstruct['mobileNetworkCode'] <=
+                 constants.MAX_MNC)):
+            raise colander.Invalid(node, ('MNC out of valid range.'))
 
 
 class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
@@ -179,8 +204,8 @@ class ValidCellSignalSchema(colander.MappingSchema, ValidatorNode):
 
         data = super(ValidCellSignalSchema, self).deserialize(data)
 
-        if isinstance(data.get('radio'), Radio):
-            radio = data['radio']
+        if isinstance(data.get('radioType'), Radio):
+            radio = data['radioType']
 
             # Radio type specific checks for ASU field
             if data.get('asu') is not None:
@@ -221,7 +246,7 @@ class ValidCellAreaLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
     def validator(self, node, cstruct):
         super(ValidCellAreaLookupSchema, self).validator(node, cstruct)
 
-        if cstruct['lac'] is None:
+        if cstruct['locationAreaCode'] is None:
             raise colander.Invalid(node, ('LAC is required in lookups.'))
 
 
@@ -232,13 +257,48 @@ class CellAreaLookup(BaseCellLookup):
     _fields = BaseCellLookup._fields
 
 
-class ValidCellLookupSchema(ValidCellKeySchema, ValidCellSignalSchema):
+class ValidCellLookupSchema(ValidCellAreaKeySchema, ValidCellSignalSchema):
     """A schema which validates the fields in a cell lookup."""
+
+    cellId = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(constants.MIN_CID, constants.MAX_CID))
+    primaryScramblingCode = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(constants.MIN_PSC, constants.MAX_PSC))
+
+    def __init__(self, *args, **kw):
+        super(ValidCellLookupSchema, self).__init__(*args, **kw)
+        self.radio_node = self.get('radioType')
+
+    def deserialize(self, data):
+        if data:
+            # shallow copy
+            data = dict(data)
+            # deserialize and validate radio field early
+            data['radioType'] = self.radio_node.deserialize(
+                data.get('radioType', colander.null))
+
+            # If the cell id > 65535 then it must be a WCDMA tower
+            if (data['radioType'] is Radio['gsm'] and
+                    data.get('cellId') is not None and
+                    data.get('cellId', 0) > constants.MAX_CID_GSM):
+                data['radioType'] = Radio['wcdma']
+
+            if (data['radioType'] is Radio['lte'] and
+                    data.get('primaryScramblingCode') is not None and
+                    data.get('primaryScramblingCode', 0) >
+                    constants.MAX_PSC_LTE):
+                data['primaryScramblingCode'] = None
+
+        return super(ValidCellLookupSchema, self).deserialize(data)
 
     def validator(self, node, cstruct):
         super(ValidCellLookupSchema, self).validator(node, cstruct)
 
-        if (cstruct['lac'] is None or cstruct['cid'] is None):
+        if (cstruct['locationAreaCode'] is None or cstruct['cellId'] is None):
             raise colander.Invalid(node, ('LAC/CID are required in lookups.'))
 
 
@@ -247,14 +307,18 @@ class CellLookup(BaseCellLookup):
 
     _valid_schema = ValidCellLookupSchema()
     _fields = BaseCellLookup._key_fields + (
-        'cid',
-        'psc',
+        'cellId',
+        'primaryScramblingCode',
     ) + BaseCellLookup._signal_fields
 
     @property
     def cellid(self):
         return encode_cellid(
-            self.radio, self.mcc, self.mnc, self.lac, self.cid)
+            self.radioType,
+            self.mobileCountryCode,
+            self.mobileNetworkCode,
+            self.locationAreaCode,
+            self.cellId)
 
 
 class ValidWifiLookupSchema(colander.MappingSchema, ValidatorNode):
@@ -365,11 +429,11 @@ class BaseLocateSchema(RenamingMappingSchema):
     def deserialize(self, data):
         data = super(BaseLocateSchema, self).deserialize(data)
 
-        if 'radio' in data:
+        if 'radioType' in data:
             for cell in data.get('cellTowers', ()):
-                if 'radio' not in cell or not cell['radio']:
-                    cell['radio'] = data['radio']
+                if 'radioType' not in cell or not cell['radioType']:
+                    cell['radioType'] = data['radioType']
 
-            del data['radio']
+            del data['radioType']
 
         return data

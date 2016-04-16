@@ -35,25 +35,29 @@ class CellTowersSchema(colander.SequenceSchema):
         # radio is a FxOS specific undocumented workaround
         radio = colander.SchemaNode(
             colander.String(),
-            validator=colander.OneOf(RADIO_STRINGS), missing=colander.drop)
+            validator=colander.OneOf(RADIO_STRINGS), missing=colander.drop,
+            to_name='radioType')
         # radioType resolves to the internal field 'radio', so if both
         # 'radio' and 'radioType' are provided, radioType should take
         # precedence. colander respects the order that fields are defined
         # and so radioType is defined after the 'radio' field.
         radioType = colander.SchemaNode(
             colander.String(), validator=colander.OneOf(RADIO_STRINGS),
-            missing=colander.drop, to_name='radio')
+            missing=colander.drop)
         mobileCountryCode = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='mcc')
+            colander.Integer(), missing=None)
         mobileNetworkCode = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='mnc')
+            colander.Integer(), missing=None)
         locationAreaCode = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='lac')
+            colander.Integer(), missing=None)
         cellId = colander.SchemaNode(
-            colander.Integer(), missing=None, to_name='cid')
+            colander.Integer(), missing=None)
 
         age = colander.SchemaNode(colander.Integer(), missing=None)
-        psc = colander.SchemaNode(colander.Integer(), missing=None)
+        psc = colander.SchemaNode(
+            colander.Integer(), missing=None, to_name='primaryScramblingCode')
+        primaryScramblingCode = colander.SchemaNode(
+            colander.Integer(), missing=None)
         signalStrength = colander.SchemaNode(colander.Integer(), missing=None)
         timingAdvance = colander.SchemaNode(colander.Integer(), missing=None)
 
@@ -83,7 +87,7 @@ class LocateV1Schema(BaseLocateSchema):
         colander.Integer(), missing=None)
     radioType = colander.SchemaNode(
         colander.String(), validator=colander.OneOf(RADIO_STRINGS),
-        missing=colander.drop, to_name='radio')
+        missing=colander.drop)
 
     bluetoothBeacons = BluetoothBeaconsSchema(missing=())
     cellTowers = CellTowersSchema(missing=())

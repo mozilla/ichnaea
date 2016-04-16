@@ -235,10 +235,10 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
                     data.get('cid', 0) > constants.MAX_CID_GSM):
                 data['radio'] = Radio['wcdma']
 
-            # Treat cid=65535 without a valid lac as an unspecified value
-            if (data.get('lac') is None and
-                    data.get('cid') == constants.MAX_CID_GSM):
-                data['cid'] = None
+            if (data['radio'] is Radio['lte'] and
+                    data.get('psc') is not None and
+                    data.get('psc', 0) > constants.MAX_PSC_LTE):
+                data['psc'] = None
 
         return super(ValidCellKeySchema, self).deserialize(data)
 
@@ -248,11 +248,6 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
         if ((cstruct.get('lac') is None or cstruct.get('cid') is None) and
                 cstruct.get('psc') is None):
             raise colander.Invalid(node, ('Must have (LAC and CID) or PSC.'))
-
-        if (cstruct['radio'] is Radio['lte'] and
-                cstruct.get('psc') is not None and
-                cstruct.get('psc', 0) > constants.MAX_PSC_LTE):
-            raise colander.Invalid(node, ('PSC is out of range for LTE.'))
 
 
 class ValidCellAreaSchema(ValidCellAreaKeySchema,
