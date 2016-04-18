@@ -153,6 +153,14 @@ class Report(BaseReport):
         # Maps 10: 1, 20: 0.7, 40: 0.5, 80: 0.35, 100: 0.32, 200: 0.22
         return math.sqrt(10 / max(accuracy, 10.0))
 
+    @property
+    def age_weight(self):
+        # Default to 2000 ms for unknown age. Use positive numbers as
+        # we only care about relative age difference.
+        age = self.age is not None and float(abs(self.age)) or 2000.0
+        # Maps 0: 1.0, 2000: 1.0, 4000: 0.7: 8000: 0.5, 18000: 0.33
+        return min(math.sqrt(2000.0 / max(age, 2000.0)), 1.0)
+
 
 class ValidBlueReportSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the Bluetooth specific fields in a report."""
@@ -212,7 +220,7 @@ class BlueObservation(BlueReport, Report, BaseObservation):
     @property
     def weight(self):
         signal_weight = 1.0
-        return signal_weight * self.accuracy_weight
+        return signal_weight * self.age_weight * self.accuracy_weight
 
 
 class ValidCellReportSchema(ValidCellKeySchema):
@@ -396,7 +404,7 @@ class CellObservation(CellReport, Report, BaseObservation):
         signal_weight = 1.0
         if signal is not None:
             signal_weight = ((1.0 / (signal + offset) ** 2) * 10000) ** 2
-        return signal_weight * self.accuracy_weight
+        return signal_weight * self.age_weight * self.accuracy_weight
 
 
 class ValidWifiReportSchema(colander.MappingSchema, ValidatorNode):
@@ -504,4 +512,4 @@ class WifiObservation(WifiReport, Report, BaseObservation):
         signal = self.signal if self.signal is not None else -80
         # Maps -100: ~0.5, -80: 1.0, -60: 2.4, -30: 16, -10: ~123
         signal_weight = ((1.0 / (signal - 20.0) ** 2) * 10000) ** 2
-        return signal_weight * self.accuracy_weight
+        return signal_weight * self.age_weight * self.accuracy_weight

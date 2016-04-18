@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Take age into account in observation weights.
+
 - Pass queries into internal data pipeline.
 
 - Allow stations to be blocklisted once per 30 days of their lifespan.
