@@ -273,8 +273,10 @@ class StationUpdater(object):
             obs = self.obs_model.from_json(obs)
             if obs is not None:
                 if obs.source is ReportSource.query:
-                    # TODO: don't process query derived observations
-                    # at this point.
+                    # TODO: Don't process query derived observations.
+                    continue
+                if not obs.weight:
+                    # Filter out observations with too little weight.
                     continue
                 shard = obs.shard_model
                 if shard not in sharded_obs:

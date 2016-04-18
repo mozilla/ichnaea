@@ -729,6 +729,8 @@ class TestWifi(StationTest):
                         age=-8000, accuracy=40.0, signal=-60, mac=wifi.mac),
             obs_factory(lat=wifi.lat, lon=wifi.lon - 0.006,
                         age=1000, accuracy=10.0, signal=-90, mac=wifi.mac),
+            obs_factory(lat=wifi.lat, lon=wifi.lon - 0.008,
+                        age=40000, accuracy=10.0, signal=-10, mac=wifi.mac),
         ]
 
         self.session.commit()

@@ -68,6 +68,9 @@ CELLAREA_MAX_RADIUS = 20000000  #: Max radius of a cell area.
 CELL_MAX_RADIUS = 100000  #: Max radius of a single cell network.
 WIFI_MAX_RADIUS = 5000  #: Max radius of a single WiFi network.
 
+MAX_OBSERVATION_AGE = 20000.0  #: Maximum observation age.
+MAX_OBSERVATION_ACCURACY = 200.0  #: Maximum observation age.
+
 WIFI_TEST_MAC = '01005e901000'
 """
 We use a `documentation-only multi-cast address

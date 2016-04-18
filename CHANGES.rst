@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Filter out observations with too little weight.
+
 - Take age into account in observation weights.
 
 - Pass queries into internal data pipeline.

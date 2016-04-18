@@ -148,18 +148,24 @@ class Report(BaseReport):
     @property
     def accuracy_weight(self):
         # Default to 10.0 meters for unknown accuracy
-        accuracy = self.accuracy is not None and self.accuracy or 10.0
+        accuracy = self.accuracy is not None and abs(self.accuracy) or 10.0
+        accuracy = max(accuracy, 10.0)
         # Don't differentiate values below 10 meters
         # Maps 10: 1, 20: 0.7, 40: 0.5, 80: 0.35, 100: 0.32, 200: 0.22
-        return math.sqrt(10 / max(accuracy, 10.0))
+        if accuracy > constants.MAX_OBSERVATION_ACCURACY:
+            return 0.0
+        return math.sqrt(10 / accuracy)
 
     @property
     def age_weight(self):
         # Default to 2000 ms for unknown age. Use positive numbers as
         # we only care about relative age difference.
-        age = self.age is not None and float(abs(self.age)) or 2000.0
+        age = self.age is not None and abs(self.age) or 2000.0
+        age = max(age, 2000.0)
         # Maps 0: 1.0, 2000: 1.0, 4000: 0.7: 8000: 0.5, 18000: 0.33
-        return min(math.sqrt(2000.0 / max(age, 2000.0)), 1.0)
+        if age > constants.MAX_OBSERVATION_AGE:
+            return 0.0
+        return min(math.sqrt(2000.0 / age), 1.0)
 
 
 class ValidBlueReportSchema(colander.MappingSchema, ValidatorNode):
