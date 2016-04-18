@@ -23,8 +23,8 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.geocalc import distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
-    encode_cellarea,
-    encode_cellid,
+    decode_cellarea,
+    decode_cellid,
     CellArea,
     CellAreaOCID,
     CellShard,
@@ -37,22 +37,24 @@ NETWORK_DTYPE = numpy.dtype([
     ('lat', numpy.double),
     ('lon', numpy.double),
     ('radius', numpy.double),
+    ('age', numpy.int32),
     ('signalStrength', numpy.int32),
     ('score', numpy.double),
 ])
 
 
-def cluster_cells(cells, lookups):
+def cluster_cells(cells, lookups, min_age=0):
     """
     Cluster cells by area.
     """
     now = util.utcnow()
 
-    # Create a dict of cell ids mapped to their signal strength.
-    signals = {}
+    # Create a dict of cell ids mapped to their age and signal strength.
+    obs_data = {}
     for lookup in lookups:
-        signals[lookup.cellid] = (lookup.signalStrength or
-                                  MIN_CELL_SIGNAL[lookup.radioType])
+        obs_data[decode_cellid(lookup.cellid)] = (
+            max(abs(lookup.age or min_age), 1000),
+            lookup.signalStrength or MIN_CELL_SIGNAL[lookup.radioType])
 
     areas = defaultdict(list)
     for cell in cells:
@@ -60,32 +62,37 @@ def cluster_cells(cells, lookups):
 
     clusters = []
     for area_cells in areas.values():
-        clusters.append(numpy.array(
-            [(cell.lat, cell.lon, cell.radius,
-              signals[encode_cellid(*cell.cellid)], cell.score(now))
-             for cell in area_cells],
+        clusters.append(numpy.array([(
+            cell.lat, cell.lon, cell.radius,
+            obs_data[cell.cellid][0],
+            obs_data[cell.cellid][1],
+            cell.score(now))
+            for cell in area_cells],
             dtype=NETWORK_DTYPE))
 
     return clusters
 
 
-def cluster_areas(areas, lookups):
+def cluster_areas(areas, lookups, min_age=0):
     """
     Cluster areas, treat each area as its own cluster.
     """
     now = util.utcnow()
 
-    # Create a dict of area ids mapped to their signal strength.
-    signals = {}
+    # Create a dict of area ids mapped to their age and signal strength.
+    obs_data = {}
     for lookup in lookups:
-        signals[lookup.areaid] = (lookup.signalStrength or
-                                  MIN_CELL_SIGNAL[lookup.radioType])
+        obs_data[decode_cellarea(lookup.areaid)] = (
+            max(abs(lookup.age or min_age), 1000),
+            lookup.signalStrength or MIN_CELL_SIGNAL[lookup.radioType])
 
     clusters = []
     for area in areas:
-        clusters.append(numpy.array(
-            [(area.lat, area.lon, area.radius,
-              signals[encode_cellarea(*area.areaid)], area.score(now))],
+        clusters.append(numpy.array([(
+            area.lat, area.lon, area.radius,
+            obs_data[area.areaid][0],
+            obs_data[area.areaid][1],
+            area.score(now))],
             dtype=NETWORK_DTYPE))
 
     return clusters
@@ -111,7 +118,10 @@ def aggregate_cell_position(networks, min_accuracy, max_accuracy):
         dtype=numpy.double)
 
     weights = numpy.array([
-        net['score'] / math.pow(net['signalStrength'], 2) for net in networks],
+        net['score'] *
+        min(math.sqrt(2000.0 / net['age']), 1.0) /
+        math.pow(net['signalStrength'], 2)
+        for net in networks],
         dtype=numpy.double)
 
     lat, lon = numpy.average(points, axis=0, weights=weights)

@@ -219,7 +219,7 @@ class TestWifi(BaseSourceTest):
         self.assertAlmostEqual(result.lon, wifi1.lon, 4)
         self.assertAlmostEqual(result.score, score, 4)
 
-    def test_signal_weight(self):
+    def test_weight(self):
         wifi1 = WifiShardFactory.build()
         wifis = []
         for i in range(4):
@@ -229,12 +229,15 @@ class TestWifi(BaseSourceTest):
 
         query = self.model_query(wifis=wifis)
         query.wifi[0].signalStrength = -10
+        query.wifi[0].age = 0
         query.wifi[1].signalStrength = -40
+        query.wifi[1].age = 8000
         query.wifi[2].signalStrength = -70
+        query.wifi[2].age = 16000
         query.wifi[3].signalStrength = -100
 
         results = self.source.search(query)
         result = results.best()
-        self.assertAlmostEqual(result.lat, wifi1.lat + 0.0000018, 7)
-        self.assertAlmostEqual(result.lon, wifi1.lon + 0.0000014, 7)
-        self.assertAlmostEqual(result.accuracy, 39.34, 2)
+        self.assertAlmostEqual(result.lat, wifi1.lat + 0.000001, 7)
+        self.assertAlmostEqual(result.lon, wifi1.lon + 0.0000006, 7)
+        self.assertAlmostEqual(result.accuracy, 39.45, 2)

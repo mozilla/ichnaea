@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Take age into account during locate lookups.
+
 - Filter out observations with too little weight.
 
 - Take age and speed into account in observation weights.

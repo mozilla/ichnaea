@@ -10,35 +10,41 @@ from scipy.optimize import leastsq
 from sqlalchemy.orm import load_only
 
 from ichnaea.geocalc import distance
-from ichnaea.models.mac import encode_mac
+from ichnaea.models.mac import decode_mac
 from ichnaea import util
 
 NETWORK_DTYPE = numpy.dtype([
     ('lat', numpy.double),
     ('lon', numpy.double),
     ('radius', numpy.double),
+    ('age', numpy.int32),
     ('signalStrength', numpy.int32),
     ('score', numpy.double),
 ])
 
 
 def cluster_networks(models, lookups,
-                     min_radius=None, min_signal=None, max_distance=None):
+                     min_age=0, min_radius=None, min_signal=None,
+                     max_distance=None):
     """
     Given a list of database models and lookups, return
     a list of clusters of nearby networks.
     """
     now = util.utcnow()
 
-    # Create a dict of macs mapped to their signal strength.
-    signals = {}
+    # Create a dict of macs mapped to their age and signal strength.
+    obs_data = {}
     for lookup in lookups:
-        signals[lookup.mac] = lookup.signalStrength or min_signal
+        obs_data[decode_mac(lookup.mac)] = (
+            max(abs(lookup.age or min_age), 1000),
+            lookup.signalStrength or min_signal)
 
-    networks = numpy.array(
-        [(model.lat, model.lon, model.radius or min_radius,
-          signals[encode_mac(model.mac)], model.score(now))
-         for model in models],
+    networks = numpy.array([(
+        model.lat, model.lon,
+        model.radius or min_radius,
+        obs_data[model.mac][0],
+        obs_data[model.mac][1],
+        model.score(now)) for model in models],
         dtype=NETWORK_DTYPE)
 
     # Only consider clusters that have at least 2 found networks
@@ -94,7 +100,8 @@ def aggregate_mac_position(networks, minimum_accuracy):
 
     def func(point, points):
         return numpy.array([
-            distance(p['lat'], p['lon'], point[0], point[1]) /
+            distance(p['lat'], p['lon'], point[0], point[1]) *
+            min(math.sqrt(2000.0 / p['age']), 1.0) /
             math.pow(p['signalStrength'], 2)
             for p in points])
 
@@ -104,7 +111,10 @@ def aggregate_mac_position(networks, minimum_accuracy):
         dtype=numpy.double)
 
     weights = numpy.array([
-        net['score'] / math.pow(net['signalStrength'], 2) for net in networks],
+        net['score'] *
+        min(math.sqrt(2000.0 / net['age']), 1.0) /
+        math.pow(net['signalStrength'], 2)
+        for net in networks],
         dtype=numpy.double)
 
     initial = numpy.average(points, axis=0, weights=weights)
