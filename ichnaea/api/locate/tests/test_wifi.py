@@ -238,6 +238,6 @@ class TestWifi(BaseSourceTest):
 
         results = self.source.search(query)
         result = results.best()
-        self.assertAlmostEqual(result.lat, wifi1.lat + 0.000001, 7)
+        self.assertAlmostEqual(result.lat, wifi1.lat + 0.0000009, 7)
         self.assertAlmostEqual(result.lon, wifi1.lon + 0.0000006, 7)
-        self.assertAlmostEqual(result.accuracy, 39.45, 2)
+        self.assertAlmostEqual(result.accuracy, 39.51, 2)

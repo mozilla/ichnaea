@@ -5,16 +5,26 @@ Contains helper functions for various geo related calculations.
 These are implemented in Cython / C using NumPy.
 """
 
-from libc.math cimport asin, cos, fmax, fmin, M_PI, pow, sin, sqrt
+from libc.math cimport asin, atan, atan2, cos
+from libc.math cimport fmax, fmin, M_PI, sin, sqrt, tan
 from numpy cimport double_t, ndarray
 
 import numpy
 
-cdef double EARTH_RADIUS = 6371.0  #: Earth radius in km.
 cdef double MAX_LAT = 85.051  #: Max Web Mercator latitude
 cdef double MIN_LAT = -85.051  #: Min Web Mercator latitude
 cdef double MAX_LON = 180.0  #: Max Web Mercator longitude
 cdef double MIN_LON = -180.0  #: Min Web Mercator longitude
+
+# Constant used in Haversine formula
+cdef double EARTH_RADIUS = 6371.009  #: Earth radius in km.
+
+# Constants for WSG-84 ellipsoid
+cdef double EARTH_MAJOR_RADIUS = 6378.137
+cdef double EARTH_MINOR_RADIUS = 6356.752314245
+cdef double EARTH_FLATTENING = 0.0033528106647474805  # 1.0 / 298.257223563
+cdef double VINCENTY_CUTOFF = 0.00000000001  # 10e-12
+cdef int VINCENTY_ITERATIONS = 25
 
 cdef double* RANDOM_LAT = [
     0.8218, 0.1382, 0.8746, 0.0961, 0.8159, 0.2876, 0.6191, 0.0897,
@@ -110,10 +120,21 @@ cpdef int circle_radius(double lat, double lon,
     return round(radius)
 
 
-cpdef double distance(double lat1, double lon1, double lat2, double lon2):
+cpdef double distance(double lat1, double lon1,
+                      double lat2, double lon2):
+    # Default to Vincenty distance, falling back to Haversine if
+    # Vincenty doesn't converge in VINCENTY_ITERATIONS iterations.
+    try:
+        return vincenty_distance(lat1, lon1, lat2, lon2)
+    except ValueError:
+        return haversine_distance(lat1, lon1, lat2, lon2)
+
+
+cpdef double haversine_distance(double lat1, double lon1,
+                                double lat2, double lon2):
     """
     Compute the distance between a pair of lat/longs in meters using
-    the haversine calculation. The output distance is in meters.
+    the Haversine calculation. The output distance is in meters.
 
     References:
       * http://en.wikipedia.org/wiki/Haversine_formula
@@ -128,10 +149,7 @@ cpdef double distance(double lat1, double lon1, double lat2, double lon2):
     value for the Earth's mean radius. This means that errors from
     assuming spherical geometry might be up to 0.55% crossing the
     equator, though generally below 0.3%, depending on latitude and
-    direction of travel. An accuracy of better than 3m in 1km is
-    mostly good enough for me, but if you want greater accuracy, you
-    could use the Vincenty formula for calculating geodesic distances
-    on ellipsoids, which gives results accurate to within 1mm.
+    direction of travel.
     """
     cdef double a, c, dLat, dLon
 
@@ -141,9 +159,127 @@ cpdef double distance(double lat1, double lon1, double lat2, double lon2):
     lat1 = deg2rad(lat1)
     lat2 = deg2rad(lat2)
 
-    a = pow(sin(dLat), 2) + cos(lat1) * cos(lat2) * pow(sin(dLon), 2)
+    a = sin(dLat) ** 2 + cos(lat1) * cos(lat2) * sin(dLon) ** 2
     c = asin(fmin(1, sqrt(a)))
-    return 1000 * 2 * EARTH_RADIUS * c
+    return 1000.0 * 2.0 * EARTH_RADIUS * c
+
+
+cpdef double vincenty_distance(double lat1, double lon1,
+                               double lat2, double lon2) except -1:
+    """
+    Compute the distance between a pair of lat/longs in meters using
+    the Vincenty formula.
+
+    References:
+      * https://en.wikipedia.org/wiki/Vincenty's_formulae
+      * http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+    """
+    cdef double delta_lon, reduced_lat1, reduced_lat2
+    cdef double sin_reduced1, cos_reduced1, sin_reduced2, cos_reduced2
+    cdef double lambda_lon, lambda_prime
+    cdef double sin_lambda_lon, cos_lambda_lon, sin_sigma, cos_sigma
+    cdef double sigma, sin_alpha, cos_sq_alpha, cos2_sigma_m
+    cdef double u_sq, A, B, C, delta_sigma
+    cdef int i
+
+    lat1 = deg2rad(lat1)
+    lon1 = deg2rad(lon1)
+    lat2 = deg2rad(lat2)
+    lon2 = deg2rad(lon2)
+
+    delta_lon = lon2 - lon1
+
+    reduced_lat1 = atan((1.0 - EARTH_FLATTENING) * tan(lat1))
+    reduced_lat2 = atan((1.0 - EARTH_FLATTENING) * tan(lat2))
+
+    sin_reduced1 = sin(reduced_lat1)
+    cos_reduced1 = cos(reduced_lat1)
+    sin_reduced2 = sin(reduced_lat2)
+    cos_reduced2 = cos(reduced_lat2)
+
+    lambda_lon = delta_lon
+    lambda_prime = 2.0 * M_PI
+
+    i = 0
+    while (abs(lambda_lon - lambda_prime) > VINCENTY_CUTOFF and
+           i <= VINCENTY_ITERATIONS):
+        i += 1
+
+        sin_lambda_lon = sin(lambda_lon)
+        cos_lambda_lon = cos(lambda_lon)
+
+        sin_sigma = sqrt(
+            (cos_reduced2 * sin_lambda_lon) ** 2 +
+            (cos_reduced1 * sin_reduced2 -
+             sin_reduced1 * cos_reduced2 * cos_lambda_lon) ** 2
+        )
+
+        if sin_sigma == 0:
+            return 0.0  # Coincident points
+
+        cos_sigma = (
+            sin_reduced1 * sin_reduced2 +
+            cos_reduced1 * cos_reduced2 * cos_lambda_lon
+        )
+
+        sigma = atan2(sin_sigma, cos_sigma)
+
+        sin_alpha = (
+            cos_reduced1 * cos_reduced2 * sin_lambda_lon / sin_sigma
+        )
+        cos_sq_alpha = 1.0 - sin_alpha ** 2
+
+        if cos_sq_alpha != 0.0:
+            cos2_sigma_m = (
+                cos_sigma - (2.0 * sin_reduced1 * sin_reduced2 / cos_sq_alpha)
+            )
+        else:
+            cos2_sigma_m = 0.0  # Equatorial line
+
+        C = (
+            EARTH_FLATTENING / 16.0 * cos_sq_alpha *
+            (4.0 + EARTH_FLATTENING * (4.0 - 3.0 * cos_sq_alpha))
+        )
+
+        lambda_prime = lambda_lon
+        lambda_lon = (
+            delta_lon + (1.0 - C) * EARTH_FLATTENING * sin_alpha *
+                (sigma + C * sin_sigma *
+                    (cos2_sigma_m + C * cos_sigma *
+                        (-1.0 + 2.0 * cos2_sigma_m ** 2)))
+        )
+
+    if i > VINCENTY_ITERATIONS:
+        raise ValueError("Vincenty formula failed to converge!")
+
+    u_sq = (
+        cos_sq_alpha *
+        (EARTH_MAJOR_RADIUS ** 2 - EARTH_MINOR_RADIUS ** 2) /
+        EARTH_MINOR_RADIUS ** 2
+    )
+
+    A = (
+        1.0 + u_sq / 16384.0 *
+        (4096.0 + u_sq *
+            (-768.0 + u_sq * (320.0 - 175.0 * u_sq)))
+    )
+
+    B = (
+        u_sq / 1024.0 *
+        (256.0 + u_sq *
+            (-128.0 + u_sq * (74.0 - 47.0 * u_sq))))
+
+    delta_sigma = (
+        B * sin_sigma *
+            (cos2_sigma_m + B / 4.0 *
+                (cos_sigma *
+                    (-1.0 + 2.0 * cos2_sigma_m ** 2) -
+                    B / 6.0 * cos2_sigma_m *
+                        (-3.0 + 4.0 * sin_sigma ** 2) *
+                        (-3.0 + 4.0 * cos2_sigma_m ** 2)))
+    )
+
+    return 1000.0 * EARTH_MINOR_RADIUS * A * (sigma - delta_sigma)
 
 
 cpdef double latitude_add(double lat, double lon, double meters):

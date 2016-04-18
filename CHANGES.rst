@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use Vincenty instead of Haversine formula for distance calculations.
+
 - Take age into account during locate lookups.
 
 - Filter out observations with too little weight.
