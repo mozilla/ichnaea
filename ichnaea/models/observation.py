@@ -146,6 +146,10 @@ class Report(BaseReport):
         return cls(**values)
 
     @property
+    def base_weight(self):
+        return self.accuracy_weight * self.age_weight * self.speed_weight
+
+    @property
     def accuracy_weight(self):
         # Default to 10.0 meters for unknown accuracy
         accuracy = self.accuracy is not None and abs(self.accuracy) or 10.0
@@ -166,6 +170,16 @@ class Report(BaseReport):
         if age > constants.MAX_OBSERVATION_AGE:
             return 0.0
         return min(math.sqrt(2000.0 / age), 1.0)
+
+    @property
+    def speed_weight(self):
+        # Default to 1 meter / second for unknown speed.
+        speed = self.speed is not None and abs(self.speed) or 1.0
+        speed = max(speed, 1.0)
+        # Maps: 0: 1.0, 5.0: 1.0, 10.0: 0.7, 20.0: 0.5, 45.0: 0.33
+        if speed > constants.MAX_OBSERVATION_SPEED:
+            return 0.0
+        return min(math.sqrt(5.0 / speed), 1.0)
 
 
 class ValidBlueReportSchema(colander.MappingSchema, ValidatorNode):
@@ -226,7 +240,7 @@ class BlueObservation(BlueReport, Report, BaseObservation):
     @property
     def weight(self):
         signal_weight = 1.0
-        return signal_weight * self.age_weight * self.accuracy_weight
+        return signal_weight * self.base_weight
 
 
 class ValidCellReportSchema(ValidCellKeySchema):
@@ -410,7 +424,7 @@ class CellObservation(CellReport, Report, BaseObservation):
         signal_weight = 1.0
         if signal is not None:
             signal_weight = ((1.0 / (signal + offset) ** 2) * 10000) ** 2
-        return signal_weight * self.age_weight * self.accuracy_weight
+        return signal_weight * self.base_weight
 
 
 class ValidWifiReportSchema(colander.MappingSchema, ValidatorNode):
@@ -518,4 +532,4 @@ class WifiObservation(WifiReport, Report, BaseObservation):
         signal = self.signal if self.signal is not None else -80
         # Maps -100: ~0.5, -80: 1.0, -60: 2.4, -30: 16, -10: ~123
         signal_weight = ((1.0 / (signal - 20.0) ** 2) * 10000) ** 2
-        return signal_weight * self.age_weight * self.accuracy_weight
+        return signal_weight * self.base_weight

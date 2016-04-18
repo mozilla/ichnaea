@@ -138,24 +138,35 @@ class TestBlueObservation(BaseTest):
     def test_weight(self):
         obs_factory = BlueObservationFactory.build
         self.assertAlmostEqual(obs_factory(
-            accuracy=None, signal=-80).weight, 1.0)
+            accuracy=None).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, signal=-80).weight, 1.0)
+            accuracy=0.0).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=10.0, signal=-80).weight, 1.0)
+            accuracy=10.0).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=40.0, signal=-80).weight, 0.5)
+            accuracy=40.0).weight, 0.5)
         self.assertAlmostEqual(obs_factory(
-            accuracy=100.0, signal=-80).weight, 0.316, 3)
+            accuracy=100.0).weight, 0.316, 3)
         self.assertAlmostEqual(obs_factory(
-            accuracy=201.0, signal=-80).weight, 0.0)
+            accuracy=201.0).weight, 0.0)
 
         self.assertAlmostEqual(obs_factory(
-            accuracy=None, age=1000, signal=-80).weight, 1.0)
+            accuracy=None, age=1000).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=None, age=8000, signal=-80).weight, 0.5)
+            accuracy=None, age=8000).weight, 0.5)
         self.assertAlmostEqual(obs_factory(
-            accuracy=None, age=20001, signal=-80).weight, 0.0)
+            accuracy=None, age=20001).weight, 0.0)
+
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=None).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=0.0).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=1.0).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=20.0).weight, 0.5)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=51.0).weight, 0.0)
 
 
 class TestBlueReport(BaseTest):
@@ -272,11 +283,22 @@ class TestCellObservation(BaseTest):
             radio=Radio.lte, accuracy=10.0, signal=-140).weight, 0.3, 2)
 
         self.assertAlmostEqual(obs_factory(
-            radio=Radio.gsm, accuracy=None, age=1000, signal=-95).weight, 1.0)
+            radio=Radio.gsm, accuracy=None, age=1000).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            radio=Radio.gsm, accuracy=None, age=8000, signal=-95).weight, 0.5)
+            radio=Radio.gsm, accuracy=None, age=8000).weight, 0.5)
         self.assertAlmostEqual(obs_factory(
-            radio=Radio.gsm, accuracy=None, age=20001, signal=-95).weight, 0.0)
+            radio=Radio.gsm, accuracy=None, age=20001,).weight, 0.0)
+
+        self.assertAlmostEqual(obs_factory(
+            radio=Radio.gsm, accuracy=None, speed=None).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            radio=Radio.gsm, accuracy=None, speed=0.0).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            radio=Radio.gsm, accuracy=None, speed=1.0).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            radio=Radio.gsm, accuracy=None, speed=20.0).weight, 0.5)
+        self.assertAlmostEqual(obs_factory(
+            radio=Radio.gsm, accuracy=None, speed=51.0).weight, 0.0)
 
 
 class TestCellReport(BaseTest):
@@ -493,17 +515,28 @@ class TestWifiObservation(BaseTest):
             accuracy=100.0, signal=-10).weight, 39.04, 2)
 
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, age=0, signal=-80).weight, 1.0)
+            accuracy=0.0, age=0).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, age=1000, signal=-80).weight, 1.0)
+            accuracy=0.0, age=1000).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, age=-1000, signal=-80).weight, 1.0)
+            accuracy=0.0, age=-1000).weight, 1.0)
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, age=5000, signal=-80).weight, 0.63, 2)
+            accuracy=0.0, age=5000).weight, 0.63, 2)
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, age=8000, signal=-80).weight, 0.5)
+            accuracy=0.0, age=8000).weight, 0.5)
         self.assertAlmostEqual(obs_factory(
-            accuracy=0.0, age=20001, signal=-80).weight, 0.0)
+            accuracy=0.0, age=20001).weight, 0.0)
+
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=None).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=0.0).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=1.0).weight, 1.0)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=20.0).weight, 0.5)
+        self.assertAlmostEqual(obs_factory(
+            accuracy=None, speed=51.0).weight, 0.0)
 
 
 class TestWifiReport(BaseTest):

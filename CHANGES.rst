@@ -22,7 +22,7 @@ Changes
 
 - Filter out observations with too little weight.
 
-- Take age into account in observation weights.
+- Take age and speed into account in observation weights.
 
 - Pass queries into internal data pipeline.
 

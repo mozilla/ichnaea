@@ -729,8 +729,12 @@ class TestWifi(StationTest):
                         age=-8000, accuracy=40.0, signal=-60, mac=wifi.mac),
             obs_factory(lat=wifi.lat, lon=wifi.lon - 0.006,
                         age=1000, accuracy=10.0, signal=-90, mac=wifi.mac),
+            obs_factory(lat=wifi.lat, lon=wifi.lon - 0.006,
+                        accuracy=10.0, speed=20.0, mac=wifi.mac),
             obs_factory(lat=wifi.lat, lon=wifi.lon - 0.008,
-                        age=40000, accuracy=10.0, signal=-10, mac=wifi.mac),
+                        age=40000, accuracy=10.0, mac=wifi.mac),
+            obs_factory(lat=wifi.lat, lon=wifi.lon - 0.008,
+                        accuracy=10.0, speed=50.1, mac=wifi.mac),
         ]
 
         self.session.commit()
@@ -742,9 +746,9 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(wifi.lat, wifi_lat)
         self.assertAlmostEqual(wifi.max_lat, wifi_lat)
         self.assertAlmostEqual(wifi.min_lat, wifi_lat)
-        self.assertAlmostEqual(wifi.lon, wifi_lon - 0.0018688, 7)
+        self.assertAlmostEqual(wifi.lon, wifi_lon - 0.0019971, 7)
         self.assertAlmostEqual(wifi.max_lon, wifi_lon)
         self.assertAlmostEqual(wifi.min_lon, wifi_lon - 0.006)
-        self.assertEqual(wifi.radius, 286)
-        self.assertEqual(wifi.samples, 5)
-        self.assertAlmostEqual(wifi.weight, 15.61, 2)
+        self.assertEqual(wifi.radius, 277)
+        self.assertEqual(wifi.samples, 6)
+        self.assertAlmostEqual(wifi.weight, 16.11, 2)
