@@ -24,6 +24,7 @@ from ichnaea.models import (
     ExportConfig,
     Radio,
     RegionStat,
+    ReportSource,
     WifiShard,
     WifiObservation,
 )
@@ -148,6 +149,7 @@ class BlueObservationFactory(BaseMemoryFactory):
     accuracy = 10.0
     signal = -80
     snr = 30
+    source = ReportSource.gnss
 
     class Meta:
         model = BlueObservation.create
@@ -235,6 +237,7 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
         model = CellObservation.create
 
     accuracy = 10.0
+    source = ReportSource.gnss
 
     @factory.lazy_attribute
     def signal(self):
@@ -296,6 +299,7 @@ class WifiObservationFactory(BaseMemoryFactory):
     accuracy = 10.0
     signal = -80
     snr = 30
+    source = ReportSource.gnss
 
     class Meta:
         model = WifiObservation.create

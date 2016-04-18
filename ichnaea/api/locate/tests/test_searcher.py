@@ -54,6 +54,7 @@ class SearcherTest(ConnectionTestCase):
             raven_client=self.raven_client,
             redis_client=self.redis_client,
             stats_client=self.stats_client,
+            data_queues=self.data_queues,
         )
 
     def _search(self, klass, **kw):

@@ -94,6 +94,12 @@ def main(app_config, ping_connections=False,
         app_config.get('geoip', 'db_path'), raven_client=raven_client,
         _client=_geoip_db)
 
+    # needs to be the exact same as async.config
+    registry.data_queues = data_queues = {
+        'update_incoming': DataQueue('update_incoming', redis_client,
+                                     batch=100, compress=True),
+    }
+
     for name, func, default in (('position_searcher',
                                  configure_position_searcher,
                                  _position_searcher),
@@ -102,14 +108,8 @@ def main(app_config, ping_connections=False,
                                  _region_searcher)):
         searcher = func(geoip_db=geoip_db, raven_client=raven_client,
                         redis_client=redis_client, stats_client=stats_client,
-                        _searcher=default)
+                        data_queues=data_queues, _searcher=default)
         setattr(registry, name, searcher)
-
-    # needs to be the exact same as async.config
-    registry.data_queues = {
-        'update_incoming': DataQueue('update_incoming', redis_client,
-                                     batch=100, compress=True),
-    }
 
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)

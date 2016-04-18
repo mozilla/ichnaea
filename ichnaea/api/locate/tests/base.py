@@ -110,6 +110,7 @@ class BaseSourceTest(ConnectionTestCase):
             raven_client=self.raven_client,
             redis_client=self.redis_client,
             stats_client=self.stats_client,
+            data_queues=self.data_queues,
         )
 
     def make_query(self, **kw):
@@ -206,6 +207,11 @@ class BaseLocateTest(object):
     metric_type = None
     not_found = LocationNotFound
 
+    @classmethod
+    def setUpClass(cls):
+        super(BaseLocateTest, cls).setUpClass()
+        cls.queue = cls.data_queues['update_incoming']
+
     @property
     def test_ip(self):
         # accesses data defined in GeoIPTestCase
@@ -242,6 +248,9 @@ class BaseLocateTest(object):
                         headers=headers,
                         **kw)
 
+    def check_queue(self, num):
+        self.assertEqual(self.queue.size(), num)
+
     def check_response(self, response, status):
         self.assertEqual(response.content_type, 'application/json')
         self.assertEqual(response.charset, 'UTF-8')
@@ -257,6 +266,8 @@ class BaseLocateTest(object):
             self.assertEqual(response.json, ParseError.json_body())
         elif status == 'limit_exceeded':
             self.assertEqual(response.json, DailyLimitExceeded.json_body())
+        if status != 'ok':
+            self.check_queue(0)
 
     def check_model_response(self, response, model,
                              region=None, fallback=None,
@@ -321,6 +332,7 @@ class CommonLocateTest(BaseLocateTest):
     def test_get(self):
         res = self._call(ip=self.test_ip, method='get', status=200)
         self.check_response(res, 'ok')
+        self.check_queue(0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:get', 'status:200']),
         ], timer=[
@@ -340,6 +352,7 @@ class CommonLocateTest(BaseLocateTest):
     def test_empty_body(self):
         res = self._call('', ip=self.test_ip, method='post', status=200)
         self.check_response(res, 'ok')
+        self.check_queue(0)
         if self.apikey_metrics:
             # ensure that a apiuser hyperloglog entry was added for today
             today = util.utcnow().date().strftime('%Y-%m-%d')
@@ -354,6 +367,7 @@ class CommonLocateTest(BaseLocateTest):
     def test_empty_json(self):
         res = self._call(ip=self.test_ip, status=200)
         self.check_response(res, 'ok')
+        self.check_queue(0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
         ], timer=[
@@ -387,6 +401,7 @@ class CommonLocateTest(BaseLocateTest):
     def test_error_invalid_key(self):
         res = self._call({'foo': 0}, ip=self.test_ip, status=200)
         self.check_response(res, 'ok')
+        self.check_queue(0)
 
     def test_no_api_key(self, status=400, response='invalid_key'):
         res = self._call(api_key=None, ip=self.test_ip, status=status)
@@ -510,7 +525,6 @@ class CommonPositionTest(BaseLocateTest):
         self.session.flush()
 
         query = self.model_query(cells=[cell])
-
         res = self._call(body=query)
         self.check_model_response(res, cell)
         self.check_stats(counter=[
@@ -750,6 +764,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         res = self._call(body=query, ip=self.test_ip)
         self.check_response(res, 'ok')
         self.check_raven([('ProgrammingError', db_errors)])
+        self.check_queue(0)
 
     def test_database_error(self, db_errors=0):
         cells = [
@@ -772,6 +787,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(body=query, ip=self.test_ip)
         self.check_response(res, 'ok')
+        self.check_queue(0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
         ], timer=[

@@ -38,6 +38,7 @@ from ichnaea.log import (
     DebugStatsClient,
 )
 from ichnaea.models import _Model, ApiKey
+from ichnaea.queue import DataQueue
 from ichnaea.webapp.config import main
 
 # make new unittest API's available under Python 2.6
@@ -482,7 +483,23 @@ class RedisTestCase(LogTestCase):
 
 class ConnectionTestCase(DBTestCase, GeoIPTestCase,
                          HTTPTestCase, RedisTestCase):
-    pass
+
+    @classmethod
+    def _configure_data_queues(cls):
+        return {
+            'update_incoming': DataQueue('update_incoming', cls.redis_client,
+                                         batch=100, compress=True),
+        }
+
+    @classmethod
+    def setUpClass(cls):
+        super(ConnectionTestCase, cls).setUpClass()
+        cls.data_queues = cls._configure_data_queues()
+
+    @classmethod
+    def tearDownClass(cls):
+        super(ConnectionTestCase, cls).tearDownClass()
+        del cls.data_queues
 
 
 class APITestCase(ConnectionTestCase):
@@ -494,7 +511,8 @@ class APITestCase(ConnectionTestCase):
                            ('region_searcher', configure_region_searcher)):
             searcher = func(
                 geoip_db=cls.geoip_db, raven_client=cls.raven_client,
-                redis_client=cls.redis_client, stats_client=cls.stats_client)
+                redis_client=cls.redis_client, stats_client=cls.stats_client,
+                data_queues=cls.data_queues)
             setattr(cls, name, searcher)
 
     @classmethod

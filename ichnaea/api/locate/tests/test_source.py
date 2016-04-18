@@ -23,6 +23,7 @@ class SourceTest(object):
             raven_client=cls.raven_client,
             redis_client=cls.redis_client,
             stats_client=cls.stats_client,
+            data_queues=cls.data_queues,
         )
 
     def _make_query(self, **kw):

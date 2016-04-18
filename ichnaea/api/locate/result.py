@@ -56,6 +56,17 @@ class Position(Result):
                     'accuracy', 'score',
                     'fallback', 'source')  #:
 
+    def json(self):
+        if self.lat is None or self.lon is None or self.accuracy is None:
+            return {'position': {'source': 'query'}}
+
+        return {'position': {
+            'latitude': self.lat,
+            'longitude': self.lon,
+            'accuracy': self.accuracy,
+            'source': 'query',
+        }}
+
 
 class Region(Result):
     """The region returned by a region query."""

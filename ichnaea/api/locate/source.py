@@ -22,11 +22,13 @@ class Source(object):
     result_type = None  #:
     source = None  #:
 
-    def __init__(self, geoip_db, raven_client, redis_client, stats_client):
+    def __init__(self, geoip_db, raven_client, redis_client,
+                 stats_client, data_queues):
         self.geoip_db = geoip_db
         self.raven_client = raven_client
         self.redis_client = redis_client
         self.stats_client = stats_client
+        self.data_queues = data_queues
         self.result_type = partial(
             self.result_type,
             source=self.source,

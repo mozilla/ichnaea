@@ -23,15 +23,17 @@ from ichnaea.constants import DEGREE_DECIMAL_PLACES
 
 
 def _configure_searcher(klass, geoip_db=None, raven_client=None,
-                        redis_client=None, stats_client=None, _searcher=None):
+                        redis_client=None, stats_client=None,
+                        data_queues=None, _searcher=None):
     if _searcher is not None:
         return _searcher
-    return klass(geoip_db, raven_client, redis_client, stats_client)
+    return klass(geoip_db, raven_client, redis_client,
+                 stats_client, data_queues)
 
 
 def configure_region_searcher(geoip_db=None, raven_client=None,
                               redis_client=None, stats_client=None,
-                              _searcher=None):
+                              data_queues=None, _searcher=None):
     """
     Configure and return a configured
     :class:`~ichnaea.api.locate.searcher.RegionSearcher` instance.
@@ -41,12 +43,13 @@ def configure_region_searcher(geoip_db=None, raven_client=None,
     return _configure_searcher(
         RegionSearcher, geoip_db=geoip_db,
         raven_client=raven_client, redis_client=redis_client,
-        stats_client=stats_client, _searcher=_searcher)
+        stats_client=stats_client, data_queues=data_queues,
+        _searcher=_searcher)
 
 
 def configure_position_searcher(geoip_db=None, raven_client=None,
                                 redis_client=None, stats_client=None,
-                                _searcher=None):
+                                data_queues=None, _searcher=None):
     """
     Configure and return a configured
     :class:`~ichnaea.api.locate.searcher.PositionSearcher` instance.
@@ -56,7 +59,8 @@ def configure_position_searcher(geoip_db=None, raven_client=None,
     return _configure_searcher(
         PositionSearcher, geoip_db=geoip_db,
         raven_client=raven_client, redis_client=redis_client,
-        stats_client=stats_client, _searcher=_searcher)
+        stats_client=stats_client, data_queues=data_queues,
+        _searcher=_searcher)
 
 
 class Searcher(object):
@@ -71,7 +75,8 @@ class Searcher(object):
     sources = ()  #:
     source_classes = ()  #:
 
-    def __init__(self, geoip_db, raven_client, redis_client, stats_client):
+    def __init__(self, geoip_db, raven_client, redis_client,
+                 stats_client, data_queues):
         self.sources = []
         for name, source in self.source_classes:
             source_instance = source(
@@ -79,6 +84,7 @@ class Searcher(object):
                 raven_client=raven_client,
                 redis_client=redis_client,
                 stats_client=stats_client,
+                data_queues=data_queues,
             )
             self.sources.append((name, source_instance))
 

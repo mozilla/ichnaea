@@ -39,6 +39,13 @@ class TestPosition(TestCase):
         self.assertTrue('100.0' in rep, rep)
         self.assertAlmostEqual(position.score, 2.0, 4)
 
+    def test_json(self):
+        self.assertEqual(Position().json(),
+                         {'position': {'source': 'query'}})
+        self.assertEqual(Position(lat=1.0, lon=1.0, accuracy=2.0).json(),
+                         {'position': {'latitude': 1.0, 'longitude': 1.0,
+                                       'accuracy': 2.0, 'source': 'query'}})
+
     def test_data_accuracy(self):
         def _position(accuracy=None):
             return Position(lat=1.0, lon=1.0, accuracy=accuracy)

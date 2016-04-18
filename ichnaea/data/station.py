@@ -20,6 +20,7 @@ from ichnaea.models import (
     BlueObservation,
     CellObservation,
     WifiObservation,
+    ReportSource,
     StatCounter,
     StatKey,
 )
@@ -271,6 +272,10 @@ class StationUpdater(object):
         for obs in observations:
             obs = self.obs_model.from_json(obs)
             if obs is not None:
+                if obs.source is ReportSource.query:
+                    # TODO: don't process query derived observations
+                    # at this point.
+                    continue
                 shard = obs.shard_model
                 if shard not in sharded_obs:
                     sharded_obs[shard] = defaultdict(list)
@@ -357,8 +362,7 @@ class StationUpdater(object):
         return (updated_areas, drop_counter, stats_counter)
 
     def __call__(self):
-        sharded_obs = self._shard_observations(
-            self.data_queue.dequeue())
+        sharded_obs = self._shard_observations(self.data_queue.dequeue())
         if not sharded_obs:
             return
 

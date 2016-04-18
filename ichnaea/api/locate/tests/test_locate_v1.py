@@ -1,6 +1,10 @@
 import colander
 
-from ichnaea.models import Radio
+from ichnaea.api.locate.constants import (
+    BLUE_MIN_ACCURACY,
+    CELL_MIN_ACCURACY,
+    WIFI_MIN_ACCURACY,
+)
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
@@ -8,11 +12,13 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateTest,
     CommonPositionTest,
 )
+from ichnaea.models import Radio
 from ichnaea.tests.base import (
     AppTestCase,
     TestCase,
 )
 from ichnaea.tests.factories import (
+    BlueShardFactory,
     CellShardFactory,
     WifiShardFactory,
 )
@@ -97,8 +103,63 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
 
 class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
+    def test_blue(self):
+        blue = BlueShardFactory()
+        offset = 0.00001
+        blues = [
+            blue,
+            BlueShardFactory(lat=blue.lat + offset),
+            BlueShardFactory(lat=blue.lat + offset * 2),
+            BlueShardFactory(lat=None, lon=None),
+        ]
+        self.session.flush()
+
+        query = self.model_query(blues=blues)
+        blue_query = query['bluetoothBeacons']
+        blue_query[0]['signalStrength'] = -50
+        blue_query[1]['signalStrength'] = -150
+        blue_query[1]['name'] = 'my-beacon'
+
+        res = self._call(body=query)
+        self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
+        self.check_queue(1)
+        self.check_stats(counter=[
+            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.result',
+                ['key:test', 'region:none', 'fallback_allowed:false',
+                 'accuracy:high', 'status:hit', 'source:internal']),
+            (self.metric_type + '.source',
+                ['key:test', 'region:none', 'source:internal',
+                 'accuracy:high', 'status:hit']),
+        ])
+        items = self.queue.dequeue()
+        self.assertEqual(items, [{
+            'api_key': 'test',
+            'source': 'query',
+            'report': {
+                'bluetoothBeacons': [{
+                    'macAddress': blue_query[0]['macAddress'],
+                    'signalStrength': -50
+                }, {
+                    'macAddress': blue_query[1]['macAddress'],
+                    'name': 'my-beacon',
+                }, {
+                    'macAddress': blue_query[2]['macAddress'],
+                }, {
+                    'macAddress': blue_query[3]['macAddress'],
+                }],
+                'fallbacks': {'ipf': True, 'lacf': True},
+                'position': {
+                    'accuracy': BLUE_MIN_ACCURACY,
+                    'latitude': blue.lat + 0.0000035,
+                    'longitude': blue.lon,
+                    'source': 'query',
+                }
+            },
+        }])
+
     def test_cell(self):
-        cell = CellShardFactory()
+        cell = CellShardFactory(radio=Radio.lte)
         self.session.flush()
 
         query = self.model_query(cells=[cell])
@@ -109,6 +170,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell)
+        self.check_queue(1)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
@@ -121,6 +183,29 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
+        items = self.queue.dequeue()
+        self.assertEqual(items, [{
+            'api_key': 'test',
+            'source': 'query',
+            'report': {
+                'cellTowers': [{
+                    'radioType': cell.radio.name,
+                    'mobileCountryCode': cell.mcc,
+                    'mobileNetworkCode': cell.mnc,
+                    'locationAreaCode': cell.lac,
+                    'cellId': cell.cid,
+                    'signalStrength': -70,
+                    'timingAdvance': 1,
+                }],
+                'fallbacks': {'ipf': True, 'lacf': True},
+                'position': {
+                    'accuracy': CELL_MIN_ACCURACY,
+                    'latitude': cell.lat,
+                    'longitude': cell.lon,
+                    'source': 'query',
+                }
+            },
+        }])
 
     def test_partial_cell(self):
         cell = CellShardFactory()
@@ -138,6 +223,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
 
         res = self._call(body=query)
         self.check_model_response(res, cell)
+        self.check_queue(1)
 
     def test_wifi(self):
         wifi = WifiShardFactory()
@@ -156,11 +242,12 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         wifi_query[0]['signalStrength'] = -50
         wifi_query[1]['frequency'] = 2437
         wifi_query[2]['signalStrength'] = -130
-        wifi_query[3]['signalToNoiseRatio'] = 13
+        wifi_query[2]['signalToNoiseRatio'] = 13
         wifi_query[3]['ssid'] = 'my-wifi'
 
         res = self._call(body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
+        self.check_queue(1)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
@@ -173,6 +260,34 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
+        items = self.queue.dequeue()
+        self.assertEqual(items, [{
+            'api_key': 'test',
+            'source': 'query',
+            'report': {
+                'wifiAccessPoints': [{
+                    'macAddress': wifi_query[0]['macAddress'],
+                    'channel': 6,
+                    'signalStrength': -50
+                }, {
+                    'macAddress': wifi_query[1]['macAddress'],
+                    'channel': 6,
+                }, {
+                    'macAddress': wifi_query[2]['macAddress'],
+                    'signalToNoiseRatio': 13,
+                }, {
+                    'macAddress': wifi_query[3]['macAddress'],
+                    'ssid': 'my-wifi',
+                }],
+                'fallbacks': {'ipf': True, 'lacf': True},
+                'position': {
+                    'accuracy': WIFI_MIN_ACCURACY,
+                    'latitude': wifi.lat + 0.000005,
+                    'longitude': wifi.lon,
+                    'source': 'query',
+                }
+            },
+        }])
 
     def test_cell_mcc_mnc_strings(self):
         # mcc and mnc are officially defined as strings, where '01' is

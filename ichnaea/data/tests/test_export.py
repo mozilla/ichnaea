@@ -448,7 +448,7 @@ class TestInternal(BaseExportTest):
 
         self.add_reports(3)
         self.add_reports(3, api_key='e5444-794', source='gnss')
-        self.add_reports(3, api_key='e5444-794', source='query')
+        self.add_reports(3, api_key='e5444-794', source='fused')
         self.add_reports(3, api_key=None)
         self._update_all()
 
@@ -478,15 +478,14 @@ class TestInternal(BaseExportTest):
         self._update_all()
 
         position = reports[0]['position']
-        wifi_data = reports[0]['bluetoothBeacons'][0]
-        mac = wifi_data['macAddress']
-        shard = BlueShard.shard_model(mac)
+        blue_data = reports[0]['bluetoothBeacons'][0]
+        shard = BlueShard.shard_model(blue_data['macAddress'])
         blues = self.session.query(shard).all()
         self.assertEqual(len(blues), 1)
         blue = blues[0]
         self.assertEqual(blue.lat, position['latitude'])
         self.assertEqual(blue.lon, position['longitude'])
-        self.assertEqual(blue.mac, wifi_data['macAddress'])
+        self.assertEqual(blue.mac, blue_data['macAddress'])
         self.assertEqual(blue.samples, 1)
 
     def test_blue_duplicated(self):
@@ -519,8 +518,7 @@ class TestInternal(BaseExportTest):
 
         position = reports[0]['position']
         cell_data = reports[0]['cellTowers'][0]
-        radio = cell_data['radioType']
-        shard = CellShard.shard_model(radio)
+        shard = CellShard.shard_model(cell_data['radioType'])
         cells = self.session.query(shard).all()
         self.assertEqual(len(cells), 1)
         cell = cells[0]
@@ -570,8 +568,7 @@ class TestInternal(BaseExportTest):
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
-        mac = wifi_data['macAddress']
-        shard = WifiShard.shard_model(mac)
+        shard = WifiShard.shard_model(wifi_data['macAddress'])
         wifis = self.session.query(shard).all()
         self.assertEqual(len(wifis), 1)
         wifi = wifis[0]

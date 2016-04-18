@@ -58,6 +58,28 @@ class InternalPositionSource(BaseInternalSource,
                              PositionSource):
     """A position source based on our own crowd-sourced internal data."""
 
+    def _store_query(self, query, results):
+        best_result = results.best()
+        if best_result:
+            report = query.json()
+            report.update(best_result.json())
+
+            data = [{
+                'api_key': query.api_key.valid_key,
+                'source': report['position']['source'],
+                'report': report,
+            }]
+
+            try:
+                self.data_queues['update_incoming'].enqueue(data)
+            except Exception:  # pragma: no cover
+                self.raven_client.captureException()
+
+    def search(self, query):
+        results = super(InternalPositionSource, self).search(query)
+        self._store_query(query, results)
+        return results
+
 
 class InternalRegionSource(BaseInternalSource,
                            BlueRegionMixin,

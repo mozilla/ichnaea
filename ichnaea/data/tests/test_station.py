@@ -14,6 +14,7 @@ from ichnaea.models import (
     BlueShard,
     CellShard,
     Radio,
+    ReportSource,
     StatCounter,
     StatKey,
     WifiShard,
@@ -152,8 +153,22 @@ class TestBlue(StationTest):
         self.assertEqual(blue.block_last, None)
         self.assertEqual(blue.block_count, None)
 
+    def test_query(self):
+        obs = BlueObservationFactory.build(source=ReportSource.query)
+        self._queue_and_update_blue([obs])
+        shard = BlueShard.shard_model(obs.mac)
+        blues = self.session.query(shard).all()
+        self.assertEqual(len(blues), 0)
+
 
 class TestCell(StationTest):
+
+    def test_query(self):
+        obs = CellObservationFactory.build(source=ReportSource.query)
+        self._queue_and_update_cell([obs])
+        shard = CellShard.shard_model(obs.cellid)
+        cells = self.session.query(shard).all()
+        self.assertEqual(len(cells), 0)
 
     def test_blocklist(self):
         now = util.utcnow()
@@ -422,6 +437,13 @@ class TestWifi(StationTest):
         self.assertEqual(wifi.block_first, None)
         self.assertEqual(wifi.block_last, None)
         self.assertEqual(wifi.block_count, None)
+
+    def test_query(self):
+        obs = WifiObservationFactory.build(source=ReportSource.query)
+        self._queue_and_update_wifi([obs])
+        shard = WifiShard.shard_model(obs.mac)
+        wifis = self.session.query(shard).all()
+        self.assertEqual(len(wifis), 0)
 
     def test_update(self):
         utcnow = util.utcnow()
