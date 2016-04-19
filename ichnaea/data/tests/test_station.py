@@ -149,6 +149,7 @@ class TestBlue(StationTest):
         self.assertAlmostEqual(blue.weight, 1.0, 2)
         self.assertEqual(blue.created.date(), utcnow.date())
         self.assertEqual(blue.modified.date(), utcnow.date())
+        self.assertEqual(blue.last_seen, utcnow.date())
         self.assertEqual(blue.block_first, None)
         self.assertEqual(blue.block_last, None)
         self.assertEqual(blue.block_count, None)
@@ -162,6 +163,32 @@ class TestBlue(StationTest):
 
 
 class TestCell(StationTest):
+
+    def test_new(self):
+        utcnow = util.utcnow()
+        obs = CellObservationFactory.build()
+        self._queue_and_update_cell([obs])
+
+        shard = CellShard.shard_model(obs.cellid)
+        cells = self.session.query(shard).all()
+        self.assertEqual(len(cells), 1)
+        cell = cells[0]
+        self.assertAlmostEqual(cell.lat, obs.lat)
+        self.assertAlmostEqual(cell.max_lat, obs.lat)
+        self.assertAlmostEqual(cell.min_lat, obs.lat)
+        self.assertAlmostEqual(cell.lon, obs.lon)
+        self.assertAlmostEqual(cell.max_lon, obs.lon)
+        self.assertAlmostEqual(cell.min_lon, obs.lon)
+        self.assertEqual(cell.radius, 0)
+        self.assertEqual(cell.region, 'GB')
+        self.assertEqual(cell.samples, 1)
+        self.assertAlmostEqual(cell.weight, 1.0, 2)
+        self.assertEqual(cell.created.date(), utcnow.date())
+        self.assertEqual(cell.modified.date(), utcnow.date())
+        self.assertEqual(cell.last_seen, utcnow.date())
+        self.assertEqual(cell.block_first, None)
+        self.assertEqual(cell.block_last, None)
+        self.assertEqual(cell.block_count, None)
 
     def test_query(self):
         obs = CellObservationFactory.build(source=ReportSource.query)
@@ -434,6 +461,7 @@ class TestWifi(StationTest):
         self.assertAlmostEqual(wifi.weight, 1.0, 2)
         self.assertEqual(wifi.created.date(), utcnow.date())
         self.assertEqual(wifi.modified.date(), utcnow.date())
+        self.assertEqual(wifi.last_seen, utcnow.date())
         self.assertEqual(wifi.block_first, None)
         self.assertEqual(wifi.block_last, None)
         self.assertEqual(wifi.block_count, None)

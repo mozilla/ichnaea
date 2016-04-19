@@ -410,6 +410,7 @@ class BlueUpdater(StationUpdater):
         return {
             'mac': station_key,
             'modified': self.utcnow,
+            'last_seen': self.utcnow.date(),
         }
 
     def _query_shard(self, session, shard, keys):
@@ -446,6 +447,7 @@ class CellUpdater(StationUpdater):
             'cid': cid,
             'psc': psc,
             'modified': self.utcnow,
+            'last_seen': self.utcnow.date(),
         }
 
     def _query_shard(self, session, shard, keys):
@@ -466,6 +468,7 @@ class WifiUpdater(StationUpdater):
         return {
             'mac': station_key,
             'modified': self.utcnow,
+            'last_seen': self.utcnow.date(),
         }
 
     def _query_shard(self, session, shard, keys):

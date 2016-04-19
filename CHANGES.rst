@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update last_seen column on each station update.
+
 - Use Vincenty formula for lat/lon additions.
 
 - Use Vincenty instead of Haversine formula for distance calculations.
