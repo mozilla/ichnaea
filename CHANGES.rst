@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use Vincenty formula for lat/lon additions.
+
 - Use Vincenty instead of Haversine formula for distance calculations.
 
 - Take age into account during locate lookups.

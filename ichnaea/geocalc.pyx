@@ -403,7 +403,7 @@ cpdef tuple destination(double lat1, double lon1,
     return (lat2, lon2)
 
 
-cpdef double latitude_add(double lat, double lon, double meters):
+cpdef double latitude_add(double lat, double lon, double distance):
     """
     Return a latitude in degrees which is shifted by
     distance in meters.
@@ -411,14 +411,15 @@ cpdef double latitude_add(double lat, double lon, double meters):
     The new latitude is bounded by our globally defined
     :data:`ichnaea.constants.MIN_LAT` and
     :data:`ichnaea.constants.MAX_LAT`.
-
-    A suitable estimate for surface level calculations is
-    111,111m = 1 degree latitude
     """
-    return fmax(MIN_LAT, fmin(lat + (meters / 111111.0), MAX_LAT))
+    cdef double lat1, lon1
+
+    lat1, lon1 = destination(lat, lon, 0.0, distance)
+
+    return fmax(MIN_LAT, fmin(lat1, MAX_LAT))
 
 
-cpdef double longitude_add(double lat, double lon, double meters):
+cpdef double longitude_add(double lat, double lon, double distance):
     """
     Return a longitude in degrees which is shifted by
     distance in meters.
@@ -427,7 +428,11 @@ cpdef double longitude_add(double lat, double lon, double meters):
     :data:`ichnaea.constants.MIN_LON` and
     :data:`ichnaea.constants.MAX_LON`.
     """
-    return fmax(MIN_LON, fmin(lon + (meters / (cos(lat) * 111111.0)), MAX_LON))
+    cdef double lat1, lon1
+
+    lat1, lon1 = destination(lat, lon, 90.0, distance)
+
+    return fmax(MIN_LON, fmin(lon1, MAX_LON))
 
 
 cpdef double max_distance(double lat, double lon,

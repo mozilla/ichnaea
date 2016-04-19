@@ -16,7 +16,11 @@ class TestBbox(TestCase):
 
     def test_null(self):
         lat, lon = (1.0, 1.0)
-        self.assertEqual(bbox(lat, lon, 0.0), (lat, lat, lon, lon))
+        lat1, lon1, lat2, lon2 = bbox(lat, lon, 0.0)
+        self.assertAlmostEqual(lat1, lat, 7)
+        self.assertAlmostEqual(lon1, lon, 7)
+        self.assertAlmostEqual(lat2, lat, 7)
+        self.assertAlmostEqual(lon2, lon, 7)
 
     def test_extremes(self):
         lat, lon = (-90.0, -181.0)
@@ -52,6 +56,23 @@ class TestDestination(TestCase):
         lat, lon = destination(-37.95103, 144.42487, 306.86816, 54972.271)
         self.assertAlmostEqual(lat, -37.6528177, 7)
         self.assertAlmostEqual(lon, 143.9264977, 7)
+
+    def test_negative(self):
+        lat, lon = destination(1.0, 1.0, 0.0, 1000)
+        self.assertAlmostEqual(lat, 1.0090437, 7)
+        self.assertAlmostEqual(lon, 1.0, 7)
+
+        lat, lon = destination(1.0, 1.0, 0.0, -1000)
+        self.assertAlmostEqual(lat, 0.9909563, 7)
+        self.assertAlmostEqual(lon, 1.0, 7)
+
+        lat, lon = destination(1.0, 1.0, 90.0, 1000)
+        self.assertAlmostEqual(lat, 1.0, 7)
+        self.assertAlmostEqual(lon, 1.0089845, 7)
+
+        lat, lon = destination(1.0, 1.0, 90.0, -1000)
+        self.assertAlmostEqual(lat, 1.0, 7)
+        self.assertAlmostEqual(lon, 0.9910155, 7)
 
     def test_out_of_bounds(self):
         lat, lon = destination(-100.0, -186.0, 60.0, 100000.0)
@@ -132,31 +153,27 @@ class TestVincentyDistance(TestCase):
 class TestLatitudeAdd(TestCase):
 
     def test_returns_min_lat(self):
-        self.assertEqual(latitude_add(1.0, 1.0, -(10 ** 10)),
-                         constants.MIN_LAT)
+        self.assertEqual(latitude_add(-85.0, 0.0, -1000000), constants.MIN_LAT)
 
     def test_returns_max_lat(self):
-        self.assertEqual(latitude_add(1.0, 1.0, 10 ** 10),
-                         constants.MAX_LAT)
+        self.assertEqual(latitude_add(85.0, 0.0, 1000000), constants.MAX_LAT)
 
     def test_adds_meters_to_latitude(self):
-        self.assertAlmostEqual(latitude_add(1.0, 1.0, 1000),
-                               1.009000009, 9)
+        self.assertAlmostEqual(latitude_add(1.0, 1.0, 1000), 1.0090437, 7)
 
 
 class TestLongitudeAdd(TestCase):
 
     def test_returns_min_lon(self):
-        self.assertEqual(longitude_add(1.0, 1.0, -(10 ** 10)),
+        self.assertEqual(longitude_add(0.0, -179.0, -1000000),
                          constants.MIN_LON)
 
     def test_returns_max_lon(self):
-        self.assertEqual(longitude_add(1.0, 1.0, 10 ** 10),
+        self.assertEqual(longitude_add(0.0, 179.0, 1000000),
                          constants.MAX_LON)
 
     def test_adds_meters_to_longitude(self):
-        self.assertAlmostEqual(longitude_add(1.0, 1.0, 1000),
-                               1.0166573581, 9)
+        self.assertAlmostEqual(longitude_add(1.0, 1.0, 1000), 1.0089845, 7)
 
 
 class TestRandomPoints(TestCase):
