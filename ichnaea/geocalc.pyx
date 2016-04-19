@@ -8,6 +8,7 @@ These are implemented in Cython / C using NumPy.
 from libc.math cimport asin, atan, atan2, cos
 from libc.math cimport fmax, fmin, M_PI, sin, sqrt, tan
 from numpy cimport double_t, ndarray
+cimport cython
 
 import numpy
 
@@ -84,6 +85,11 @@ cdef double* RANDOM_LON = [
 
 cdef inline double deg2rad(double degrees):
     return degrees * M_PI / 180.0
+
+
+@cython.cdivision(True)
+cdef inline double rad2deg(double radians):
+    return radians * 180.0 / M_PI
 
 
 cpdef tuple bbox(double lat, double lon, double meters):
@@ -173,6 +179,7 @@ cpdef double vincenty_distance(double lat1, double lon1,
     References:
       * https://en.wikipedia.org/wiki/Vincenty's_formulae
       * http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+      * https://github.com/geopy/geopy/blob/master/geopy/distance.py
     """
     cdef double delta_lon, reduced_lat1, reduced_lat2
     cdef double sin_reduced1, cos_reduced1, sin_reduced2, cos_reduced2
@@ -267,7 +274,8 @@ cpdef double vincenty_distance(double lat1, double lon1,
     B = (
         u_sq / 1024.0 *
         (256.0 + u_sq *
-            (-128.0 + u_sq * (74.0 - 47.0 * u_sq))))
+            (-128.0 + u_sq * (74.0 - 47.0 * u_sq)))
+    )
 
     delta_sigma = (
         B * sin_sigma *
@@ -280,6 +288,119 @@ cpdef double vincenty_distance(double lat1, double lon1,
     )
 
     return 1000.0 * EARTH_MINOR_RADIUS * A * (sigma - delta_sigma)
+
+
+cpdef tuple destination(double lat1, double lon1,
+                        double bearing, double distance):
+    """
+    Given an initial point, a bearing and a distance in meters,
+    compute the destination point using the Vincenty formula.
+
+    References:
+      * https://en.wikipedia.org/wiki/Vincenty's_formulae
+      * http://www.movable-type.co.uk/scripts/latlong-vincenty.html
+      * https://github.com/geopy/geopy/blob/master/geopy/distance.py
+    """
+    cdef int i
+    cdef double tan_reduced1, cos_reduced1, sin_bearing, cos_bearing
+    cdef double sigma1, sin_alpha, cos_sq_alpha, u_sq, A, B, C
+    cdef double sigma, sigma_prime, cos2_sigma_m, sin_sigma, cos_sigma
+    cdef double delta_sigma, lat2, lon2, lambda_lon, delta_lon
+
+    lat1 = deg2rad(lat1)
+    lon1 = deg2rad(lon1)
+    bearing = deg2rad(bearing)
+    distance = distance / 1000.0
+
+    tan_reduced1 = (1.0 - EARTH_FLATTENING) * tan(lat1)
+    cos_reduced1 = 1.0 / sqrt(1.0 + tan_reduced1 ** 2)
+    sin_reduced1 = tan_reduced1 * cos_reduced1
+
+    sin_bearing = sin(bearing)
+    cos_bearing = cos(bearing)
+
+    sigma1 = atan2(tan_reduced1, cos_bearing)
+    sin_alpha = cos_reduced1 * sin_bearing
+    cos_sq_alpha = 1.0 - sin_alpha ** 2
+
+    u_sq = (
+        cos_sq_alpha *
+        (EARTH_MAJOR_RADIUS ** 2 - EARTH_MINOR_RADIUS ** 2) /
+        EARTH_MINOR_RADIUS ** 2
+    )
+
+    A = 1.0 + u_sq / 16384.0 * (
+        4096.0 + u_sq *
+            (-768.0 + u_sq * (320.0 - 175.0 * u_sq))
+    )
+
+    B = u_sq / 1024.0 * (
+        256.0 + u_sq *
+            (-128.0 + u_sq * (74.0 - 47.0 * u_sq))
+    )
+
+    sigma = distance / (EARTH_MINOR_RADIUS * A)
+    sigma_prime = 2 * M_PI
+
+    i = 0
+    while (abs(sigma - sigma_prime) > VINCENTY_CUTOFF and
+           i <= VINCENTY_ITERATIONS):
+        i += 1
+
+        cos2_sigma_m = cos(2.0 * sigma1 + sigma)
+        sin_sigma = sin(sigma)
+        cos_sigma = cos(sigma)
+
+        delta_sigma = (
+            B * sin_sigma *
+            (cos2_sigma_m + B / 4.0 *
+                (cos_sigma *
+                    (-1.0 + 2.0 * cos2_sigma_m ** 2) -
+                    B / 6.0 * cos2_sigma_m *
+                        (-3.0 + 4.0 * sin_sigma ** 2) *
+                        (-3.0 + 4.0 * cos2_sigma_m ** 2)))
+        )
+
+        sigma_prime = sigma
+        sigma = distance / (EARTH_MINOR_RADIUS * A) + delta_sigma
+
+    if i > VINCENTY_ITERATIONS:
+        raise ValueError("Vincenty formula failed to converge!")
+
+    sin_sigma = sin(sigma)
+    cos_sigma = cos(sigma)
+
+    lat2 = atan2(
+        sin_reduced1 * cos_sigma + cos_reduced1 * sin_sigma * cos_bearing,
+        (1.0 - EARTH_FLATTENING) * sqrt(
+            sin_alpha ** 2 +
+            (sin_reduced1 * sin_sigma -
+             cos_reduced1 * cos_sigma * cos_bearing) ** 2
+        )
+    )
+
+    lambda_lon = atan2(
+        sin_sigma * sin_bearing,
+        cos_reduced1 * cos_sigma - sin_reduced1 * sin_sigma * cos_bearing
+    )
+
+    C = (
+        EARTH_FLATTENING / 16.0 * cos_sq_alpha *
+        (4.0 + EARTH_FLATTENING * (4.0 - 3.0 * cos_sq_alpha))
+    )
+
+    delta_lon = (
+        lambda_lon - (1.0 - C) * EARTH_FLATTENING * sin_alpha *
+            (sigma + C * sin_sigma *
+                (cos2_sigma_m + C * cos_sigma *
+                    (-1.0 + 2.0 * cos2_sigma_m ** 2)))
+    )
+
+    lon2 = lon1 + delta_lon
+    lat2 = rad2deg(lat2)
+    lon2 = rad2deg(lon2)
+
+    return (lat2, lon2)
 
 
 cpdef double latitude_add(double lat, double lon, double meters):

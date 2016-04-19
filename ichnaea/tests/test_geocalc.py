@@ -1,5 +1,6 @@
 from ichnaea.geocalc import (
     bbox,
+    destination,
     distance,
     haversine_distance,
     vincenty_distance,
@@ -28,13 +29,47 @@ class TestBbox(TestCase):
                           constants.MAX_LON, constants.MAX_LON))
 
 
+class TestDestination(TestCase):
+
+    def test_antipodal(self):
+        lat, lon = destination(90.0, 0.0, 180.0, 20003931.4586)
+        self.assertAlmostEqual(lat, -90.0, 7)
+        self.assertAlmostEqual(lon, 0.0, 7)
+
+        lat, lon = destination(0.0, 0.0, 89.0, 19902751.0326)
+        self.assertAlmostEqual(lat, 0.0106671, 7)
+        self.assertAlmostEqual(lon, 178.789547, 7)
+
+        lat, lon = destination(0.0, 0.0, 89.7, 19950277.9698)
+        self.assertAlmostEqual(lat, 0.0009494, 7)
+        self.assertAlmostEqual(lon, 179.2163987, 7)
+
+    def test_closeby(self):
+        lat, lon = destination(44.0337065, -79.4908184, -0.00071533, 137.0099)
+        self.assertAlmostEqual(lat, 44.0349396, 7)
+        self.assertAlmostEqual(lon, -79.4908184, 7)
+
+        lat, lon = destination(-37.95103, 144.42487, 306.86816, 54972.271)
+        self.assertAlmostEqual(lat, -37.6528177, 7)
+        self.assertAlmostEqual(lon, 143.9264977, 7)
+
+    def test_out_of_bounds(self):
+        lat, lon = destination(-100.0, -186.0, 60.0, 100000.0)
+        self.assertAlmostEqual(lat, 80.4166734, 7)
+        self.assertAlmostEqual(lon, -181.3373112, 7)
+
+        lat, lon = destination(-100.0, -186.0, 60.0, 200000.0)
+        self.assertAlmostEqual(lat, 80.7657146, 7)
+        self.assertAlmostEqual(lon, -176.2908896, 7)
+
+
 class TestDistance(TestCase):
 
     dist = distance
 
     def test_antipodal(self):
         self.assertAlmostEqual(self.dist(
-            90.0, 0.0, -90.0, 0), 20003931.4586, 4)
+            90.0, 0.0, -90.0, 0.0), 20003931.4586, 4)
         self.assertAlmostEqual(self.dist(
             0.0, 0.0, 0.5, 179.0), 19902751.0326, 4)
         self.assertAlmostEqual(self.dist(
@@ -42,7 +77,7 @@ class TestDistance(TestCase):
 
     def test_closeby(self):
         self.assertAlmostEqual(self.dist(
-            44.0337065, -79.4908184, 44.0347065, -79.4918184), 137.0099, 4)
+            44.0337065, -79.4908184, 44.0349396, -79.4908184), 137.0133, 4)
 
     def test_non_float(self):
         self.assertAlmostEqual(self.dist(1.0, 1.0, 1, 1.1), 11130.265, 4)
@@ -67,7 +102,7 @@ class TestHaversineDistance(TestCase):
 
     def test_closeby(self):
         self.assertAlmostEqual(self.dist(
-            44.0337065, -79.4908184, 44.0347065, -79.4918184), 136.9485, 4)
+            44.0337065, -79.4908184, 44.0349396, -79.4908184), 137.1147, 4)
 
     def test_out_of_bounds(self):
         self.assertAlmostEqual(self.dist(
@@ -80,14 +115,14 @@ class TestVincentyDistance(TestCase):
 
     def test_antipodal(self):
         self.assertAlmostEqual(self.dist(
-            90.0, 0.0, -90.0, 0), 20003931.4586, 4)
+            90.0, 0.0, -90.0, 0.0), 20003931.4586, 4)
         self.assertAlmostEqual(self.dist(
             0.0, 0.0, 0.5, 179.0), 19902751.0326, 4)
         self.assertRaises(ValueError, self.dist, 0.0, 0.0, 0.5, 179.7)
 
     def test_closeby(self):
         self.assertAlmostEqual(self.dist(
-            44.0337065, -79.4908184, 44.0347065, -79.4918184), 137.0099, 4)
+            44.0337065, -79.4908184, 44.0349396, -79.4908184), 137.0133, 4)
 
     def test_out_of_bounds(self):
         self.assertAlmostEqual(self.dist(
