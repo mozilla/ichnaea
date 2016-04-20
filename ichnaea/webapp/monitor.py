@@ -55,7 +55,7 @@ def check_redis(request):
 def configure_monitor(config):
     """Configure monitor related views and set up routes."""
     HeartbeatView.configure(config)
-    MonitorView.configure(config)
+    LBHeartbeatView.configure(config)
     VersionView.configure(config)
 
 
@@ -78,32 +78,12 @@ class Timer(object):
 class HeartbeatView(BaseView):
     """
     A heartbeat view which returns a successful response if the service
-    is reachable and works at all. If any of the backend connections are
-    broken, this view will still respond with a success, allowing the
-    service to operate in a degraded mode.
-
-    This view is typically used in load balancer health checks.
-    """
-
-    route = '/__heartbeat__'  #:
-
-    def __call__(self):
-        """Return a response with a 200 or 503 status."""
-        try:
-            return {'status': 'OK', 'hostname': LOCAL_FQDN}
-        except Exception:  # pragma: no cover
-            raise self.prepare_exception(HTTPServiceUnavailable())
-
-
-class MonitorView(BaseView):
-    """
-    A monitor view which returns a successful response if the service
     and all its backend connections work.
 
     The view actively checks the database, geoip and redis connections.
     """
 
-    route = '/__monitor__'  #:
+    route = '/__heartbeat__'  #:
 
     def __call__(self):
         """
@@ -136,6 +116,26 @@ class MonitorView(BaseView):
             return response
 
         return result
+
+
+class LBHeartbeatView(BaseView):
+    """
+    A loadbalancer heartbeat view which returns a successful response if
+    the service is reachable and works at all. If any of the backend
+    connections are broken, this view will still respond with a success,
+    allowing the service to operate in a degraded mode.
+
+    This view is typically used in load balancer health checks.
+    """
+
+    route = '/__lbheartbeat__'  #:
+
+    def __call__(self):
+        """Return a response with a 200 or 503 status."""
+        try:
+            return {'status': 'OK', 'hostname': LOCAL_FQDN}
+        except Exception:  # pragma: no cover
+            raise self.prepare_exception(HTTPServiceUnavailable())
 
 
 class VersionView(BaseView):

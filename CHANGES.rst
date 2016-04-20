@@ -17,8 +17,14 @@ Migrations
 
 - 4255b858a37e: Remove user/score tables.
 
+- In service checks, change anything that checked the `/__heartbeat__`
+  view to check `/__lbheartbeat__` instead. Change `/__monitor__` to
+  `/__heartbeat__`.
+
 Changes
 ~~~~~~~
+
+- Change hearbeat/monitor view to lbhearbeat/hearbeat views.
 
 - Update last_seen column on each station update.
 
