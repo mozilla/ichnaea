@@ -82,6 +82,98 @@ class StationUpdater(object):
         self.stat_count('station', 'confirm', stats_counter['confirm'])
         self.stat_count('station', 'new', stats_counter['new_station'])
 
+    def confirm_values(self, station_key):
+        values = self._base_key_values(station_key)
+        values['last_seen'] = self.today
+        return ('confirm', values)
+
+    def change_values(self, station_key, shard_station, observations,
+                      lat, lon, max_lat, min_lat, max_lon, min_lon,
+                      radius, region, samples, weight):
+        # move and change values need to have the exact same dict keys,
+        # as they get combined into one bulk_update_mappings calls.
+        values = self._base_submit_values(
+            station_key, shard_station, observations)
+        values.update({
+            'last_seen': self.today,
+            'modified': self.utcnow,
+            'lat': lat,
+            'lon': lon,
+            'max_lat': max_lat,
+            'min_lat': min_lat,
+            'max_lon': max_lon,
+            'min_lon': min_lon,
+            'radius': radius,
+            'region': region,
+            'samples': samples,
+            'source': None,
+            'weight': weight,
+            'block_first': shard_station.block_first,
+            'block_last': shard_station.block_last,
+            'block_count': shard_station.block_count,
+        })
+        return ('change', values)
+
+    def move_values(self, station_key, observations, shard_station):
+        # move and change values need to have the exact same dict keys,
+        # as they get combined into one bulk_update_mappings calls.
+        block_count = shard_station.block_count or 0
+        values = self._base_submit_values(
+            station_key, shard_station, observations)
+        values.update({
+            'last_seen': None,
+            'modified': self.utcnow,
+            'lat': None,
+            'lon': None,
+            'max_lat': None,
+            'min_lat': None,
+            'max_lon': None,
+            'min_lon': None,
+            'radius': None,
+            'region': shard_station.region,
+            'samples': None,
+            'source': None,
+            'weight': None,
+            'block_first': shard_station.block_first or self.today,
+            'block_last': self.today,
+            'block_count': block_count + 1,
+        })
+        return ('move', values)
+
+    def new_values(self, station_key, observations,
+                   lat, lon, max_lat, min_lat, max_lon, min_lon,
+                   radius, region, samples, weight):
+        values = self._base_submit_values(station_key, None, observations)
+        values.update({
+            'created': self.utcnow,
+            'last_seen': self.today,
+            'modified': self.utcnow,
+            'lat': lat,
+            'lon': lon,
+            'max_lat': max_lat,
+            'min_lat': min_lat,
+            'max_lon': max_lon,
+            'min_lon': min_lon,
+            'radius': radius,
+            'region': region,
+            'samples': samples,
+            'source': None,
+            'weight': weight,
+        })
+        return ('new', values)
+
+    def new_move_values(self, station_key, observations):
+        values = self._base_submit_values(station_key, None, observations)
+        values.update({
+            'created': self.utcnow,
+            'last_seen': None,
+            'modified': self.utcnow,
+            'block_first': self.today,
+            'block_last': self.today,
+            'block_count': 1,
+        })
+        return ('new_move', values)
+
     def station_values(self, station_key, shard_station, observations):
         """
         Return two-tuple of status, value dict where status is one of:
@@ -135,40 +227,14 @@ class StationUpdater(object):
 
             if agree >= disagree:
                 # we got more agreeing than disagreeing observations
-                values = self._base_key_values(station_key)
-                values['last_seen'] = self.today
-                return ('confirm', values)
+                return self.confirm_values(station_key)
 
             if not agree and disagree:
                 # we got only disagreeing observations
-                block_count = shard_station.block_count or 0
-                values = self._base_submit_values(
-                    station_key, shard_station, query_observations)
-                values.update({
-                    'last_seen': None,
-                    'modified': self.utcnow,
-                    'lat': None,
-                    'lon': None,
-                    'max_lat': None,
-                    'min_lat': None,
-                    'max_lon': None,
-                    'min_lon': None,
-                    'radius': None,
-                    'region': shard_station.region,
-                    'samples': None,
-                    'source': None,
-                    'weight': None,
-                    'block_first': shard_station.block_first or self.today,
-                    'block_last': self.today,
-                    'block_count': block_count + 1,
-                })
-                return ('move', values)
+                return self.move_values(
+                    station_key, query_observations, shard_station)
 
             return (None, None)  # pragma: no cover
-
-        created = self.utcnow
-        values = self._base_submit_values(
-            station_key, shard_station, submit_observations)
 
         obs_positions = numpy.array(
             [(obs.lat, obs.lon) for obs in submit_observations],
@@ -193,59 +259,28 @@ class StationUpdater(object):
         if obs_box_dist > self.max_dist_meters:
             # the new observations are already too far apart
             if not shard_station:
-                values.update({
-                    'created': created,
-                    'last_seen': None,
-                    'modified': self.utcnow,
-                    'block_first': self.today,
-                    'block_last': self.today,
-                    'block_count': 1,
-                })
-                return ('new_move', values)
+                return self.new_move_values(
+                    station_key, submit_observations)
             else:
-                block_count = shard_station.block_count or 0
-                values.update({
-                    'last_seen': None,
-                    'modified': self.utcnow,
-                    'lat': None,
-                    'lon': None,
-                    'max_lat': None,
-                    'min_lat': None,
-                    'max_lon': None,
-                    'min_lon': None,
-                    'radius': None,
-                    'region': shard_station.region,
-                    'samples': None,
-                    'source': None,
-                    'weight': None,
-                    'block_first': shard_station.block_first or self.today,
-                    'block_last': self.today,
-                    'block_count': block_count + 1,
-                })
-                return ('move', values)
+                return self.move_values(
+                    station_key, submit_observations, shard_station)
 
         if shard_station is None:
             # totally new station, only agreeing observations
             radius = circle_radius(
                 obs_new_lat, obs_new_lon,
                 obs_max_lat, obs_max_lon, obs_min_lat, obs_min_lon)
-            values.update({
-                'created': created,
-                'last_seen': self.today,
-                'modified': self.utcnow,
-                'lat': obs_new_lat,
-                'lon': obs_new_lon,
-                'max_lat': float(obs_max_lat),
-                'min_lat': float(obs_min_lat),
-                'max_lon': float(obs_max_lon),
-                'min_lon': float(obs_min_lon),
-                'radius': radius,
-                'region': GEOCODER.region(obs_new_lat, obs_new_lon),
-                'samples': obs_length,
-                'source': None,
-                'weight': obs_weight,
-            })
-            return ('new', values)
+
+            region = GEOCODER.region(obs_new_lat, obs_new_lon)
+
+            return self.new_values(
+                station_key, submit_observations,
+                lat=obs_new_lat, lon=obs_new_lon,
+                max_lat=float(obs_max_lat), min_lat=float(obs_min_lat),
+                max_lon=float(obs_max_lon), min_lon=float(obs_min_lon),
+                radius=radius, region=region,
+                samples=obs_length, weight=obs_weight,
+            )
         else:
             # shard_station + new observations
             positions = numpy.append(obs_positions, [
@@ -267,26 +302,8 @@ class StationUpdater(object):
             box_dist = distance(min_lat, min_lon, max_lat, max_lon)
             if box_dist > self.max_dist_meters:
                 # shard_station + disagreeing observations
-                block_count = shard_station.block_count or 0
-                values.update({
-                    'last_seen': None,
-                    'modified': self.utcnow,
-                    'lat': None,
-                    'lon': None,
-                    'max_lat': None,
-                    'min_lat': None,
-                    'max_lon': None,
-                    'min_lon': None,
-                    'radius': None,
-                    'region': shard_station.region,
-                    'samples': None,
-                    'source': None,
-                    'weight': None,
-                    'block_first': shard_station.block_first or self.today,
-                    'block_last': self.today,
-                    'block_count': block_count + 1,
-                })
-                return ('move', values)
+                return self.move_values(
+                    station_key, submit_observations, shard_station)
             else:
                 # shard_station + agreeing observations
                 if shard_station.lat is None or shard_station.lon is None:
@@ -310,6 +327,7 @@ class StationUpdater(object):
 
                 radius = circle_radius(
                     new_lat, new_lon, max_lat, max_lon, min_lat, min_lon)
+
                 region = shard_station.region
                 if (region and not GEOCODER.in_region(
                         new_lat, new_lon, region)):
@@ -317,25 +335,15 @@ class StationUpdater(object):
                     region = None
                 if not region:
                     region = GEOCODER.region(new_lat, new_lon)
-                values.update({
-                    'last_seen': self.today,
-                    'modified': self.utcnow,
-                    'lat': new_lat,
-                    'lon': new_lon,
-                    'max_lat': float(max_lat),
-                    'min_lat': float(min_lat),
-                    'max_lon': float(max_lon),
-                    'min_lon': float(min_lon),
-                    'radius': radius,
-                    'region': region,
-                    'samples': samples,
-                    'source': None,
-                    'weight': weight,
-                    'block_first': shard_station.block_first,
-                    'block_last': shard_station.block_last,
-                    'block_count': shard_station.block_count,
-                })
-                return ('change', values)
+
+                return self.change_values(
+                    station_key, shard_station, submit_observations,
+                    lat=new_lat, lon=new_lon,
+                    max_lat=float(max_lat), min_lat=float(min_lat),
+                    max_lon=float(max_lon), min_lon=float(min_lon),
+                    radius=radius, region=region,
+                    samples=samples, weight=weight,
+                )
 
         return (None, None)  # pragma: no cover
 
