@@ -23,6 +23,7 @@ from ichnaea.models.constants import TEMPORARY_BLOCKLIST_DURATION
 from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     BlueObservationFactory,
+    BlueShardFactory,
     CellObservationFactory,
     CellShardFactory,
     WifiObservationFactory,
@@ -154,12 +155,55 @@ class TestBlue(StationTest):
         self.assertEqual(blue.block_last, None)
         self.assertEqual(blue.block_count, None)
 
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, ['type:blue']),
+            ('data.station.new', 1, ['type:blue']),
+        ])
+
+    def test_confirm(self):
+        utcnow = util.utcnow()
+        today = utcnow.date()
+        two_weeks = utcnow - timedelta(days=14)
+        obs1 = BlueObservationFactory.build(source=ReportSource.query)
+        obs11 = BlueObservationFactory.build(
+            source=ReportSource.query,
+            mac=obs1.mac, lat=obs1.lat, lon=obs1.lon + 0.1)
+        obs2 = BlueObservationFactory.build(source=ReportSource.query)
+        BlueShardFactory(
+            mac=obs1.mac, created=two_weeks, modified=two_weeks,
+            last_seen=two_weeks.date())
+        BlueShardFactory(
+            mac=obs2.mac, created=utcnow, modified=utcnow, last_seen=today)
+        self.session.commit()
+        self._queue_and_update_blue([obs1, obs11, obs2])
+
+        shard = BlueShard.shard_model(obs1.mac)
+        blue = (self.session.query(shard)
+                            .filter(shard.mac == obs1.mac)).first()
+        self.assertEqual(blue.created.date(), two_weeks.date())
+        self.assertEqual(blue.modified.date(), two_weeks.date())
+        self.assertEqual(blue.last_seen, today)
+
+        shard = BlueShard.shard_model(obs2.mac)
+        blue = (self.session.query(shard)
+                            .filter(shard.mac == obs2.mac)).first()
+        self.assertEqual(blue.created.date(), today)
+        self.assertEqual(blue.modified.date(), today)
+        self.assertEqual(blue.last_seen, today)
+
+        self.check_stats(counter=[
+            ('data.station.confirm', 1, ['type:blue']),
+        ])
+
     def test_query(self):
         obs = BlueObservationFactory.build(source=ReportSource.query)
         self._queue_and_update_blue([obs])
         shard = BlueShard.shard_model(obs.mac)
         blues = self.session.query(shard).all()
         self.assertEqual(len(blues), 0)
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, ['type:blue']),
+        ])
 
 
 class TestCell(StationTest):
@@ -190,12 +234,60 @@ class TestCell(StationTest):
         self.assertEqual(cell.block_last, None)
         self.assertEqual(cell.block_count, None)
 
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, ['type:cell']),
+            ('data.station.new', 1, ['type:cell']),
+        ])
+
+    def test_confirm(self):
+        utcnow = util.utcnow()
+        today = utcnow.date()
+        two_weeks = utcnow - timedelta(days=14)
+        obs1 = CellObservationFactory.build(source=ReportSource.query)
+        obs11 = CellObservationFactory.build(
+            radio=obs1.radio, mcc=obs1.mcc, mnc=obs1.mnc,
+            lac=obs1.lac, cid=obs1.cid,
+            source=ReportSource.query, lat=obs1.lat + 1.0, lon=obs1.lon)
+        obs2 = CellObservationFactory.build(source=ReportSource.query)
+        CellShardFactory(
+            radio=obs1.radio, mcc=obs1.mcc, mnc=obs1.mnc,
+            lac=obs1.lac, cid=obs1.cid,
+            created=two_weeks, modified=two_weeks,
+            last_seen=two_weeks.date())
+        CellShardFactory(
+            radio=obs2.radio, mcc=obs2.mcc, mnc=obs2.mnc,
+            lac=obs2.lac, cid=obs2.cid,
+            created=utcnow, modified=utcnow, last_seen=today)
+        self.session.commit()
+        self._queue_and_update_cell([obs1, obs11, obs2])
+
+        shard = CellShard.shard_model(obs1.cellid)
+        cell = (self.session.query(shard)
+                            .filter(shard.cellid == obs1.cellid)).first()
+        self.assertEqual(cell.created.date(), two_weeks.date())
+        self.assertEqual(cell.modified.date(), two_weeks.date())
+        self.assertEqual(cell.last_seen, today)
+
+        shard = CellShard.shard_model(obs2.cellid)
+        cell = (self.session.query(shard)
+                            .filter(shard.cellid == obs2.cellid)).first()
+        self.assertEqual(cell.created.date(), today)
+        self.assertEqual(cell.modified.date(), today)
+        self.assertEqual(cell.last_seen, today)
+
+        self.check_stats(counter=[
+            ('data.station.confirm', 1, ['type:cell']),
+        ])
+
     def test_query(self):
         obs = CellObservationFactory.build(source=ReportSource.query)
         self._queue_and_update_cell([obs])
         shard = CellShard.shard_model(obs.cellid)
         cells = self.session.query(shard).all()
         self.assertEqual(len(cells), 0)
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, ['type:cell']),
+        ])
 
     def test_blocklist(self):
         now = util.utcnow()
@@ -222,7 +314,7 @@ class TestCell(StationTest):
                 blocks.append(cell)
 
         self.assertEqual(len(blocks), 1)
-        self.check_statcounter(StatKey.cell, 2)
+        self.check_statcounter(StatKey.cell, 3)
         self.check_statcounter(StatKey.unique_cell, 2)
 
     def test_blocklist_moving_cells(self):
@@ -466,12 +558,55 @@ class TestWifi(StationTest):
         self.assertEqual(wifi.block_last, None)
         self.assertEqual(wifi.block_count, None)
 
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, ['type:wifi']),
+            ('data.station.new', 1, ['type:wifi']),
+        ])
+
+    def test_confirm(self):
+        utcnow = util.utcnow()
+        today = utcnow.date()
+        two_weeks = utcnow - timedelta(days=14)
+        obs1 = WifiObservationFactory.build(source=ReportSource.query)
+        obs11 = WifiObservationFactory.build(
+            source=ReportSource.query,
+            mac=obs1.mac, lat=obs1.lat, lon=obs1.lon + 0.1)
+        obs2 = WifiObservationFactory.build(source=ReportSource.query)
+        WifiShardFactory(
+            mac=obs1.mac, created=two_weeks, modified=two_weeks,
+            last_seen=two_weeks.date())
+        WifiShardFactory(
+            mac=obs2.mac, created=utcnow, modified=utcnow, last_seen=today)
+        self.session.commit()
+        self._queue_and_update_wifi([obs1, obs11, obs2])
+
+        shard = WifiShard.shard_model(obs1.mac)
+        wifi = (self.session.query(shard)
+                            .filter(shard.mac == obs1.mac)).first()
+        self.assertEqual(wifi.created.date(), two_weeks.date())
+        self.assertEqual(wifi.modified.date(), two_weeks.date())
+        self.assertEqual(wifi.last_seen, today)
+
+        shard = WifiShard.shard_model(obs2.mac)
+        wifi = (self.session.query(shard)
+                            .filter(shard.mac == obs2.mac)).first()
+        self.assertEqual(wifi.created.date(), today)
+        self.assertEqual(wifi.modified.date(), today)
+        self.assertEqual(wifi.last_seen, today)
+
+        self.check_stats(counter=[
+            ('data.station.confirm', 1, ['type:wifi']),
+        ])
+
     def test_query(self):
         obs = WifiObservationFactory.build(source=ReportSource.query)
         self._queue_and_update_wifi([obs])
         shard = WifiShard.shard_model(obs.mac)
         wifis = self.session.query(shard).all()
         self.assertEqual(len(wifis), 0)
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, ['type:wifi']),
+        ])
 
     def test_update(self):
         utcnow = util.utcnow()
@@ -569,7 +704,7 @@ class TestWifi(StationTest):
         self.assertTrue(wifis[0].lat is None)
         self.assertTrue(wifis[0].lon is None)
 
-        self.check_statcounter(StatKey.wifi, 2)
+        self.check_statcounter(StatKey.wifi, 3)
         self.check_statcounter(StatKey.unique_wifi, 1)
 
     def test_temp_blocked_admitted_again(self):

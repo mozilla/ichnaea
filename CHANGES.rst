@@ -24,6 +24,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use query observations to confirm station positions.
+
 - Change hearbeat/monitor view to lbhearbeat/hearbeat views.
 
 - Update last_seen column on each station update.

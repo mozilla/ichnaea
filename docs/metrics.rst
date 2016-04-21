@@ -299,14 +299,6 @@ Along the way several counters measure the steps involved:
     validity-condition error encountered while attempting to normalize the
     :term:`observation`.
 
-``data.observation.drop#type:blue,reason:blocklisted``,
-``data.observation.drop#type:cell,reason:blocklisted``,
-``data.observation.drop#type:wifi,reason:blocklisted`` : counters
-
-    Count incoming Bluetooth, cell or WiFi :term:`observations` that were
-    discarded before integration due to the presence of a blocklist record
-    for the :term:`station` (see next metric).
-
 ``data.observation.insert#type:blue``,
 ``data.observation.insert#type:cell``,
 ``data.observation.insert#type:wifi`` : counters
@@ -314,9 +306,9 @@ Along the way several counters measure the steps involved:
     Count Bluetooth, cell or WiFi :term:`observations` that are successfully
     normalized, integrated and not discarded due to consistency errors.
 
-``data.station.blocklist#type:blue,action:add,reason:moving``,
-``data.station.blocklist#type:cell,action:add,reason:moving``,
-``data.station.blocklist#type:wifi,action:add,reason:moving`` : counters
+``data.station.blocklist#type:blue``,
+``data.station.blocklist#type:cell``,
+``data.station.blocklist#type:wifi`` : counters
 
     Count any Bluetooth, cell or WiFi network that is blocklisted due to
     the acceptance of multiple :term:`observations` at sufficiently different
@@ -324,6 +316,20 @@ Along the way several counters measure the steps involved:
     (such as a picocell or mobile hotspot on a public transit vehicle) and
     blocklist it, to avoid estimating query positions using the
     :term:`station`.
+
+``data.station.confirm#type:blue``,
+``data.station.confirm#type:cell``,
+``data.station.confirm#type:wifi`` : counters
+
+    Count the number of Bluetooth, cell or WiFi :term:`station` that were
+    successfully confirmed by any type of :term:`observations`.
+
+``data.station.new#type:blue``,
+``data.station.new#type:cell``,
+``data.station.new#type:wifi`` : counters
+
+    Count the number of Bluetooth, cell or WiFi :term:`station` that were
+    discovered for the first time.
 
 
 Data Pipeline Export Metrics

@@ -52,15 +52,11 @@ class StationUpdater(object):
         self.data_queues = self.task.app.data_queues
         self.data_queue = self.data_queues[self.queue_prefix + shard_id]
 
-    def stat_count(self, action, count, reason=None):
-        if count > 0:
-            tags = ['type:%s' % self.station_type]
-            if reason:
-                tags.append('reason:%s' % reason)
-            self.task.stats_client.incr(
-                'data.observation.%s' % action,
-                count,
-                tags=tags)
+    def _base_key_values(self, station_key):
+        raise NotImplementedError()
+
+    def _base_submit_values(self, station_key, shard_station, observations):
+        raise NotImplementedError()
 
     def add_area_update(self, updated_areas, key):
         pass
@@ -68,52 +64,92 @@ class StationUpdater(object):
     def queue_area_updates(self, pipe, updated_areas):  # pragma: no cover
         pass
 
-    def emit_stats(self, pipe, stats_counter, drop_counter):
-        day = self.today
-        StatCounter(self.stat_obs_key, day).incr(
+    def stat_count(self, type_, action, count):
+        if count > 0:
+            self.task.stats_client.incr(
+                'data.%s.%s' % (type_, action),
+                count,
+                tags=['type:%s' % self.station_type])
+
+    def emit_stats(self, pipe, stats_counter):
+        StatCounter(self.stat_obs_key, self.today).incr(
             pipe, stats_counter['obs'])
-        StatCounter(self.stat_station_key, day).incr(
+        StatCounter(self.stat_station_key, self.today).incr(
             pipe, stats_counter['new_station'])
 
-        self.stat_count('insert', stats_counter['obs'])
-        for reason, count in drop_counter.items():
-            self.stat_count('drop', drop_counter[reason], reason=reason)
-        if stats_counter['block']:
-            self.task.stats_client.incr(
-                'data.station.blocklist',
-                stats_counter['block'],
-                tags=['type:%s' % self.station_type,
-                      'action:add',
-                      'reason:moving'])
-
-    def _base_station_values(self, station_key, observations):
-        raise NotImplementedError()
+        self.stat_count('observation', 'insert', stats_counter['obs'])
+        self.stat_count('station', 'blocklist', stats_counter['block'])
+        self.stat_count('station', 'confirm', stats_counter['confirm'])
+        self.stat_count('station', 'new', stats_counter['new_station'])
 
     def station_values(self, station_key, shard_station, observations):
         """
         Return two-tuple of status, value dict where status is one of:
-        `new`, `new_moving`, `moving`, `changed`.
+        `new`, `new_move`, `move`, `change`, `confirm`.
         """
         # cases:
-        # we always get a station key and observations
-        # 0. observations disagree
-        # 0.a. no shard station, return new_moving
-        # 0.b. shard station, return moving
-        # 1. no shard station
-        # 1.a. obs agree -> return new
-        # 2. shard station
-        # 2.a. obs disagree -> return moving
-        # 2.b. obs agree -> return changed
+        # A. we only get query observations
+        # A.0. observations disagree -> ignore
+        # A.1. no shard station -> ignore
+        # B.2. shard station
+        # B.2.a. obs disagree -> ignore
+        # B.2.b. obs agree -> return confirm
+        # B. we get submit observations
+        # B.0. observations disagree
+        # B.0.a. no shard station, return new_move
+        # B.0.b. shard station, return move
+        # B.1. no shard station
+        # B.1.a. obs agree -> return new
+        # B.2. shard station
+        # B.2.a. obs disagree -> return move
+        # B.2.b. obs agree -> return change
+        query_observations = []
+        submit_observations = []
+
+        for obs in observations:
+            if obs.source is ReportSource.query:
+                query_observations.append(obs)
+            else:
+                submit_observations.append(obs)
+
+        if not submit_observations:
+            if (not shard_station or
+                    (shard_station.lat is None or shard_station is None)):
+                # no prior station or a station without a position
+                return (None, None)
+
+            if shard_station.last_seen == self.today:
+                # station was already confirmed today
+                return (None, None)
+
+            agree = 0
+            disagree = 0
+            for obs in query_observations:
+                obs_distance = distance(obs.lat, obs.lon,
+                                        shard_station.lat, shard_station.lon)
+                if obs_distance <= self.max_dist_meters:
+                    agree += 1
+                else:
+                    disagree += 1
+
+            if agree >= disagree:
+                values = self._base_key_values(station_key)
+                values['last_seen'] = self.today
+                return ('confirm', values)
+
+            return (None, None)  # pragma: no cover
+
         created = self.utcnow
-        values = self._base_station_values(station_key, observations)
+        values = self._base_submit_values(
+            station_key, shard_station, submit_observations)
 
         obs_positions = numpy.array(
-            [(obs.lat, obs.lon) for obs in observations],
+            [(obs.lat, obs.lon) for obs in submit_observations],
             dtype=numpy.double)
-        obs_length = len(observations)
+        obs_length = len(submit_observations)
 
         obs_weights = numpy.array(
-            [obs.weight for obs in observations],
+            [obs.weight for obs in submit_observations],
             dtype=numpy.double)
         obs_weight = float(obs_weights.sum())
 
@@ -132,14 +168,16 @@ class StationUpdater(object):
             if not shard_station:
                 values.update({
                     'created': created,
+                    'last_seen': None,
                     'block_first': self.today,
                     'block_last': self.today,
                     'block_count': 1,
                 })
-                return ('new_moving', values)
+                return ('new_move', values)
             else:
                 block_count = shard_station.block_count or 0
                 values.update({
+                    'last_seen': None,
                     'lat': None,
                     'lon': None,
                     'max_lat': None,
@@ -155,7 +193,7 @@ class StationUpdater(object):
                     'block_last': self.today,
                     'block_count': block_count + 1,
                 })
-                return ('moving', values)
+                return ('move', values)
 
         if shard_station is None:
             # totally new station, only agreeing observations
@@ -164,6 +202,7 @@ class StationUpdater(object):
                 obs_max_lat, obs_max_lon, obs_min_lat, obs_min_lon)
             values.update({
                 'created': created,
+                'last_seen': self.today,
                 'lat': obs_new_lat,
                 'lon': obs_new_lon,
                 'max_lat': float(obs_max_lat),
@@ -200,6 +239,7 @@ class StationUpdater(object):
                 # shard_station + disagreeing observations
                 block_count = shard_station.block_count or 0
                 values.update({
+                    'last_seen': None,
                     'lat': None,
                     'lon': None,
                     'max_lat': None,
@@ -215,7 +255,7 @@ class StationUpdater(object):
                     'block_last': self.today,
                     'block_count': block_count + 1,
                 })
-                return ('moving', values)
+                return ('move', values)
             else:
                 # shard_station + agreeing observations
                 if shard_station.lat is None or shard_station.lon is None:
@@ -247,6 +287,7 @@ class StationUpdater(object):
                 if not region:
                     region = GEOCODER.region(new_lat, new_lon)
                 values.update({
+                    'last_seen': self.today,
                     'lat': new_lat,
                     'lon': new_lon,
                     'max_lat': float(max_lat),
@@ -258,12 +299,12 @@ class StationUpdater(object):
                     'samples': samples,
                     'source': None,
                     'weight': weight,
-                    # use the exact same keys as in the moving case
+                    # use the exact same keys as in the move case
                     'block_first': shard_station.block_first,
                     'block_last': shard_station.block_last,
                     'block_count': shard_station.block_count,
                 })
-                return ('changed', values)
+                return ('change', values)
 
         return (None, None)  # pragma: no cover
 
@@ -272,9 +313,6 @@ class StationUpdater(object):
         for obs in observations:
             obs = self.obs_model.from_json(obs)
             if obs is not None:
-                if obs.source is ReportSource.query:
-                    # TODO: Don't process query derived observations.
-                    continue
                 if not obs.weight:
                     # Filter out observations with too little weight.
                     continue
@@ -300,32 +338,34 @@ class StationUpdater(object):
 
         return (blocklist, stations)
 
-    def _update_shard(self, session, shard, shard_values,
-                      drop_counter, stats_counter):
+    def _update_shard(self, session, shard, shard_values, stats_counter):
         updated_areas = set()
         new_data = defaultdict(list)
         blocklist, stations = self._query_stations(
             session, shard, shard_values)
 
         for station_key, observations in shard_values.items():
+            # Count all observations.
+            stats_counter['obs'] += len(observations)
+
             if blocklist.get(station_key, False):
                 # Drop observations for blocklisted stations.
-                drop_counter['blocklisted'] += len(observations)
                 continue
 
-            shard_station = stations.get(station_key, None)
-            if shard_station is None:
-                # We discovered an actual new never before seen station.
-                stats_counter['new_station'] += 1
-
             status, result = self.station_values(
-                station_key, shard_station, observations)
+                station_key, stations.get(station_key, None), observations)
+
+            if not status:
+                continue
+
             new_data[status].append(result)
 
-            if status in ('moving', 'new_moving'):
+            if status in ('change', 'confirm'):
+                stats_counter['confirm'] += 1
+            if status in ('new', 'new_move'):
+                stats_counter['new_station'] += 1
+            if status in ('move', 'new_move'):
                 stats_counter['block'] += 1
-            else:
-                stats_counter['obs'] += len(observations)
 
             # track potential updates to dependent areas
             self.add_area_update(updated_areas, station_key)
@@ -337,31 +377,33 @@ class StationUpdater(object):
             )
             session.execute(stmt.values(new_data['new']))
 
-        if new_data['new_moving']:
+        if new_data['new_move']:
             # do a batch insert of new moving stations
             stmt = shard.__table__.insert(
                 mysql_on_duplicate='block_count = block_count'  # no-op
             )
-            session.execute(stmt.values(new_data['new_moving']))
+            session.execute(stmt.values(new_data['new_move']))
 
-        if new_data['moving'] or new_data['changed']:
+        if new_data['change'] or new_data['move']:
             # do a batch update of changing and moving stations
             session.bulk_update_mappings(
-                shard, new_data['changed'] + new_data['moving'])
+                shard, new_data['change'] + new_data['move'])
+
+        if new_data['confirm']:
+            # do a batch update of confirmed stations
+            session.bulk_update_mappings(shard, new_data['confirm'])
 
         return updated_areas
 
     def _update_shards(self, session, sharded_obs):
-        drop_counter = defaultdict(int)
         stats_counter = defaultdict(int)
         updated_areas = set()
 
         for shard, shard_values in sharded_obs.items():
             updated_areas.update(self._update_shard(
-                session, shard, shard_values,
-                drop_counter, stats_counter))
+                session, shard, shard_values, stats_counter))
 
-        return (updated_areas, drop_counter, stats_counter)
+        return (updated_areas, stats_counter)
 
     def __call__(self):
         sharded_obs = self._shard_observations(self.data_queue.dequeue())
@@ -372,7 +414,7 @@ class StationUpdater(object):
         for i in range(self._retries):
             try:
                 with self.task.db_session() as session:
-                    updated_areas, drop_counter, stats_counter = \
+                    updated_areas, stats_counter = \
                         self._update_shards(session, sharded_obs)
                 success = True
             except SQLInternalError as exc:
@@ -391,7 +433,7 @@ class StationUpdater(object):
                 if updated_areas:
                     self.queue_area_updates(pipe, updated_areas)
 
-                self.emit_stats(pipe, stats_counter, drop_counter)
+                self.emit_stats(pipe, stats_counter)
 
             if self.data_queue.ready():  # pragma: no cover
                 self.task.apply_countdown(kwargs={'shard_id': self.shard_id})
@@ -406,12 +448,15 @@ class BlueUpdater(StationUpdater):
     stat_obs_key = StatKey.blue
     stat_station_key = StatKey.unique_blue
 
-    def _base_station_values(self, station_key, observations):
+    def _base_key_values(self, station_key):
         return {
             'mac': station_key,
-            'modified': self.utcnow,
-            'last_seen': self.utcnow.date(),
         }
+
+    def _base_submit_values(self, station_key, shard_station, observations):
+        values = self._base_key_values(station_key)
+        values['modified'] = self.utcnow
+        return values
 
     def _query_shard(self, session, shard, keys):
         return (session.query(shard)
@@ -434,10 +479,8 @@ class CellUpdater(StationUpdater):
         data_queue = self.data_queues['update_cellarea']
         data_queue.enqueue(list(updated_areas), pipe=pipe)
 
-    def _base_station_values(self, station_key, observations):
+    def _base_key_values(self, station_key):
         radio, mcc, mnc, lac, cid = decode_cellid(station_key)
-        if observations:
-            psc = observations[-1].psc
         return {
             'cellid': station_key,
             'radio': radio,
@@ -445,10 +488,23 @@ class CellUpdater(StationUpdater):
             'mnc': mnc,
             'lac': lac,
             'cid': cid,
-            'psc': psc,
-            'modified': self.utcnow,
-            'last_seen': self.utcnow.date(),
         }
+
+    def _base_submit_values(self, station_key, shard_station, observations):
+        values = self._base_key_values(station_key)
+        values['cellid'] = station_key
+        values['modified'] = self.utcnow
+
+        psc = None
+        if shard_station:
+            psc = shard_station.psc
+
+        if observations:
+            pscs = [obs.psc for obs in observations if obs.psc is not None]
+            if pscs:
+                psc = pscs[-1]
+        values['psc'] = psc
+        return values
 
     def _query_shard(self, session, shard, keys):
         return (session.query(shard)
@@ -464,12 +520,15 @@ class WifiUpdater(StationUpdater):
     stat_obs_key = StatKey.wifi
     stat_station_key = StatKey.unique_wifi
 
-    def _base_station_values(self, station_key, observations):
+    def _base_key_values(self, station_key):
         return {
             'mac': station_key,
-            'modified': self.utcnow,
-            'last_seen': self.utcnow.date(),
         }
+
+    def _base_submit_values(self, station_key, shard_station, observations):
+        values = self._base_key_values(station_key)
+        values['modified'] = self.utcnow
+        return values
 
     def _query_shard(self, session, shard, keys):
         return (session.query(shard)
