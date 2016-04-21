@@ -90,10 +90,11 @@ class StationUpdater(object):
         # cases:
         # A. we only get query observations
         # A.0. observations disagree -> ignore
-        # A.1. no shard station -> ignore
-        # B.2. shard station
-        # B.2.a. obs disagree -> ignore
-        # B.2.b. obs agree -> return confirm
+        # A.1. no shard station
+        # A.1.a. obs agree -> TODO ignore
+        # A.2. shard station
+        # A.2.a. obs disagree -> return move
+        # A.2.b. obs agree -> return confirm
         # B. we get submit observations
         # B.0. observations disagree
         # B.0.a. no shard station, return new_move
@@ -133,9 +134,35 @@ class StationUpdater(object):
                     disagree += 1
 
             if agree >= disagree:
+                # we got more agreeing than disagreeing observations
                 values = self._base_key_values(station_key)
                 values['last_seen'] = self.today
                 return ('confirm', values)
+
+            if not agree and disagree:
+                # we got only disagreeing observations
+                block_count = shard_station.block_count or 0
+                values = self._base_submit_values(
+                    station_key, shard_station, query_observations)
+                values.update({
+                    'last_seen': None,
+                    'modified': self.utcnow,
+                    'lat': None,
+                    'lon': None,
+                    'max_lat': None,
+                    'min_lat': None,
+                    'max_lon': None,
+                    'min_lon': None,
+                    'radius': None,
+                    'region': shard_station.region,
+                    'samples': None,
+                    'source': None,
+                    'weight': None,
+                    'block_first': shard_station.block_first or self.today,
+                    'block_last': self.today,
+                    'block_count': block_count + 1,
+                })
+                return ('move', values)
 
             return (None, None)  # pragma: no cover
 
@@ -169,6 +196,7 @@ class StationUpdater(object):
                 values.update({
                     'created': created,
                     'last_seen': None,
+                    'modified': self.utcnow,
                     'block_first': self.today,
                     'block_last': self.today,
                     'block_count': 1,
@@ -178,6 +206,7 @@ class StationUpdater(object):
                 block_count = shard_station.block_count or 0
                 values.update({
                     'last_seen': None,
+                    'modified': self.utcnow,
                     'lat': None,
                     'lon': None,
                     'max_lat': None,
@@ -203,6 +232,7 @@ class StationUpdater(object):
             values.update({
                 'created': created,
                 'last_seen': self.today,
+                'modified': self.utcnow,
                 'lat': obs_new_lat,
                 'lon': obs_new_lon,
                 'max_lat': float(obs_max_lat),
@@ -240,6 +270,7 @@ class StationUpdater(object):
                 block_count = shard_station.block_count or 0
                 values.update({
                     'last_seen': None,
+                    'modified': self.utcnow,
                     'lat': None,
                     'lon': None,
                     'max_lat': None,
@@ -288,6 +319,7 @@ class StationUpdater(object):
                     region = GEOCODER.region(new_lat, new_lon)
                 values.update({
                     'last_seen': self.today,
+                    'modified': self.utcnow,
                     'lat': new_lat,
                     'lon': new_lon,
                     'max_lat': float(max_lat),
@@ -299,7 +331,6 @@ class StationUpdater(object):
                     'samples': samples,
                     'source': None,
                     'weight': weight,
-                    # use the exact same keys as in the move case
                     'block_first': shard_station.block_first,
                     'block_last': shard_station.block_last,
                     'block_count': shard_station.block_count,
@@ -454,9 +485,7 @@ class BlueUpdater(StationUpdater):
         }
 
     def _base_submit_values(self, station_key, shard_station, observations):
-        values = self._base_key_values(station_key)
-        values['modified'] = self.utcnow
-        return values
+        return self._base_key_values(station_key)
 
     def _query_shard(self, session, shard, keys):
         return (session.query(shard)
@@ -492,8 +521,6 @@ class CellUpdater(StationUpdater):
 
     def _base_submit_values(self, station_key, shard_station, observations):
         values = self._base_key_values(station_key)
-        values['cellid'] = station_key
-        values['modified'] = self.utcnow
 
         psc = None
         if shard_station:
@@ -526,9 +553,7 @@ class WifiUpdater(StationUpdater):
         }
 
     def _base_submit_values(self, station_key, shard_station, observations):
-        values = self._base_key_values(station_key)
-        values['modified'] = self.utcnow
-        return values
+        return self._base_key_values(station_key)
 
     def _query_shard(self, session, shard, keys):
         return (session.query(shard)
