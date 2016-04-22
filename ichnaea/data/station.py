@@ -272,9 +272,13 @@ class StationUpdater(object):
 
         if not shard_station:
             # 2. no prior station
-            # 2.a. obs disagree -> TODO new_move
-            # 2.b. obs agree -> TODO new
-            return (None, None)
+            obs_data = self.aggregate_obs(observations)
+            if obs_data is None:
+                # 2.a. obs disagree
+                return self.new_move_values(station_key, observations)
+            else:
+                # 2.b. obs agree -> TODO new
+                return (None, None)
 
         return (None, None)  # pragma: no cover
 

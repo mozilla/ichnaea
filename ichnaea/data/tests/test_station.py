@@ -296,6 +296,27 @@ class StationTest(BaseStationTest):
         self.assertEqual(station.lat, None)
         self.assertEqual(station.lon, None)
 
+    def test_new_move_query(self):
+        now = util.utcnow()
+        today = now.date()
+        obs1 = self.obs_factory.build(source=ReportSource.query)
+        far_away_lat, _ = destination(
+            obs1.lat, obs1.lon, 0.0, self.max_radius + 1000.0)
+        obs2 = self.obs_factory(
+            lat=far_away_lat, lon=obs1.lon, source=ReportSource.query,
+            **self.key(obs1))
+        self.queue_and_update([obs1, obs2])
+
+        station = self.get_station(obs1)
+        self.assertEqual(station.block_first, today)
+        self.assertEqual(station.block_last, today)
+        self.assertEqual(station.block_count, 1)
+        self.assertEqual(station.created.date(), today)
+        self.assertEqual(station.modified.date(), today)
+        self.assertEqual(station.last_seen, None)
+        self.assertEqual(station.lat, None)
+        self.assertEqual(station.lon, None)
+
     def test_move_obs_agree(self):
         now = util.utcnow()
         today = now.date()
