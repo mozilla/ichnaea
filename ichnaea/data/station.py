@@ -91,7 +91,7 @@ class StationUpdater(object):
         return ('confirm', values)
 
     def change_values(self, station_key, shard_station,
-                      observations, data):
+                      observations, data, source):
         # move and change values need to have the exact same dict keys,
         # as they get combined into one bulk_update_mappings calls.
         values = self.base_submit_values(
@@ -102,7 +102,7 @@ class StationUpdater(object):
             'max_lat': data['max_lat'], 'min_lat': data['min_lat'],
             'max_lon': data['max_lon'], 'min_lon': data['min_lon'],
             'radius': data['radius'], 'region': data['region'],
-            'samples': data['samples'], 'source': None,
+            'samples': data['samples'], 'source': source,
             'weight': data['weight'],
             'block_first': shard_station.block_first,
             'block_last': shard_station.block_last,
@@ -129,7 +129,7 @@ class StationUpdater(object):
         })
         return ('move', values)
 
-    def new_values(self, station_key, observations, data):
+    def new_values(self, station_key, observations, data, source):
         values = self.base_submit_values(station_key, None, observations)
         values.update({
             'created': self.utcnow, 'last_seen': self.today,
@@ -138,7 +138,7 @@ class StationUpdater(object):
             'max_lat': data['max_lat'], 'min_lat': data['min_lat'],
             'max_lon': data['max_lon'], 'min_lon': data['min_lon'],
             'radius': data['radius'], 'region': data['region'],
-            'samples': data['samples'], 'source': None,
+            'samples': data['samples'], 'source': source,
             'weight': data['weight'],
         })
         return ('new', values)
@@ -285,8 +285,7 @@ class StationUpdater(object):
             # 0. the new observations are already too far apart
             if not shard_station:
                 # 0.a. no shard station
-                return self.new_move_values(
-                    station_key, observations)
+                return self.new_move_values(station_key, observations)
             else:
                 # 0.b. shard station
                 return self.move_values(
@@ -296,7 +295,8 @@ class StationUpdater(object):
             # 1. no shard station
             # 1.a. obs agree
             # 1.b. obs disagree (already covered in 0.a.)
-            return self.new_values(station_key, observations, obs_data)
+            return self.new_values(
+                station_key, observations, obs_data, ReportSource.gnss)
         else:
             # 2. shard station
             data = self.aggregate_station_obs(shard_station, obs_data)
@@ -307,7 +307,8 @@ class StationUpdater(object):
             else:
                 # 2.b. obs agree with station
                 return self.change_values(
-                    station_key, shard_station, observations, data)
+                    station_key, shard_station, observations,
+                    data, ReportSource.gnss)
 
         return (None, None)  # pragma: no cover
 

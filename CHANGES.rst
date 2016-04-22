@@ -24,6 +24,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Set stations source column to gnss on insert/update.
+
 - Use query observations to detect and blocklist stations.
 
 - Use query observations to confirm station positions.

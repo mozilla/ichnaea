@@ -132,6 +132,7 @@ class BlueShardFactory(BaseSQLFactory):
     radius = BLUE_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    source = ReportSource.gnss
     weight = 1.0
     created = util.utcnow()
     modified = util.utcnow()
@@ -184,6 +185,7 @@ class BaseCellShardFactory(CellPositionFactory, BboxFactory):
     radius = CELL_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    source = ReportSource.gnss
     weight = 1.0
     created = util.utcnow()
     modified = util.utcnow()
@@ -282,6 +284,7 @@ class WifiShardFactory(BaseSQLFactory):
     radius = WIFI_MIN_ACCURACY / 2.0
     region = 'GB'
     samples = 1
+    source = ReportSource.gnss
     weight = 1.0
     created = util.utcnow()
     modified = util.utcnow()
