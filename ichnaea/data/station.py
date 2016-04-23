@@ -277,8 +277,9 @@ class StationUpdater(object):
                 # 2.a. obs disagree
                 return self.new_move_values(station_key, observations)
             else:
-                # 2.b. obs agree -> TODO new
-                return (None, None)
+                # 2.b. obs agree
+                return self.new_values(
+                    station_key, observations, obs_data, ReportSource.query)
 
         return (None, None)  # pragma: no cover
 

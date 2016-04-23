@@ -276,6 +276,39 @@ class StationTest(BaseStationTest):
             ('data.station.new', 1, [self.type_tag]),
         ])
 
+    def test_new_query(self):
+        now = util.utcnow()
+        obs = self.obs_factory.build(source=ReportSource.query)
+        obs1 = self.obs_factory.build(
+            source=ReportSource.query, lat=obs.lat + 0.0003, **self.key(obs))
+        obs2 = self.obs_factory.build(
+            source=ReportSource.query, lon=obs.lon - 0.0003, **self.key(obs))
+        self.queue_and_update([obs, obs1, obs2])
+
+        station = self.get_station(obs)
+        self.assertAlmostEqual(station.lat, obs.lat + 0.0001)
+        self.assertAlmostEqual(station.max_lat, obs.lat + 0.0003)
+        self.assertAlmostEqual(station.min_lat, obs.lat)
+        self.assertAlmostEqual(station.lon, obs.lon - 0.0001)
+        self.assertAlmostEqual(station.max_lon, obs.lon)
+        self.assertAlmostEqual(station.min_lon, obs.lon - 0.0003)
+        self.assertEqual(station.radius, 26)
+        self.assertEqual(station.region, 'GB')
+        self.assertEqual(station.samples, 3)
+        self.assertEqual(station.source, ReportSource.query)
+        self.assertAlmostEqual(station.weight, 3.0, 2)
+        self.assertEqual(station.created.date(), now.date())
+        self.assertEqual(station.modified.date(), now.date())
+        self.assertEqual(station.last_seen, now.date())
+        self.assertEqual(station.block_first, None)
+        self.assertEqual(station.block_last, None)
+        self.assertEqual(station.block_count, None)
+
+        self.check_stats(counter=[
+            ('data.observation.insert', 1, [self.type_tag]),
+            ('data.station.new', 1, [self.type_tag]),
+        ])
+
     def test_new_move(self):
         now = util.utcnow()
         today = now.date()
@@ -364,16 +397,6 @@ class StationTest(BaseStationTest):
         self.assertEqual(station.last_seen, None)
         self.assertEqual(station.lat, None)
         self.assertEqual(station.lon, None)
-
-    def test_query(self):
-        obs = self.obs_factory.build(source=ReportSource.query)
-        self.queue_and_update([obs])
-
-        station = self.get_station(obs)
-        self.assertEqual(station, None)
-        self.check_stats(counter=[
-            ('data.observation.insert', 1, [self.type_tag]),
-        ])
 
 
 class StationMacTest(StationTest):
