@@ -369,7 +369,8 @@ class StationUpdater(object):
                 stats_counter['block'] += 1
 
             # track potential updates to dependent areas
-            self.add_area_update(updated_areas, station_key)
+            if status != 'confirm':
+                self.add_area_update(updated_areas, station_key)
 
         if new_data['new']:
             session.execute(shard.__table__.insert(

@@ -12,6 +12,8 @@ from ichnaea.data.tasks import (
 )
 from ichnaea.geocalc import destination
 from ichnaea.models import (
+    decode_cellid,
+    encode_cellarea,
     BlueShard,
     CellShard,
     Radio,
@@ -139,6 +141,9 @@ class StationTest(BaseStationTest):
                             .filter(getattr(shard, self.unique_key) ==
                                     getattr(model, self.unique_key))).first()
 
+    def check_areas(self, keys):
+        pass
+
     def test_blocklist_skip(self):
         now = util.utcnow()
         today = now.date()
@@ -165,6 +170,8 @@ class StationTest(BaseStationTest):
         self.assertEqual(blocks[0].block_last, today)
         self.assertEqual(blocks[0].block_count, 1)
 
+        self.check_areas(
+            [observations[1].unique_key, observations[2].unique_key])
         self.check_statcounter(self.stat_obs_key, 3)
         self.check_statcounter(self.stat_station_key, 2)
 
@@ -183,6 +190,7 @@ class StationTest(BaseStationTest):
         self.session.commit()
         self.queue_and_update([obs])
 
+        self.check_areas([obs.unique_key])
         station = self.get_station(obs)
         self.assertEqual(station.block_first, past.date())
         self.assertEqual(station.block_last, past.date())
@@ -228,6 +236,7 @@ class StationTest(BaseStationTest):
         self.session.commit()
         self.queue_and_update([obs1, obs11, obs2, obs3])
 
+        self.check_areas([obs3.unique_key])
         station = self.get_station(obs1)
         self.assertEqual(station.created.date(), two_weeks.date())
         self.assertEqual(station.modified.date(), two_weeks.date())
@@ -252,6 +261,7 @@ class StationTest(BaseStationTest):
         obs4 = self.obs_factory(lon=obs.lon - 0.0004, **self.key(obs))
         self.queue_and_update([obs, obs1, obs2, obs3, obs4])
 
+        self.check_areas([obs.unique_key])
         station = self.get_station(obs)
         self.assertAlmostEqual(station.lat, obs.lat - 0.00004)
         self.assertAlmostEqual(station.max_lat, obs.lat + 0.0001)
@@ -285,6 +295,7 @@ class StationTest(BaseStationTest):
             source=ReportSource.query, lon=obs.lon - 0.0003, **self.key(obs))
         self.queue_and_update([obs, obs1, obs2])
 
+        self.check_areas([obs.unique_key])
         station = self.get_station(obs)
         self.assertAlmostEqual(station.lat, obs.lat + 0.0001)
         self.assertAlmostEqual(station.max_lat, obs.lat + 0.0003)
@@ -312,14 +323,15 @@ class StationTest(BaseStationTest):
     def test_new_move(self):
         now = util.utcnow()
         today = now.date()
-        obs1 = self.obs_factory.build()
+        obs = self.obs_factory.build()
         far_away_lat, _ = destination(
-            obs1.lat, obs1.lon, 0.0, self.max_radius + 1000.0)
-        obs2 = self.obs_factory(
-            lat=far_away_lat, lon=obs1.lon, **self.key(obs1))
-        self.queue_and_update([obs1, obs2])
+            obs.lat, obs.lon, 0.0, self.max_radius + 1000.0)
+        obs1 = self.obs_factory(
+            lat=far_away_lat, lon=obs.lon, **self.key(obs))
+        self.queue_and_update([obs, obs1])
 
-        station = self.get_station(obs1)
+        self.check_areas([obs.unique_key])
+        station = self.get_station(obs)
         self.assertEqual(station.block_first, today)
         self.assertEqual(station.block_last, today)
         self.assertEqual(station.block_count, 1)
@@ -332,15 +344,16 @@ class StationTest(BaseStationTest):
     def test_new_move_query(self):
         now = util.utcnow()
         today = now.date()
-        obs1 = self.obs_factory.build(source=ReportSource.query)
+        obs = self.obs_factory.build(source=ReportSource.query)
         far_away_lat, _ = destination(
-            obs1.lat, obs1.lon, 0.0, self.max_radius + 1000.0)
-        obs2 = self.obs_factory(
-            lat=far_away_lat, lon=obs1.lon, source=ReportSource.query,
-            **self.key(obs1))
-        self.queue_and_update([obs1, obs2])
+            obs.lat, obs.lon, 0.0, self.max_radius + 1000.0)
+        obs1 = self.obs_factory(
+            lat=far_away_lat, lon=obs.lon, source=ReportSource.query,
+            **self.key(obs))
+        self.queue_and_update([obs, obs1])
 
-        station = self.get_station(obs1)
+        self.check_areas([obs.unique_key])
+        station = self.get_station(obs)
         self.assertEqual(station.block_first, today)
         self.assertEqual(station.block_last, today)
         self.assertEqual(station.block_count, 1)
@@ -362,6 +375,7 @@ class StationTest(BaseStationTest):
         self.session.commit()
         self.queue_and_update([obs])
 
+        self.check_areas([obs.unique_key])
         station = self.get_station(obs)
         self.assertEqual(station.block_first, today)
         self.assertEqual(station.block_last, today)
@@ -377,18 +391,18 @@ class StationTest(BaseStationTest):
         now = util.utcnow()
         today = now.date()
         past = now - timedelta(days=10)
-        obs1 = self.obs_factory.build()
+        obs = self.obs_factory.build()
         far_away_lat, _ = destination(
-            obs1.lat, obs1.lon, 0.0, self.max_radius + 1000.0)
-        obs2 = self.obs_factory(
-            lat=far_away_lat, lon=obs1.lon, **self.key(obs1))
+            obs.lat, obs.lon, 0.0, self.max_radius + 1000.0)
+        obs1 = self.obs_factory(
+            lat=far_away_lat, lon=obs.lon, **self.key(obs))
         self.station_factory(
             created=past, modified=past, last_seen=past.date(),
-            **self.key(obs1))
+            **self.key(obs))
         self.session.commit()
-        self.queue_and_update([obs1, obs2])
+        self.queue_and_update([obs, obs1])
 
-        station = self.get_station(obs1)
+        station = self.get_station(obs)
         self.assertEqual(station.block_first, today)
         self.assertEqual(station.block_last, today)
         self.assertEqual(station.block_count, 1)
@@ -548,6 +562,13 @@ class TestCell(StationTest, CeleryTestCase):
     def queue_and_update(self, obs):
         return self._queue_and_update(obs, update_cell)
 
+    def check_areas(self, keys):
+        queue = self.celery_app.data_queues['update_cellarea']
+        queued = set(queue.dequeue())
+        cellids = [decode_cellid(key) for key in keys]
+        areaids = set([encode_cellarea(*cellid[:4]) for cellid in cellids])
+        self.assertEqual(queued, areaids)
+
     def test_change(self):
         station = self.station_factory(radio=Radio.gsm, samples=1, weight=2.0)
         station_key = self.key(station)
@@ -563,6 +584,7 @@ class TestCell(StationTest, CeleryTestCase):
         ]
         self.session.commit()
         self.queue_and_update(obs)
+        self.check_areas([obs[0].unique_key])
 
         station = self.get_station(station)
         self.assertAlmostEqual(station.lat, lat)
