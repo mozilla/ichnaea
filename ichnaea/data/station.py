@@ -55,7 +55,7 @@ class StationUpdater(object):
     def base_key_values(self, station_key):
         raise NotImplementedError()
 
-    def base_submit_values(self, station_key, shard_station, observations):
+    def base_submit_values(self, station_key, station, observations):
         raise NotImplementedError()
 
     def query_shard(self, session, shard, keys):
@@ -90,12 +90,10 @@ class StationUpdater(object):
         values['last_seen'] = self.today
         return ('confirm', values)
 
-    def change_values(self, station_key, shard_station,
-                      observations, data, source):
+    def change_values(self, station_key, observations, station, data, source):
         # move and change values need to have the exact same dict keys,
         # as they get combined into one bulk_update_mappings calls.
-        values = self.base_submit_values(
-            station_key, shard_station, observations)
+        values = self.base_submit_values(station_key, station, observations)
         values.update({
             'last_seen': self.today, 'modified': self.utcnow,
             'lat': data['lat'], 'lon': data['lon'],
@@ -104,28 +102,27 @@ class StationUpdater(object):
             'radius': data['radius'], 'region': data['region'],
             'samples': data['samples'], 'source': source,
             'weight': data['weight'],
-            'block_first': shard_station.block_first,
-            'block_last': shard_station.block_last,
-            'block_count': shard_station.block_count,
+            'block_first': station.block_first,
+            'block_last': station.block_last,
+            'block_count': station.block_count,
         })
         return ('change', values)
 
-    def move_values(self, station_key, observations, shard_station):
+    def move_values(self, station_key, observations, station):
         # move and change values need to have the exact same dict keys,
         # as they get combined into one bulk_update_mappings calls.
-        values = self.base_submit_values(
-            station_key, shard_station, observations)
+        values = self.base_submit_values(station_key, station, observations)
         values.update({
             'last_seen': None, 'modified': self.utcnow,
             'lat': None, 'lon': None,
             'max_lat': None, 'min_lat': None,
             'max_lon': None, 'min_lon': None,
-            'radius': None, 'region': shard_station.region,
+            'radius': None, 'region': station.region,
             'samples': None, 'source': None,
             'weight': None,
-            'block_first': shard_station.block_first or self.today,
+            'block_first': station.block_first or self.today,
             'block_last': self.today,
-            'block_count': (shard_station.block_count or 0) + 1,
+            'block_count': (station.block_count or 0) + 1,
         })
         return ('move', values)
 
@@ -192,9 +189,9 @@ class StationUpdater(object):
             'samples': samples, 'weight': weight,
         }
 
-    def aggregate_station_obs(self, shard_station, obs_data):
+    def aggregate_station_obs(self, station, obs_data):
         def get_nan(name):
-            value = getattr(shard_station, name, None)
+            value = getattr(station, name, None)
             return numpy.nan if value is None else value
 
         positions = numpy.append(obs_data['positions'], [
@@ -210,21 +207,20 @@ class StationUpdater(object):
         if box_distance > self.max_dist_meters:
             return None
 
-        if shard_station.lat is None or shard_station.lon is None:
+        if station.lat is None or station.lon is None:
             old_weight = 0.0
         else:
-            old_weight = min((shard_station.weight or 0.0),
-                             self.MAX_OLD_WEIGHT)
+            old_weight = min((station.weight or 0.0), self.MAX_OLD_WEIGHT)
 
         lat = ((obs_data['lat'] * obs_data['weight'] +
-                (shard_station.lat or 0.0) * old_weight) /
+                (station.lat or 0.0) * old_weight) /
                (obs_data['weight'] + old_weight))
         lon = ((obs_data['lon'] * obs_data['weight'] +
-                (shard_station.lon or 0.0) * old_weight) /
+                (station.lon or 0.0) * old_weight) /
                (obs_data['weight'] + old_weight))
 
         radius = circle_radius(lat, lon, max_lat, max_lon, min_lat, min_lon)
-        region = shard_station.region
+        region = station.region
         if (region and not GEOCODER.in_region(lat, lon, region)):
             # reset region if it no longer matches
             region = None
@@ -232,8 +228,8 @@ class StationUpdater(object):
             region = GEOCODER.region(lat, lon)
 
         samples, weight = self.bounded_samples_weight(
-            (shard_station.samples or 0) + obs_data['samples'],
-            (shard_station.weight or 0.0) + obs_data['weight'])
+            (station.samples or 0) + obs_data['samples'],
+            (station.weight or 0.0) + obs_data['weight'])
 
         return {
             'lat': lat, 'lon': lon,
@@ -243,76 +239,73 @@ class StationUpdater(object):
             'samples': samples, 'weight': weight,
         }
 
-    def query_values(self, station_key, shard_station, observations):
-        if shard_station and shard_station.last_seen == self.today:
-            # 0. shard station was confirmed today
+    def query_values(self, station_key, station, observations):
+        if not station:
+            # no station
+            obs_data = self.aggregate_obs(observations)
+            if obs_data is None:
+                # obs disagree
+                return self.new_move_values(station_key, observations)
+            else:
+                # obs agree
+                return self.new_values(
+                    station_key, observations, obs_data, ReportSource.query)
+
+        if (station and station.last_seen == self.today):
+            # station was confirmed today
             return (None, None)
 
-        if (shard_station and (shard_station.lat is not None and
-                               shard_station.lon is not None)):
-            # 1. shard station
+        if (station and (station.lat is not None and
+                         station.lon is not None)):
+            # station with position
             agree = 0
             disagree = 0
             for obs in observations:
                 obs_distance = distance(obs.lat, obs.lon,
-                                        shard_station.lat, shard_station.lon)
+                                        station.lat, station.lon)
                 if obs_distance <= self.max_dist_meters:
                     agree += 1
                 else:
                     disagree += 1
 
             if agree >= disagree:
-                # 1.a. majority of obs agree with station
+                # majority of obs agree with station
                 return self.confirm_values(station_key)
 
             if not agree and disagree:
-                # 1.b. no obs agrees with station
-                return self.move_values(
-                    station_key, observations, shard_station)
-
-        if not shard_station:
-            # 2. no prior station
-            obs_data = self.aggregate_obs(observations)
-            if obs_data is None:
-                # 2.a. obs disagree
-                return self.new_move_values(station_key, observations)
-            else:
-                # 2.b. obs agree
-                return self.new_values(
-                    station_key, observations, obs_data, ReportSource.query)
+                # no obs agrees with station
+                return self.move_values(station_key, observations, station)
 
         return (None, None)  # pragma: no cover
 
-    def submit_values(self, station_key, shard_station, observations):
+    def submit_values(self, station_key, station, observations):
         obs_data = self.aggregate_obs(observations)
 
         if obs_data is None:
-            # 0. the new observations are already too far apart
-            if not shard_station:
-                # 0.a. no shard station
+            # the new observations are already too far apart
+            if not station:
+                # no station
                 return self.new_move_values(station_key, observations)
             else:
-                # 0.b. shard station
-                return self.move_values(
-                    station_key, observations, shard_station)
+                # prior station
+                return self.move_values(station_key, observations, station)
 
-        if shard_station is None:
-            # 1. no shard station
-            # 1.a. obs agree
-            # 1.b. obs disagree (already covered in 0.a.)
+        if station is None:
+            # no station
+            # obs agree
+            # obs disagree (already covered in obs_data is None case)
             return self.new_values(
                 station_key, observations, obs_data, ReportSource.gnss)
         else:
-            # 2. shard station
-            data = self.aggregate_station_obs(shard_station, obs_data)
+            # prior station
+            data = self.aggregate_station_obs(station, obs_data)
             if data is None:
-                # 2.a. obs disagree with station
-                return self.move_values(
-                    station_key, observations, shard_station)
+                # obs disagree with station
+                return self.move_values(station_key, observations, station)
             else:
-                # 2.b. obs agree with station
+                # obs agree with station
                 return self.change_values(
-                    station_key, shard_station, observations,
+                    station_key, observations, station,
                     data, ReportSource.gnss)
 
         return (None, None)  # pragma: no cover
@@ -353,15 +346,15 @@ class StationUpdater(object):
                 else:
                     submit_observations.append(obs)
 
-            shard_station = stations.get(station_key, None)
+            station = stations.get(station_key, None)
             if not submit_observations:
                 # Only query observations.
                 status, result = self.query_values(
-                    station_key, shard_station, query_observations)
+                    station_key, station, query_observations)
             else:
                 # At least one submit observation, ignore query_observations.
                 status, result = self.submit_values(
-                    station_key, shard_station, submit_observations)
+                    station_key, station, submit_observations)
 
             if not status:
                 continue
@@ -455,7 +448,7 @@ class MacUpdater(StationUpdater):
     def base_key_values(self, station_key):
         return {'mac': station_key}
 
-    def base_submit_values(self, station_key, shard_station, observations):
+    def base_submit_values(self, station_key, station, observations):
         return self.base_key_values(station_key)
 
     def query_shard(self, session, shard, keys):
@@ -503,12 +496,12 @@ class CellUpdater(StationUpdater):
             'cid': cid,
         }
 
-    def base_submit_values(self, station_key, shard_station, observations):
+    def base_submit_values(self, station_key, station, observations):
         values = self.base_key_values(station_key)
 
         psc = None
-        if shard_station:
-            psc = shard_station.psc
+        if station:
+            psc = station.psc
 
         if observations:
             pscs = [obs.psc for obs in observations if obs.psc is not None]
