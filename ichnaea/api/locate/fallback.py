@@ -379,8 +379,10 @@ class FallbackPositionSource(PositionSource):
 
             validated = None
             try:
-                validated = self.result_schema.deserialize(response.json())
-            except colander.Invalid:  # pragma: no cover
+                body = response.json()
+                validated = self.result_schema.deserialize(body)
+            except (colander.Invalid,
+                    simplejson.JSONDecodeError):  # pragma: no cover
                 self.raven_client.captureException()
 
             if not validated:  # pragma: no cover
