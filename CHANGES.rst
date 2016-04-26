@@ -24,13 +24,11 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use GNSS observations to replace purely query-based stations.
+
+- Use query observations to confirm, blocklist and insert new stations.
+
 - Configure release for raven/sentry client.
-
-- Set stations source column to gnss on insert/update.
-
-- Use query observations to detect and blocklist stations.
-
-- Use query observations to confirm station positions.
 
 - Change hearbeat/monitor view to lbhearbeat/hearbeat views.
 
