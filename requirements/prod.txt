@@ -6,7 +6,7 @@ billiard==3.3.0.23
 boto==2.39.0
 celery==3.1.23
 certifi==2016.2.28
-cffi==1.5.2
+cffi==1.6.0
 Chameleon==2.24
 colander==1.2
 configparser==3.5.0b2
@@ -44,8 +44,8 @@ pyopenssl==16.0.0
 pyramid==1.6.1
 pyramid-chameleon==0.3
 python-editor==1.0
-pytz==2016.3
-raven==5.12.0
+pytz==2016.4
+raven==5.13.0
 redis==2.10.5
 repoze.lru==0.6
 requests==2.9.1
