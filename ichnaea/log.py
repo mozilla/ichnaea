@@ -19,6 +19,7 @@ from datadog.dogstatsd.base import (
     imap,
 )
 
+from ichnaea.config import RELEASE
 from ichnaea.exceptions import BaseClientError
 
 RAVEN_CLIENT = None  #: The globally configured raven client.
@@ -58,7 +59,7 @@ def configure_raven(config, transport=None, _client=None):  # pragma: no cover
     if not transport:
         raise ValueError('No valid raven transport was configured.')
 
-    client = RavenClient(dsn=config, transport=transport)
+    client = RavenClient(dsn=config, transport=transport, release=RELEASE)
     return set_raven_client(client)
 
 

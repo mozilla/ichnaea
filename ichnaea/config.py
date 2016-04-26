@@ -3,13 +3,36 @@ Contains helper functionality for reading and parsing configuration files.
 """
 
 import os
+import os.path
+import socket
 
 from backports.configparser import (
     ConfigParser,
     NoOptionError,
     NoSectionError,
 )
+import pkg_resources
+import simplejson
 from six import PY2, string_types
+
+from ichnaea import ROOT
+
+LOCAL_FQDN = socket.getfqdn()
+RELEASE = None
+VERSION = pkg_resources.get_distribution('ichnaea').version
+VERSION_FILE = os.path.join(ROOT, 'version.json')
+VERSION_INFO = {
+    'commit': 'HEAD',
+    'source': 'https://github.com/mozilla/ichnaea',
+    'tag': 'master',
+    'version': VERSION,
+}
+
+if os.path.isfile(VERSION_FILE):
+    with open(VERSION_FILE, 'r') as fd:
+        data = simplejson.load(fd)
+    VERSION_INFO['commit'] = data.get('commit', None)
+    VERSION_INFO['tag'] = RELEASE = data.get('tag', None)
 
 
 class Config(ConfigParser):
