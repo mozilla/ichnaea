@@ -158,16 +158,16 @@ class ValidStationSchema(ValidBboxSchema,
                          ValidTimeTrackingSchema):
     """A schema which validates the fields in a station."""
 
-    radius = colander.SchemaNode(colander.Integer(), missing=0)
+    radius = colander.SchemaNode(colander.Integer(), missing=None)
     region = colander.SchemaNode(colander.String(), missing=None)
-    samples = colander.SchemaNode(colander.Integer(), missing=0)
+    samples = colander.SchemaNode(colander.Integer(), missing=None)
     source = ReportSourceNode(ReportSourceType(), missing=None)
     weight = colander.SchemaNode(colander.Float(), missing=None)
 
     last_seen = colander.SchemaNode(DateFromString(), missing=None)
     block_first = colander.SchemaNode(DateFromString(), missing=None)
     block_last = colander.SchemaNode(DateFromString(), missing=None)
-    block_count = colander.SchemaNode(colander.Integer(), missing=0)
+    block_count = colander.SchemaNode(colander.Integer(), missing=None)
 
 
 class StationMixin(BboxMixin,

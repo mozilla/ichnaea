@@ -256,11 +256,11 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
 
     # areaid is a derived value
     radius = colander.SchemaNode(
-        colander.Integer(), missing=0,
+        colander.Integer(), missing=None,
         validator=colander.Range(0, constants.CELLAREA_MAX_RADIUS))
     region = colander.SchemaNode(colander.String(), missing=None)
-    avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=0)
-    num_cells = colander.SchemaNode(colander.Integer(), missing=0)
+    avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=None)
+    num_cells = colander.SchemaNode(colander.Integer(), missing=None)
     last_seen = colander.SchemaNode(DateFromString(), missing=None)
 
 
@@ -352,7 +352,7 @@ class ValidCellShardSchema(ValidCellKeySchema, ValidStationSchema):
 
     # adds a range validator
     radius = colander.SchemaNode(
-        colander.Integer(), missing=0,
+        colander.Integer(), missing=None,
         validator=colander.Range(0, constants.CELL_MAX_RADIUS))
 
 
