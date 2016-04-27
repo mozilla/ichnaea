@@ -106,8 +106,9 @@ class TestHeartbeatErrors(AppTestCase):
 
     def tearDown(self):
         super(TestHeartbeatErrors, self).tearDown()
+        self.broken_db.engine.pool.dispose()
         del self.broken_db
-        self.broken_redis.connection_pool.disconnect()
+        self.broken_redis.close()
         del self.broken_redis
 
     def test_database_error(self):

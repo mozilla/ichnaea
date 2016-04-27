@@ -100,7 +100,7 @@ Usually a per-region radius is calculated. This is the worst case
 radius returned for GeoIP region based queries, based on data
 for Russia:
 
-``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5220613 meters``
+``geocalc.distance(60.0, 100.0, 41.199278, 27.351944) == 5234427 meters``
 """
 
 # City selection based on
@@ -360,8 +360,17 @@ class GeoIPNull(object):
         """
         return -1
 
+    def close(self):
+        pass
+
     def ping(self):
         """
         :returns: False
         """
         return False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()

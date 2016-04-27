@@ -17,7 +17,7 @@ decorator==4.0.9
 enum34==1.0.4 ; python_version < '3.0'
 filechunkio==1.6
 genc==0.2
-geoip2==2.2.0
+geoip2==2.3.0
 gevent==1.1.1
 greenlet==0.4.9
 gunicorn==19.4.5

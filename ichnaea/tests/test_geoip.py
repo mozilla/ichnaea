@@ -28,21 +28,21 @@ class TestDatabase(GeoIPTestCase):
                         'The C extension was not installed correctly.')
 
     def test_c_extension_warning(self):
-        db = self._open_db(mode=MODE_MMAP)
-        self.assertFalse(db.check_extension())
+        with self._open_db(mode=MODE_MMAP) as db:
+            self.assertFalse(db.check_extension())
         self.check_raven(['RuntimeError: Maxmind C extension not installed'])
 
     def test_no_file(self):
-        db = self._open_db('')
-        self.assertTrue(isinstance(db, geoip.GeoIPNull))
+        with self._open_db('') as db:
+            self.assertTrue(isinstance(db, geoip.GeoIPNull))
         self.check_raven(['OSError: No geoip filename specified.'])
 
     def test_open_missing_file(self):
         tmpdir = tempfile.mkdtemp()
         try:
             filename = os.path.join(tmpdir, 'not_there')
-            db = self._open_db(filename)
-            self.assertTrue(isinstance(db, geoip.GeoIPNull))
+            with self._open_db(filename) as db:
+                self.assertTrue(isinstance(db, geoip.GeoIPNull))
         finally:
             shutil.rmtree(tmpdir)
 
@@ -50,13 +50,13 @@ class TestDatabase(GeoIPTestCase):
         with tempfile.NamedTemporaryFile() as temp:
             temp.write(b'Bucephalus')
             temp.seek(0)
-            db = self._open_db(temp.name)
-            self.assertTrue(isinstance(db, geoip.GeoIPNull))
+            with self._open_db(temp.name) as db:
+                self.assertTrue(isinstance(db, geoip.GeoIPNull))
         self.check_raven(['InvalidDatabaseError: Error opening database file'])
 
     def test_open_wrong_file_type(self):
-        db = self._open_db(GEOIP_BAD_FILE)
-        self.assertTrue(isinstance(db, geoip.GeoIPNull))
+        with self._open_db(GEOIP_BAD_FILE) as db:
+            self.assertTrue(isinstance(db, geoip.GeoIPNull))
         self.check_raven(['InvalidDatabaseError: Invalid database type'])
 
     def test_regions(self):

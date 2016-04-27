@@ -73,6 +73,9 @@ class RedisClient(redis.StrictRedis):
         'stats_wifi_json': b'cache:stats_wifi_json:2',
     }
 
+    def close(self):
+        self.connection_pool.disconnect()
+
     def ping(self):
         """
         Ping the Redis server. On success return `True`, otherwise `False`.

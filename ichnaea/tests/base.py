@@ -460,6 +460,7 @@ class GeoIPTestCase(LogTestCase):
     @classmethod
     def tearDownClass(cls):
         super(GeoIPTestCase, cls).tearDownClass()
+        cls.geoip_db.close()
         del cls.geoip_db
 
 
@@ -473,7 +474,7 @@ class RedisTestCase(LogTestCase):
     @classmethod
     def tearDownClass(cls):
         super(RedisTestCase, cls).tearDownClass()
-        cls.redis_client.connection_pool.disconnect()
+        cls.redis_client.close()
         del cls.redis_client
 
     def tearDown(self):
