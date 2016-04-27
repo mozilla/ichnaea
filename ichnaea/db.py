@@ -121,6 +121,9 @@ class Database(object):
             bind=self.engine, class_=PingableSession,
             autocommit=False, autoflush=False)
 
+    def close(self):
+        self.engine.pool.dispose()
+
     def ping(self):
         """
         Check database connectivity.

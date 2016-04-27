@@ -171,11 +171,12 @@ def shutdown_worker(celery_app):
 
     This is executed inside each forked worker process.
     """
-    celery_app.db_rw.engine.pool.dispose()
+    celery_app.db_rw.close()
     del celery_app.db_rw
     del celery_app.raven_client
     celery_app.redis_client.close()
     del celery_app.redis_client
+    celery_app.stats_client.close()
     del celery_app.stats_client
     celery_app.geoip_db.close()
     del celery_app.geoip_db

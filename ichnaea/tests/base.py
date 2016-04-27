@@ -135,6 +135,7 @@ class LogTestCase(TestCase):
     def tearDownClass(cls):
         super(LogTestCase, cls).tearDownClass()
         del cls.raven_client
+        cls.stats_client.close()
         del cls.stats_client
 
     def setUp(self):
@@ -374,9 +375,9 @@ class DBTestCase(LogTestCase):
     @classmethod
     def tearDownClass(cls):
         super(DBTestCase, cls).tearDownClass()
-        cls.db_rw.engine.pool.dispose()
+        cls.db_rw.close()
         del cls.db_rw
-        cls.db_ro.engine.pool.dispose()
+        cls.db_ro.close()
         del cls.db_ro
 
     @classmethod
@@ -585,7 +586,7 @@ def setup_package(module):
     engine = db.engine
     DBTestCase.cleanup_tables(engine)
     DBTestCase.setup_tables(engine)
-    db.engine.pool.dispose()
+    db.close()
 
 
 def teardown_package(module):

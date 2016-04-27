@@ -127,3 +127,26 @@ def main(app_config, ping_connections=False,
         registry.redis_client.ping()
 
     return config.make_wsgi_app()
+
+
+def shutdown_worker(app):  # pragma: no cover
+    registry = getattr(app, 'registry', None)
+    if registry is not None:
+        registry.db_ro.close()
+        del registry.db_ro
+        registry.db_rw.close()
+        del registry.db_rw
+        del registry.raven_client
+        registry.redis_client.close()
+        del registry.redis_client
+        registry.stats_client.close()
+        del registry.stats_client
+        registry.http_session.close()
+        del registry.http_session
+        registry.geoip_db.close()
+        del registry.geoip_db
+
+        del registry.data_queues
+        del registry.position_searcher
+        del registry.region_searcher
+        del registry.skip_logging

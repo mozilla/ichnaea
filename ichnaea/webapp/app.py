@@ -3,7 +3,10 @@ Holds global web application state and the WSGI handler.
 """
 
 from ichnaea.config import read_config
-from ichnaea.webapp.config import main
+from ichnaea.webapp.config import (
+    main,
+    shutdown_worker,
+)
 
 _APP = None  #: Internal module global holding the runtime web app.
 
@@ -31,3 +34,7 @@ def wsgi_app(environ, start_response):  # pragma: no cover
             return _APP
 
     return _APP(environ, start_response)
+
+
+def worker_exit(server, worker):  # pragma: no cover
+    shutdown_worker(_APP)

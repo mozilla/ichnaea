@@ -70,7 +70,7 @@ class TestMigration(TestCase):
 
     def tearDown(self):
         super(TestMigration, self).tearDown()
-        self.db.engine.pool.dispose()
+        self.db.close()
         del self.db
         # setup normal database schema again
         setup_package(None)

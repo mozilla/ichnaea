@@ -100,7 +100,7 @@ LIMIT :limit OFFSET :offset
     if not result_rows:
         os.remove(filename)
 
-    db.engine.pool.dispose()
+    db.close()
     return result_rows
 
 

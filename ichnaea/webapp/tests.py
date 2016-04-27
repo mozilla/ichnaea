@@ -38,8 +38,8 @@ class TestApp(ConnectionTestCase):
             self.assertTrue(db_ro.ping())
         finally:
             # clean up the new db engine's _make_app created
-            db_rw.engine.pool.dispose()
-            db_ro.engine.pool.dispose()
+            db_rw.close()
+            db_ro.close()
 
     def test_db_hooks(self):
         db_rw = _make_db()
@@ -53,6 +53,8 @@ class TestApp(ConnectionTestCase):
         # check that our _db hooks are passed through
         self.assertTrue(app.app.registry.db_rw is db_rw)
         self.assertTrue(app.app.registry.db_ro is db_ro)
+        db_rw.close()
+        db_ro.close()
 
     def test_redis_config(self):
         app_config = DummyConfig({

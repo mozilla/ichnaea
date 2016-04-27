@@ -24,6 +24,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Be more explicit about closing socket connections.
+
 - Use GNSS observations to replace purely query-based stations.
 
 - Use query observations to confirm, blocklist and insert new stations.

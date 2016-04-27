@@ -204,6 +204,11 @@ class StatsClient(DogStatsd):
             use_ms=True)  # always enable this to be standards compliant
         self.tag_support = tag_support
 
+    def close(self):
+        if self.socket:  # pragma: no cover
+            self.socket.close()
+            self.socket = None
+
     def _report(self, metric, metric_type, value, tags, sample_rate):
         if value is None:  # pragma: no cover
             return

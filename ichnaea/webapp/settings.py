@@ -39,3 +39,8 @@ def post_worker_init(worker):  # pragma: no cover
     # Actually initialize the application
     worker.load_wsgi()
     worker.wsgi(None, None)
+
+
+def worker_exit(server, worker):  # pragma: no cover
+    from ichnaea.webapp.app import worker_exit
+    worker_exit(server, worker)
