@@ -15,7 +15,7 @@
   "dependencies": {
     "datatables": "1.10.11",
     "flot": "0.8.3",
-    "jquery": "2.1.4",
+    "jquery": "2.2.3",
     "leaflet.locatecontrol": "0.45.1",
     "leaflet-hash": "mlevans/leaflet-hash#d73fc84d8c",
     "mapbox.js": "2.4.0",
