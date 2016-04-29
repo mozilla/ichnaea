@@ -55,14 +55,23 @@ class BaseSubmitView(BaseAPIView):
         # may raise HTTP error
         request_data = self.preprocess()
 
-        reports = request_data['items']
         valid_key = api_key.valid_key
-        data = [{'api_key': valid_key,
-                 'source': report['position'].get('source', 'gnss'),
-                 'report': report} for report in reports]
+        data = []
+        for report in request_data['items']:
+            source = 'gnss'
+            if report is not None:
+                position = report.get('position')
+                if position is not None:
+                    source = position.get('source', 'gnss')
+
+            data.append({
+                'api_key': valid_key,
+                'report': report,
+                'source': source,
+            })
 
         self.queue.enqueue(data)
-        self.emit_upload_metrics(len(reports), api_key)
+        self.emit_upload_metrics(len(data), api_key)
 
     def view(self, api_key):
         """

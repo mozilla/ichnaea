@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Allow report submissions without any position data.
+
 - #485: Fix development documentation.
 
 20160427100000

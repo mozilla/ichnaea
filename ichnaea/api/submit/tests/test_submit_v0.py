@@ -222,7 +222,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertEqual(wifis[0]['ssid'], 'my-wifi')
 
     def test_batches(self):
-        batch = 110
+        batch = self.queue.batch + 10
         wifis = WifiShardFactory.build_batch(batch)
         items = [{'lat': wifi.lat,
                   'lon': wifi.lon,
@@ -253,5 +253,6 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
              },
             {'wifi': [{'key': wifi.mac}],
              'accuracy': 16.0},
+            {'wifi': [{'key': wifi.mac}]},
         ])
-        self.assertEqual(self.queue.size(), 2)
+        self.assertEqual(self.queue.size(), 3)

@@ -206,7 +206,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         self.assertFalse('xtra_field' in wifis[0])
 
     def test_batches(self):
-        batch = 110
+        batch = self.queue.batch + 10
         wifis = WifiShardFactory.build_batch(batch)
         items = [{'latitude': wifi.lat,
                   'longitude': wifi.lon,
@@ -228,6 +228,20 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             }],
         }], status=400)
         self.assertEqual(self.queue.size(), 0)
+
+    def test_error_missing_latlon(self):
+        wifi = WifiShardFactory.build()
+        self._post([
+            {'latitude': wifi.lat,
+             'longitude': wifi.lon,
+             'accuracy': 17.0,
+             'wifiAccessPoints': [{'macAddress': wifi.mac}],
+             },
+            {'wifiAccessPoints': [{'macAddress': wifi.mac}],
+             'accuracy': 16.0},
+            {'wifiAccessPoints': [{'macAddress': wifi.mac}]},
+        ])
+        self.assertEqual(self.queue.size(), 3)
 
     def test_error_invalid_float(self):
         wifi = WifiShardFactory.build()
