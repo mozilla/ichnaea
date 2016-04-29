@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #485: Fix development documentation.
+
 20160427100000
 **************
 

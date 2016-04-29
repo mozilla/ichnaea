@@ -69,14 +69,7 @@ command is globally available. If this isn't true for your system,
 please create a virtualenv manually inside the ichnaea folder before
 continuing (``/path/to/virtualenv .``).
 
-The first time you need to download some shared docker images. You can
-manually trigger this by calling:
-
-.. code-block:: bash
-
-    docker-compose up -d
-
-Then run make:
+Then run make which is going to take quite a while the first time:
 
 .. code-block:: bash
 
