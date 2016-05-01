@@ -136,5 +136,6 @@ def update_statregion(self):
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  expires=2700, _schedule=crontab(minute=2))
-def update_statcounter(self, ago=1):
-    stats.StatCounterUpdater(self)(ago=ago)
+def update_statcounter(self, ago=None):
+    # BBB: ago argument
+    stats.StatCounterUpdater(self)()

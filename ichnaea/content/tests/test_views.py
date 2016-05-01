@@ -227,15 +227,15 @@ class TestFunctionalContentViews(AppTestCase):
         return ContentViews(request)
 
     def test_stats(self):
-        day = util.utcnow().date() - timedelta(1)
+        today = util.utcnow().date()
         stats = [
-            Stat(key=StatKey.blue, time=day, value=2200000),
-            Stat(key=StatKey.cell, time=day, value=2000000),
-            Stat(key=StatKey.wifi, time=day, value=2000000),
-            Stat(key=StatKey.unique_blue, time=day, value=1500000),
-            Stat(key=StatKey.unique_cell, time=day, value=1000000),
-            Stat(key=StatKey.unique_cell_ocid, time=day, value=1500000),
-            Stat(key=StatKey.unique_wifi, time=day, value=2000000),
+            Stat(key=StatKey.blue, time=today, value=2200000),
+            Stat(key=StatKey.cell, time=today, value=2000000),
+            Stat(key=StatKey.wifi, time=today, value=2000000),
+            Stat(key=StatKey.unique_blue, time=today, value=1500000),
+            Stat(key=StatKey.unique_cell, time=today, value=1000000),
+            Stat(key=StatKey.unique_cell_ocid, time=today, value=1500000),
+            Stat(key=StatKey.unique_wifi, time=today, value=2000000),
         ]
         self.session.add_all(stats)
         self.session.commit()

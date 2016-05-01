@@ -35,7 +35,6 @@ def transliterate(string):
 
 def global_stats(session):
     today = util.utcnow().date()
-    yesterday = today - timedelta(1)
     stat_keys = (
         StatKey.blue,
         StatKey.cell,
@@ -47,7 +46,7 @@ def global_stats(session):
     )
     rows = (session.query(Stat.key, Stat.value)
                    .filter(Stat.key.in_(stat_keys),
-                           (Stat.time == yesterday)))
+                           (Stat.time == today)))
 
     stats = {}
     for row in rows.all():

@@ -18,45 +18,47 @@ class StatCounterUpdater(object):
 
     def __init__(self, task):
         self.task = task
+        self.today = util.utcnow().date()
+        self.yesterday = util.utcnow().date() - timedelta(days=1)
 
-    def __call__(self, ago=1):
-        today = util.utcnow().date()
-        day = today - timedelta(days=ago)
+    def __call__(self):
         with self.task.redis_pipeline() as pipe:
             with self.task.db_session() as session:
                 for stat_key in StatKey:
-                    self.update_key(session, pipe, stat_key, day)
+                    self.update_key(session, pipe, stat_key, self.yesterday)
+                    self.update_key(session, pipe, stat_key, self.today)
 
     def update_key(self, session, pipe, stat_key, day):
-        # determine the value from the day before
-        query = (session.query(Stat)
-                        .filter((Stat.key == stat_key),
-                                (Stat.time < day))
-                        .order_by(Stat.time.desc()))
-        before = query.first()
-        old_value = 0
-        if before:
-            old_value = before.value
-
-        # get the value from redis for the day in question
+        # Get value for the given day from Redis.
         stat_counter = StatCounter(stat_key, day)
         value = stat_counter.get(self.task.redis_client)
 
-        # insert or update a new stat value
-        query = (session.query(Stat)
-                        .filter((Stat.key == stat_key),
-                                (Stat.time == day)))
-        stat = query.first()
+        # Get value for the given day from the database.
+        stat = (session.query(Stat)
+                       .filter((Stat.key == stat_key),
+                               (Stat.time == day))).first()
         if stat is not None:
-            stat.value += value
+            # If the day already has an entry, update it.
+            if value:
+                stat.value += value
+                stat_counter.decr(pipe, value)
         else:
+            # Get the most recent value for the stat from the database.
+            before = (session.query(Stat)
+                             .filter((Stat.key == stat_key),
+                                     (Stat.time < day))
+                             .order_by(Stat.time.desc())
+                             .limit(1)).first()
+            old_value = 0
+            if before:
+                old_value = before.value
+
+            # Insert a new stat value.
             stmt = Stat.__table__.insert(
                 mysql_on_duplicate='value = value + %s' % value
             ).values(key=stat_key, time=day, value=old_value + value)
             session.execute(stmt)
-
-        # queue the redis value to be decreased
-        stat_counter.decr(pipe, value)
+            stat_counter.decr(pipe, value)
 
 
 class StatRegion(object):

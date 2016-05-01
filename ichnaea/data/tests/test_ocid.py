@@ -198,7 +198,7 @@ class TestImport(CeleryAppTestCase):
         self.assertEqual(
             self.session.query(CellArea).count(), len(areaids))
 
-        update_statcounter.delay(ago=0).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell, 9)
 
     def test_import_local_ocid(self):
@@ -210,7 +210,7 @@ class TestImport(CeleryAppTestCase):
         self.assertEqual(
             self.session.query(CellAreaOCID).count(), len(areaids))
 
-        update_statcounter.delay(ago=0).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell_ocid, 9)
 
     def test_import_local_delta(self):
@@ -222,7 +222,7 @@ class TestImport(CeleryAppTestCase):
         self.import_csv(time=old_time)
         cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
         self.assertEqual(len(cells), 9)
-        update_statcounter.delay(ago=0).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell_ocid, 9)
 
         areaids = set([cell.areaid for cell in cells])
@@ -248,7 +248,7 @@ class TestImport(CeleryAppTestCase):
         self.assertEqual(
             self.session.query(CellAreaOCID).count(), len(areaids))
 
-        update_statcounter.delay(ago=0).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell_ocid, 12)
 
     def test_import_external(self):

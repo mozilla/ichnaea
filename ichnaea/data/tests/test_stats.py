@@ -26,8 +26,8 @@ class TestStatCounter(CeleryTestCase):
     def setUp(self):
         super(TestStatCounter, self).setUp()
         self.today = util.utcnow().date()
-        self.yesterday = self.today - timedelta(1)
-        self.two_days = self.today - timedelta(2)
+        self.yesterday = self.today - timedelta(days=1)
+        self.two_days = self.today - timedelta(days=2)
 
     def add_counter(self, stat_key, time, value):
         stat_counter = StatCounter(stat_key, time)
@@ -41,73 +41,72 @@ class TestStatCounter(CeleryTestCase):
         self.assertEqual(stat.value, value)
 
     def test_first_run(self):
-        self.add_counter(StatKey.cell, self.yesterday, 3)
+        self.add_counter(StatKey.cell, self.today, 3)
 
-        update_statcounter.delay(ago=1).get()
-        self.check_stat(StatKey.cell, self.yesterday, 3)
+        update_statcounter.delay().get()
+        self.check_stat(StatKey.cell, self.today, 3)
 
     def test_update_from_yesterday(self):
-        self.add_counter(StatKey.cell, self.yesterday, 3)
         self.add_counter(StatKey.cell, self.today, 4)
-        self.session.add(Stat(key=StatKey.cell, time=self.two_days, value=2))
+        self.session.add(Stat(key=StatKey.cell, time=self.yesterday, value=2))
         self.session.flush()
 
-        update_statcounter.delay(ago=1).get()
-        self.check_stat(StatKey.cell, self.yesterday, 5)
+        update_statcounter.delay().get()
+        self.check_stat(StatKey.cell, self.today, 6)
 
     def test_multiple_updates_for_today(self):
         self.add_counter(StatKey.cell, self.today, 4)
         self.session.add(Stat(key=StatKey.cell, time=self.yesterday, value=5))
         self.session.flush()
 
-        update_statcounter.delay(ago=0).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.cell, self.today, 9)
 
         self.add_counter(StatKey.cell, self.today, 3)
-        update_statcounter.delay(ago=0).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.cell, self.today, 12)
 
     def test_update_with_gap(self):
         a_week_ago = self.today - timedelta(days=7)
-        self.add_counter(StatKey.cell, self.yesterday, 3)
-        self.add_counter(StatKey.cell, self.today, 4)
+        self.add_counter(StatKey.cell, self.today, 3)
         self.session.add(Stat(key=StatKey.cell, time=a_week_ago, value=7))
         self.session.flush()
 
-        update_statcounter.delay(ago=1).get()
-        self.check_stat(StatKey.cell, self.yesterday, 10)
+        update_statcounter.delay().get()
+        self.check_stat(StatKey.cell, self.today, 10)
 
-    def test_update_does_not_overwrite(self):
+    def test_update_two_days(self):
         self.add_counter(StatKey.cell, self.yesterday, 5)
         self.add_counter(StatKey.cell, self.today, 7)
         self.session.add(Stat(key=StatKey.cell, time=self.two_days, value=1))
         self.session.add(Stat(key=StatKey.cell, time=self.yesterday, value=3))
         self.session.flush()
 
-        update_statcounter.delay(ago=1).get()
+        update_statcounter.delay().get()
         self.check_stat(StatKey.cell, self.yesterday, 8)
+        self.check_stat(StatKey.cell, self.today, 15)
 
     def test_update_all_keys(self):
-        self.add_counter(StatKey.blue, self.yesterday, 1)
-        self.add_counter(StatKey.cell, self.yesterday, 2)
-        self.add_counter(StatKey.wifi, self.yesterday, 3)
-        self.add_counter(StatKey.unique_blue, self.yesterday, 4)
-        self.add_counter(StatKey.unique_cell, self.yesterday, 5)
-        self.add_counter(StatKey.unique_wifi, self.yesterday, 6)
-        self.add_counter(StatKey.unique_cell_ocid, self.yesterday, 7)
-        self.session.add(Stat(key=StatKey.blue, time=self.two_days, value=8))
-        self.session.add(Stat(key=StatKey.cell, time=self.two_days, value=9))
-        self.session.add(Stat(key=StatKey.wifi, time=self.two_days, value=10))
+        self.add_counter(StatKey.blue, self.today, 1)
+        self.add_counter(StatKey.cell, self.today, 2)
+        self.add_counter(StatKey.wifi, self.today, 3)
+        self.add_counter(StatKey.unique_blue, self.today, 4)
+        self.add_counter(StatKey.unique_cell, self.today, 5)
+        self.add_counter(StatKey.unique_wifi, self.today, 6)
+        self.add_counter(StatKey.unique_cell_ocid, self.today, 7)
+        self.session.add(Stat(key=StatKey.blue, time=self.yesterday, value=8))
+        self.session.add(Stat(key=StatKey.cell, time=self.yesterday, value=9))
+        self.session.add(Stat(key=StatKey.wifi, time=self.yesterday, value=10))
         self.session.flush()
 
-        update_statcounter.delay(ago=1).get()
-        self.check_stat(StatKey.blue, self.yesterday, 9)
-        self.check_stat(StatKey.cell, self.yesterday, 11)
-        self.check_stat(StatKey.wifi, self.yesterday, 13)
-        self.check_stat(StatKey.unique_blue, self.yesterday, 4)
-        self.check_stat(StatKey.unique_cell, self.yesterday, 5)
-        self.check_stat(StatKey.unique_wifi, self.yesterday, 6)
-        self.check_stat(StatKey.unique_cell_ocid, self.yesterday, 7)
+        update_statcounter.delay().get()
+        self.check_stat(StatKey.blue, self.today, 9)
+        self.check_stat(StatKey.cell, self.today, 11)
+        self.check_stat(StatKey.wifi, self.today, 13)
+        self.check_stat(StatKey.unique_blue, self.today, 4)
+        self.check_stat(StatKey.unique_cell, self.today, 5)
+        self.check_stat(StatKey.unique_wifi, self.today, 6)
+        self.check_stat(StatKey.unique_cell_ocid, self.today, 7)
 
 
 class TestStatRegion(CeleryTestCase):

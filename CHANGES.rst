@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Calculate and display stats for today.
+
 - Preserve or derive both WiFi channel and frequency values.
 
 20160429092200
