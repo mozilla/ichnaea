@@ -231,7 +231,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifi']
-        wifi_query[0]['channel'] = 6
+        wifi_query[0]['channel'] = 1
         wifi_query[0]['signal'] = -50
         wifi_query[1]['frequency'] = 2437
         wifi_query[2]['signal'] = -130
@@ -257,11 +257,13 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             'report': {
                 'wifiAccessPoints': [{
                     'macAddress': wifi_query[0]['key'],
-                    'channel': 6,
+                    'channel': 1,
+                    'frequency': 2412,
                     'signalStrength': -50
                 }, {
                     'macAddress': wifi_query[1]['key'],
                     'channel': 6,
+                    'frequency': 2437,
                 }, {
                     'macAddress': wifi_query[2]['key'],
                     'signalToNoiseRatio': 13,

@@ -85,7 +85,10 @@ VALID_MAC_REGEX = re.compile('([0-9a-fA-F]{12})')
 VALID_APIKEY_REGEX = re.compile('^[-0-9a-z]+$', re.IGNORECASE | re.UNICODE)
 
 MIN_WIFI_CHANNEL = 1  #: Minimum accepted WiFi channel.
-MAX_WIFI_CHANNEL = 165  #: Maximum accepted WiFi channel.
+MAX_WIFI_CHANNEL = 199  #: Maximum accepted WiFi channel.
+
+MIN_WIFI_FREQUENCY = 2400  #: Minimum accepted WiFi frequency in MHz.
+MAX_WIFI_FREQUENCY = 5999  #: Maximum accepted WiFi frequency in MHz.
 
 MIN_WIFI_SIGNAL = -100  #: Minimum accepted WiFi signal strength value.
 MAX_WIFI_SIGNAL = -10  #: Maximum accepted WiFi signal strength value.

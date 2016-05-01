@@ -62,7 +62,7 @@ class QueryTest(ConnectionTestCase):
             query.append({
                 'macAddress': wifi.mac,
                 'age': 30,
-                'channel': 11,
+                'frequency': 2412,
                 'signalStrength': -85,
                 'signalToNoiseRatio': 13,
                 'ssid': 'wifi',
@@ -262,7 +262,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
         for wifi in query.wifi:
             self.assertEqual(wifi.age, 30)
-            self.assertEqual(wifi.channel, 11)
+            self.assertEqual(wifi.frequency, 2412)
             self.assertEqual(wifi.signalStrength, -85)
             self.assertEqual(wifi.signalToNoiseRatio, 13)
             self.assertTrue(wifi.macAddress in macs)
@@ -286,7 +286,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
     def test_wifi_better(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(wifi=[
-            {'macAddress': wifis[0].mac, 'signalStrength': -90, 'channel': 1},
+            {'macAddress': wifis[0].mac, 'signalStrength': -90,
+             'frequency': 1},
             {'macAddress': wifis[0].mac, 'signalStrength': -82},
             {'macAddress': wifis[0].mac, 'signalStrength': -85},
             {'macAddress': wifis[1].mac, 'signalStrength': -70},

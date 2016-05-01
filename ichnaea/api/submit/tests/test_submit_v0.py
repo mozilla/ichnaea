@@ -194,6 +194,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             'source': '2',
             'wifi': [{'key': wifi.mac.upper(),
                       'age': 2500,
+                      'channel': 1,
                       'frequency': 2437,
                       'signal': -70,
                       'signalToNoiseRatio': 5,
@@ -215,7 +216,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         wifis = report['wifiAccessPoints']
         self.assertEqual(wifis[0]['macAddress'], wifi.mac.upper())
         self.assertEqual(wifis[0]['age'], 2500)
-        self.assertFalse('channel' in wifis[0])
+        self.assertEqual(wifis[0]['channel'], 1)
         self.assertEqual(wifis[0]['frequency'], 2437)
         self.assertEqual(wifis[0]['signalStrength'], -70)
         self.assertEqual(wifis[0]['signalToNoiseRatio'], 5)

@@ -22,7 +22,10 @@ from ichnaea.models import constants
 from ichnaea.models.base import (
     HashableDict,
 )
-from ichnaea.models.mac import MacNode
+from ichnaea.models.mac import (
+    channel_frequency,
+    MacNode,
+)
 from ichnaea.models.schema import (
     DefaultNode,
     ReportSourceNode,
@@ -444,6 +447,12 @@ class ValidWifiReportSchema(colander.MappingSchema, ValidatorNode):
         validator=colander.Range(
             constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
 
+    frequency = DefaultNode(
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_WIFI_FREQUENCY, constants.MAX_WIFI_FREQUENCY))
+
     signal = DefaultNode(
         colander.Integer(),
         missing=None,
@@ -457,33 +466,18 @@ class ValidWifiReportSchema(colander.MappingSchema, ValidatorNode):
             constants.MIN_WIFI_SNR, constants.MAX_WIFI_SNR))
 
     def deserialize(self, data):
-        if data:
+        data = super(ValidWifiReportSchema, self).deserialize(data)
+        if (data and data is not colander.drop and data is not colander.null):
             channel = data.get('channel')
-            channel = channel is not None and int(channel) or None
-
-            if (channel is None or not
-                    (constants.MIN_WIFI_CHANNEL <= channel <=
-                     constants.MAX_WIFI_CHANNEL)):
+            frequency = data.get('frequency')
+            if ((frequency is None and channel is not None) or
+                    (frequency is not None and channel is None)):
                 # shallow copy
                 data = dict(data)
+                data['channel'], data['frequency'] = channel_frequency(
+                    channel, frequency)
 
-                # if no explicit channel was given, calculate
-                freq = data.get('frequency', None)
-                if freq is None:
-                    freq = 0
-
-                if 2411 < freq < 2473:
-                    # 2.4 GHz band
-                    data['channel'] = (freq - 2407) // 5
-                elif freq == 2484:
-                    data['channel'] = 14
-                elif 5169 < freq < 5826:
-                    # 5 GHz band
-                    data['channel'] = (freq - 5000) // 5
-                else:
-                    data['channel'] = None
-
-        return super(ValidWifiReportSchema, self).deserialize(data)
+        return data
 
 
 class WifiReport(BaseReport):
@@ -494,6 +488,7 @@ class WifiReport(BaseReport):
         'mac',
         'age',
         'channel',
+        'frequency',
         'signal',
         'snr',
     )

@@ -99,8 +99,10 @@ class TestValidWifiLookupSchema(TestCase):
 
     _schema = schema.ValidWifiLookupSchema()
 
-    def compare(self, name, value, expect):
-        self.assertEqual(self.sample(**{name: value})[name], expect)
+    def compare(self, channel, frequency, channel_expect, frequency_expect):
+        sample = self.sample(channel=channel, frequency=frequency)
+        self.assertEqual(sample['channel'], channel_expect)
+        self.assertEqual(sample['frequency'], frequency_expect)
 
     def sample(self, **values):
         value = {
@@ -110,21 +112,24 @@ class TestValidWifiLookupSchema(TestCase):
         return self._schema.deserialize(value)
 
     def test_channel(self):
-        self.compare('channel', 1, 1)
-        self.compare('channel', 36, 36)
+        self.compare(0, None, None, None)
+        self.compare(1, None, 1, 2412)
+        self.compare(13, None, 13, 2472)
+        self.compare(14, None, 14, 2484)
+        self.compare(36, None, 36, 5180)
+        self.compare(186, None, 186, 4930)
+        self.compare(200, None, None, None)
 
     def test_channel_frequency(self):
-        self.assertEqual(self.sample(channel=0, frequency=10)['channel'], None)
-        self.assertEqual(self.sample(channel=0, frequency=2427)['channel'], 4)
-        self.assertEqual(self.sample(channel=1, frequency=2000)['channel'], 1)
-        self.assertEqual(self.sample(channel=1, frequency=2427)['channel'], 1)
+        self.compare(None, None, None, None)
+        self.compare(4, None, 4, 2427)
+        self.compare(None, 2412, 1, 2412)
+        self.compare(3, 2412, 3, 2412)
 
     def test_frequency(self):
-        self.assertEqual(self.sample(frequency=2411)['channel'], None)
-        self.assertEqual(self.sample(frequency=2412)['channel'], 1)
-        self.assertEqual(self.sample(frequency=2484)['channel'], 14)
-        self.assertEqual(self.sample(frequency=2473)['channel'], None)
-        self.assertEqual(self.sample(frequency=5168)['channel'], None)
-        self.assertEqual(self.sample(frequency=5170)['channel'], 34)
-        self.assertEqual(self.sample(frequency=5825)['channel'], 165)
-        self.assertEqual(self.sample(frequency=5826)['channel'], None)
+        self.compare(None, 2399, None, None)
+        self.compare(None, 2412, 1, 2412)
+        self.compare(None, 2484, 14, 2484)
+        self.compare(None, 4915, 183, 4915)
+        self.compare(None, 5180, 36, 5180)
+        self.compare(None, 6000, None, None)

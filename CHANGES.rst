@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Preserve or derive both WiFi channel and frequency values.
 
 20160429092200
 **************

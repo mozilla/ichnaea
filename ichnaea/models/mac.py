@@ -26,6 +26,41 @@ from ichnaea.models.station import (
 )
 
 
+def channel_frequency(channel, frequency):
+    """
+    Takes a WiFi channel and frequency value and if one of them is None,
+    derives it from the other.
+    """
+    new_channel = channel
+    new_frequency = frequency
+    if (frequency is None and channel is not None):
+        if 0 < channel < 14:
+            # 2.4 GHz band
+            new_frequency = (channel * 5) + 2407
+        elif channel == 14:
+            new_frequency = 2484
+        elif 14 < channel < 186:
+            # 5 GHz band, incl. UNII4
+            new_frequency = (channel * 5) + 5000
+        elif 185 < channel < 200:
+            # 4.9 GHz band
+            new_frequency = (channel * 5) + 4000
+    elif (frequency is not None and channel is None):
+        if 2411 < frequency < 2473:
+            # 2.4 GHz band
+            new_channel = (frequency - 2407) // 5
+        elif frequency == 2484:
+            new_channel = 14
+        elif 4914 < frequency < 4996:
+            # 4.9 GHz band
+            new_channel = (frequency - 4000) // 5
+        elif 5074 < frequency < 5926:
+            # 5 GHz band, incl. UNII4
+            new_channel = (frequency - 5000) // 5
+
+    return (new_channel, new_frequency)
+
+
 def decode_mac(value, codec=None):
     """
     Decode a 6 byte sequence representing a 48 bit MAC address into a

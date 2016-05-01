@@ -580,20 +580,31 @@ class TestWifiReport(BaseTest):
         self.compare(field, constants.MAX_WIFI_CHANNEL + 1, None)
 
     def test_channel_frequency(self):
-        self.assertEqual(self.sample(channel=0, frequency=10)['channel'], None)
-        self.assertEqual(self.sample(channel=0, frequency=2427)['channel'], 4)
-        self.assertEqual(self.sample(channel=1, frequency=2000)['channel'], 1)
-        self.assertEqual(self.sample(channel=1, frequency=2427)['channel'], 1)
+        sample = self.sample(channel=0, frequency=10)
+        self.assertEqual(sample['channel'], None)
+        self.assertEqual(sample['frequency'], None)
+
+        sample = self.sample(channel=0, frequency=2412)
+        self.assertEqual(sample['channel'], 1)
+        self.assertEqual(sample['frequency'], 2412)
+
+        sample = self.sample(channel=4, frequency=10)
+        self.assertEqual(sample['channel'], 4)
+        self.assertEqual(sample['frequency'], 2427)
+
+        sample = self.sample(channel=1, frequency=2427)
+        self.assertEqual(sample['channel'], 1)
+        self.assertEqual(sample['frequency'], 2427)
 
     def test_frequency(self):
-        self.assertEqual(self.sample(frequency=2411)['channel'], None)
-        self.assertEqual(self.sample(frequency=2412)['channel'], 1)
-        self.assertEqual(self.sample(frequency=2484)['channel'], 14)
-        self.assertEqual(self.sample(frequency=2473)['channel'], None)
-        self.assertEqual(self.sample(frequency=5168)['channel'], None)
-        self.assertEqual(self.sample(frequency=5170)['channel'], 34)
-        self.assertEqual(self.sample(frequency=5825)['channel'], 165)
-        self.assertEqual(self.sample(frequency=5826)['channel'], None)
+        field = 'frequency'
+        self.compare(field, constants.MIN_WIFI_FREQUENCY - 1, None)
+        self.compare(field, 2412, 2412)
+        self.compare(field, 2484, 2484)
+        self.compare(field, 4915, 4915)
+        self.compare(field, 5170, 5170)
+        self.compare(field, 5925, 5925)
+        self.compare(field, constants.MAX_WIFI_FREQUENCY + 1, None)
 
     def test_signal(self):
         field = 'signal'
