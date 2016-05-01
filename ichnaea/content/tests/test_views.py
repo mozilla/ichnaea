@@ -1,5 +1,4 @@
 from calendar import timegm
-from datetime import timedelta
 
 import boto
 from chameleon.zpt.template import Macro
@@ -163,14 +162,14 @@ class TestFunctionalContent(AppTestCase):
         self.app.get('/stats/regions', status=200)
 
     def test_stats_blue_json(self):
-        yesterday = util.utcnow().date() - timedelta(1)
+        today = util.utcnow().date()
         self.session.add(
-            Stat(key=StatKey.unique_blue, time=yesterday, value=2))
+            Stat(key=StatKey.unique_blue, time=today, value=2))
         self.session.commit()
         result = self.app.get('/stats_blue.json', status=200)
         self.assertEqual(
             result.json, {'series': [
-                {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
+                {'data': [[timegm(today.timetuple()) * 1000, 2]],
                  'title': 'MLS Bluetooth'},
             ]}
         )
@@ -178,18 +177,18 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(second_result.json, result.json)
 
     def test_stats_cell_json(self):
-        yesterday = util.utcnow().date() - timedelta(1)
+        today = util.utcnow().date()
         self.session.add(
-            Stat(key=StatKey.unique_cell, time=yesterday, value=2))
+            Stat(key=StatKey.unique_cell, time=today, value=2))
         self.session.add(
-            Stat(key=StatKey.unique_cell_ocid, time=yesterday, value=5))
+            Stat(key=StatKey.unique_cell_ocid, time=today, value=5))
         self.session.commit()
         result = self.app.get('/stats_cell.json', status=200)
         self.assertEqual(
             result.json, {'series': [
-                {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
+                {'data': [[timegm(today.timetuple()) * 1000, 2]],
                  'title': 'MLS Cells'},
-                {'data': [[timegm(yesterday.timetuple()) * 1000, 5]],
+                {'data': [[timegm(today.timetuple()) * 1000, 5]],
                  'title': 'OCID Cells'},
             ]}
         )
@@ -197,14 +196,14 @@ class TestFunctionalContent(AppTestCase):
         self.assertEqual(second_result.json, result.json)
 
     def test_stats_wifi_json(self):
-        yesterday = util.utcnow().date() - timedelta(1)
+        today = util.utcnow().date()
         self.session.add(
-            Stat(key=StatKey.unique_wifi, time=yesterday, value=2))
+            Stat(key=StatKey.unique_wifi, time=today, value=2))
         self.session.commit()
         result = self.app.get('/stats_wifi.json', status=200)
         self.assertEqual(
             result.json, {'series': [
-                {'data': [[timegm(yesterday.timetuple()) * 1000, 2]],
+                {'data': [[timegm(today.timetuple()) * 1000, 2]],
                  'title': 'MLS WiFi'},
             ]}
         )

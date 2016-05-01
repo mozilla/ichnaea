@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use the first of the month, to display stats for the entire month.
+
 - Calculate and display stats for today.
 
 - Preserve or derive both WiFi channel and frequency values.

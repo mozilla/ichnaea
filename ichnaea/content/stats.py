@@ -83,21 +83,14 @@ def histogram(session, stat_key, days=365):
     month_key = (func.year(Stat.time), func.month(Stat.time))
     rows = (session.query(func.max(Stat.value), *month_key)
                    .filter((Stat.key == stat_key),
-                           (Stat.time >= start),
-                           (Stat.time < today))
+                           (Stat.time >= start))
                    .group_by(*month_key)
                    .order_by(*month_key))
     result = []
     for num, year, month in rows.all():
-        # use first of August to plot the highest result for July
-        if month == 12:  # pragma: no cover
-            next_month = date(year + 1, 1, 1)
-        else:
-            next_month = date(year, month + 1, 1)
-        if next_month >= today:
-            # we restrict dates to be at most yesterday
-            next_month = today - timedelta(days=1)
-        day = timegm(next_month.timetuple()) * 1000
+        # Use the first of the month to graph the value
+        # for the entire month.
+        day = timegm(date(year, month, 1).timetuple()) * 1000
         result.append([day, num])
     return [result]
 
