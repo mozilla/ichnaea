@@ -163,13 +163,14 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_blue_json(self):
         today = util.utcnow().date()
+        first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
         self.session.add(
             Stat(key=StatKey.unique_blue, time=today, value=2))
         self.session.commit()
         result = self.app.get('/stats_blue.json', status=200)
         self.assertEqual(
             result.json, {'series': [
-                {'data': [[timegm(today.timetuple()) * 1000, 2]],
+                {'data': [[first_of_month, 2]],
                  'title': 'MLS Bluetooth'},
             ]}
         )
@@ -178,6 +179,7 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_cell_json(self):
         today = util.utcnow().date()
+        first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
         self.session.add(
             Stat(key=StatKey.unique_cell, time=today, value=2))
         self.session.add(
@@ -186,9 +188,9 @@ class TestFunctionalContent(AppTestCase):
         result = self.app.get('/stats_cell.json', status=200)
         self.assertEqual(
             result.json, {'series': [
-                {'data': [[timegm(today.timetuple()) * 1000, 2]],
+                {'data': [[first_of_month, 2]],
                  'title': 'MLS Cells'},
-                {'data': [[timegm(today.timetuple()) * 1000, 5]],
+                {'data': [[first_of_month, 5]],
                  'title': 'OCID Cells'},
             ]}
         )
@@ -197,13 +199,14 @@ class TestFunctionalContent(AppTestCase):
 
     def test_stats_wifi_json(self):
         today = util.utcnow().date()
+        first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
         self.session.add(
             Stat(key=StatKey.unique_wifi, time=today, value=2))
         self.session.commit()
         result = self.app.get('/stats_wifi.json', status=200)
         self.assertEqual(
             result.json, {'series': [
-                {'data': [[timegm(today.timetuple()) * 1000, 2]],
+                {'data': [[first_of_month, 2]],
                  'title': 'MLS WiFi'},
             ]}
         )

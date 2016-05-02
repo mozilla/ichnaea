@@ -93,7 +93,8 @@ class TestStats(DBTestCase):
         session.add_all(stats)
         session.commit()
         result = histogram(session, StatKey.cell, days=90)
-        self.assertTrue([unixtime(today), 90] in result[0])
+        first_of_month = today.replace(day=1)
+        self.assertTrue([unixtime(first_of_month), 90] in result[0])
 
         expected = date(two_months.year, two_months.month, 1)
         self.assertTrue([unixtime(expected), 50] in result[0])
@@ -105,7 +106,8 @@ class TestStats(DBTestCase):
         session.add(stat)
         session.commit()
         result = histogram(session, StatKey.unique_cell)
-        self.assertEqual(result, [[[unixtime(today), 9]]])
+        first_of_month = today.replace(day=1)
+        self.assertEqual(result, [[[unixtime(first_of_month), 9]]])
 
     def test_regions(self):
         RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
