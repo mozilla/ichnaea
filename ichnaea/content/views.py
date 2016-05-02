@@ -42,18 +42,9 @@ script-src {base} *.google-analytics.com 'unsafe-eval';
 style-src {base};
 """
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
-LOCAL_TILES_BASE = 'http://127.0.0.1:7001/static/tiles/'
 TILES_PATTERN = '{z}/{x}/{y}.png'
-LOCAL_TILES = LOCAL_TILES_BASE + TILES_PATTERN
-BASE_MAP_KEY = 'mozilla-webprod.map-05ad0a21'
-
-
-def map_tiles_url(base_url):
-    if base_url is None:
-        return LOCAL_TILES
-    elif not base_url.endswith('/'):  # pragma: no cover
-        base_url = base_url + '/'
-    return urlparse.urljoin(base_url, 'tiles/' + TILES_PATTERN)
+HOMEPAGE_MAP_IMAGE = ('{scheme}://a.tiles.mapbox.com/v4/{map_id}'
+                      '/0/0/0@2x.png?access_token={token}')
 
 
 def configure_content(config):
@@ -77,11 +68,22 @@ def configure_content(config):
 
     config.scan('ichnaea.content.views')
 
-    assets_url = config.registry.settings.get('assets', {}).get('url', None)
-    config.registry.tiles_url = tiles_url = map_tiles_url(assets_url)
+    assets_url = config.registry.settings.get('assets', {}).get('url', '')
+    if not assets_url.endswith('/'):  # pragma: no cover
+        assets_url = assets_url + '/'
+    tiles_url = urlparse.urljoin(assets_url, 'tiles/' + TILES_PATTERN)
+
     result = urlparse.urlsplit(tiles_url)
     tiles = urlparse.urlunparse((result.scheme, result.netloc, '', '', '', ''))
     config.registry.csp = CSP_POLICY.format(base=CSP_BASE, tiles=tiles)
+
+    web_config = config.registry.settings.get('web', {})
+    config.registry.map_config = {
+        'map_id_base': web_config.get('map_id_base', 'mapbox.streets'),
+        'map_id_labels': web_config.get('map_id_labels', ''),
+        'map_token': web_config.get('map_token', ''),
+        'map_tiles_url': tiles_url,
+    }
 
 
 @subscriber(NewResponse)
@@ -151,12 +153,6 @@ class ContentViews(object):
     def this_year(self):
         return THIS_YEAR
 
-    def _tiles_url(self):
-        tiles_url = getattr(self.request.registry, 'tiles_url', None)
-        if not tiles_url:
-            tiles_url = map_tiles_url(None)
-        return tiles_url
-
     def _get_cache(self, cache_key):
         cache_key = self.redis_client.cache_keys[cache_key]
         cached = self.redis_client.get(cache_key)
@@ -170,15 +166,17 @@ class ContentViews(object):
 
     @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
-        map_url = self._tiles_url().format(z=0, x=0, y=0)
         scheme = urlparse.urlparse(self.request.url).scheme
-        map_base_url = '%s://a.tiles.mapbox.com/v3/%s/0/0/0.png' % (
-            scheme, BASE_MAP_KEY)
+        map_config = self.request.registry.map_config
+        image_base_url = HOMEPAGE_MAP_IMAGE.format(
+            scheme=scheme,
+            map_id=map_config['map_id_base'],
+            token=map_config['map_token'])
+        image_url = map_config['map_tiles_url'].format(z=0, x=0, y='0@2x')
         return {
             'page_title': 'Overview',
-            'map_url': map_url,
-            'map_url_2': map_url.replace('/0.png', '/0@2x.png'),
-            'map_base_url': map_base_url,
+            'map_image_base_url': image_base_url,
+            'map_image_url': image_url,
         }
 
     @view_config(renderer='templates/api.pt', name='api', http_cache=3600)
@@ -229,12 +227,18 @@ class ContentViews(object):
 
     @view_config(renderer='templates/map.pt', name='map', http_cache=3600)
     def map_view(self):
-        return {'page_title': 'Map', 'tiles': self._tiles_url()}
+        map_config = self.request.registry.map_config
+        return {
+            'page_title': 'Map',
+            'map_id_base': map_config['map_id_base'],
+            'map_id_labels': map_config['map_id_labels'],
+            'map_tiles_url': map_config['map_tiles_url'],
+            'map_token': map_config['map_token'],
+        }
 
-    @view_config(
-        renderer='json', name='map.json', http_cache=3600)
+    @view_config(renderer='json', name='map.json', http_cache=3600)
     def map_json(self):
-        tiles_url = self._tiles_url()
+        tiles_url = self.request.registry.map_config.get('map_tiles_url', '')
         offset = tiles_url.find(TILES_PATTERN)
         base_url = tiles_url[:offset]
         return {'tiles_url': base_url}

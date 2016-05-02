@@ -4,6 +4,12 @@ $(document).ready(function() {
     // noted via the maxNativeZoom restriction on the tile layer
     // we still allow more zoom levels on the base map, to make
     // it easier to see which streets are covered
+    var mapDOMElement = $('#map');
+    var mapIdBase = mapDOMElement.data('map_id_base');
+    var mapIdLabels = mapDOMElement.data('map_id_labels');
+    var mapTilesUrl = mapDOMElement.data('map_tiles_url');
+    var mapToken = mapDOMElement.data('map_token');
+
     var maxZoom = 16;
     if (L.Browser.retina) {
         maxZoom = 15;
@@ -15,9 +21,9 @@ $(document).ready(function() {
         bounds = L.latLngBounds(southWest, northEast);
 
     // Set public access token
-    L.mapbox.accessToken = 'pk.eyJ1IjoibW96aWxsYS13ZWJwcm9kIiwiYSI6ImY2ZDMxNjRhM2Y1ZjE4YTFkNzZjZjkzODg4YzNkNThlIn0.GZPxUn4eIDaRsVX510gFGg'
+    L.mapbox.accessToken = mapToken
 
-    var map = L.mapbox.map('map', 'mozilla-webprod.map-05ad0a21', {
+    var map = L.mapbox.map('map', mapIdBase, {
         minZoom: 1,
         maxZoom: maxZoom,
         maxBounds: bounds,
@@ -50,18 +56,24 @@ $(document).ready(function() {
     }).addTo(map);
 
     // add geocoding control
-    L.mapbox.geocoderControl('mapbox.places').addTo(map);
-
-    // add tile layer
-    var tiles = $('#map').data('tiles');
-    L.tileLayer(tiles, {
-        detectRetina: true,
-        maxNativeZoom: 13
+    L.mapbox.geocoderControl('mapbox.places', {
+        'pointZoom': 12,
+        'queryOptions': {'types': 'country,region,postcode,place,locality'}
     }).addTo(map);
 
     // add tile layer
-    L.mapbox.tileLayer('mozilla-webprod.map-5e1cee8a', {
-        detectRetina: true
-    }).addTo(map);
+    if (mapTilesUrl) {
+        L.tileLayer(mapTilesUrl, {
+            detectRetina: true,
+            maxNativeZoom: 13
+        }).addTo(map);
+    }
+
+    // add tile layer
+    if (mapIdLabels) {
+        L.mapbox.tileLayer(mapIdLabels, {
+            detectRetina: true
+        }).addTo(map);
+    }
 
 });

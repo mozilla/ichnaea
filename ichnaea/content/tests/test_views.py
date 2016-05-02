@@ -11,10 +11,6 @@ from ichnaea.models.content import (
     Stat,
     StatKey,
 )
-from ichnaea.content.views import (
-    LOCAL_TILES,
-    LOCAL_TILES_BASE,
-)
 from ichnaea.tests.base import AppTestCase, TestCase
 from ichnaea import util
 
@@ -35,14 +31,28 @@ class TestContentViews(TestCase):
         request = DummyRequest()
         setattr(request, 'db_ro_session', None)
         setattr(request.registry, 'redis_client', None)
+        setattr(request.registry, 'map_config', {})
         return ContentViews(request)
 
     def test_base_template(self):
         self.assertEqual(self._make_view().base_template.__class__, Macro)
 
     def test_homepage(self):
-        result = self._make_view().homepage_view()
+        tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
+        view = self._make_view()
+        map_config = view.request.registry.map_config
+        map_config['map_id_base'] = 'base.map'
+        map_config['map_token'] = 'pk.123456'
+        map_config['map_tiles_url'] = tiles_url
+        result = view.homepage_view()
         self.assertEqual(result['page_title'], 'Overview')
+        self.assertEqual(
+            result['map_image_url'],
+            tiles_url.format(z=0, x=0, y='0@2x'))
+        self.assertEqual(
+            result['map_image_base_url'],
+            ('http://a.tiles.mapbox.com/v4/base.map/'
+             '0/0/0@2x.png?access_token=pk.123456'))
 
     def test_api(self):
         result = self._make_view().api_view()
@@ -61,9 +71,19 @@ class TestContentViews(TestCase):
         self.assertTrue('Privacy' in result['page_title'])
 
     def test_map(self):
-        result = self._make_view().map_view()
+        tiles_url = 'http://127.0.0.1:7001/static/'
+        view = self._make_view()
+        map_config = view.request.registry.map_config
+        map_config['map_id_base'] = 'base.map'
+        map_config['map_id_labels'] = 'labels.map'
+        map_config['map_tiles_url'] = tiles_url
+        map_config['map_token'] = 'pk.123456'
+        result = view.map_view()
         self.assertEqual(result['page_title'], 'Map')
-        self.assertEqual(result['tiles'], LOCAL_TILES)
+        self.assertEqual(result['map_id_base'], 'base.map')
+        self.assertEqual(result['map_id_labels'], 'labels.map')
+        self.assertEqual(result['map_tiles_url'], tiles_url)
+        self.assertEqual(result['map_token'], 'pk.123456')
 
 
 class TestFunctionalContent(AppTestCase):
@@ -156,7 +176,8 @@ class TestFunctionalContent(AppTestCase):
 
     def test_map_json(self):
         result = self.app.get('/map.json', status=200)
-        self.assertEqual(result.json['tiles_url'], LOCAL_TILES_BASE)
+        self.assertEqual(
+            result.json['tiles_url'], 'http://127.0.0.1:7001/static/tiles/')
 
     def test_stats_regions(self):
         self.app.get('/stats/regions', status=200)

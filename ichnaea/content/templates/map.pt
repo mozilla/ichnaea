@@ -18,7 +18,11 @@
         samples. It does not show the locations of Bluetooth beacons,
         cell towers or WiFi access points.
     </p>
-    <div id='map' data-tiles='${tiles}'></div>
+    <div id="map"
+         data-map_id_base="${map_id_base}"
+         data-map_id_labels="${map_id_labels}"
+         data-map_tiles_url="${map_tiles_url}"
+         data-map_token="${map_token}"></div>
 </section>
 </tal:slot>
 

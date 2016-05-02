@@ -125,6 +125,23 @@ part of the standard metric name.
     tag_support = true
 
 
+Web
+---
+
+The web section contains settings related to the non-API website content.
+
+The ``map_id_base`` and ``map_id_labels`` settings specify Mapbox map
+ids for a base map and a map containing only labels. The ``map_token``
+specifies a Mapbox access token.
+
+.. code-block:: ini
+
+    [web]
+    map_id_base = example_base.map-123
+    map_id_labels = example_labels.map-234
+    map_token = pk.example_public_access_token
+
+
 Import
 ------
 

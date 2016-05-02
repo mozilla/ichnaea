@@ -11,10 +11,12 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
-- Remove the celery section from the config file.
+- Remove the celery section from the config file, add the web section.
 
 Changes
 ~~~~~~~
+
+- Make map related settings configurable via the config file.
 
 - Use the first of the month, to display stats for the entire month.
 
