@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- Remove the celery section from the config file.
+
 Changes
 ~~~~~~~
 

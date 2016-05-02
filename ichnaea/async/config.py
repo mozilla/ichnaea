@@ -57,7 +57,7 @@ def configure_celery(celery_app):
     # This happens at module import time and depends on a properly
     # set ICHNAEA_CFG.
     app_config = read_config()
-    if not app_config.has_section('celery'):  # pragma: no cover
+    if not app_config.has_section('cache'):  # pragma: no cover
         # Happens while building docs locally.
         return
 
@@ -66,21 +66,15 @@ def configure_celery(celery_app):
     celery_app.settings = app_config.asdict()
 
     # testing settings
-    always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
     redis_uri = os.environ.get('REDIS_URI')
 
-    if always_eager and redis_uri:
-        broker_url = redis_uri
-        result_url = redis_uri
-    else:  # pragma: no cover
-        celery_section = app_config.get_map('celery')
-        broker_url = celery_section['broker_url']
-        result_url = celery_section['result_url']
+    if not redis_uri:  # pragma: no cover
+        redis_uri = app_config.get_map('cache')['cache_url']
 
     celery_app.config_from_object('ichnaea.async.settings')
     celery_app.conf.update(
-        BROKER_URL=broker_url,
-        CELERY_RESULT_BACKEND=result_url,
+        BROKER_URL=redis_uri,
+        CELERY_RESULT_BACKEND=redis_uri,
         CELERY_QUEUES=CELERY_QUEUES,
     )
 

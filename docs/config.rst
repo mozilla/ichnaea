@@ -40,25 +40,12 @@ Cache
 The cache section contains a ``cache_url`` pointing to a Redis server.
 
 The cache is used as a classic cache by the webapp code, as a backend
-to store rate-limiting counters and as a custom queuing backend.
+to store rate-limiting counters, as a custom and a celery queuing backend.
 
 .. code-block:: ini
 
     [cache]
     cache_url = redis://localhost:6379/0
-
-
-Celery
-------
-
-The celery section contains connection settings for the Celery asynchronous
-task system.
-
-.. code-block:: ini
-
-    [celery]
-    broker_url = redis://localhost:6379/0
-    result_url = redis://localhost:6379/0
 
 
 Database
