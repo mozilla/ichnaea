@@ -9,9 +9,6 @@
         There is a wide variety of current applications and libraries
         for different audiences. The following list calls out a select
         few officially supported projects.
-    </p>
-
-    <p class="text-justified">
         A <a href="https://wiki.mozilla.org/CloudServices/Location/Software">
             list of community maintained projects</a> can be found in the
         Mozilla wiki.
@@ -57,16 +54,17 @@
         <a href="https://www.mozilla.org/firefox/android/">
             Firefox for Android</a> includes a way to contribute data
         and enhance this service. Enable this feature by opening the
-        Settings menu and in the Mozilla section under Data Choices
-        check the Mozilla Location Services option.
+        Settings menu. Open the <i>Privacy</i> section, scroll to the bottom
+        to see the <i>Data Choices</i>.
+        Check the <i>Mozilla Location Services</i> box.
     </p>
 
     <h3>Firefox Desktop</h3>
 
     <p class="text-justified">
-        Firefox Desktop version 36 and later allows you to use this service
-        instead of the default location provider. In <i>about:config</i>
-        change the <i>geo.wifi.uri</i> setting to:
+        Firefox Desktop allows you to use this service instead of the
+        default location provider. In <i>about:config</i> change the
+        <i>geo.wifi.uri</i> setting to:
         <pre>https://location.services.mozilla.com/v1/geolocate?key=%MOZILLA_API_KEY%</pre>
     </p>
 

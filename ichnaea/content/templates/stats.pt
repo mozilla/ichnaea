@@ -9,9 +9,8 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p>
-        This page shows global statistics, updated daily.
-        You can also <a href="/stats/regions">
-            view region specific statistics</a>.
+        This page shows global statistics. You can also
+        <a href="/stats/regions">view region specific statistics</a>.
     </p>
 
     <div class="separator">

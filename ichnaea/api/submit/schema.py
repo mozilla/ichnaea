@@ -2,7 +2,7 @@
 General submit specific colander schemata describing the public HTTP APIs.
 
 This API is based on both the `Google geolocation API
-<https://developers.google.com/maps/documentation/business/geolocation/>`_
+<https://developers.google.com/maps/documentation/geolocation/intro>`_
 and the `W3C geolocation position interface
 <http://www.w3.org/TR/geolocation-API/#position_interface>`_.
 """

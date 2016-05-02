@@ -14,11 +14,9 @@
 <section id="main-content">
     <p>
         This map shows areas in which our stumbling community has collected
-        data samples. The map is updated once a day.
-    </p>
-    <p>
-        The map shows general areas in which we have data samples.
-        It does not show the locations of cell towers or WiFi access points.
+        data samples. The map shows general areas in which we have data
+        samples. It does not show the locations of Bluetooth beacons,
+        cell towers or WiFi access points.
     </p>
     <div id='map' data-tiles='${tiles}'></div>
 </section>

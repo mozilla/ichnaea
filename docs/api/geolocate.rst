@@ -18,7 +18,7 @@ Geolocate requests are submitted using a POST request to the URL::
     https://location.services.mozilla.com/v1/geolocate?key=<API_KEY>
 
 This implements almost the same interface as the `Google Maps Geolocation
-API <https://developers.google.com/maps/documentation/business/geolocation/>`_
+API <https://developers.google.com/maps/documentation/geolocation/intro>`_
 endpoint, hence referred to as `GLS` or Google Location Service API. Our
 service implements all of the standard GLS API with a couple of additions.
 

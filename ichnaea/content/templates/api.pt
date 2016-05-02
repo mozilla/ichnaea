@@ -5,6 +5,17 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
 
+    <aside class="api-callout-open"><div class="intro">
+        <h4>Open-Source</h4>
+        <p>
+            You are free to run your own instance of the service using the
+            open-source
+            <a href="https://github.com/mozilla/ichnaea">
+                service code called ichnaea</a> and use the data available
+            from <a href="/downloads">our downloads section</a>.
+        </p>
+    </div></aside>
+
     <p class="text-justified">
         Depending on your use-case, you might be able to use one of the
         <a href="/apps">existing client applications</a> using this service.
@@ -15,38 +26,28 @@
         interact with this location service directly. Instead you use the
         <a href="https://developer.mozilla.org/en-US/docs/WebAPI/Using_geolocation">
             HTML5 geolocation web api</a>. This will give you the best
-        position estimate which the device can determine, based on all
-        available sensors (including GPS) and all enabled backend location
-        services.
+        position estimate for the users device, based on all available
+        sensors (including GPS) and all location services supported by
+        their device.
     </p>
 
     <p class="text-justified">
         If you are developing a native application or library for a desktop
         operating system or Android, you can in principle use this service
         via its HTTPS API. Please refer to the
-        <a href="https://mozilla.github.io/ichnaea/">
-            development documentation</a> for the details.
-        On most other operating systems, you cannot access the required
-        Bluetooth, cell and WiFi network information required to call
-        the service API.
+        <a href="https://mozilla.github.io/ichnaea/api/index.html">
+            API documentation</a> for the details.
+        On other mobile operating systems, you typically cannot access
+        the required Bluetooth, cell and WiFi network information
+        required to call the service API.
     </p>
 
-    <p class="text-justified">
-        At this stage the service is open to anyone, who wants to
-        contribute back to the service and applications supporting the
-        <a href="https://www.mozilla.org/mission/">Mozilla mission</a>.
-    </p>
-
-    <p class="text-justified">
-        The service is currently provided as-is, without any guarantee
-        on uptime, availability, accuracy of results or continued existence.
-        We also don't offer any commercial plans to use the service
-        and have no plans to provide such. You are free to run your own
-        instance of the service using the open-source
-        <a href="https://github.com/mozilla/ichnaea">
-            service code called ichnaea</a> and use the available data
-        from <a href="/downloads">our downloads section</a>.
-    </p>
+    <div class="api-callout-asis"><p>
+        The service is currently provided as-is, free of charge, without
+        any guarantee on availability, accuracy of results or
+        continued existence. We don't offer any commercial plans for
+        the service and have no plans to provide such.
+    </p></div>
 
     <h3>API Keys</h3>
 
@@ -54,24 +55,16 @@
         In order to use the service API you need to obtain an API key.
         If you use one of the existing applications, there is a good
         chance those applications already come with an API key included.
-    </p>
-
-    <p class="text-justified">
         We require these API keys as one way to prevent abuse of the
-        service. We are unfortunately the target of constant attacks
-        and need to protect against these. The API keys are not
-        permanently stored with any of the submitted data, but merely
-        act as a way to rate limit the number of incoming requests
-        from any one application.
+        service.
     </p>
 
     <p class="text-justified">
         If you are developing a new application, please
-        <a href="mailto:mls-contact@mozilla.com">
-            contact us via email</a> to obtain an API key.
+        <a href="/contact">contact us</a> to obtain an API key.
         Please make sure to describe your use-case and intended use of
-        the service. If you merely want to test out the service for a
-        small experiment, please use the literal "test" API key.
+        the service. If you merely want to test out the service for an
+        experiment, please use the literal "test" API key.
     </p>
 
     <p class="text-justified">

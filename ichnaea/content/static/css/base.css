@@ -453,6 +453,37 @@ img {
     margin-right: 5px;
 }
 
+/* API */
+
+.api-callout-open {
+    clear: right;
+    float: right;
+    width: 220px;
+    margin: 0 10px;
+}
+
+.api-callout-open .intro {
+    font-size: 0.875em;
+    margin: 0 0 20px;
+    padding: 20px;
+    text-align: center;
+}
+
+.api-callout-asis {
+    background-color: #fff;
+    clear: both;
+    font-size: 1.2em;
+    font-style: italic;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.api-callout-asis p {
+    margin: 0;
+    padding: 20px;
+    text-align: justify;
+}
+
 /* Map */
 
 #map {
@@ -469,7 +500,7 @@ img {
 .map-callout-caption {
     position: absolute;
     top: 205px;
-    font-size: .875em;
+    font-size: 0.875em;
     padding-bottom: 5px;
 }
 .map-callout a {
@@ -714,6 +745,19 @@ img {
     }
     #region-stats_wrapper {
         margin: 0 -10px;
+    }
+}
+
+/* Narrow Mobile Layout: Less than 480px */
+
+@media only screen and (max-width: 479px) {
+    .api-callout-open {
+        float: none;
+        width: auto;
+    }
+    .api-callout-open .intro {
+        margin: 0;
+        padding: 0;
     }
 }
 

@@ -2,7 +2,7 @@
 Colander schemata describing the public v1/geolocate HTTP API.
 
 This API is based on the `Google geolocation API
-<https://developers.google.com/maps/documentation/business/geolocation/>`_.
+<https://developers.google.com/maps/documentation/geolocation/intro>`_.
 """
 
 import colander
