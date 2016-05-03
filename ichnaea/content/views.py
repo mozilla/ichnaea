@@ -48,6 +48,11 @@ HOMEPAGE_MAP_IMAGE = ('{scheme}://a.tiles.mapbox.com/v4/{map_id}'
 
 
 def configure_content(config):
+    web_config = config.registry.settings.get('web', {})
+    enabled = web_config.get('enabled', True)
+    if enabled in ('false', '0'):
+        return False
+
     config.add_view(favicon_view, name='favicon.ico',
                     http_cache=(86400, {'public': True}))
     config.registry.skip_logging.add('/favicon.ico')
@@ -69,7 +74,7 @@ def configure_content(config):
     config.scan('ichnaea.content.views')
 
     assets_url = config.registry.settings.get('assets', {}).get('url', '')
-    if not assets_url.endswith('/'):  # pragma: no cover
+    if not assets_url.endswith('/'):
         assets_url = assets_url + '/'
     tiles_url = urlparse.urljoin(assets_url, 'tiles/' + TILES_PATTERN)
 
@@ -77,13 +82,13 @@ def configure_content(config):
     tiles = urlparse.urlunparse((result.scheme, result.netloc, '', '', '', ''))
     config.registry.csp = CSP_POLICY.format(base=CSP_BASE, tiles=tiles)
 
-    web_config = config.registry.settings.get('web', {})
     config.registry.map_config = {
         'map_id_base': web_config.get('map_id_base', 'mapbox.streets'),
         'map_id_labels': web_config.get('map_id_labels', ''),
         'map_token': web_config.get('map_token', ''),
         'map_tiles_url': tiles_url,
     }
+    return True
 
 
 @subscriber(NewResponse)

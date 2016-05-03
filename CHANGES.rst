@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- The website content can be disabled via a setting in the config file.
+
 - Make map related settings configurable via the config file.
 
 - Use the first of the month, to display stats for the entire month.

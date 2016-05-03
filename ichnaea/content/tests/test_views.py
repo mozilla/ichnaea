@@ -6,13 +6,41 @@ from mock import MagicMock, patch
 from pyramid.testing import DummyRequest
 from pyramid import testing
 
-from ichnaea.content.views import ContentViews
+from ichnaea.content.views import (
+    configure_content,
+    ContentViews,
+)
 from ichnaea.models.content import (
     Stat,
     StatKey,
 )
 from ichnaea.tests.base import AppTestCase, TestCase
 from ichnaea import util
+
+
+class TestConfig(TestCase):
+
+    def _make_config(self):
+        config = testing.setUp()
+        config.registry.skip_logging = set()
+        return config
+
+    def test_assets(self):
+        config = self._make_config()
+        config.registry.settings['assets'] = {'url': 'http://127.0.0.1:9/foo'}
+        self.assertTrue(configure_content(config))
+        self.assertEqual(
+            config.registry.map_config['map_tiles_url'],
+            'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
+
+    def test_enabled(self):
+        config = self._make_config()
+        self.assertTrue(configure_content(config))
+
+    def test_disabled(self):
+        config = self._make_config()
+        config.registry.settings['web'] = {'enabled': 'false'}
+        self.assertFalse(configure_content(config))
 
 
 class TestContentViews(TestCase):
