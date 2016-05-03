@@ -30,6 +30,13 @@ def _ocid_import_enabled(app_config):
     return 'import:ocid' in app_config.sections()
 
 
+def _web_content_enabled(app_config):
+    if ('web' in app_config.sections() and
+            app_config.get('web', 'enabled', True) in ('false', '0')):
+        return False  # pragma: no cover
+    return True
+
+
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
                  expires=2700, _schedule=crontab(minute=3),
                  _enabled=_cell_export_enabled)
@@ -116,26 +123,30 @@ def update_cellarea(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 _countdown=5, expires=30, _schedule=timedelta(seconds=45))
+                 _countdown=5, expires=30, _schedule=timedelta(seconds=45),
+                 _enabled=_ocid_import_enabled)
 def update_cellarea_ocid(self):
     area.CellAreaOCIDUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  _countdown=2, expires=30, _schedule=timedelta(seconds=47),
-                 _shard_model=models.DataMap)
+                 _shard_model=models.DataMap,
+                 _enabled=_web_content_enabled)
 def update_datamap(self, shard_id=None):
     DataMapUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=18000, _schedule=timedelta(seconds=21600))
+                 expires=18000, _schedule=timedelta(seconds=21600),
+                 _enabled=_web_content_enabled)
 def update_statregion(self):
     stats.StatRegion(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=2700, _schedule=crontab(minute=2))
+                 expires=2700, _schedule=crontab(minute=2),
+                 _enabled=_web_content_enabled)
 def update_statcounter(self, ago=None):
     # BBB: ago argument
     stats.StatCounterUpdater(self)()
