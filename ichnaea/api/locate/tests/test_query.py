@@ -510,7 +510,7 @@ class TestResultStats(QueryTest):
 
     def test_high_hit(self):
         wifis = WifiShardFactory.build_batch(2)
-        self._make_query(self._make_result(accuracy=1000.0), wifi=wifis)
+        self._make_query(self._make_result(accuracy=500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
                 ['key:key', 'region:none', 'fallback_allowed:false',

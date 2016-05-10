@@ -48,14 +48,14 @@ the aggregate result.
 # and adjustments in one need to be reflected in the other.
 
 BLUE_MIN_ACCURACY = 10.0  #: Minimum accuracy returned for Bluetooth queries.
-BLUE_MAX_ACCURACY = 100.0  #: Maximum accuracy returned for Bluetooth queries.
+BLUE_MAX_ACCURACY = 50.0  #: Maximum accuracy returned for Bluetooth queries.
 
 WIFI_MIN_ACCURACY = 10.0  #: Minimum accuracy returned for Wifi queries.
-WIFI_MAX_ACCURACY = 1000.0  # Maximum accuracy returned for Wifi queries.
+WIFI_MAX_ACCURACY = 500.0  # Maximum accuracy returned for Wifi queries.
 
-CELL_MIN_ACCURACY = 1000.1  #: Minimum accuracy returned for cell queries.
+CELL_MIN_ACCURACY = 1000.0  #: Minimum accuracy returned for cell queries.
 CELL_MAX_ACCURACY = 50000.0  #: Maximum accuracy returned for cell queries.
-CELLAREA_MIN_ACCURACY = 50000.1  #: Minimum accuracy for cell area queries.
+CELLAREA_MIN_ACCURACY = 50000.0  #: Minimum accuracy for cell area queries.
 CELLAREA_MAX_ACCURACY = 500000.0  #: Maximum accuracy for cell area queries.
 
 
@@ -82,7 +82,7 @@ class DataAccuracy(Enum):
     in one need to be reflected in the other.
     """
 
-    high = 1000.0  #: High accuracy, probably Bluetooth or WiFi based.
+    high = 500.0  #: High accuracy, probably Bluetooth or WiFi based.
     medium = 50000.0  #: Medium accuracy, probably cell based.
     low = EARTH_CIRCUMFERENCE  #: Low accuracy, large cell, cell area or GeoIP.
     none = float('inf')  # No accuracy at all.

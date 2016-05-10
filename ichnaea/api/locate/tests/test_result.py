@@ -80,7 +80,7 @@ class TestRegion(TestCase):
         self.assertEqual(region.data_accuracy, DataAccuracy.low)
         region = Region(
             region_code='VA', region_name='Holy See', accuracy=1000.0)
-        self.assertEqual(region.data_accuracy, DataAccuracy.high)
+        self.assertEqual(region.data_accuracy, DataAccuracy.medium)
 
 
 class TestResultList(TestCase):

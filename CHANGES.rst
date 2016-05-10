@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Lower maximum accuracy values returned from locate queries.
+
 - Accept observations with slightly worse accuracy values.
 
 - The website content can be disabled via a setting in the config file.
