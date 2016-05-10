@@ -16,7 +16,7 @@ class TestApp(ConnectionTestCase):
 
     def test_compiles(self):
         from ichnaea.webapp import app
-        self.assertTrue(hasattr(app, 'wsgi_app'))
+        assert hasattr(app, 'wsgi_app')
 
     def test_db_config(self):
         app_config = DummyConfig({
@@ -34,8 +34,8 @@ class TestApp(ConnectionTestCase):
         db_ro = app.app.registry.db_ro
         # the configured databases are working
         try:
-            self.assertTrue(db_rw.ping())
-            self.assertTrue(db_ro.ping())
+            assert db_rw.ping()
+            assert db_ro.ping()
         finally:
             # clean up the new db engine's _make_app created
             db_rw.close()
@@ -51,8 +51,8 @@ class TestApp(ConnectionTestCase):
                         _stats_client=self.stats_client,
                         )
         # check that our _db hooks are passed through
-        self.assertTrue(app.app.registry.db_rw is db_rw)
-        self.assertTrue(app.app.registry.db_ro is db_ro)
+        assert app.app.registry.db_rw is db_rw
+        assert app.app.registry.db_ro is db_ro
         db_rw.close()
         db_ro.close()
 
@@ -68,26 +68,25 @@ class TestApp(ConnectionTestCase):
                         _raven_client=self.raven_client,
                         _stats_client=self.stats_client)
         redis_client = app.app.registry.redis_client
-        self.assertTrue(redis_client is not None)
-        self.assertEqual(
-            redis_client.connection_pool.connection_kwargs['db'], 1)
+        assert redis_client is not None
+        assert redis_client.connection_pool.connection_kwargs['db'] == 1
 
 
 class TestHeartbeat(AppTestCase):
 
     def test_ok(self):
         response = self.app.get('/__heartbeat__', status=200)
-        self.assertEqual(response.content_type, 'application/json')
+        assert response.content_type == 'application/json'
         data = response.json
         timed_services = set(['database', 'geoip', 'redis'])
-        self.assertEqual(set(data.keys()), timed_services)
+        assert set(data.keys()) == timed_services
 
         for name in timed_services:
-            self.assertEqual(data[name]['up'], True)
-            self.assertTrue(isinstance(data[name]['time'], int))
-            self.assertTrue(data[name]['time'] >= 0)
+            assert data[name]['up']
+            assert isinstance(data[name]['time'], int)
+            assert data[name]['time'] >= 0
 
-        self.assertTrue(1 < data['geoip']['age_in_days'] < 1000)
+        assert 1 < data['geoip']['age_in_days'] < 1000
 
 
 class TestHeartbeatErrors(AppTestCase):
@@ -115,41 +114,41 @@ class TestHeartbeatErrors(AppTestCase):
 
     def test_database_error(self):
         res = self.app.get('/__heartbeat__', status=503)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['database'], {'up': False, 'time': 0})
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        assert res.content_type == 'application/json'
+        assert res.json['database'] == {'up': False, 'time': 0}
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
 
     def test_geoip_error(self):
         res = self.app.get('/__heartbeat__', status=503)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['geoip'],
-                         {'up': False, 'time': 0, 'age_in_days': -1})
+        assert res.content_type == 'application/json'
+        assert res.json['geoip'] == \
+            {'up': False, 'time': 0, 'age_in_days': -1}
 
     def test_redis_error(self):
         res = self.app.get('/__heartbeat__', status=503)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['redis'], {'up': False, 'time': 0})
+        assert res.content_type == 'application/json'
+        assert res.json['redis'] == {'up': False, 'time': 0}
 
 
 class TestLBHeartbeat(AppTestCase):
 
     def test_get(self):
         res = self.app.get('/__lbheartbeat__', status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['status'], 'OK')
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        assert res.content_type == 'application/json'
+        assert res.json['status'] == 'OK'
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
 
     def test_head(self):
         res = self.app.head('/__lbheartbeat__', status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.body, b'')
+        assert res.content_type == 'application/json'
+        assert res.body == b''
 
     def test_post(self):
         res = self.app.post('/__lbheartbeat__', status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['status'], 'OK')
+        assert res.content_type == 'application/json'
+        assert res.json['status'] == 'OK'
 
     def test_options(self):
         res = self.app.options(
@@ -157,10 +156,10 @@ class TestLBHeartbeat(AppTestCase):
                 'Access-Control-Request-Method': 'POST',
                 'Origin': 'localhost.local',
             })
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
-        self.assertEqual(res.content_length, None)
-        self.assertEqual(res.content_type, None)
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
+        assert res.content_length is None
+        assert res.content_type is None
 
     def test_unsupported_methods(self):
         self.app.delete('/__lbheartbeat__', status=405)
@@ -179,30 +178,29 @@ class TestLBHeartbeatDatabase(AppTestCase):
             uri='mysql+pymysql://none:none@127.0.0.1:9/test_location')
 
         res = self.app.get('/__lbheartbeat__', status=200)
-        self.assertEqual(res.content_type, 'application/json')
-        self.assertEqual(res.json['status'], 'OK')
+        assert res.content_type == 'application/json'
+        assert res.json['status'] == 'OK'
 
 
 class TestSettings(TestCase):
 
     def test_compiles(self):
         from ichnaea.webapp import settings
-        self.assertEqual(type(settings.max_requests_jitter), int)
+        assert type(settings.max_requests_jitter) == int
 
 
 class TestVersion(AppTestCase):
 
     def test_ok(self):
         response = self.app.get('/__version__', status=200)
-        self.assertEqual(response.content_type, 'application/json')
+        assert response.content_type == 'application/json'
         data = response.json
-        self.assertEqual(
-            set(data.keys()), set(['commit', 'source', 'tag', 'version']))
-        self.assertEqual(data['source'], 'https://github.com/mozilla/ichnaea')
+        assert set(data.keys()) == set(['commit', 'source', 'tag', 'version'])
+        assert data['source'] == 'https://github.com/mozilla/ichnaea'
 
 
 class TestWorker(TestCase):
 
     def test_compiles(self):
         from ichnaea.webapp import worker
-        self.assertTrue(hasattr(worker, 'LocationGeventWorker'))
+        assert hasattr(worker, 'LocationGeventWorker')
