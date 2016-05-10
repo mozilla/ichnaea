@@ -127,6 +127,7 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
 class Report(BaseReport):
     """A class for report data."""
 
+    _max_observation_accuracy = constants.MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidReportSchema()
     _fields = (
         'lat',
@@ -159,7 +160,7 @@ class Report(BaseReport):
         accuracy = max(accuracy, 10.0)
         # Don't differentiate values below 10 meters
         # Maps 10: 1, 20: 0.7, 40: 0.5, 80: 0.35, 100: 0.32, 200: 0.22
-        if accuracy > constants.MAX_OBSERVATION_ACCURACY:
+        if accuracy > self._max_observation_accuracy:
             return 0.0
         return math.sqrt(10 / accuracy)
 
@@ -206,6 +207,7 @@ class ValidBlueReportSchema(colander.MappingSchema, ValidatorNode):
 class BlueReport(BaseReport):
     """A class for Bluetooth report data."""
 
+    _max_observation_accuracy = constants.BLUE_MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidBlueReportSchema()
     _fields = (
         'mac',
@@ -338,6 +340,7 @@ class ValidCellReportSchema(ValidCellKeySchema):
 class CellReport(BaseReport):
     """A class for cell report data."""
 
+    _max_observation_accuracy = constants.CELL_MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidCellReportSchema()
     _fields = (
         'radio',
@@ -483,6 +486,7 @@ class ValidWifiReportSchema(colander.MappingSchema, ValidatorNode):
 class WifiReport(BaseReport):
     """A class for wifi report data."""
 
+    _max_observation_accuracy = constants.WIFI_MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidWifiReportSchema()
     _fields = (
         'mac',

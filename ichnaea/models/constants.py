@@ -69,7 +69,10 @@ CELL_MAX_RADIUS = 100000  #: Max radius of a single cell network.
 WIFI_MAX_RADIUS = 5000  #: Max radius of a single WiFi network.
 
 MAX_OBSERVATION_AGE = 20000.0  #: Maximum observation age.
-MAX_OBSERVATION_ACCURACY = 200.0  #: Maximum observation accuracy.
+MAX_OBSERVATION_ACCURACY = 1000.0  #: Maximum observation accuracy.
+BLUE_MAX_OBSERVATION_ACCURACY = 100.0  #: Maximum BLE observation accuracy.
+CELL_MAX_OBSERVATION_ACCURACY = 1000.0  #: Maximum cell observation accuracy.
+WIFI_MAX_OBSERVATION_ACCURACY = 200.0  #: Maximum WiFi observation accuracy.
 MAX_OBSERVATION_SPEED = 50.0  #: Maximum observation speed.
 
 WIFI_TEST_MAC = '01005e901000'

@@ -462,6 +462,9 @@ class TestBlue(StationMacTest, CeleryTestCase):
                 self.obs_factory(
                     lat=lat, lon=lon - 0.0002, age=-8000, accuracy=40.0,
                     signal=-60, source=source, **station_key),
+                self.obs_factory(
+                    lat=lat, lon=lon - 0.0003, accuracy=100.1,
+                    source=source, **station_key),
             ]
             self.session.commit()
             self.queue_and_update(obs)
@@ -519,6 +522,9 @@ class TestWifi(StationMacTest, CeleryTestCase):
                 self.obs_factory(
                     lat=lat, lon=lon - 0.008, accuracy=10.0,
                     speed=50.1, source=source, **station_key),
+                self.obs_factory(
+                    lat=lat, lon=lon - 0.010, accuracy=200.1,
+                    source=source, **station_key),
             ]
             self.session.commit()
             self.queue_and_update(obs)
@@ -600,7 +606,10 @@ class TestCell(StationTest, CeleryTestCase):
                     lat=lat, lon=lon - 0.002, accuracy=20.0,
                     signal=-51, source=source, **station_key),
                 self.obs_factory(
-                    lat=lat, signal=-111, lon=lon - 0.004, accuracy=40.0,
+                    lat=lat, signal=-111, lon=lon - 0.004, accuracy=1000.0,
+                    source=source, **station_key),
+                self.obs_factory(
+                    lat=lat, lon=lon - 0.004, accuracy=1000.1,
                     source=source, **station_key),
             ]
             self.session.commit()
@@ -612,10 +621,10 @@ class TestCell(StationTest, CeleryTestCase):
             self.assertAlmostEqual(station.lat, lat)
             self.assertAlmostEqual(station.max_lat, lat)
             self.assertAlmostEqual(station.min_lat, lat)
-            self.assertAlmostEqual(station.lon, lon - 0.0016358, 7)
+            self.assertAlmostEqual(station.lon, lon - 0.0015793, 7)
             self.assertAlmostEqual(station.max_lon, lon)
             self.assertAlmostEqual(station.min_lon, lon - 0.004)
-            self.assertEqual(station.radius, 164)
+            self.assertEqual(station.radius, 168)
             self.assertEqual(station.samples, 3)
             self.assertEqual(station.source, source)
-            self.assertAlmostEqual(station.weight, 9.47, 2)
+            self.assertAlmostEqual(station.weight, 9.245, 3)
