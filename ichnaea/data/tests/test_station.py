@@ -45,9 +45,6 @@ class BaseStationTest(object):
     shard_model = None
     unique_key = None
 
-    def _compare_sets(self, one, two):
-        self.assertEqual(set(one), set(two))
-
     def check_statcounter(self, stat_key, value):
         stat_counter = StatCounter(stat_key, util.utcnow())
         self.assertEqual(stat_counter.get(self.redis_client), value)

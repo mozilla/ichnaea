@@ -11,7 +11,7 @@ from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
 
-class TestRegionSource(RegionSource):
+class DummyRegionSource(RegionSource):
 
     def search(self, query):
         return self.result_type(
@@ -19,13 +19,13 @@ class TestRegionSource(RegionSource):
             accuracy=100000.0, score=0.5)
 
 
-class TestEmptySource(RegionSource):
+class EmptySource(RegionSource):
 
     def search(self, query):
         return self.result_list()
 
 
-class TestPositionSource(PositionSource):
+class DummyPositionSource(PositionSource):
     fallback_field = 'ipf'
 
     def search(self, query):
@@ -75,7 +75,7 @@ class TestSearcher(SearcherTest):
     def test_no_result(self):
         class TestSearcher(RegionSearcher):
             source_classes = (
-                ('test', TestEmptySource),
+                ('test', EmptySource),
             )
 
         result = self._search(TestSearcher)
@@ -87,12 +87,12 @@ class TestSearcher(SearcherTest):
             def should_search(self, query, results):
                 return False
 
-            def search(self, query):
+            def search(self, query):  # pragma: no cover
                 raise Exception('The searcher should not reach this point.')
 
         class TestSearcher(RegionSearcher):
             source_classes = (
-                ('test1', TestRegionSource),
+                ('test1', DummyRegionSource),
                 ('test2', TestSource),
             )
 
@@ -105,7 +105,7 @@ class TestPositionSearcher(SearcherTest):
     def test_result(self):
         class TestSearcher(PositionSearcher):
             source_classes = (
-                ('test', TestPositionSource),
+                ('test', DummyPositionSource),
             )
 
         result = self._search(TestSearcher)
@@ -120,7 +120,7 @@ class TestRegionSearcher(SearcherTest):
     def test_result(self):
         class TestSearcher(RegionSearcher):
             source_classes = (
-                ('test', TestRegionSource),
+                ('test', DummyRegionSource),
             )
 
         result = self._search(TestSearcher)

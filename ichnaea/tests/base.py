@@ -1,5 +1,4 @@
 from contextlib import contextmanager
-import gc
 import os
 import os.path
 
@@ -274,6 +273,14 @@ class DBTestCase(LogTestCase):
 
     default_session = 'db_rw_session'
     track_connection_events = False
+
+    @classmethod
+    def setup_database(cls):
+        db = _make_db()
+        engine = db.engine
+        cls.cleanup_tables(engine)
+        cls.setup_tables(engine)
+        db.close()
 
     @contextmanager
     def db_call_checker(self):
@@ -573,24 +580,3 @@ class CeleryTestCase(ConnectionTestCase):
 
 class CeleryAppTestCase(AppTestCase, CeleryTestCase):
     default_session = 'db_rw_session'
-
-
-def setup_package(module):
-    # look for memory leaks
-    gc.set_debug(gc.DEBUG_UNCOLLECTABLE)
-
-    # make sure all models are imported
-    from ichnaea.models import base  # NOQA
-    from ichnaea.models import content  # NOQA
-    db = _make_db()
-    engine = db.engine
-    DBTestCase.cleanup_tables(engine)
-    DBTestCase.setup_tables(engine)
-    db.close()
-
-
-def teardown_package(module):
-    if gc.garbage:
-        print('Uncollectable objects found:')
-        for obj in gc.garbage:
-            print(obj)

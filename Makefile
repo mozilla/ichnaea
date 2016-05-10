@@ -28,7 +28,7 @@ ifeq ($(TRAVIS), true)
 
 	PYTHON = python
 	PIP = pip
-	NOSE = nosetests
+	PYTEST = py.test
 	CYTHON = cython
 	SPHINXBUILD = sphinx-build
 else
@@ -44,7 +44,7 @@ else
 
 	PYTHON = $(BIN)/python
 	PIP = $(BIN)/pip
-	NOSE = $(BIN)/nosetests
+	PYTEST = $(BIN)/py.test
 	CYTHON = $(BIN)/cython
 	SPHINXBUILD = $(BIN)/sphinx-build
 endif
@@ -56,9 +56,9 @@ ifeq ($(findstring 3.,$(TRAVIS_PYTHON_VERSION)), 3.)
 endif
 
 ifeq ($(TESTS), ichnaea)
-	TEST_ARG = ichnaea --with-coverage --cover-package ichnaea --cover-erase
+	TEST_ARG = --cov-config=.coveragerc --cov=ichnaea ichnaea
 else
-	TEST_ARG = --tests=$(TESTS)
+	TEST_ARG = $(TESTS)
 endif
 
 INSTALL = $(PIP) install --no-deps --disable-pip-version-check
@@ -257,7 +257,7 @@ clean:
 test: mysql
 	SQLURI=$(SQLURI) REDIS_URI=$(REDIS_URI) CELERY_ALWAYS_EAGER=true \
 	ICHNAEA_CFG=$(ICHNAEA_CFG) LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
-	$(NOSE) -s -d $(TEST_ARG)
+	$(PYTEST) $(TEST_ARG)
 
 tox_install:
 ifeq ($(wildcard $(TOXENVDIR)/.git/),)

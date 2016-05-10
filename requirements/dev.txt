@@ -10,11 +10,12 @@ funcsigs==1.0 ; python_version < "3.3"
 imagesize==0.7.1
 Jinja2==2.8.0
 mock==2.0.0
-nose==1.3.7
 pbr==1.9.1
 pluggy==0.3.1
 py==1.4.31
 Pygments==2.1.3
+pytest==2.9.1
+pytest-cov==2.2.1
 python-dateutil==2.5.3
 requests-mock==0.7.0
 snowballstemmer==1.2.1

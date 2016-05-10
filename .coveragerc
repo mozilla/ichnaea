@@ -2,9 +2,10 @@
 source = ichnaea
 concurrency = gevent
 plugins = Cython.Coverage
+omit = */tests/*
 
 [report]
-skip_covered = true
+show_missing = true
 exclude_lines =
     pragma: no cover
     raise NotImplementedError()

@@ -304,8 +304,7 @@ class BaseLocateTest(object):
             query['cellTowers'] = []
             for cell in cells:
                 radio_name = cell.radio.name
-                if radio_name == 'umts':
-                    radio_name = 'wcdma'
+                radio_name = 'wcdma' if radio_name == 'umts' else radio_name
                 cell_query = {
                     'radioType': radio_name,
                     'mobileCountryCode': cell.mcc,

@@ -28,6 +28,10 @@ class TestBlue(BaseSourceTest):
 
     TestSource = BlueTestPositionSource
 
+    def test_should_search(self):
+        query = self.make_query()
+        self.check_should_search(query, False)
+
     def test_blue(self):
         blue = BlueShardFactory(radius=10, samples=50)
         blue2 = BlueShardFactory(

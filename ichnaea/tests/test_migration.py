@@ -16,7 +16,6 @@ from ichnaea.tests.base import (
     _make_db,
     DATA_DIRECTORY,
     DBTestCase,
-    setup_package,
     TestCase,
 )
 
@@ -73,7 +72,7 @@ class TestMigration(TestCase):
         self.db.close()
         del self.db
         # setup normal database schema again
-        setup_package(None)
+        DBTestCase.setup_database()
 
     def alembic_config(self):
         alembic_cfg = Config()

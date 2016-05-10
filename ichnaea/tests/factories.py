@@ -249,7 +249,6 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
             return -100
         if self.radio is Radio.lte:
             return -105
-        return None
 
 
 class ExportConfigFactory(BaseSQLFactory):
