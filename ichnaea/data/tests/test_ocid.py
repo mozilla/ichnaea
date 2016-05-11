@@ -134,10 +134,9 @@ class TestExport(CeleryTestCase):
 
 class TestImport(CeleryAppTestCase):
 
-    def setUp(self):
-        super(TestImport, self).setUp()
-        self.cell = CellShardFactory.build(radio=Radio.wcdma)
-        self.today = util.utcnow().date()
+    @property
+    def today(self):
+        return util.utcnow().date()
 
     def check_stat(self, stat_key, value, time=None):
         if time is None:
@@ -148,8 +147,7 @@ class TestImport(CeleryAppTestCase):
         self.assertEqual(stat.value, value)
 
     @contextmanager
-    def get_csv(self, lo=1, hi=10, time=1408604686):
-        cell = self.cell
+    def get_csv(self, cell, lo=1, hi=10, time=1408604686):
         line_template = ('UMTS,{mcc},{mnc},{lac},{cid},{psc},{lon:.7f},'
                          '{lat:.7f},1,1,1,{time},{time},')
         lines = [line_template.format(
@@ -178,9 +176,9 @@ class TestImport(CeleryAppTestCase):
                     gzip_file.write(txt)
             yield path
 
-    def import_csv(self, lo=1, hi=10, time=1408604686, cell_type='ocid'):
+    def import_csv(self, cell, lo=1, hi=10, time=1408604686, cell_type='ocid'):
         task = FakeTask(self.celery_app)
-        with self.get_csv(lo=lo, hi=hi, time=time) as path:
+        with self.get_csv(cell, lo=lo, hi=hi, time=time) as path:
             with redis_pipeline(self.redis_client) as pipe:
                 ImportLocal(task, cell_type=cell_type)(
                     pipe, self.session, filename=path)
@@ -190,7 +188,8 @@ class TestImport(CeleryAppTestCase):
             update_cellarea.delay().get()
 
     def test_import_local_cell(self):
-        self.import_csv(cell_type='cell')
+        self.import_csv(
+            CellShardFactory.build(radio=Radio.wcdma), cell_type='cell')
         cells = self.session.query(CellShard.shards()['wcdma']).all()
         self.assertEqual(len(cells), 9)
 
@@ -202,7 +201,7 @@ class TestImport(CeleryAppTestCase):
         self.check_stat(StatKey.unique_cell, 9)
 
     def test_import_local_ocid(self):
-        self.import_csv()
+        self.import_csv(CellShardFactory.build(radio=Radio.wcdma))
         cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
         self.assertEqual(len(cells), 9)
 
@@ -214,12 +213,13 @@ class TestImport(CeleryAppTestCase):
         self.check_stat(StatKey.unique_cell_ocid, 9)
 
     def test_import_local_delta(self):
+        base_cell = CellShardFactory.build(radio=Radio.wcdma)
         old_time = 1407000000
         new_time = 1408000000
         old_date = datetime.utcfromtimestamp(old_time).replace(tzinfo=UTC)
         new_date = datetime.utcfromtimestamp(new_time).replace(tzinfo=UTC)
 
-        self.import_csv(time=old_time)
+        self.import_csv(base_cell, time=old_time)
         cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
         self.assertEqual(len(cells), 9)
         update_statcounter.delay().get()
@@ -230,7 +230,7 @@ class TestImport(CeleryAppTestCase):
             self.session.query(CellAreaOCID).count(), len(areaids))
 
         # update some entries
-        self.import_csv(lo=5, hi=13, time=new_time)
+        self.import_csv(base_cell, lo=5, hi=13, time=new_time)
         self.session.commit()
 
         model = CellShardOCID.shards()['wcdma']
@@ -252,7 +252,7 @@ class TestImport(CeleryAppTestCase):
         self.check_stat(StatKey.unique_cell_ocid, 12)
 
     def test_import_external(self):
-        with self.get_csv() as path:
+        with self.get_csv(CellShardFactory.build(radio=Radio.wcdma)) as path:
             with open(path, 'rb') as gzip_file:
                 with requests_mock.Mocker() as req_m:
                     req_m.register_uri('GET', re.compile('.*'), body=gzip_file)

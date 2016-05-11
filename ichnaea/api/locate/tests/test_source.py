@@ -1,3 +1,5 @@
+import pytest
+
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
@@ -14,21 +16,9 @@ from ichnaea.tests.factories import ApiKeyFactory
 
 class SourceTest(object):
 
-    @classmethod
-    def setUpClass(cls):
-        super(SourceTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(valid_key='key')
-        cls.source = cls.TestSource(
-            geoip_db=cls.geoip_db,
-            raven_client=cls.raven_client,
-            redis_client=cls.redis_client,
-            stats_client=cls.stats_client,
-            data_queues=cls.data_queues,
-        )
-
     def _make_query(self, **kw):
         return Query(
-            api_key=self.api_key,
+            api_key=ApiKeyFactory.build(valid_key='test'),
             geoip_db=self.geoip_db,
             stats_client=self.stats_client,
             **kw)
@@ -45,6 +35,7 @@ class SourceTest(object):
         self.assertTrue(self.source.should_search(query, results))
 
 
+@pytest.mark.usefixtures('source')
 class TestPositionSource(SourceTest, ConnectionTestCase):
 
     class TestSource(PositionSource):
@@ -61,6 +52,7 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
         self.assertEqual(type(results), PositionResultList)
 
 
+@pytest.mark.usefixtures('source')
 class TestRegionSource(SourceTest, ConnectionTestCase):
 
     class TestSource(RegionSource):

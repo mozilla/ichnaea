@@ -2,17 +2,31 @@ import os
 import shutil
 import tempfile
 
-from maxminddb.const import MODE_MMAP
+from maxminddb.const import (
+    MODE_AUTO,
+    MODE_MMAP,
+)
+import pytest
+import six
 
 from ichnaea.geocode import GEOCODER
 from ichnaea import geoip
 from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
-    GeoIPTestCase,
+    GEOIP_DATA,
+    GEOIP_TEST_FILE,
+    LogTestCase,
+    TestCase,
 )
 
 
-class TestDatabase(GeoIPTestCase):
+@pytest.mark.usefixtures('geoip_db')
+class TestDatabase(LogTestCase):
+
+    @classmethod
+    def _open_db(cls, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):
+        return geoip.configure_geoip(
+            filename, mode=mode, raven_client=cls.raven_client)
 
     def test_open(self):
         self.assertIsInstance(self.geoip_db, geoip.GeoIPWrapper)
@@ -45,6 +59,10 @@ class TestDatabase(GeoIPTestCase):
                 self.assertTrue(isinstance(db, geoip.GeoIPNull))
         finally:
             shutil.rmtree(tmpdir)
+        if six.PY2:
+            self.check_raven(['IOError: No such file or directory'])
+        else:
+            self.check_raven(['FileNotFoundError'])
 
     def test_open_invalid_file(self):
         with tempfile.NamedTemporaryFile() as temp:
@@ -71,10 +89,11 @@ class TestDatabase(GeoIPTestCase):
             self.assertNotEqual(region_radius, None, region)
 
 
-class TestLookup(GeoIPTestCase):
+@pytest.mark.usefixtures('geoip_db')
+class TestLookup(TestCase):
 
     def test_city(self):
-        london = self.geoip_data['London']
+        london = GEOIP_DATA['London']
         result = self.geoip_db.lookup(london['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             self.assertAlmostEqual(london[name], result[name])
@@ -82,7 +101,7 @@ class TestLookup(GeoIPTestCase):
             self.assertEqual(london[name], result[name])
 
     def test_region(self):
-        bhutan = self.geoip_data['Bhutan']
+        bhutan = GEOIP_DATA['Bhutan']
         result = self.geoip_db.lookup(bhutan['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             self.assertAlmostEqual(bhutan[name], result[name])
@@ -105,7 +124,8 @@ class TestLookup(GeoIPTestCase):
         self.assertIsNone(geoip.GeoIPNull().lookup('200'))
 
 
-class TestRadius(GeoIPTestCase):
+@pytest.mark.usefixtures('geoip_db')
+class TestRadius(TestCase):
 
     def test_region(self):
         self.assertTrue(self.geoip_db.radius('US')[0] > 1000000.0)

@@ -9,7 +9,10 @@ from ichnaea.api.locate.result import (
     Region,
 )
 from ichnaea.models import Radio
-from ichnaea.tests.base import ConnectionTestCase
+from ichnaea.tests.base import (
+    ConnectionTestCase,
+    GEOIP_DATA,
+)
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -21,12 +24,7 @@ from ichnaea.tests.factories import (
 
 class QueryTest(ConnectionTestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        super(QueryTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(valid_key='key')
-        cls.london = cls.geoip_data['London']
-        cls.london_ip = cls.london['ip']
+    london_ip = GEOIP_DATA['London']['ip']
 
     def blue_model_query(self, blues):
         query = []
@@ -345,7 +343,7 @@ class TestQueryStats(QueryTest):
     def _make_query(self, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
-            api_key=api_key or self.api_key,
+            api_key=api_key or ApiKeyFactory.build(valid_key='test'),
             api_type=api_type,
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
@@ -365,7 +363,7 @@ class TestQueryStats(QueryTest):
         self._make_query(ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.query',
-                ['key:key', 'region:GB',
+                ['key:test', 'region:GB',
                  'blue:none', 'cell:none', 'wifi:none']),
         ])
 
@@ -377,7 +375,7 @@ class TestQueryStats(QueryTest):
         self._make_query(blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'region:GB',
+                ['key:test', 'region:GB',
                  'blue:one', 'cell:one', 'wifi:one']),
         ])
 
@@ -389,7 +387,7 @@ class TestQueryStats(QueryTest):
         self._make_query(blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
         self.check_stats(total=1, counter=[
             ('locate.query',
-                ['key:key', 'region:GB',
+                ['key:test', 'region:GB',
                  'blue:many', 'cell:many', 'wifi:many']),
         ])
 
@@ -397,9 +395,10 @@ class TestQueryStats(QueryTest):
 class TestResultStats(QueryTest):
 
     def _make_result(self, accuracy=None):
+        london = GEOIP_DATA['London']
         return Position(
-            lat=self.london['latitude'],
-            lon=self.london['longitude'],
+            lat=london['latitude'],
+            lon=london['longitude'],
             accuracy=accuracy,
             score=0.5)
 
@@ -413,7 +412,7 @@ class TestResultStats(QueryTest):
     def _make_query(self, result, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
-            api_key=api_key or self.api_key,
+            api_key=api_key or ApiKeyFactory.build(valid_key='test'),
             api_type=api_type,
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
@@ -435,7 +434,7 @@ class TestResultStats(QueryTest):
             self._make_region_result(), api_type='region', ip=self.london_ip)
         self.check_stats(counter=[
             ('region.result',
-                ['key:key', 'region:GB', 'fallback_allowed:false',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:low', 'status:hit']),
         ])
 
@@ -451,7 +450,7 @@ class TestResultStats(QueryTest):
         self._make_query(None, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'fallback_allowed:false',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:low', 'status:miss']),
         ])
 
@@ -459,7 +458,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'fallback_allowed:false',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:low', 'status:miss']),
         ])
 
@@ -468,7 +467,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=25000.0), ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'fallback_allowed:false',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:low', 'status:hit']),
         ])
 
@@ -477,7 +476,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'fallback_allowed:false',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:miss']),
         ])
 
@@ -486,7 +485,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=50000.1), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'fallback_allowed:false',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:miss']),
         ])
 
@@ -495,7 +494,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=50000.0), cell=cells)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'fallback_allowed:false',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:hit']),
         ])
 
@@ -504,7 +503,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=2500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'fallback_allowed:false',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:high', 'status:miss']),
         ])
 
@@ -513,7 +512,7 @@ class TestResultStats(QueryTest):
         self._make_query(self._make_result(accuracy=500.0), wifi=wifis)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:none', 'fallback_allowed:false',
+                ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:high', 'status:hit']),
         ])
 
@@ -523,7 +522,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=2001.0), wifi=wifis, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'fallback_allowed:false',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:high', 'status:miss']),
         ])
 
@@ -533,7 +532,7 @@ class TestResultStats(QueryTest):
             self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip)
         self.check_stats(counter=[
             ('locate.result',
-                ['key:key', 'region:GB', 'fallback_allowed:false',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:medium', 'status:hit']),
         ])
 
@@ -541,16 +540,17 @@ class TestResultStats(QueryTest):
 class TestSourceStats(QueryTest, ConnectionTestCase):
 
     def _make_results(self, accuracy=None):
+        london = GEOIP_DATA['London']
         return PositionResultList(Position(
-            lat=self.london['latitude'],
-            lon=self.london['longitude'],
+            lat=london['latitude'],
+            lon=london['longitude'],
             accuracy=accuracy,
             score=0.5))
 
     def _make_query(self, source, results, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
-            api_key=api_key or self.api_key,
+            api_key=api_key or ApiKeyFactory.build(valid_key='test'),
             api_type=api_type,
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
@@ -567,7 +567,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(DataSource.internal, results, wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
-                ['key:key', 'region:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ])
 
@@ -577,7 +577,7 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(DataSource.ocid, results, wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
-                ['key:key', 'region:none', 'source:ocid',
+                ['key:test', 'region:none', 'source:ocid',
                  'accuracy:high', 'status:miss']),
         ])
 
@@ -587,6 +587,6 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
         self._make_query(DataSource.internal, results, wifi=wifis)
         self.check_stats(counter=[
             ('locate.source',
-                ['key:key', 'region:none', 'source:internal',
+                ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:miss']),
         ])

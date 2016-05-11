@@ -4,47 +4,24 @@ import os.path
 
 from alembic.config import Config
 from alembic import command
-from maxminddb.const import MODE_AUTO
+import pytest
 from sqlalchemy import (
     event,
     inspect,
     text,
 )
-from webtest import TestApp
 
-from ichnaea.api.locate.searcher import (
-    configure_position_searcher,
-    configure_region_searcher,
-)
-from ichnaea.async.app import celery_app
-from ichnaea.async.config import (
-    init_worker,
-    shutdown_worker,
-)
-from ichnaea.cache import configure_redis
 from ichnaea.config import read_config
 from ichnaea.db import configure_db
 from ichnaea.geocode import GEOCODER
-from ichnaea.geoip import (
-    CITY_RADII,
-    configure_geoip,
-)
-from ichnaea.http import configure_http_session
-from ichnaea.log import (
-    configure_raven,
-    configure_stats,
-    DebugRavenClient,
-    DebugStatsClient,
-)
+from ichnaea.geoip import CITY_RADII
 from ichnaea.models import _Model, ApiKey
-from ichnaea.queue import DataQueue
-from ichnaea.webapp.config import main
 
 # make new unittest API's available under Python 2.6
 try:
-    from unittest2 import TestCase  # NOQA
+    import unittest2 as unittest  # NOQA
 except ImportError:
-    from unittest import TestCase
+    import unittest
 
 TEST_DIRECTORY = os.path.dirname(__file__)
 DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, 'data')
@@ -96,57 +73,12 @@ def _make_db(uri=SQLURI):
     return configure_db(uri)
 
 
-def _make_redis(uri=REDIS_URI):
-    return configure_redis(uri)
+class TestCase(unittest.TestCase):
+    pass
 
 
-def _make_app(app_config=TEST_CONFIG,
-              _db_rw=None, _db_ro=None, _http_session=None, _geoip_db=None,
-              _raven_client=None, _redis_client=None, _stats_client=None,
-              _position_searcher=None, _region_searcher=None):
-    wsgiapp = main(
-        app_config,
-        _db_rw=_db_rw,
-        _db_ro=_db_ro,
-        _geoip_db=_geoip_db,
-        _http_session=_http_session,
-        _raven_client=_raven_client,
-        _redis_client=_redis_client,
-        _stats_client=_stats_client,
-        _position_searcher=_position_searcher,
-        _region_searcher=_region_searcher,
-    )
-    return TestApp(wsgiapp)
-
-
+@pytest.mark.usefixtures('raven', 'stats')
 class LogTestCase(TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(LogTestCase, cls).setUpClass()
-        # Use a debug configuration
-        cls.raven_client = configure_raven(
-            None, transport='sync', _client=DebugRavenClient())
-        cls.stats_client = configure_stats(
-            None, _client=DebugStatsClient(tag_support=True))
-
-    @classmethod
-    def tearDownClass(cls):
-        super(LogTestCase, cls).tearDownClass()
-        del cls.raven_client
-        cls.stats_client.close()
-        del cls.stats_client
-
-    def setUp(self):
-        super(LogTestCase, self).setUp()
-        self._unexpected_errors = []
-
-    def tearDown(self):
-        super(LogTestCase, self).tearDown()
-        self.assert_no_unexpected_raven_errors()
-        del self._unexpected_errors
-        self.raven_client._clear()
-        self.stats_client._clear()
 
     def find_stats_messages(self, msg_type, msg_name,
                             msg_value=None, msg_tags=(), _client=None):
@@ -203,8 +135,7 @@ class LogTestCase(TestCase):
         The names are matched via startswith against the captured exception
         messages.
         """
-        msgs = self.raven_client.msgs
-        found_msgs = [msg['message'] for msg in msgs]
+        messages = [msg['message'] for msg in self.raven_client.msgs]
         matched_msgs = []
         if expected is None:
             expected = ()
@@ -213,15 +144,13 @@ class LogTestCase(TestCase):
             name = exp
             if isinstance(exp, tuple):
                 name, count = exp
-            matches = [found for found in found_msgs if found.startswith(name)]
+            matches = [msg for msg in self.raven_client.msgs
+                       if msg['message'].startswith(name)]
             matched_msgs.extend(matches)
-            self.assertEqual(len(matches), count, found_msgs)
-        self._unexpected_errors = [msg for msg in msgs
-                                   if msg['message'] not in matched_msgs]
+            assert len(matches) == count, messages
 
-    def assert_no_unexpected_raven_errors(self):
-        self.assertEqual(len(self._unexpected_errors), 0,
-                         self._unexpected_errors)
+        for msg in matched_msgs:
+            self.raven_client.msgs.remove(msg)
 
     def check_stats(self, _client=None, total=None, **kw):
         """Checks a partial specification of messages to be found in
@@ -232,7 +161,7 @@ class LogTestCase(TestCase):
         else:
             client = _client
         if total is not None:
-            self.assertEqual(total, len(client.msgs), client.msgs)
+            assert total == len(client.msgs)
 
         for (msg_type, preds) in kw.items():
             for pred in preds:
@@ -263,10 +192,10 @@ class LogTestCase(TestCase):
                 msgs = self.find_stats_messages(
                     msg_type, name, value, tags, _client=client)
                 if isinstance(match, int):
-                    self.assertEqual(match, len(msgs),
-                                     msg='%s %s not found' % (msg_type, name))
+                    assert match == len(msgs)
 
 
+@pytest.mark.usefixtures('db_rw', 'db_ro')
 class DBTestCase(LogTestCase):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
@@ -293,10 +222,10 @@ class DBTestCase(LogTestCase):
     def check_db_calls(self, rw=None, ro=None):
         if rw is not None:
             events = self.db_events['rw']['calls']
-            self.assertEqual(len(events), rw, events)
+            assert len(events) == rw
         if ro is not None:
             events = self.db_events['ro']['calls']
-            self.assertEqual(len(events), ro, events)
+            assert len(events) == ro
 
     def reset_db_event_tracking(self):
         self.db_events = {
@@ -374,20 +303,6 @@ class DBTestCase(LogTestCase):
         del self.rw_conn
 
     @classmethod
-    def setUpClass(cls):
-        super(DBTestCase, cls).setUpClass()
-        cls.db_rw = _make_db()
-        cls.db_ro = _make_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(DBTestCase, cls).tearDownClass()
-        cls.db_rw.close()
-        del cls.db_rw
-        cls.db_ro.close()
-        del cls.db_ro
-
-    @classmethod
     def setup_tables(cls, engine):
         with engine.connect() as conn:
             trans = conn.begin()
@@ -435,148 +350,21 @@ class DBTestCase(LogTestCase):
             trans.commit()
 
 
-class HTTPTestCase(object):
-
-    @classmethod
-    def setUpClass(cls):
-        super(HTTPTestCase, cls).setUpClass()
-        cls.http_session = configure_http_session(size=1)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(HTTPTestCase, cls).tearDownClass()
-        cls.http_session.close()
-        del cls.http_session
+@pytest.mark.usefixtures('data_queues', 'geoip_db', 'http_session', 'redis')
+class ConnectionTestCase(DBTestCase):
+    pass
 
 
-class GeoIPTestCase(LogTestCase):
-
-    geoip_data = GEOIP_DATA
-
-    @classmethod
-    def _open_db(cls, filename=None, mode=MODE_AUTO):
-        if filename is None:
-            filename = GEOIP_TEST_FILE
-        return configure_geoip(
-            filename, mode=mode, raven_client=cls.raven_client)
-
-    @classmethod
-    def setUpClass(cls):
-        super(GeoIPTestCase, cls).setUpClass()
-        cls.geoip_db = cls._open_db()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(GeoIPTestCase, cls).tearDownClass()
-        cls.geoip_db.close()
-        del cls.geoip_db
-
-
-class RedisTestCase(LogTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(RedisTestCase, cls).setUpClass()
-        cls.redis_client = _make_redis()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(RedisTestCase, cls).tearDownClass()
-        cls.redis_client.close()
-        del cls.redis_client
-
-    def tearDown(self):
-        super(RedisTestCase, self).tearDown()
-        self.redis_client.flushdb()
-
-
-class ConnectionTestCase(DBTestCase, GeoIPTestCase,
-                         HTTPTestCase, RedisTestCase):
-
-    @classmethod
-    def _configure_data_queues(cls):
-        return {
-            'update_incoming': DataQueue('update_incoming', cls.redis_client,
-                                         batch=100, compress=True),
-        }
-
-    @classmethod
-    def setUpClass(cls):
-        super(ConnectionTestCase, cls).setUpClass()
-        cls.data_queues = cls._configure_data_queues()
-
-    @classmethod
-    def tearDownClass(cls):
-        super(ConnectionTestCase, cls).tearDownClass()
-        del cls.data_queues
-
-
-class APITestCase(ConnectionTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(APITestCase, cls).setUpClass()
-        for name, func in (('position_searcher', configure_position_searcher),
-                           ('region_searcher', configure_region_searcher)):
-            searcher = func(
-                geoip_db=cls.geoip_db, raven_client=cls.raven_client,
-                redis_client=cls.redis_client, stats_client=cls.stats_client,
-                data_queues=cls.data_queues)
-            setattr(cls, name, searcher)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(APITestCase, cls).tearDownClass()
-        del cls.position_searcher
-        del cls.region_searcher
-
-
-class AppTestCase(APITestCase):
-
+@pytest.mark.usefixtures('app', 'redis')
+class AppTestCase(DBTestCase):
     default_session = 'db_ro_session'
 
-    @classmethod
-    def setUpClass(cls):
-        super(AppTestCase, cls).setUpClass()
-        cls.app = _make_app(app_config=TEST_CONFIG,
-                            _db_rw=cls.db_rw,
-                            _db_ro=cls.db_ro,
-                            _http_session=cls.http_session,
-                            _geoip_db=cls.geoip_db,
-                            _raven_client=cls.raven_client,
-                            _redis_client=cls.redis_client,
-                            _stats_client=cls.stats_client,
-                            _position_searcher=cls.position_searcher,
-                            _region_searcher=cls.region_searcher)
 
-    @classmethod
-    def tearDownClass(cls):
-        super(AppTestCase, cls).tearDownClass()
-        del cls.app
+@pytest.mark.usefixtures('celery', 'data_queues', 'http_session', 'redis')
+class CeleryTestCase(DBTestCase):
+    pass
 
 
-class CeleryTestCase(ConnectionTestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        super(CeleryTestCase, cls).setUpClass()
-        cls.celery_app = celery_app
-        celery_app.app_config = TEST_CONFIG
-        celery_app.settings = TEST_CONFIG.asdict()
-        init_worker(
-            celery_app,
-            _db_rw=cls.db_rw,
-            _geoip_db=cls.geoip_db,
-            _raven_client=cls.raven_client,
-            _redis_client=cls.redis_client,
-            _stats_client=cls.stats_client)
-
-    @classmethod
-    def tearDownClass(cls):
-        super(CeleryTestCase, cls).tearDownClass()
-        shutdown_worker(celery_app)
-        del cls.celery_app
-
-
-class CeleryAppTestCase(AppTestCase, CeleryTestCase):
+@pytest.mark.usefixtures('app', 'celery', 'redis')
+class CeleryAppTestCase(DBTestCase):
     default_session = 'db_rw_session'

@@ -2,12 +2,13 @@ import time
 
 import colander
 from pyramid.request import Request
+import pytest
 
 from ichnaea.api import exceptions as api_exceptions
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.api.schema import RenamingMapping
 from ichnaea.tests.base import (
-    RedisTestCase,
+    LogTestCase,
     TestCase,
 )
 
@@ -78,7 +79,8 @@ class TestExceptions(TestCase):
         self.assertTrue('parseError' in response.text)
 
 
-class TestLimiter(RedisTestCase):
+@pytest.mark.usefixtures('redis')
+class TestLimiter(LogTestCase):
 
     def test_limiter_maxrequests(self):
         rate_key = 'apilimit:key_a:v1.geolocate:20150101'

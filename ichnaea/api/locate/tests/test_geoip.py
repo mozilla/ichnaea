@@ -34,11 +34,11 @@ class SourceTest(object):
             0.5 < results.best().score < 1.0)
 
 
-class TestPositionSource(SourceTest, BaseSourceTest):
+class TestPosition(SourceTest, BaseSourceTest):
 
     TestSource = GeoIPPositionSource
 
 
-class TestRegionSource(SourceTest, BaseSourceTest):
+class TestRegion(SourceTest, BaseSourceTest):
 
     TestSource = GeoIPRegionSource

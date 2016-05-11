@@ -7,6 +7,7 @@ from ichnaea.api.exceptions import (
     ServiceUnavailable,
 )
 from ichnaea.models import Radio
+from ichnaea.tests.base import GEOIP_DATA
 from ichnaea import util
 
 
@@ -17,9 +18,9 @@ class BaseSubmitTest(object):
     metric_type = 'submit'
     status = None
 
-    def setUp(self):
-        super(BaseSubmitTest, self).setUp()
-        self.queue = self.celery_app.data_queues['update_incoming']
+    @property
+    def queue(self):
+        return self.celery_app.data_queues['update_incoming']
 
     def _one_cell_query(self, radio=True):
         raise NotImplementedError()
@@ -28,7 +29,7 @@ class BaseSubmitTest(object):
         url = self.url
         if api_key:
             url += '?key=%s' % api_key
-        extra = {'HTTP_X_FORWARDED_FOR': self.geoip_data['London']['ip']}
+        extra = {'HTTP_X_FORWARDED_FOR': GEOIP_DATA['London']['ip']}
         result = self.app.post_json(
             url, {'items': items},
             status=status, extra_environ=extra, **kw)
@@ -56,6 +57,7 @@ class BaseSubmitTest(object):
             self.url, 'invalid', headers=headers,
             content_type='application/json', status=400)
         self.assertEqual(self.queue.size(), 0)
+        self.check_raven([('ParseError', 1)])
 
     def test_error_get(self):
         res = self.app.get(self.url, status=400)
@@ -91,6 +93,7 @@ class BaseSubmitTest(object):
             self.assertEqual(res.json, ServiceUnavailable.json_body())
 
         self.assertTrue(mock_queue.called)
+        self.check_raven([('ServiceUnavailable', 1)])
         self.check_stats(counter=[
             ('data.batch.upload', 0),
             ('request', [self.metric_path, 'method:post', 'status:503']),

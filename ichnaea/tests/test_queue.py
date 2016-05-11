@@ -1,10 +1,13 @@
 from uuid import uuid4
 
+import pytest
+
 from ichnaea.queue import DataQueue
-from ichnaea.tests.base import RedisTestCase
+from ichnaea.tests.base import LogTestCase
 
 
-class TestDataQueue(RedisTestCase):
+@pytest.mark.usefixtures('redis')
+class TestDataQueue(LogTestCase):
 
     def _make_queue(self, batch=0, compress=False, json=True):
         return DataQueue(uuid4().hex, self.redis_client,

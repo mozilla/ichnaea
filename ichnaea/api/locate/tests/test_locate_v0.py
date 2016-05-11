@@ -16,6 +16,7 @@ from ichnaea.api.locate.tests.base import (
 from ichnaea.models import Radio
 from ichnaea.tests.base import (
     AppTestCase,
+    GEOIP_DATA,
     TestCase,
 )
 from ichnaea.tests.factories import (
@@ -45,7 +46,7 @@ class TestSchema(TestCase):
                 {'cell': [{'mcc': 'a', 'mnc': 2, 'lac': 3, 'cid': 4}]})
 
 
-class LocateV1Base(BaseLocateTest, AppTestCase):
+class LocateV0Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/search'
     metric_path = 'path:v1.search'
@@ -54,7 +55,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
     @property
     def ip_response(self):
-        london = self.geoip_data['London']
+        london = GEOIP_DATA['London']
         return {
             'status': 'ok',
             'lat': london['latitude'],
@@ -67,7 +68,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
                              region=None, fallback=None, **kw):
         expected_names = set(['status', 'lat', 'lon', 'accuracy'])
 
-        expected = super(LocateV1Base, self).check_model_response(
+        expected = super(LocateV0Base, self).check_model_response(
             response, model,
             region=region,
             fallback=fallback,
@@ -113,7 +114,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
         return query
 
 
-class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
+class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
     def test_blue(self):
         blue = BlueShardFactory()
@@ -282,7 +283,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         }])
 
 
-class TestError(LocateV1Base, CommonLocateErrorTest):
+class TestError(LocateV0Base, CommonLocateErrorTest):
 
     def test_apikey_error(self):
         super(TestError, self).test_apikey_error(db_errors=1)

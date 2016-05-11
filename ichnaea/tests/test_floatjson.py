@@ -7,9 +7,9 @@ from ichnaea.tests.base import TestCase
 
 class TestFloatJSONRenderer(TestCase):
 
-    def setUp(self):
-        super(TestFloatJSONRenderer, self).setUp()
-        self.render = FloatJSONRenderer()(None)
+    @property
+    def render(self):
+        return FloatJSONRenderer()(None)
 
     def test_basic(self):
         self.assertEqual(self.render({'a': 1}, {}), '{"a": 1}')

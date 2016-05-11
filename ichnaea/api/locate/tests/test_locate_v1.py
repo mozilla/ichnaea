@@ -15,6 +15,7 @@ from ichnaea.api.locate.tests.base import (
 from ichnaea.models import Radio
 from ichnaea.tests.base import (
     AppTestCase,
+    GEOIP_DATA,
     TestCase,
 )
 from ichnaea.tests.factories import (
@@ -65,7 +66,7 @@ class TestSchema(TestCase):
         self.assertFalse('radio' in data['cellTowers'][0])
 
 
-class LocateV2Base(BaseLocateTest, AppTestCase):
+class LocateV1Base(BaseLocateTest, AppTestCase):
 
     url = '/v1/geolocate'
     metric_path = 'path:v1.geolocate'
@@ -73,7 +74,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
 
     @property
     def ip_response(self):
-        london = self.geoip_data['London']
+        london = GEOIP_DATA['London']
         return {
             'location': {'lat': london['latitude'],
                          'lng': london['longitude']},
@@ -85,7 +86,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
                              region=None, fallback=None, **kw):
         expected_names = set(['location', 'accuracy'])
 
-        expected = super(LocateV2Base, self).check_model_response(
+        expected = super(LocateV1Base, self).check_model_response(
             response, model,
             region=region,
             fallback=fallback,
@@ -101,7 +102,7 @@ class LocateV2Base(BaseLocateTest, AppTestCase):
             self.assertEqual(data['fallback'], fallback)
 
 
-class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
+class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
     def test_blue(self):
         blue = BlueShardFactory()
@@ -390,7 +391,7 @@ class TestView(LocateV2Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
 
-class TestError(LocateV2Base, CommonLocateErrorTest):
+class TestError(LocateV1Base, CommonLocateErrorTest):
 
     def test_apikey_error(self):
         super(TestError, self).test_apikey_error(db_errors=1)

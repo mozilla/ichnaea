@@ -23,11 +23,17 @@ from ichnaea import util
 
 class TestStatCounter(CeleryTestCase):
 
-    def setUp(self):
-        super(TestStatCounter, self).setUp()
-        self.today = util.utcnow().date()
-        self.yesterday = self.today - timedelta(days=1)
-        self.two_days = self.today - timedelta(days=2)
+    @property
+    def today(self):
+        return util.utcnow().date()
+
+    @property
+    def yesterday(self):
+        return self.today - timedelta(days=1)
+
+    @property
+    def two_days(self):
+        return self.today - timedelta(days=2)
 
     def add_counter(self, stat_key, time, value):
         stat_counter = StatCounter(stat_key, time)

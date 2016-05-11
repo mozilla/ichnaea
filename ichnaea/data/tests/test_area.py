@@ -159,9 +159,9 @@ class TestArea(BaseTest, CeleryTestCase):
     cell_factory = CellShardFactory
     task = update_cellarea
 
-    def setUp(self):
-        super(TestArea, self).setUp()
-        self.area_queue = self.celery_app.data_queues['update_cellarea']
+    @property
+    def area_queue(self):
+        return self.celery_app.data_queues['update_cellarea']
 
 
 class TestAreaOCID(BaseTest, CeleryTestCase):
@@ -171,6 +171,6 @@ class TestAreaOCID(BaseTest, CeleryTestCase):
     cell_factory = CellShardOCIDFactory
     task = update_cellarea_ocid
 
-    def setUp(self):
-        super(TestAreaOCID, self).setUp()
-        self.area_queue = self.celery_app.data_queues['update_cellarea_ocid']
+    @property
+    def area_queue(self):
+        return self.celery_app.data_queues['update_cellarea_ocid']

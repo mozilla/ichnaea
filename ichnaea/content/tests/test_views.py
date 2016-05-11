@@ -1,4 +1,5 @@
 from calendar import timegm
+from contextlib import contextmanager
 
 import boto
 from chameleon.zpt.template import Macro
@@ -20,59 +21,56 @@ from ichnaea import util
 
 class TestConfig(TestCase):
 
+    @contextmanager
     def _make_config(self):
-        config = testing.setUp()
-        config.registry.skip_logging = set()
-        return config
+        with testing.testConfig() as config:
+            config.registry.skip_logging = set()
+            yield config
 
     def test_assets(self):
-        config = self._make_config()
-        config.registry.settings['assets'] = {'url': 'http://127.0.0.1:9/foo'}
-        self.assertTrue(configure_content(config))
-        self.assertEqual(
-            config.registry.map_config['map_tiles_url'],
-            'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
+        with self._make_config() as config:
+            config.registry.settings['assets'] = {
+                'url': 'http://127.0.0.1:9/foo'}
+            self.assertTrue(configure_content(config))
+            self.assertEqual(
+                config.registry.map_config['map_tiles_url'],
+                'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
 
     def test_enabled(self):
-        config = self._make_config()
-        self.assertTrue(configure_content(config))
+        with self._make_config() as config:
+            self.assertTrue(configure_content(config))
 
     def test_disabled(self):
-        config = self._make_config()
-        config.registry.settings['web'] = {'enabled': 'false'}
-        self.assertFalse(configure_content(config))
+        with self._make_config() as config:
+            config.registry.settings['web'] = {'enabled': 'false'}
+            self.assertFalse(configure_content(config))
 
 
 class TestContentViews(TestCase):
 
-    def setUp(self):
-        super(TestContentViews, self).setUp()
-        request = DummyRequest()
-        self.config = testing.setUp(request=request)
-        self.config.include('pyramid_chameleon')
-
-    def tearDown(self):
-        super(TestContentViews, self).setUp()
-        testing.tearDown()
-
+    @contextmanager
     def _make_view(self):
         request = DummyRequest()
-        setattr(request, 'db_ro_session', None)
-        setattr(request.registry, 'redis_client', None)
-        setattr(request.registry, 'map_config', {})
-        return ContentViews(request)
+        with testing.testConfig(request=request) as config:
+            config.include('pyramid_chameleon')
+            setattr(request, 'db_ro_session', None)
+            setattr(request.registry, 'redis_client', None)
+            setattr(request.registry, 'map_config', {})
+            yield ContentViews(request)
 
     def test_base_template(self):
-        self.assertEqual(self._make_view().base_template.__class__, Macro)
+        with self._make_view() as view:
+            self.assertEqual(view.base_template.__class__, Macro)
 
     def test_homepage(self):
         tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
-        view = self._make_view()
-        map_config = view.request.registry.map_config
-        map_config['map_id_base'] = 'base.map'
-        map_config['map_token'] = 'pk.123456'
-        map_config['map_tiles_url'] = tiles_url
-        result = view.homepage_view()
+        with self._make_view() as view:
+            map_config = view.request.registry.map_config
+            map_config['map_id_base'] = 'base.map'
+            map_config['map_token'] = 'pk.123456'
+            map_config['map_tiles_url'] = tiles_url
+            result = view.homepage_view()
+
         self.assertEqual(result['page_title'], 'Overview')
         self.assertEqual(
             result['map_image_url'],
@@ -83,30 +81,35 @@ class TestContentViews(TestCase):
              '0/0/0@2x.png?access_token=pk.123456'))
 
     def test_api(self):
-        result = self._make_view().api_view()
+        with self._make_view() as view:
+            result = view.api_view()
         self.assertTrue('API' in result['page_title'])
 
     def test_apps(self):
-        result = self._make_view().apps_view()
+        with self._make_view() as view:
+            result = view.apps_view()
         self.assertTrue('App' in result['page_title'])
 
     def test_optout(self):
-        result = self._make_view().optout_view()
+        with self._make_view() as view:
+            result = view.optout_view()
         self.assertTrue('Opt' in result['page_title'])
 
     def test_privacy(self):
-        result = self._make_view().privacy_view()
+        with self._make_view() as view:
+            result = view.privacy_view()
         self.assertTrue('Privacy' in result['page_title'])
 
     def test_map(self):
         tiles_url = 'http://127.0.0.1:7001/static/'
-        view = self._make_view()
-        map_config = view.request.registry.map_config
-        map_config['map_id_base'] = 'base.map'
-        map_config['map_id_labels'] = 'labels.map'
-        map_config['map_tiles_url'] = tiles_url
-        map_config['map_token'] = 'pk.123456'
-        result = view.map_view()
+        with self._make_view() as view:
+            map_config = view.request.registry.map_config
+            map_config['map_id_base'] = 'base.map'
+            map_config['map_id_labels'] = 'labels.map'
+            map_config['map_tiles_url'] = tiles_url
+            map_config['map_token'] = 'pk.123456'
+            result = view.map_view()
+
         self.assertEqual(result['page_title'], 'Map')
         self.assertEqual(result['map_id_base'], 'base.map')
         self.assertEqual(result['map_id_labels'], 'labels.map')
@@ -265,17 +268,13 @@ class TestFunctionalContent(AppTestCase):
 
 class TestFunctionalContentViews(AppTestCase):
 
-    def setUp(self):
-        super(TestFunctionalContentViews, self).setUp()
-        request = DummyRequest()
-        self.config = testing.setUp(request=request)
-
-    def tearDown(self):
-        super(TestFunctionalContentViews, self).tearDown()
-        testing.tearDown()
-
+    @contextmanager
     def _make_view(self, request):
-        return ContentViews(request)
+        with testing.testConfig(request=request) as config:
+            config.include('pyramid_chameleon')
+            setattr(request, 'db_ro_session', self.session)
+            setattr(request.registry, 'redis_client', self.redis_client)
+            yield ContentViews(request)
 
     def test_stats(self):
         today = util.utcnow().date()
@@ -291,10 +290,9 @@ class TestFunctionalContentViews(AppTestCase):
         self.session.add_all(stats)
         self.session.commit()
         request = DummyRequest()
-        request.db_ro_session = self.session
-        request.registry.redis_client = self.redis_client
-        inst = self._make_view(request)
-        result = inst.stats_view()
+        with self._make_view(request) as view:
+            result = view.stats_view()
+
         self.assertEqual(result['page_title'], 'Statistics')
         self.assertEqual(
             result['metrics1'], [
@@ -312,22 +310,22 @@ class TestFunctionalContentViews(AppTestCase):
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
-        inst = self._make_view(request)
-        request.db_ro_session = None
-        second_result = inst.stats_view()
+        with self._make_view(request) as view:
+            request.db_ro_session = None
+            second_result = view.stats_view()
         self.assertEqual(second_result, result)
 
     def test_stats_regions(self):
         request = DummyRequest()
-        request.db_ro_session = self.session
-        request.registry.redis_client = self.redis_client
-        inst = self._make_view(request)
-        result = inst.stats_regions_view()
+        with self._make_view(request) as view:
+            result = view.stats_regions_view()
+
         self.assertEqual(result['page_title'], 'Region Statistics')
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
-        inst = self._make_view(request)
-        request.db_ro_session = None
-        second_result = inst.stats_regions_view()
+        request = DummyRequest()
+        with self._make_view(request) as view:
+            request.db_ro_session = None
+            second_result = view.stats_regions_view()
         self.assertEqual(second_result, result)

@@ -8,7 +8,10 @@ from ichnaea.data.tasks import (
     monitor_queue_size,
 )
 from ichnaea.models import Radio
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.tests.base import (
+    CeleryTestCase,
+    GEOIP_DATA,
+)
 from ichnaea.tests.factories import CellShardOCIDFactory
 from ichnaea import util
 
@@ -87,12 +90,16 @@ class TestMonitor(CeleryTestCase):
 
 class TestMonitorAPIUsers(CeleryTestCase):
 
-    def setUp(self):
-        super(TestMonitorAPIUsers, self).setUp()
-        self.today = util.utcnow().date()
-        self.today_str = util.utcnow().date().strftime('%Y-%m-%d')
-        self.bhutan_ip = self.geoip_data['Bhutan']['ip']
-        self.london_ip = self.geoip_data['London']['ip']
+    bhutan_ip = GEOIP_DATA['Bhutan']['ip']
+    london_ip = GEOIP_DATA['London']['ip']
+
+    @property
+    def today(self):
+        return util.utcnow().date()
+
+    @property
+    def today_str(self):
+        return self.today.strftime('%Y-%m-%d')
 
     def test_empty(self):
         monitor_api_users.delay().get()

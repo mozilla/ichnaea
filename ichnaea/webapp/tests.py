@@ -1,15 +1,37 @@
+import webtest
+
+from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
 from ichnaea.geoip import GeoIPNull
 from ichnaea.tests.base import (
-    _make_app,
     _make_db,
-    _make_redis,
     AppTestCase,
     ConnectionTestCase,
     REDIS_URI,
     SQLURI,
+    TEST_CONFIG,
     TestCase,
 )
+from ichnaea.webapp.config import main
+
+
+def _make_app(app_config=TEST_CONFIG,
+              _db_rw=None, _db_ro=None, _http_session=None, _geoip_db=None,
+              _raven_client=None, _redis_client=None, _stats_client=None,
+              _position_searcher=None, _region_searcher=None):
+    wsgiapp = main(
+        app_config,
+        _db_rw=_db_rw,
+        _db_ro=_db_ro,
+        _geoip_db=_geoip_db,
+        _http_session=_http_session,
+        _raven_client=_raven_client,
+        _redis_client=_redis_client,
+        _stats_client=_stats_client,
+        _position_searcher=_position_searcher,
+        _region_searcher=_region_searcher,
+    )
+    return webtest.TestApp(wsgiapp)
 
 
 class TestApp(ConnectionTestCase):
@@ -26,6 +48,7 @@ class TestApp(ConnectionTestCase):
             },
         })
         app = _make_app(app_config=app_config,
+                        _geoip_db=self.geoip_db,
                         _raven_client=self.raven_client,
                         _redis_client=self.redis_client,
                         _stats_client=self.stats_client,
@@ -46,6 +69,7 @@ class TestApp(ConnectionTestCase):
         db_ro = _make_db()
         app = _make_app(_db_rw=db_rw,
                         _db_ro=db_ro,
+                        _geoip_db=self.geoip_db,
                         _raven_client=self.raven_client,
                         _redis_client=self.redis_client,
                         _stats_client=self.stats_client,
@@ -65,6 +89,7 @@ class TestApp(ConnectionTestCase):
         app = _make_app(app_config=app_config,
                         _db_rw=self.db_rw,
                         _db_ro=self.db_ro,
+                        _geoip_db=self.geoip_db,
                         _raven_client=self.raven_client,
                         _stats_client=self.stats_client)
         redis_client = app.app.registry.redis_client
@@ -101,8 +126,7 @@ class TestHeartbeatErrors(AppTestCase):
         # create broken geoip db
         self.app.app.registry.geoip_db = GeoIPNull()
         # create broken redis connection
-        redis_uri = 'redis://127.0.0.1:9/15'
-        self.broken_redis = _make_redis(redis_uri)
+        self.broken_redis = configure_redis('redis://127.0.0.1:9/15')
         self.app.app.registry.redis_client = self.broken_redis
 
     def tearDown(self):

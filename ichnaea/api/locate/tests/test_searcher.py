@@ -36,14 +36,9 @@ class SearcherTest(ConnectionTestCase):
 
     searcher = None
 
-    def setUp(self):
-        super(SearcherTest, self).setUp()
-        self.api_key = ApiKeyFactory.build(valid_key='key')
-        self.api_type = 'locate'
-
     def _make_query(self, **kw):
-        return Query(api_key=self.api_key,
-                     api_type=self.api_type,
+        return Query(api_key=ApiKeyFactory.build(valid_key='test'),
+                     api_type='locate',
                      session=self.session,
                      stats_client=self.stats_client,
                      **kw)

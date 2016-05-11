@@ -132,13 +132,21 @@ class StationTest(BaseStationTest):
     station_factory = None
     type_tag = None
 
-    @classmethod
-    def setUpClass(cls):
-        super(StationTest, cls).setUpClass()
-        cls.now = now = util.utcnow()
-        cls.today = now.date()
-        cls.ten_days = now - timedelta(days=10)
-        cls.past = now - timedelta(days=50)
+    @property
+    def now(self):
+        return util.utcnow()
+
+    @property
+    def today(self):
+        return self.now.date()
+
+    @property
+    def ten_days(self):
+        return self.now - timedelta(days=10)
+
+    @property
+    def past(self):
+        return self.now - timedelta(days=50)
 
     def displace(self, lat, lon, bearing=0.0, distance=0.0):
         distance = (self.max_radius + 10.0) * distance

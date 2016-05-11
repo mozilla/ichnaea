@@ -1,5 +1,6 @@
 import operator
 
+import pytest
 import requests_mock
 import simplejson as json
 from sqlalchemy import text
@@ -35,7 +36,10 @@ from ichnaea.models import (
     WifiShard,
     Radio,
 )
-from ichnaea.tests.base import ConnectionTestCase
+from ichnaea.tests.base import (
+    ConnectionTestCase,
+    GEOIP_DATA,
+)
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -77,41 +81,15 @@ def bound_model_accuracy(model, accuracy):
     return accuracy
 
 
+@pytest.mark.usefixtures('source')
 class BaseSourceTest(ConnectionTestCase):
 
     api_type = 'locate'
     TestSource = None
 
-    @classmethod
-    def setUpClass(cls):
-        super(BaseSourceTest, cls).setUpClass()
-        cls.api_key = ApiKeyFactory.build(valid_key='test')
-        bhutan = cls.geoip_data['Bhutan']
-        cls.bhutan_model = DummyModel(
-            lat=bhutan['latitude'],
-            lon=bhutan['longitude'],
-            radius=bhutan['radius'],
-            code=bhutan['region_code'],
-            name=bhutan['region_name'],
-            ip=bhutan['ip'])
-        london = cls.geoip_data['London']
-        cls.london_model = DummyModel(
-            lat=london['latitude'],
-            lon=london['longitude'],
-            radius=london['radius'],
-            code=london['region_code'],
-            name=london['region_name'],
-            ip=london['ip'])
-
-    def setUp(self):
-        super(BaseSourceTest, self).setUp()
-        self.source = self.TestSource(
-            geoip_db=self.geoip_db,
-            raven_client=self.raven_client,
-            redis_client=self.redis_client,
-            stats_client=self.stats_client,
-            data_queues=self.data_queues,
-        )
+    @property
+    def api_key(self):
+        return ApiKeyFactory.build(valid_key='test')
 
     def make_query(self, **kw):
         api_key = kw.pop('api_key', self.api_key)
@@ -202,24 +180,18 @@ class BaseLocateTest(object):
 
     url = None
     apikey_metrics = True
-    default_apikey = 'test'
     metric_path = None
     metric_type = None
     not_found = LocationNotFound
-
-    @classmethod
-    def setUpClass(cls):
-        super(BaseLocateTest, cls).setUpClass()
-        cls.queue = cls.data_queues['update_incoming']
-
-    @property
-    def test_ip(self):
-        # accesses data defined in GeoIPTestCase
-        return self.geoip_data['London']['ip']
+    test_ip = GEOIP_DATA['London']['ip']
 
     @property
     def ip_response(self):  # pragma: no cover
         return {}
+
+    @property
+    def queue(self):
+        return self.data_queues['update_incoming']
 
     def _call(self, body=None, api_key=_sentinel, ip=None, status=200,
               headers=None, method='post_json', **kw):
@@ -228,7 +200,7 @@ class BaseLocateTest(object):
         url = self.url
         if api_key:
             if api_key is _sentinel:
-                api_key = self.default_apikey
+                api_key = 'test'
             url += '?key=%s' % api_key
         extra_environ = {}
         if ip is not None:

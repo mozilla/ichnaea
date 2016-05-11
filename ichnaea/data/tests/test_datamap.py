@@ -12,10 +12,13 @@ from ichnaea import util
 
 class TestDataMap(CeleryTestCase):
 
-    def setUp(self):
-        super(TestDataMap, self).setUp()
-        self.today = util.utcnow().date()
-        self.yesterday = self.today - timedelta(days=1)
+    @property
+    def today(self):
+        return util.utcnow().date()
+
+    @property
+    def yesterday(self):
+        return self.today - timedelta(days=1)
 
     def _add(self, entries):
         for lat, lon, time in entries:

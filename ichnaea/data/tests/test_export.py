@@ -52,19 +52,19 @@ def mock_s3(mock_keys):
 
 class BaseExportTest(CeleryTestCase):
 
-    def setUp(self):
-        super(BaseExportTest, self).setUp()
-        self.queue = self.celery_app.data_queues['update_incoming']
-        self.timestamp = int(time.time() * 1000)
+    @property
+    def queue(self):
+        return self.celery_app.data_queues['update_incoming']
 
     def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
                     blue_key=None, cell_mcc=None, wifi_key=None,
                     api_key='test', lat=None, lon=None, source=None):
         reports = []
+        timestamp = int(time.time() * 1000)
         for i in range(num):
             pos = CellShardFactory.build()
             report = {
-                'timestamp': self.timestamp,
+                'timestamp': timestamp,
                 'position': {},
                 'bluetoothBeacons': [],
                 'cellTowers': [],
@@ -286,15 +286,13 @@ class TestS3(BaseExportTest):
 
 class TestInternalTransform(TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.transform = InternalTransform()
-        cls.timestamp = int(time.time() * 1000)
+    transform = InternalTransform()
 
     def test_empty(self):
         self.assertEqual(self.transform({}), {})
 
     def test_position(self):
+        timestamp = int(time.time() * 1000)
         self.assertEqual(self.transform({
             'position': {'latitude': 1.0,
                          'longitude': 2.0,
@@ -307,7 +305,7 @@ class TestInternalTransform(TestCase):
                          'pressure': 1020.2,
                          'source': 'gnss',
                          },
-            'timestamp': self.timestamp,
+            'timestamp': timestamp,
             'wifiAccessPoints': [{'macAddress': 'abcdef123456'}],
         }), {
             'lat': 1.0,
@@ -319,7 +317,7 @@ class TestInternalTransform(TestCase):
             'speed': 2.5,
             'pressure': 1020.2,
             'source': 'gnss',
-            'timestamp': self.timestamp - 6001,
+            'timestamp': timestamp - 6001,
             'wifi': [{'mac': 'abcdef123456', 'age': -6001}],
         })
 
