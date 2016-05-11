@@ -38,7 +38,7 @@ class TestWifi(BaseSourceTest):
         query.wifi[1].signalStrength = -80
         results = self.source.search(query)
         self.check_model_results(results, [wifi], lon=wifi.lon + 0.000004)
-        self.assertTrue(results.best().score > 1.0)
+        assert results.best().score > 1.0
 
     def test_wifi_no_position(self):
         wifi = WifiShardFactory()
@@ -88,7 +88,7 @@ class TestWifi(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         results = self.source.result_list()
-        self.assertFalse(self.source.should_search(query, results))
+        assert not self.source.should_search(query, results)
 
     def test_empty(self):
         query = self.model_query()
@@ -126,7 +126,7 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(wifis=[wifi] + wifis)
         results = self.source.search(query)
         self.check_model_results(results, [wifi], lat=wifi.lat + 0.00001)
-        self.assertAlmostEqual(results.best().score, 0.15)
+        assert round(results.best().score, 4) == 0.15
 
     def test_not_closeby(self):
         wifi = WifiShardFactory()
@@ -182,17 +182,17 @@ class TestWifi(BaseSourceTest):
         query = self.model_query(
             wifis=[wifi11, wifi12, wifi13, wifi21, wifi22])
         results = self.source.search(query)
-        self.assertEqual(len(results), 2)
+        assert len(results) == 2
         best_result = results.best()
-        self.assertAlmostEqual(best_result.lat, wifi21.lat, 7)
-        self.assertAlmostEqual(best_result.lon, wifi21.lon, 7)
-        self.assertAlmostEqual(best_result.accuracy, 10.0, 2)
-        self.assertAlmostEqual(
-            best_result.score, wifi21.score(now) + wifi22.score(now), 4)
+        assert round(best_result.lat, 7) == round(wifi21.lat, 7)
+        assert round(best_result.lon, 7) == round(wifi21.lon, 7)
+        assert round(best_result.accuracy, 2) == 10.0
+        assert (round(best_result.score, 2) ==
+                round(wifi21.score(now) + wifi22.score(now), 2))
         other_result = [res for res in results
                         if res.score < best_result.score][0]
-        self.assertAlmostEqual(other_result.lat, wifi11.lat, 4)
-        self.assertAlmostEqual(other_result.lon, wifi11.lon, 4)
+        assert round(other_result.lat, 4) == round(wifi11.lat, 4)
+        assert round(other_result.lon, 4) == round(wifi11.lon, 4)
 
     def test_top_results_in_noisy_cluster(self):
         now = util.utcnow()
@@ -215,9 +215,9 @@ class TestWifi(BaseSourceTest):
 
         results = self.source.search(query)
         result = results.best()
-        self.assertAlmostEqual(result.lat, wifi1.lat, 4)
-        self.assertAlmostEqual(result.lon, wifi1.lon, 4)
-        self.assertAlmostEqual(result.score, score, 4)
+        assert round(result.lat, 4) == round(wifi1.lat, 4)
+        assert round(result.lon, 4) == round(wifi1.lon, 4)
+        assert round(result.score, 4) == round(score, 4)
 
     def test_weight(self):
         wifi1 = WifiShardFactory.build()
@@ -238,6 +238,6 @@ class TestWifi(BaseSourceTest):
 
         results = self.source.search(query)
         result = results.best()
-        self.assertAlmostEqual(result.lat, wifi1.lat + 0.0000009, 7)
-        self.assertAlmostEqual(result.lon, wifi1.lon + 0.0000006, 7)
-        self.assertAlmostEqual(result.accuracy, 39.51, 2)
+        assert round(result.lat, 7) == wifi1.lat + 0.0000009
+        assert round(result.lon, 7) == wifi1.lon + 0.0000006
+        assert round(result.accuracy, 2) == 39.51

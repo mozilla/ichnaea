@@ -189,6 +189,31 @@ class DebugRavenClient(RavenClient):
         self.msgs.append(data)
         self.state.set_success()
 
+    def check(self, expected=()):
+        """Checks the raven message stream looking for the expected messages.
+
+        The expected argument should be a list of either names or tuples.
+
+        If it is a tuple, it should be a tuple of name and an expected count.
+
+        The names are matched via startswith against the captured exception
+        messages.
+        """
+        messages = [msg['message'] for msg in self.msgs]
+        matched_msgs = []
+        for exp in expected:
+            count = 1
+            name = exp
+            if isinstance(exp, tuple):
+                name, count = exp
+            matches = [msg for msg in self.msgs
+                       if msg['message'].startswith(name)]
+            matched_msgs.extend(matches)
+            assert len(matches) == count, messages
+
+        for msg in matched_msgs:
+            self.msgs.remove(msg)
+
 
 class StatsClient(DogStatsd):
     """A statsd client."""

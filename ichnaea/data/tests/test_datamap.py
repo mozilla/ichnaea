@@ -28,7 +28,7 @@ class TestDataMap(CeleryTestCase):
         self.session.flush()
 
     def _check_position(self, stat, lat, lon):
-        self.assertEqual(stat.grid, DataMap.scale(lat, lon))
+        assert stat.grid == DataMap.scale(lat, lon)
 
     def _queue(self, pairs):
         grids = defaultdict(list)
@@ -44,7 +44,7 @@ class TestDataMap(CeleryTestCase):
     def test_empty(self):
         for shard_id, shard in DataMap.shards().items():
             update_datamap.delay(shard_id=shard_id).get()
-            self.assertEqual(self.session.query(shard).count(), 0)
+            assert self.session.query(shard).count() == 0
 
     def test_one(self):
         lat = 1.234567
@@ -54,10 +54,10 @@ class TestDataMap(CeleryTestCase):
         update_datamap.delay(shard_id=shard_id).get()
 
         grids = self.session.query(DataMap.shards()[shard_id]).all()
-        self.assertEqual(len(grids), 1)
+        assert len(grids) == 1
         self._check_position(grids[0], 1.235, 2.346)
-        self.assertEqual(grids[0].created, self.today)
-        self.assertEqual(grids[0].modified, self.today)
+        assert grids[0].created == self.today
+        assert grids[0].modified == self.today
 
     def test_update(self):
         lat = 1.0
@@ -68,10 +68,10 @@ class TestDataMap(CeleryTestCase):
         update_datamap.delay(shard_id=shard_id).get()
 
         grids = self.session.query(DataMap.shards()[shard_id]).all()
-        self.assertEqual(len(grids), 1)
+        assert len(grids) == 1
         self._check_position(grids[0], 1.0, 2.0)
-        self.assertEqual(grids[0].created, self.yesterday)
-        self.assertEqual(grids[0].modified, self.today)
+        assert grids[0].created == self.yesterday
+        assert grids[0].modified == self.today
 
     def test_multiple(self):
         self._add([
@@ -94,7 +94,7 @@ class TestDataMap(CeleryTestCase):
         for shard in DataMap.shards().values():
             rows.extend(self.session.query(shard).all())
 
-        self.assertEqual(len(rows), 5)
+        assert len(rows) == 5
         created = set()
         modified = set()
         positions = set()
@@ -104,8 +104,8 @@ class TestDataMap(CeleryTestCase):
             modified.add(row.modified)
             positions.add((lat / 1000.0, lon / 1000.0))
 
-        self.assertEqual(created, set([self.today, self.yesterday]))
-        self.assertEqual(modified, set([self.today, self.yesterday]))
-        self.assertEqual(positions, set([
+        assert created == set([self.today, self.yesterday])
+        assert modified == set([self.today, self.yesterday])
+        assert (positions == set([
             (0.0, 0.0), (0.0, 1.0), (1.0, 2.0),
             (-10.0, 40.0), (40.001, 3.001)]))

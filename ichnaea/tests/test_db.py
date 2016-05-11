@@ -10,18 +10,16 @@ from ichnaea.tests.base import DBTestCase
 class TestDatabase(DBTestCase):
 
     def test_constructors(self):
-        self.assertEqual(self.db_rw.engine.name, 'mysql')
-        self.assertEqual(self.db_ro.engine.name, 'mysql')
+        assert self.db_rw.engine.name == 'mysql'
+        assert self.db_ro.engine.name == 'mysql'
 
     def test_sessions(self):
-        self.assertTrue(
-            self.db_rw_session.bind.engine is self.db_rw.engine)
-        self.assertTrue(
-            self.db_ro_session.bind.engine is self.db_ro.engine)
+        assert self.db_rw_session.bind.engine is self.db_rw.engine
+        assert self.db_ro_session.bind.engine is self.db_ro.engine
 
     def test_table_creation(self):
         result = self.session.execute('select * from cell_gsm;')
-        self.assertTrue(result.first() is None)
+        assert result.first() is None
 
     def test_show_warnings_backport(self):
         # Fixed in PyMySQL 0.6.7
@@ -47,7 +45,7 @@ class TestDatabase(DBTestCase):
         ]
         self.session.execute(stmt.values(values))
         rows = self.session.query(WifiShard0).all()
-        self.assertEqual(set([row.mac for row in rows]),
-                         set(['000000100000', '000000300000']))
-        self.assertEqual(set([row.region for row in rows]),
-                         set(['DE', u'\xe4']))
+        assert (set([row.mac for row in rows]) ==
+                set(['000000100000', '000000300000']))
+        assert (set([row.region for row in rows]) ==
+                set(['DE', u'\xe4']))

@@ -65,7 +65,7 @@ class TestSearcher(SearcherTest):
             source_classes = ()
 
         result = self._search(TestSearcher)
-        self.assertTrue(result is None)
+        assert result is None
 
     def test_no_result(self):
         class TestSearcher(RegionSearcher):
@@ -74,7 +74,7 @@ class TestSearcher(SearcherTest):
             )
 
         result = self._search(TestSearcher)
-        self.assertTrue(result is None)
+        assert result is None
 
     def test_should_search(self):
         class TestSource(RegionSource):
@@ -92,7 +92,7 @@ class TestSearcher(SearcherTest):
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['region_code'], 'DE')
+        assert result['region_code'] == 'DE'
 
 
 class TestPositionSearcher(SearcherTest):
@@ -104,10 +104,10 @@ class TestPositionSearcher(SearcherTest):
             )
 
         result = self._search(TestSearcher)
-        self.assertAlmostEqual(result['lat'], 1.0)
-        self.assertAlmostEqual(result['lon'], 1.0)
-        self.assertAlmostEqual(result['accuracy'], 1000.0)
-        self.assertEqual(result['fallback'], 'ipf')
+        assert result['lat'] == 1.0
+        assert result['lon'] == 1.0
+        assert result['accuracy'] == 1000.0
+        assert result['fallback'] == 'ipf'
 
 
 class TestRegionSearcher(SearcherTest):
@@ -119,5 +119,5 @@ class TestRegionSearcher(SearcherTest):
             )
 
         result = self._search(TestSearcher)
-        self.assertEqual(result['region_code'], 'DE')
-        self.assertEqual(result['region_name'], 'Germany')
+        assert result['region_code'] == 'DE'
+        assert result['region_name'] == 'Germany'

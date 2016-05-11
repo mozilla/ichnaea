@@ -16,8 +16,12 @@ from ichnaea.tests.base import (
     _make_db,
     DATA_DIRECTORY,
     DBTestCase,
-    TestCase,
 )
+
+try:
+    import unittest2 as unittest  # NOQA
+except ImportError:
+    import unittest
 
 _compare_attrs = {
     sqltypes._Binary: ('length', ),
@@ -55,7 +59,7 @@ def db_compare_type(context, inspected_column,
     raise AssertionError('Unsupported DB type comparison.')
 
 
-class TestMigration(TestCase):
+class TestMigration(unittest.TestCase):
 
     base = SQL_BASE
     rev = None
@@ -122,7 +126,7 @@ class TestMigration(TestCase):
     def test_migration(self):
         self.setup_base_db()
         # we have no alembic base revision
-        self.assertTrue(self.current_db_revision() is None)
+        assert self.current_db_revision() is None
 
         # stamp the database with the correct version
         self.stamp_db()
@@ -130,11 +134,11 @@ class TestMigration(TestCase):
         # run the migration, afterwards the DB is stamped
         self.run_migration()
         db_revision = self.current_db_revision()
-        self.assertTrue(db_revision is not None)
+        assert db_revision is not None
 
         # db revision matches latest alembic revision
         alembic_head = self.alembic_script().get_current_head()
-        self.assertEqual(db_revision, alembic_head)
+        assert db_revision == alembic_head
 
         # compare the db schema from a migrated database to
         # one created fresh from the model definitions
@@ -146,4 +150,4 @@ class TestMigration(TestCase):
             context = MigrationContext.configure(connection=conn, opts=opts)
             metadata_diff = compare_metadata(context, self.head_metadata)
 
-        self.assertEqual(metadata_diff, [])
+        assert metadata_diff == []

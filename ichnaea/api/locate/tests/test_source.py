@@ -24,15 +24,15 @@ class SourceTest(object):
             **kw)
 
     def test_init(self):
-        self.assertEqual(self.source.geoip_db, self.geoip_db)
-        self.assertEqual(self.source.raven_client, self.raven_client)
-        self.assertEqual(self.source.redis_client, self.redis_client)
-        self.assertEqual(self.source.stats_client, self.stats_client)
+        assert self.source.geoip_db == self.geoip_db
+        assert self.source.raven_client == self.raven_client
+        assert self.source.redis_client == self.redis_client
+        assert self.source.stats_client == self.stats_client
 
     def test_should_search(self):
         query = self._make_query()
         results = self.source.result_list()
-        self.assertTrue(self.source.should_search(query, results))
+        assert self.source.should_search(query, results)
 
 
 @pytest.mark.usefixtures('source')
@@ -48,8 +48,8 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
     def test_empty(self):
         query = self._make_query()
         results = self.source.search(query)
-        self.assertEqual(len(results), 0)
-        self.assertEqual(type(results), PositionResultList)
+        assert len(results) == 0
+        assert type(results) is PositionResultList
 
 
 @pytest.mark.usefixtures('source')
@@ -65,5 +65,5 @@ class TestRegionSource(SourceTest, ConnectionTestCase):
     def test_empty(self):
         query = self._make_query()
         results = self.source.search(query)
-        self.assertEqual(len(results), 0)
-        self.assertEqual(type(results), RegionResultList)
+        assert len(results) == 0
+        assert type(results) is RegionResultList

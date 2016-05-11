@@ -1,8 +1,7 @@
 from ichnaea.scripts import load
-from ichnaea.tests.base import TestCase
 
 
-class LoadTestCase(TestCase):
+class TestLoad(object):
 
     def test_compiles(self):
-        self.assertTrue(hasattr(load, 'console_entry'))
+        assert hasattr(load, 'console_entry')

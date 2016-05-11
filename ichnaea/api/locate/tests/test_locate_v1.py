@@ -1,4 +1,5 @@
 import colander
+import pytest
 
 from ichnaea.api.locate.constants import (
     BLUE_MIN_ACCURACY,
@@ -16,7 +17,6 @@ from ichnaea.models import Radio
 from ichnaea.tests.base import (
     AppTestCase,
     GEOIP_DATA,
-    TestCase,
 )
 from ichnaea.tests.factories import (
     BlueShardFactory,
@@ -25,13 +25,11 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestSchema(TestCase):
-
-    schema = LOCATE_V1_SCHEMA
+class TestSchema(object):
 
     def test_empty(self):
-        data = self.schema.deserialize({})
-        self.assertEqual(data, {
+        data = LOCATE_V1_SCHEMA.deserialize({})
+        assert (data == {
             'bluetoothBeacons': (),
             'carrier': None,
             'cellTowers': (),
@@ -42,28 +40,29 @@ class TestSchema(TestCase):
             'wifiAccessPoints': ()})
 
     def test_consider_ip(self):
-        data = self.schema.deserialize({'considerIp': False})
-        self.assertEqual(data['fallbacks']['ipf'], False)
-        data = self.schema.deserialize({'considerIp': 'false'})
-        self.assertEqual(data['fallbacks']['ipf'], False)
-        data = self.schema.deserialize({'considerIp': 'true'})
-        self.assertEqual(data['fallbacks']['ipf'], True)
-        data = self.schema.deserialize({'considerIp': False, 'fallbacks': {}})
-        self.assertEqual(data['fallbacks']['ipf'], True)
+        data = LOCATE_V1_SCHEMA.deserialize({'considerIp': False})
+        assert data['fallbacks']['ipf'] is False
+        data = LOCATE_V1_SCHEMA.deserialize({'considerIp': 'false'})
+        assert data['fallbacks']['ipf'] is False
+        data = LOCATE_V1_SCHEMA.deserialize({'considerIp': 'true'})
+        assert data['fallbacks']['ipf'] is True
+        data = LOCATE_V1_SCHEMA.deserialize(
+            {'considerIp': False, 'fallbacks': {}})
+        assert data['fallbacks']['ipf'] is True
 
     def test_invalid_radio_field(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize({'cellTowers': [{
+        with pytest.raises(colander.Invalid):
+            LOCATE_V1_SCHEMA.deserialize({'cellTowers': [{
                 'radioType': 'umts',
             }]})
 
     def test_multiple_radio_fields(self):
-        data = self.schema.deserialize({'cellTowers': [{
+        data = LOCATE_V1_SCHEMA.deserialize({'cellTowers': [{
             'radio': 'gsm',
             'radioType': 'wcdma',
         }]})
-        self.assertEqual(data['cellTowers'][0]['radioType'], 'wcdma')
-        self.assertFalse('radio' in data['cellTowers'][0])
+        assert data['cellTowers'][0]['radioType'] == 'wcdma'
+        assert 'radio' not in data['cellTowers'][0]
 
 
 class LocateV1Base(BaseLocateTest, AppTestCase):
@@ -95,11 +94,11 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
         data = response.json
         location = data['location']
-        self.assertAlmostEqual(location['lat'], expected['lat'])
-        self.assertAlmostEqual(location['lng'], expected['lon'])
-        self.assertAlmostEqual(data['accuracy'], expected['accuracy'])
+        assert round(location['lat'], 7) == round(expected['lat'], 7)
+        assert round(location['lng'], 7) == round(expected['lon'], 7)
+        assert data['accuracy'] == expected['accuracy']
         if fallback is not None:
-            self.assertEqual(data['fallback'], fallback)
+            assert data['fallback'] == fallback
 
 
 class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
@@ -134,7 +133,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                  'accuracy:high', 'status:hit']),
         ])
         items = self.queue.dequeue()
-        self.assertEqual(items, [{
+        assert (items == [{
             'api_key': 'test',
             'source': 'query',
             'report': {
@@ -185,7 +184,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             ('request', [self.metric_path, 'method:post']),
         ])
         items = self.queue.dequeue()
-        self.assertEqual(items, [{
+        assert (items == [{
             'api_key': 'test',
             'source': 'query',
             'report': {
@@ -262,7 +261,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             ('request', [self.metric_path, 'method:post']),
         ])
         items = self.queue.dequeue()
-        self.assertEqual(items, [{
+        assert (items == [{
             'api_key': 'test',
             'source': 'query',
             'report': {

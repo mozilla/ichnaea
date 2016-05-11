@@ -31,36 +31,33 @@ class TestBeat(CeleryTestCase):
         all_tasks = set([m[1].shortname() for m in getmembers(tasks)
                          if isinstance(m[1], BaseTask)])
 
-        self.assertEqual(
-            all_tasks - registered_tasks,
-            set(['data.update_blue', 'data.update_cell',
-                 'data.update_datamap', 'data.update_wifi',
-                 'data.export_reports',
-                 ]))
+        assert (all_tasks - registered_tasks ==
+                set(['data.update_blue', 'data.update_cell',
+                     'data.update_datamap', 'data.update_wifi',
+                     'data.export_reports',
+                     ]))
 
-        self.assertEqual(
-            set(['_'.join(name.split('_')[:-1]) for name in
-                 registered_tasks - all_tasks]),
-            set(['data.update_blue', 'data.update_cell',
-                 'data.update_datamap', 'data.update_wifi']))
+        assert (set(['_'.join(name.split('_')[:-1]) for name in
+                     registered_tasks - all_tasks]) ==
+                set(['data.update_blue', 'data.update_cell',
+                     'data.update_datamap', 'data.update_wifi']))
 
         for name in ('data.cell_export_full', 'data.cell_export_diff'):
-            self.assertTrue(name in registered_tasks)
+            assert name in registered_tasks
         for name in ('data.cell_import_external', 'data.monitor_ocid_import'):
-            self.assertTrue(name in registered_tasks)
+            assert name in registered_tasks
         for i in range(16):
-            self.assertTrue('data.update_blue_%x' % i in registered_tasks)
+            assert 'data.update_blue_%x' % i in registered_tasks
         for name in ('gsm', 'wcdma', 'lte'):
-            self.assertTrue('data.update_cell_' + name in registered_tasks)
+            assert 'data.update_cell_' + name in registered_tasks
         for name in ('ne', 'nw', 'se', 'sw'):
-            self.assertTrue('data.update_datamap_' + name in registered_tasks)
+            assert 'data.update_datamap_' + name in registered_tasks
         for i in range(16):
-            self.assertTrue('data.update_wifi_%x' % i in registered_tasks)
+            assert 'data.update_wifi_%x' % i in registered_tasks
 
 
 class TestWorkerConfig(CeleryTestCase):
 
     def test_config(self):
-        self.assertTrue(self.celery_app.conf['CELERY_ALWAYS_EAGER'])
-        self.assertTrue(
-            'redis' in self.celery_app.conf['CELERY_RESULT_BACKEND'])
+        assert self.celery_app.conf['CELERY_ALWAYS_EAGER']
+        assert 'redis' in self.celery_app.conf['CELERY_RESULT_BACKEND']

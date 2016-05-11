@@ -3,18 +3,15 @@ from ichnaea.models.mac import (
     decode_mac,
     encode_mac,
 )
-from ichnaea.tests.base import (
-    TestCase,
-)
 
 
-class TestChannelFrequency(TestCase):
+class TestChannelFrequency(object):
 
     def compare(self, channel, frequency, channel_expect, frequency_expect):
         new_channel, new_frequency = channel_frequency(
             channel=channel, frequency=frequency)
-        self.assertEqual(new_channel, channel_expect)
-        self.assertEqual(new_frequency, frequency_expect)
+        assert new_channel == channel_expect
+        assert new_frequency == frequency_expect
 
     def test_channel(self):
         self.compare(1, None, 1, 2412)
@@ -49,35 +46,20 @@ class TestChannelFrequency(TestCase):
         self.compare(None, 5930, None, 5930)
 
 
-class TestMacCodec(TestCase):
+class TestMacCodec(object):
 
     def test_decode(self):
-        value = decode_mac(b'\xab\xcd\xed\x124V')
-        self.assertEqual(value, 'abcded123456')
-
-        value = decode_mac(b'q83tEjRW', codec='base64')
-        self.assertEqual(value, 'abcded123456')
+        assert decode_mac(b'\xab\xcd\xed\x124V') == 'abcded123456'
+        assert decode_mac(b'q83tEjRW', codec='base64') == 'abcded123456'
 
     def test_encode(self):
-        value = encode_mac('abcded123456')
-        self.assertEqual(len(value), 6)
-        self.assertEqual(value, b'\xab\xcd\xed\x124V')
-
-        value = encode_mac('abcded123456', codec='base64')
-        self.assertEqual(value, b'q83tEjRW')
+        assert encode_mac('abcded123456') == b'\xab\xcd\xed\x124V'
+        assert encode_mac('abcded123456', codec='base64') == b'q83tEjRW'
 
     def test_max(self):
-        value = encode_mac('ffffffffffff')
-        self.assertEqual(len(value), 6)
-        self.assertEqual(value, b'\xff\xff\xff\xff\xff\xff')
-
-        value = encode_mac('ffffffffffff', codec='base64')
-        self.assertEqual(value, b'////////')
+        assert encode_mac('ffffffffffff') == b'\xff\xff\xff\xff\xff\xff'
+        assert encode_mac('ffffffffffff', codec='base64') == b'////////'
 
     def test_min(self):
-        value = encode_mac('000000000000')
-        self.assertEqual(len(value), 6)
-        self.assertEqual(value, b'\x00\x00\x00\x00\x00\x00')
-
-        value = encode_mac('000000000000', codec='base64')
-        self.assertEqual(value, b'AAAAAAAA')
+        assert encode_mac('000000000000') == b'\x00\x00\x00\x00\x00\x00'
+        assert encode_mac('000000000000', codec='base64') == b'AAAAAAAA'

@@ -10,7 +10,6 @@ from ichnaea.tests.base import (
     REDIS_URI,
     SQLURI,
     TEST_CONFIG,
-    TestCase,
 )
 from ichnaea.webapp.config import main
 
@@ -206,7 +205,7 @@ class TestLBHeartbeatDatabase(AppTestCase):
         assert res.json['status'] == 'OK'
 
 
-class TestSettings(TestCase):
+class TestSettings(object):
 
     def test_compiles(self):
         from ichnaea.webapp import settings
@@ -223,7 +222,7 @@ class TestVersion(AppTestCase):
         assert data['source'] == 'https://github.com/mozilla/ichnaea'
 
 
-class TestWorker(TestCase):
+class TestWorker(object):
 
     def test_compiles(self):
         from ichnaea.webapp import worker

@@ -14,10 +14,7 @@ from ichnaea.content.stats import (
     regions,
     transliterate,
 )
-from ichnaea.tests.base import (
-    DBTestCase,
-    TestCase,
-)
+from ichnaea.tests.base import DBTestCase
 from ichnaea.tests.factories import RegionStatFactory
 from ichnaea import util
 
@@ -29,7 +26,6 @@ def unixtime(value):
 class TestStats(DBTestCase):
 
     def test_global_stats(self):
-        session = self.session
         day = util.utcnow().date() - timedelta(1)
         stats = [
             Stat(key=StatKey.blue, time=day, value=2200000),
@@ -40,20 +36,18 @@ class TestStats(DBTestCase):
             Stat(key=StatKey.unique_cell_ocid, time=day, value=1523000),
             Stat(key=StatKey.unique_wifi, time=day, value=2009000),
         ]
-        session.add_all(stats)
-        session.commit()
+        self.session.add_all(stats)
+        self.session.commit()
 
-        result = global_stats(session)
-        self.assertDictEqual(
-            result, {
-                'blue': '2.20', 'unique_blue': '1.10',
-                'cell': '6.10', 'unique_cell': '3.28',
-                'wifi': '3.21', 'unique_wifi': '2.00',
-                'unique_cell_ocid': '1.52',
-            })
+        result = global_stats(self.session)
+        assert (result == {
+            'blue': '2.20', 'unique_blue': '1.10',
+            'cell': '6.10', 'unique_cell': '3.28',
+            'wifi': '3.21', 'unique_wifi': '2.00',
+            'unique_cell_ocid': '1.52',
+        })
 
     def test_global_stats_missing_today(self):
-        session = self.session
         day = util.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
@@ -62,20 +56,18 @@ class TestStats(DBTestCase):
             Stat(key=StatKey.wifi, time=day, value=3000000),
             Stat(key=StatKey.unique_cell, time=yesterday, value=4000000),
         ]
-        session.add_all(stats)
-        session.commit()
+        self.session.add_all(stats)
+        self.session.commit()
 
-        result = global_stats(session)
-        self.assertDictEqual(
-            result, {
-                'blue': '0.00', 'unique_blue': '0.00',
-                'cell': '6.00', 'unique_cell': '4.00',
-                'wifi': '3.00', 'unique_wifi': '0.00',
-                'unique_cell_ocid': '0.00',
-            })
+        result = global_stats(self.session)
+        assert (result == {
+            'blue': '0.00', 'unique_blue': '0.00',
+            'cell': '6.00', 'unique_cell': '4.00',
+            'wifi': '3.00', 'unique_wifi': '0.00',
+            'unique_cell_ocid': '0.00',
+        })
 
     def test_histogram(self):
-        session = self.session
         today = util.utcnow().date()
         one_day = today - timedelta(days=1)
         two_days = today - timedelta(days=2)
@@ -90,24 +82,23 @@ class TestStats(DBTestCase):
             Stat(key=StatKey.cell, time=one_day, value=80),
             Stat(key=StatKey.cell, time=today, value=90),
         ]
-        session.add_all(stats)
-        session.commit()
-        result = histogram(session, StatKey.cell, days=90)
+        self.session.add_all(stats)
+        self.session.commit()
+        result = histogram(self.session, StatKey.cell, days=90)
         first_of_month = today.replace(day=1)
-        self.assertTrue([unixtime(first_of_month), 90] in result[0])
+        assert [unixtime(first_of_month), 90] in result[0]
 
         expected = date(two_months.year, two_months.month, 1)
-        self.assertTrue([unixtime(expected), 50] in result[0])
+        assert [unixtime(expected), 50] in result[0]
 
     def test_histogram_different_stat_name(self):
-        session = self.session
         today = util.utcnow().date()
         stat = Stat(key=StatKey.unique_cell, time=today, value=9)
-        session.add(stat)
-        session.commit()
-        result = histogram(session, StatKey.unique_cell)
+        self.session.add(stat)
+        self.session.commit()
+        result = histogram(self.session, StatKey.unique_cell)
         first_of_month = today.replace(day=1)
-        self.assertEqual(result, [[[unixtime(first_of_month), 9]]])
+        assert result == [[[unixtime(first_of_month), 9]]]
 
     def test_regions(self):
         RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
@@ -118,7 +109,7 @@ class TestStats(DBTestCase):
 
         result = regions(self.session)
         expected = set(['DE', 'GB', 'TW', 'US'])
-        self.assertEqual(set([r['code'] for r in result]), expected)
+        assert set([r['code'] for r in result]) == expected
 
         region_results = {}
         for r in result:
@@ -127,28 +118,28 @@ class TestStats(DBTestCase):
             del region_results[code]['code']
 
         # ensure we use GENC names
-        self.assertEqual(region_results['TW']['name'], 'Taiwan')
+        assert region_results['TW']['name'] == 'Taiwan'
 
         # strip out names to make assertion statements shorter
         for code in region_results:
             del region_results[code]['name']
 
-        self.assertEqual(region_results['DE'],
-                         {'gsm': 2, 'wcdma': 1, 'lte': 0, 'cell': 3,
-                          'blue': 0, 'wifi': 4, 'order': 'germany'})
-        self.assertEqual(region_results['GB'],
-                         {'gsm': 0, 'wcdma': 0, 'lte': 0, 'cell': 0,
-                          'blue': 1, 'wifi': 1, 'order': 'united kin'})
-        self.assertEqual(region_results['US'],
-                         {'gsm': 3, 'wcdma': 0, 'lte': 0, 'cell': 3,
-                          'blue': 2, 'wifi': 0, 'order': 'united sta'})
+        assert (region_results['DE'] ==
+                {'gsm': 2, 'wcdma': 1, 'lte': 0, 'cell': 3,
+                 'blue': 0, 'wifi': 4, 'order': 'germany'})
+        assert (region_results['GB'] ==
+                {'gsm': 0, 'wcdma': 0, 'lte': 0, 'cell': 0,
+                 'blue': 1, 'wifi': 1, 'order': 'united kin'})
+        assert (region_results['US'] ==
+                {'gsm': 3, 'wcdma': 0, 'lte': 0, 'cell': 3,
+                 'blue': 2, 'wifi': 0, 'order': 'united sta'})
 
 
-class TestTransliterate(TestCase):
+class TestTransliterate(object):
 
     def test_ascii(self):
         for record in genc.REGIONS:
-            self.assertNotEqual(record.name, '')
+            assert record.name != ''
             trans = transliterate(record.name)
             non_ascii = [c for c in trans if ord(c) > 127]
-            self.assertEqual(non_ascii, [])
+            assert non_ascii == []

@@ -1,3 +1,5 @@
+import pytest
+
 from ichnaea.api.locate.constants import (
     DataAccuracy,
     DataSource,
@@ -72,62 +74,62 @@ class TestQuery(QueryTest, ConnectionTestCase):
 
     def test_empty(self):
         query = Query()
-        self.assertEqual(query.fallback.ipf, True)
-        self.assertEqual(query.fallback.lacf, True)
-        self.assertEqual(query.ip, None)
-        self.assertEqual(query.blue, [])
-        self.assertEqual(query.cell, [])
-        self.assertEqual(query.cell_area, [])
-        self.assertEqual(query.wifi, [])
-        self.assertEqual(query.api_key, None)
-        self.assertEqual(query.api_type, None)
-        self.assertEqual(query.session, None)
-        self.assertEqual(query.http_session, None)
-        self.assertEqual(query.geoip_db, None)
-        self.assertEqual(query.stats_client, None)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+        assert query.fallback.ipf is True
+        assert query.fallback.lacf is True
+        assert query.ip is None
+        assert query.blue == []
+        assert query.cell == []
+        assert query.cell_area == []
+        assert query.wifi == []
+        assert query.api_key is None
+        assert query.api_type is None
+        assert query.session is None
+        assert query.http_session is None
+        assert query.geoip_db is None
+        assert query.stats_client is None
+        assert query.expected_accuracy is DataAccuracy.none
 
     def test_fallback(self):
         query = Query(fallback={'ipf': False}, ip=self.london_ip)
-        self.assertEqual(query.fallback.ipf, False)
-        self.assertEqual(query.fallback.lacf, True)
-        self.assertEqual(query.ip, self.london_ip)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
-        self.assertTrue(query.geoip is None)
+        assert query.fallback.ipf is False
+        assert query.fallback.lacf is True
+        assert query.ip == self.london_ip
+        assert query.expected_accuracy is DataAccuracy.none
+        assert query.geoip is None
 
     def test_geoip(self):
         query = Query(ip=self.london_ip, geoip_db=self.geoip_db)
-        self.assertEqual(query.region, 'GB')
-        self.assertEqual(query.geoip['city'], True)
-        self.assertEqual(query.geoip['region_code'], 'GB')
-        self.assertEqual(query.geoip['region_name'], 'United Kingdom')
-        self.assertEqual(query.ip, self.london_ip)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        assert query.region == 'GB'
+        assert query.geoip['city'] is True
+        assert query.geoip['region_code'] == 'GB'
+        assert query.geoip['region_name'] == 'United Kingdom'
+        assert query.ip == self.london_ip
+        assert query.expected_accuracy is DataAccuracy.low
 
     def test_geoip_malformed(self):
         query = Query(ip='127.0.0.0.0.1', geoip_db=self.geoip_db)
-        self.assertEqual(query.region, None)
-        self.assertEqual(query.geoip, None)
-        self.assertEqual(query.ip, None)
+        assert query.region is None
+        assert query.geoip is None
+        assert query.ip is None
 
     def test_blue(self):
         blues = BlueShardFactory.build_batch(2)
         macs = [blue.mac for blue in blues]
         query = Query(blue=self.blue_model_query(blues))
 
-        self.assertEqual(len(query.blue), 2)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.high)
+        assert len(query.blue) == 2
+        assert query.expected_accuracy is DataAccuracy.high
 
         for blue in query.blue:
-            self.assertEqual(blue.age, 10)
-            self.assertEqual(blue.signalStrength, -85)
-            self.assertTrue(blue.macAddress in macs)
+            assert blue.age == 10
+            assert blue.signalStrength == -85
+            assert blue.macAddress in macs
 
     def test_blue_single(self):
         blue = BlueShardFactory.build()
         blue_query = {'macAddress': blue.mac}
         query = Query(blue=[blue_query])
-        self.assertEqual(len(query.blue), 0)
+        assert len(query.blue) == 0
 
     def test_blue_duplicates(self):
         blue = BlueShardFactory.build()
@@ -136,7 +138,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
             {'macAddress': blue.mac, 'signalStrength': -82},
             {'macAddress': blue.mac, 'signalStrength': -85},
         ])
-        self.assertEqual(len(query.blue), 0)
+        assert len(query.blue) == 0
 
     def test_blue_better(self):
         blues = BlueShardFactory.build_batch(2)
@@ -147,52 +149,52 @@ class TestQuery(QueryTest, ConnectionTestCase):
             {'macAddress': blues[0].mac, 'signalStrength': -85},
             {'macAddress': blues[1].mac, 'signalStrength': -70},
         ])
-        self.assertEqual(len(query.blue), 2)
-        self.assertEqual(
-            set([blue.signalStrength for blue in query.blue]), set([-70, -82]))
+        assert len(query.blue) == 2
+        assert (set([blue.signalStrength for blue in query.blue]) ==
+                set([-70, -82]))
 
     def test_blue_malformed(self):
         blue = BlueShardFactory.build()
         blue_query = {'macAddress': blue.mac}
         query = Query(blue=[blue_query, {'macAddress': 'foo'}])
-        self.assertEqual(len(query.blue), 0)
+        assert len(query.blue) == 0
 
     def test_blue_region(self):
         blues = BlueShardFactory.build_batch(2)
         query = Query(
             blue=self.blue_model_query(blues), api_type='region')
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        assert query.expected_accuracy is DataAccuracy.low
 
     def test_cell(self):
         cell = CellShardFactory.build(radio=Radio.lte)
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query)
 
-        self.assertEqual(len(query.cell), 1)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.medium)
+        assert len(query.cell) == 1
+        assert query.expected_accuracy is DataAccuracy.medium
 
         query_cell = query.cell[0]
         for key, value in cell_query[0].items():
             query_value = getattr(query_cell, key, None)
             if key == 'radioType':
-                self.assertEqual(query_value, cell.radio)
+                assert query_value is cell.radio
             else:
-                self.assertEqual(query_value, value)
+                assert query_value == value
 
-        self.assertEqual(len(query.cell_area), 1)
+        assert len(query.cell_area) == 1
         query_area = query.cell_area[0]
         for key, value in cell_query[0].items():
             query_value = getattr(query_area, key, None)
             if key == 'radioType':
-                self.assertEqual(query_value, cell.radio)
+                assert query_value is cell.radio
             elif key in ('cellId', 'primaryScramblingCode'):
                 pass
             else:
-                self.assertEqual(query_value, value)
+                assert query_value == value
 
     def test_cell_malformed(self):
         query = Query(cell=[{'radioType': 'foo', 'mobileCountryCode': 'ab'}])
-        self.assertEqual(len(query.cell), 0)
+        assert len(query.cell) == 0
 
     def test_cell_duplicated(self):
         cell = CellShardFactory.build()
@@ -201,23 +203,23 @@ class TestQuery(QueryTest, ConnectionTestCase):
         cell_query[1]['signalStrength'] = -90
         cell_query[2]['signalStrength'] = -92
         query = Query(cell=cell_query)
-        self.assertEqual(len(query.cell), 1)
-        self.assertEqual(query.cell[0].signalStrength, -90)
+        assert len(query.cell) == 1
+        assert query.cell[0].signalStrength == -90
 
     def test_cell_region(self):
         cell = CellShardFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='region')
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        assert query.expected_accuracy is DataAccuracy.low
 
     def test_cell_area(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query)
 
-        self.assertEqual(len(query.cell), 0)
-        self.assertEqual(len(query.cell_area), 1)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        assert len(query.cell) == 0
+        assert len(query.cell_area) == 1
+        assert query.expected_accuracy is DataAccuracy.low
 
     def test_cell_area_duplicated(self):
         cell = CellShardFactory.build()
@@ -225,52 +227,52 @@ class TestQuery(QueryTest, ConnectionTestCase):
         cell_query[1]['cellId'] += 2
         cell_query[2]['cellId'] += 1
         query = Query(cell=cell_query)
-        self.assertEqual(len(query.cell), 3)
-        self.assertEqual(len(query.cell_area), 1)
+        assert len(query.cell) == 3
+        assert len(query.cell_area) == 1
 
     def test_cell_area_no_fallback(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, fallback={'lacf': False})
 
-        self.assertEqual(len(query.cell), 0)
-        self.assertEqual(len(query.cell_area), 0)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+        assert len(query.cell) == 0
+        assert len(query.cell_area) == 0
+        assert query.expected_accuracy is DataAccuracy.none
 
     def test_cell_area_region(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='region')
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        assert query.expected_accuracy is DataAccuracy.low
 
     def test_cell_area_region_no_fallback(self):
         cell = CellAreaFactory.build()
         cell_query = self.cell_model_query([cell])
         query = Query(cell=cell_query, api_type='region',
                       fallback={'lacf': False})
-        self.assertEqual(query.expected_accuracy, DataAccuracy.none)
+        assert query.expected_accuracy is DataAccuracy.none
 
     def test_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
         macs = [wifi.mac for wifi in wifis]
         query = Query(wifi=self.wifi_model_query(wifis))
 
-        self.assertEqual(len(query.wifi), 2)
-        self.assertEqual(query.expected_accuracy, DataAccuracy.high)
+        assert len(query.wifi) == 2
+        assert query.expected_accuracy is DataAccuracy.high
 
         for wifi in query.wifi:
-            self.assertEqual(wifi.age, 30)
-            self.assertEqual(wifi.frequency, 2412)
-            self.assertEqual(wifi.signalStrength, -85)
-            self.assertEqual(wifi.signalToNoiseRatio, 13)
-            self.assertTrue(wifi.macAddress in macs)
-            self.assertEqual(wifi.ssid, 'wifi')
+            assert wifi.age == 30
+            assert wifi.frequency == 2412
+            assert wifi.signalStrength == -85
+            assert wifi.signalToNoiseRatio == 13
+            assert wifi.macAddress in macs
+            assert wifi.ssid == 'wifi'
 
     def test_wifi_single(self):
         wifi = WifiShardFactory.build()
         wifi_query = {'macAddress': wifi.mac}
         query = Query(wifi=[wifi_query])
-        self.assertEqual(len(query.wifi), 0)
+        assert len(query.wifi) == 0
 
     def test_wifi_duplicates(self):
         wifi = WifiShardFactory.build()
@@ -279,7 +281,7 @@ class TestQuery(QueryTest, ConnectionTestCase):
             {'macAddress': wifi.mac, 'signalStrength': -82},
             {'macAddress': wifi.mac, 'signalStrength': -85},
         ])
-        self.assertEqual(len(query.wifi), 0)
+        assert len(query.wifi) == 0
 
     def test_wifi_better(self):
         wifis = WifiShardFactory.build_batch(2)
@@ -290,21 +292,21 @@ class TestQuery(QueryTest, ConnectionTestCase):
             {'macAddress': wifis[0].mac, 'signalStrength': -85},
             {'macAddress': wifis[1].mac, 'signalStrength': -70},
         ])
-        self.assertEqual(len(query.wifi), 2)
-        self.assertEqual(
-            set([wifi.signalStrength for wifi in query.wifi]), set([-70, -82]))
+        assert len(query.wifi) == 2
+        assert (set([wifi.signalStrength for wifi in query.wifi]) ==
+                set([-70, -82]))
 
     def test_wifi_malformed(self):
         wifi = WifiShardFactory.build()
         wifi_query = {'macAddress': wifi.mac}
         query = Query(wifi=[wifi_query, {'macAddress': 'foo'}])
-        self.assertEqual(len(query.wifi), 0)
+        assert len(query.wifi) == 0
 
     def test_wifi_region(self):
         wifis = WifiShardFactory.build_batch(2)
         query = Query(
             wifi=self.wifi_model_query(wifis), api_type='region')
-        self.assertEqual(query.expected_accuracy, DataAccuracy.low)
+        assert query.expected_accuracy is DataAccuracy.low
 
     def test_mixed_cell_wifi(self):
         cells = CellShardFactory.build_batch(1)
@@ -313,29 +315,29 @@ class TestQuery(QueryTest, ConnectionTestCase):
         query = Query(
             cell=self.cell_model_query(cells),
             wifi=self.wifi_model_query(wifis))
-        self.assertEqual(query.expected_accuracy, DataAccuracy.high)
+        assert query.expected_accuracy is DataAccuracy.high
 
     def test_api_key(self):
         api_key = ApiKeyFactory.build()
         query = Query(api_key=api_key)
-        self.assertEqual(query.api_key.valid_key, api_key.valid_key)
-        self.assertEqual(query.api_key, api_key)
+        assert query.api_key.valid_key == api_key.valid_key
+        assert query.api_key == api_key
 
     def test_api_type(self):
         query = Query(api_type='locate')
-        self.assertEqual(query.api_type, 'locate')
+        assert query.api_type == 'locate'
 
     def test_api_type_failure(self):
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             Query(api_type='something')
 
     def test_session(self):
         query = Query(session=self.session)
-        self.assertEqual(query.session, self.session)
+        assert query.session == self.session
 
     def test_stats_client(self):
         query = Query(stats_client=self.stats_client)
-        self.assertEqual(query.stats_client, self.stats_client)
+        assert query.stats_client == self.stats_client
 
 
 class TestQueryStats(QueryTest):

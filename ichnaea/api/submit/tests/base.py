@@ -47,41 +47,41 @@ class BaseSubmitTest(object):
         res = self.app.post(
             self.url, body, headers=headers,
             content_type='application/json', status=self.status)
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
-        self.assertEqual(self.queue.size(), 1)
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
+        assert self.queue.size() == 1
 
     def test_malformed_gzip(self):
         headers = {'Content-Encoding': 'gzip'}
         self.app.post(
             self.url, 'invalid', headers=headers,
             content_type='application/json', status=400)
-        self.assertEqual(self.queue.size(), 0)
+        assert self.queue.size() == 0
         self.check_raven([('ParseError', 1)])
 
     def test_error_get(self):
         res = self.app.get(self.url, status=400)
-        self.assertEqual(res.json, ParseError.json_body())
+        assert res.json == ParseError.json_body()
         self.check_raven([('ParseError', 1)])
 
     def test_error_empty_body(self):
         res = self.app.post(self.url, '', status=400)
-        self.assertEqual(res.json, ParseError.json_body())
+        assert res.json == ParseError.json_body()
         self.check_raven([('ParseError', 1)])
 
     def test_error_empty_json(self):
         res = self.app.post_json(self.url, {}, status=400)
-        self.assertEqual(res.json, ParseError.json_body())
+        assert res.json == ParseError.json_body()
         self.check_raven([('ParseError', 1)])
 
     def test_error_no_json(self):
         res = self.app.post(self.url, '\xae', status=400)
-        self.assertEqual(res.json, ParseError.json_body())
+        assert res.json == ParseError.json_body()
         self.check_raven([('ParseError', 1)])
 
     def test_error_no_mapping(self):
         res = self.app.post_json(self.url, [1], status=400)
-        self.assertEqual(res.json, ParseError.json_body())
+        assert res.json == ParseError.json_body()
         self.check_raven([('ParseError', 1)])
 
     def test_error_redis_failure(self):
@@ -90,9 +90,9 @@ class BaseSubmitTest(object):
 
         with mock.patch('ichnaea.queue.DataQueue.enqueue', mock_queue):
             res = self._post_one_cell(status=503)
-            self.assertEqual(res.json, ServiceUnavailable.json_body())
+            assert res.json == ServiceUnavailable.json_body()
 
-        self.assertTrue(mock_queue.called)
+        assert mock_queue.called
         self.check_raven([('ServiceUnavailable', 1)])
         self.check_stats(counter=[
             ('data.batch.upload', 0),
@@ -105,7 +105,7 @@ class BaseSubmitTest(object):
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:none']),
         ])
-        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+        assert self.redis_client.keys('apiuser:*') == []
 
     def test_log_api_key_invalid(self):
         cell, query = self._one_cell_query()
@@ -113,7 +113,7 @@ class BaseSubmitTest(object):
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:none']),
         ])
-        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+        assert self.redis_client.keys('apiuser:*') == []
 
     def test_log_api_key_unknown(self):
         cell, query = self._one_cell_query()
@@ -121,7 +121,7 @@ class BaseSubmitTest(object):
         self.check_stats(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:invalid']),
         ])
-        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+        assert self.redis_client.keys('apiuser:*') == []
 
     def test_log_stats(self):
         cell, query = self._one_cell_query()
@@ -136,14 +136,14 @@ class BaseSubmitTest(object):
             ('request', [self.metric_path, 'method:post']),
         ])
         today = util.utcnow().date()
-        self.assertEqual(
-            [k.decode('ascii') for k in self.redis_client.keys('apiuser:*')],
+        assert (
+            [k.decode('ascii') for k in self.redis_client.keys('apiuser:*')] ==
             ['apiuser:submit:test:%s' % today.strftime('%Y-%m-%d')])
 
     def test_options(self):
         res = self.app.options(self.url, status=200)
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
 
     def test_radio_duplicated(self):
         cell, query = self._one_cell_query(radio=False)
@@ -152,20 +152,20 @@ class BaseSubmitTest(object):
         self._post([query])
         item = self.queue.dequeue()[0]
         cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], Radio.lte.name)
+        assert cells[0]['radioType'] == Radio.lte.name
 
     def test_radio_invalid(self):
         cell, query = self._one_cell_query(radio=False)
         query[self.cells_id][0][self.radio_id] = '18'
         self._post([query])
         item = self.queue.dequeue()[0]
-        self.assertFalse('radioType' in item['report']['cellTowers'][0])
+        assert 'radioType' not in item['report']['cellTowers'][0]
 
     def test_radio_missing(self):
         cell, query = self._one_cell_query(radio=False)
         self._post([query])
         item = self.queue.dequeue()[0]
-        self.assertFalse('radioType' in item['report']['cellTowers'])
+        assert 'radioType' not in item['report']['cellTowers']
 
     def test_radio_missing_in_observation(self):
         cell, query = self._one_cell_query(radio=False)
@@ -173,11 +173,11 @@ class BaseSubmitTest(object):
         self._post([query])
         item = self.queue.dequeue()[0]
         cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], cell.radio.name)
+        assert cells[0]['radioType'] == cell.radio.name
 
     def test_radio_missing_top_level(self):
         cell, query = self._one_cell_query()
         self._post([query])
         item = self.queue.dequeue()[0]
         cells = item['report']['cellTowers']
-        self.assertEqual(cells[0]['radioType'], cell.radio.name)
+        assert cells[0]['radioType'] == cell.radio.name

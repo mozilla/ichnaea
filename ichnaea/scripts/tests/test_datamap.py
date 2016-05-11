@@ -29,9 +29,9 @@ PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 class TestMap(CeleryTestCase):
 
     def _check_quadtree(self, path):
-        self.assertTrue(os.path.isdir(path))
+        assert os.path.isdir(path)
         for name in ('1,0', 'meta'):
-            self.assertTrue(os.path.isfile(os.path.join(path, name)))
+            assert os.path.isfile(os.path.join(path, name))
 
     def test_files(self):
         today = util.utcnow().date()
@@ -63,7 +63,7 @@ class TestMap(CeleryTestCase):
                     _db_rw=_make_db(), _session=self.session)
 
                 if not result:
-                    self.assertFalse(os.path.isfile(filepath))
+                    assert not os.path.isfile(filepath)
                     continue
 
                 rows += result
@@ -74,24 +74,23 @@ class TestMap(CeleryTestCase):
                 encode_file(filename, temp_dir, quaddir, DATAMAPS_DIR)
 
                 quadfolder = os.path.join(quaddir, 'map_' + shard_id)
-                self.assertTrue(os.path.isdir(quadfolder))
+                assert os.path.isdir(quadfolder)
                 self._check_quadtree(quadfolder)
 
             merge_files(quaddir, shapes, DATAMAPS_DIR)
             self._check_quadtree(shapes)
 
             render_tiles(shapes, tiles, 1, 2, DATAMAPS_DIR, PNGQUANT)
-            self.assertEqual(sorted(os.listdir(tiles)),
-                             ['0', '1', '2'])
-            self.assertEqual(sorted(os.listdir(os.path.join(tiles, '0', '0'))),
-                             ['0.png', '0@2x.png'])
+            assert (sorted(os.listdir(tiles)) == ['0', '1', '2'])
+            assert (sorted(os.listdir(os.path.join(tiles, '0', '0'))) ==
+                    ['0.png', '0@2x.png'])
 
-        self.assertEqual(rows, 36)
-        self.assertEqual(len(lines), 36)
-        self.assertEqual(set([round(float(l[0]), 2) for l in lines]),
-                         set([-10.0, 0.0, 12.35]))
-        self.assertEqual(set([round(float(l[1]), 2) for l in lines]),
-                         set([-11.0, 12.35]))
+        assert rows == 36
+        assert len(lines) == 36
+        assert (set([round(float(l[0]), 2) for l in lines]) ==
+                set([-10.0, 0.0, 12.35]))
+        assert (set([round(float(l[1]), 2) for l in lines]) ==
+                set([-11.0, 12.35]))
 
     def test_main(self):
         with util.selfdestruct_tempdir() as temp_dir:
@@ -109,10 +108,10 @@ class TestMap(CeleryTestCase):
                      _raven_client=self.raven_client,
                      _stats_client=self.stats_client)
 
-                self.assertEqual(len(mock_generate.mock_calls), 1)
+                assert len(mock_generate.mock_calls) == 1
                 args, kw = mock_generate.call_args
 
-                self.assertEqual(kw['concurrency'], 1)
-                self.assertEqual(kw['datamaps'], temp_dir + '/datamaps')
-                self.assertEqual(kw['output'], temp_dir)
-                self.assertEqual(kw['upload'], True)
+                assert kw['concurrency'] == 1
+                assert kw['datamaps'] == temp_dir + '/datamaps'
+                assert kw['output'] == temp_dir
+                assert kw['upload'] is True

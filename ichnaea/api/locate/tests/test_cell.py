@@ -23,7 +23,7 @@ class TestCellPosition(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         results = self.source.result_list()
-        self.assertFalse(self.source.should_search(query, results))
+        assert not self.source.should_search(query, results)
 
     def test_empty(self):
         query = self.model_query()
@@ -40,7 +40,7 @@ class TestCellPosition(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_results(results, [cell])
-        self.assertAlmostEqual(results.best().score, cell.score(now), 4)
+        assert results.best().score == cell.score(now)
 
     def test_cell_wrong_cid(self):
         cell = CellShardFactory()
@@ -66,8 +66,7 @@ class TestCellPosition(BaseSourceTest):
             results, [cell],
             lat=cell.lat + 0.3333333, lon=cell.lon + 0.3333333,
             accuracy=CELL_MAX_ACCURACY)
-        self.assertAlmostEqual(
-            results.best().score, cell.score(now) + cell2.score(now), 4)
+        assert results.best().score == cell.score(now) + cell2.score(now)
 
     def test_incomplete_keys(self):
         cells = CellAreaFactory.build_batch(4)
@@ -79,7 +78,7 @@ class TestCellPosition(BaseSourceTest):
         with self.db_call_checker() as check_db_calls:
             query = self.model_query(cells=cells)
             results = self.source.result_list()
-            self.assertFalse(self.source.should_search(query, results))
+            assert not self.source.should_search(query, results)
             check_db_calls(rw=0, ro=0)
 
     def test_smallest_area(self):
@@ -91,7 +90,7 @@ class TestCellPosition(BaseSourceTest):
         query = self.model_query(cells=[area, area2])
         results = self.source.search(query)
         self.check_model_results(results, [area])
-        self.assertAlmostEqual(results.best().score, area.score(now), 4)
+        assert results.best().score == area.score(now)
 
     def test_minimum_radius(self):
         areas = CellAreaFactory.create_batch(2)
@@ -113,7 +112,7 @@ class TestOCIDPositionSource(BaseSourceTest):
     def test_check_empty(self):
         query = self.model_query()
         results = self.source.result_list()
-        self.assertFalse(self.source.should_search(query, results))
+        assert not self.source.should_search(query, results)
 
     def test_empty(self):
         query = self.model_query()
@@ -129,7 +128,7 @@ class TestOCIDPositionSource(BaseSourceTest):
         query = self.model_query(cells=[cell])
         results = self.source.search(query)
         self.check_model_results(results, [cell])
-        self.assertAlmostEqual(results.best().score, cell.score(now), 4)
+        assert results.best().score == cell.score(now)
 
     def test_cell_area(self):
         now = util.utcnow()
@@ -138,4 +137,4 @@ class TestOCIDPositionSource(BaseSourceTest):
         query = self.model_query(cells=[area])
         results = self.source.search(query)
         self.check_model_results(results, [area])
-        self.assertAlmostEqual(results.best().score, area.score(now), 4)
+        assert results.best().score == area.score(now)

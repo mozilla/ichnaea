@@ -15,11 +15,11 @@ from ichnaea.models.content import (
     Stat,
     StatKey,
 )
-from ichnaea.tests.base import AppTestCase, TestCase
+from ichnaea.tests.base import AppTestCase
 from ichnaea import util
 
 
-class TestConfig(TestCase):
+class TestConfig(object):
 
     @contextmanager
     def _make_config(self):
@@ -31,22 +31,21 @@ class TestConfig(TestCase):
         with self._make_config() as config:
             config.registry.settings['assets'] = {
                 'url': 'http://127.0.0.1:9/foo'}
-            self.assertTrue(configure_content(config))
-            self.assertEqual(
-                config.registry.map_config['map_tiles_url'],
-                'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
+            assert configure_content(config)
+            assert (config.registry.map_config['map_tiles_url'] ==
+                    'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
 
     def test_enabled(self):
         with self._make_config() as config:
-            self.assertTrue(configure_content(config))
+            assert configure_content(config)
 
     def test_disabled(self):
         with self._make_config() as config:
             config.registry.settings['web'] = {'enabled': 'false'}
-            self.assertFalse(configure_content(config))
+            assert not configure_content(config)
 
 
-class TestContentViews(TestCase):
+class TestContentViews(object):
 
     @contextmanager
     def _make_view(self):
@@ -60,7 +59,7 @@ class TestContentViews(TestCase):
 
     def test_base_template(self):
         with self._make_view() as view:
-            self.assertEqual(view.base_template.__class__, Macro)
+            assert view.base_template.__class__ is Macro
 
     def test_homepage(self):
         tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
@@ -71,34 +70,32 @@ class TestContentViews(TestCase):
             map_config['map_tiles_url'] = tiles_url
             result = view.homepage_view()
 
-        self.assertEqual(result['page_title'], 'Overview')
-        self.assertEqual(
-            result['map_image_url'],
-            tiles_url.format(z=0, x=0, y='0@2x'))
-        self.assertEqual(
-            result['map_image_base_url'],
-            ('http://a.tiles.mapbox.com/v4/base.map/'
-             '0/0/0@2x.png?access_token=pk.123456'))
+        assert result['page_title'] == 'Overview'
+        assert (result['map_image_url'] ==
+                tiles_url.format(z=0, x=0, y='0@2x'))
+        assert (result['map_image_base_url'] ==
+                ('http://a.tiles.mapbox.com/v4/base.map/'
+                 '0/0/0@2x.png?access_token=pk.123456'))
 
     def test_api(self):
         with self._make_view() as view:
             result = view.api_view()
-        self.assertTrue('API' in result['page_title'])
+        assert 'API' in result['page_title']
 
     def test_apps(self):
         with self._make_view() as view:
             result = view.apps_view()
-        self.assertTrue('App' in result['page_title'])
+        assert 'App' in result['page_title']
 
     def test_optout(self):
         with self._make_view() as view:
             result = view.optout_view()
-        self.assertTrue('Opt' in result['page_title'])
+        assert 'Opt' in result['page_title']
 
     def test_privacy(self):
         with self._make_view() as view:
             result = view.privacy_view()
-        self.assertTrue('Privacy' in result['page_title'])
+        assert 'Privacy' in result['page_title']
 
     def test_map(self):
         tiles_url = 'http://127.0.0.1:7001/static/'
@@ -110,11 +107,11 @@ class TestContentViews(TestCase):
             map_config['map_token'] = 'pk.123456'
             result = view.map_view()
 
-        self.assertEqual(result['page_title'], 'Map')
-        self.assertEqual(result['map_id_base'], 'base.map')
-        self.assertEqual(result['map_id_labels'], 'labels.map')
-        self.assertEqual(result['map_tiles_url'], tiles_url)
-        self.assertEqual(result['map_token'], 'pk.123456')
+        assert result['page_title'] == 'Map'
+        assert result['map_id_base'] == 'base.map'
+        assert result['map_id_labels'] == 'labels.map'
+        assert result['map_tiles_url'] == tiles_url
+        assert result['map_token'] == 'pk.123456'
 
 
 class TestFunctionalContent(AppTestCase):
@@ -137,12 +134,12 @@ class TestFunctionalContent(AppTestCase):
 
     def test_csp(self):
         result = self.app.get('/', status=200)
-        self.assertTrue('Content-Security-Policy' in result.headers)
+        assert 'Content-Security-Policy' in result.headers
         csp = result.headers['Content-Security-Policy']
         # make sure CSP_BASE interpolation worked
-        self.assertTrue("'self'" in csp)
+        assert "'self'" in csp
         # make sure map assets url interpolation worked
-        self.assertTrue('127.0.0.1:7001' in csp)
+        assert '127.0.0.1:7001' in csp
 
     def test_downloads(self):
         mock_conn = MagicMock(name='conn')
@@ -165,17 +162,17 @@ class TestFunctionalContent(AppTestCase):
         ]
         with patch.object(boto, 'connect_s3', mock_conn):
             result = self.app.get('/downloads', status=200)
-            self.assertFalse('0kB' in result.text)
-            self.assertTrue('1kB' in result.text)
-            self.assertTrue('8kB' in result.text)
+            assert '0kB' not in result.text
+            assert '1kB' in result.text
+            assert '8kB' in result.text
 
         # calling the page again should use the cache
         with patch.object(boto, 'connect_s3', mock_conn):
             result = self.app.get('/downloads', status=200)
-            self.assertTrue('1kB' in result.text)
+            assert '1kB' in result.text
 
         # The mock / S3 API was only called once
-        self.assertEqual(len(mock_bucket.list.mock_calls), 1)
+        assert len(mock_bucket.list.mock_calls) == 1
 
     def test_favicon(self):
         self.app.get('/favicon.ico', status=200)
@@ -187,11 +184,11 @@ class TestFunctionalContent(AppTestCase):
 
     def test_hsts_header(self):
         result = self.app.get('/', status=200)
-        self.assertTrue('Strict-Transport-Security' in result.headers)
+        assert 'Strict-Transport-Security' in result.headers
 
     def test_frame_options_header(self):
         result = self.app.get('/', status=200)
-        self.assertTrue('X-Frame-Options' in result.headers)
+        assert 'X-Frame-Options' in result.headers
 
     def test_not_found(self):
         self.app.get('/nobody-is-home', status=404)
@@ -207,8 +204,8 @@ class TestFunctionalContent(AppTestCase):
 
     def test_map_json(self):
         result = self.app.get('/map.json', status=200)
-        self.assertEqual(
-            result.json['tiles_url'], 'http://127.0.0.1:7001/static/tiles/')
+        assert (result.json['tiles_url'] ==
+                'http://127.0.0.1:7001/static/tiles/')
 
     def test_stats_regions(self):
         self.app.get('/stats/regions', status=200)
@@ -220,14 +217,14 @@ class TestFunctionalContent(AppTestCase):
             Stat(key=StatKey.unique_blue, time=today, value=2))
         self.session.commit()
         result = self.app.get('/stats_blue.json', status=200)
-        self.assertEqual(
-            result.json, {'series': [
+        assert (result.json == {
+            'series': [
                 {'data': [[first_of_month, 2]],
                  'title': 'MLS Bluetooth'},
             ]}
         )
         second_result = self.app.get('/stats_blue.json', status=200)
-        self.assertEqual(second_result.json, result.json)
+        assert second_result.json == result.json
 
     def test_stats_cell_json(self):
         today = util.utcnow().date()
@@ -238,8 +235,8 @@ class TestFunctionalContent(AppTestCase):
             Stat(key=StatKey.unique_cell_ocid, time=today, value=5))
         self.session.commit()
         result = self.app.get('/stats_cell.json', status=200)
-        self.assertEqual(
-            result.json, {'series': [
+        assert (result.json == {
+            'series': [
                 {'data': [[first_of_month, 2]],
                  'title': 'MLS Cells'},
                 {'data': [[first_of_month, 5]],
@@ -247,7 +244,7 @@ class TestFunctionalContent(AppTestCase):
             ]}
         )
         second_result = self.app.get('/stats_cell.json', status=200)
-        self.assertEqual(second_result.json, result.json)
+        assert second_result.json == result.json
 
     def test_stats_wifi_json(self):
         today = util.utcnow().date()
@@ -256,14 +253,14 @@ class TestFunctionalContent(AppTestCase):
             Stat(key=StatKey.unique_wifi, time=today, value=2))
         self.session.commit()
         result = self.app.get('/stats_wifi.json', status=200)
-        self.assertEqual(
-            result.json, {'series': [
+        assert (result.json == {
+            'series': [
                 {'data': [[first_of_month, 2]],
                  'title': 'MLS WiFi'},
             ]}
         )
         second_result = self.app.get('/stats_wifi.json', status=200)
-        self.assertEqual(second_result.json, result.json)
+        assert second_result.json == result.json
 
 
 class TestFunctionalContentViews(AppTestCase):
@@ -293,34 +290,32 @@ class TestFunctionalContentViews(AppTestCase):
         with self._make_view(request) as view:
             result = view.stats_view()
 
-        self.assertEqual(result['page_title'], 'Statistics')
-        self.assertEqual(
-            result['metrics1'], [
-                {'name': 'Bluetooth Networks', 'value': '1.50'},
-                {'name': 'Bluetooth Observations', 'value': '2.20'},
-                {'name': 'Wifi Networks', 'value': '2.00'},
-                {'name': 'Wifi Observations', 'value': '2.00'},
-            ])
-        self.assertEqual(
-            result['metrics2'], [
-                {'name': 'MLS Cells', 'value': '1.00'},
-                {'name': 'MLS Cell Observations', 'value': '2.00'},
-                {'name': 'OpenCellID Cells', 'value': '1.50'},
-            ])
+        assert result['page_title'] == 'Statistics'
+        assert (result['metrics1'] == [
+            {'name': 'Bluetooth Networks', 'value': '1.50'},
+            {'name': 'Bluetooth Observations', 'value': '2.20'},
+            {'name': 'Wifi Networks', 'value': '2.00'},
+            {'name': 'Wifi Observations', 'value': '2.00'},
+        ])
+        assert (result['metrics2'] == [
+            {'name': 'MLS Cells', 'value': '1.00'},
+            {'name': 'MLS Cell Observations', 'value': '2.00'},
+            {'name': 'OpenCellID Cells', 'value': '1.50'},
+        ])
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         with self._make_view(request) as view:
             request.db_ro_session = None
             second_result = view.stats_view()
-        self.assertEqual(second_result, result)
+        assert second_result == result
 
     def test_stats_regions(self):
         request = DummyRequest()
         with self._make_view(request) as view:
             result = view.stats_regions_view()
 
-        self.assertEqual(result['page_title'], 'Region Statistics')
+        assert result['page_title'] == 'Region Statistics'
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
@@ -328,4 +323,4 @@ class TestFunctionalContentViews(AppTestCase):
         with self._make_view(request) as view:
             request.db_ro_session = None
             second_result = view.stats_regions_view()
-        self.assertEqual(second_result, result)
+        assert second_result == result

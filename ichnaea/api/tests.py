@@ -2,21 +2,15 @@ import time
 
 import colander
 from pyramid.request import Request
-import pytest
 
 from ichnaea.api import exceptions as api_exceptions
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.api.schema import RenamingMapping
-from ichnaea.tests.base import (
-    LogTestCase,
-    TestCase,
-)
 
 
-class TestRenamingMapping(TestCase):
+class TestRenamingMapping(object):
 
     def test_to_name(self):
-
         class SampleSchema(colander.MappingSchema):
             schema_type = RenamingMapping
 
@@ -33,87 +27,86 @@ class TestRenamingMapping(TestCase):
         }
 
         output_data = SampleSchema().deserialize(input_data)
-        self.assertEqual(output_data['output_name'], 'foo')
-        self.assertEqual(output_data['name'], 'bar')
-        self.assertFalse('input_name' in output_data)
+        assert output_data['output_name'] == 'foo'
+        assert output_data['name'] == 'bar'
+        assert 'input_name' not in output_data
 
 
-class TestExceptions(TestCase):
+class TestExceptions(object):
 
     def _check(self, error, status,
                json=True, content_type='application/json'):
         response = Request.blank('/').get_response(error())
-        self.assertEqual(response.content_type, content_type)
-        self.assertEqual(response.status_code, status)
+        assert response.content_type == content_type
+        assert response.status_code == status
         if json:
-            self.assertEqual(response.json, error.json_body())
+            assert response.json == error.json_body()
         return response
 
     def test_str(self):
         error = api_exceptions.LocationNotFound
-        self.assertEqual(str(error()), '<LocationNotFound>: 404')
+        assert str(error()) == '<LocationNotFound>: 404'
 
     def test_daily_limit(self):
         error = api_exceptions.DailyLimitExceeded
         response = self._check(error, 403)
-        self.assertTrue('dailyLimitExceeded' in response.text)
+        assert 'dailyLimitExceeded' in response.text
 
     def test_invalid_apikey(self):
         error = api_exceptions.InvalidAPIKey
         response = self._check(error, 400)
-        self.assertTrue('keyInvalid' in response.text)
+        assert 'keyInvalid' in response.text
 
     def test_location_not_found(self):
         error = api_exceptions.LocationNotFound
         response = self._check(error, 404)
-        self.assertTrue('notFound' in response.text)
+        assert 'notFound' in response.text
 
     def test_location_not_found_v0(self):
         error = api_exceptions.LocationNotFoundV0
         response = self._check(error, 200)
-        self.assertEqual(response.json, {'status': 'not_found'})
+        assert response.json == {'status': 'not_found'}
 
     def test_parse_error(self):
         error = api_exceptions.ParseError
         response = self._check(error, 400)
-        self.assertTrue('parseError' in response.text)
+        assert 'parseError' in response.text
 
 
-@pytest.mark.usefixtures('redis')
-class TestLimiter(LogTestCase):
+class TestLimiter(object):
 
-    def test_limiter_maxrequests(self):
+    def test_limiter_maxrequests(self, redis):
         rate_key = 'apilimit:key_a:v1.geolocate:20150101'
         maxreq = 5
         expire = 1
         for i in range(maxreq):
-            self.assertFalse(rate_limit_exceeded(
-                self.redis_client,
+            assert not rate_limit_exceeded(
+                redis,
                 rate_key,
                 maxreq=maxreq,
                 expire=expire,
-            ))
-        self.assertTrue(rate_limit_exceeded(
-            self.redis_client,
+            )
+        assert rate_limit_exceeded(
+            redis,
             rate_key,
             maxreq=maxreq,
             expire=expire,
-        ))
+        )
 
-    def test_limiter_expiry(self):
+    def test_limiter_expiry(self, redis):
         rate_key = 'apilimit:key_a:v1.geolocate:20150101'
         maxreq = 100
         expire = 1
-        self.assertFalse(rate_limit_exceeded(
-            self.redis_client,
+        assert not rate_limit_exceeded(
+            redis,
             rate_key,
             maxreq=maxreq,
             expire=expire,
-        ))
-        time.sleep(1)
-        self.assertFalse(rate_limit_exceeded(
-            self.redis_client,
+        )
+        time.sleep(1.0)
+        assert not rate_limit_exceeded(
+            redis,
             rate_key,
             maxreq=maxreq,
             expire=expire,
-        ))
+        )

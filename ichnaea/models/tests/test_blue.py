@@ -1,6 +1,5 @@
-from sqlalchemy.exc import (
-    SQLAlchemyError,
-)
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
 
 from ichnaea.models import (
     encode_mac,
@@ -22,22 +21,22 @@ from ichnaea import util
 class TestBlueShard(DBTestCase):
 
     def test_shard_id(self):
-        self.assertEqual(BlueShard.shard_id('111101123456'), '0')
-        self.assertEqual(BlueShard.shard_id('0000f0123456'), 'f')
-        self.assertEqual(BlueShard.shard_id(''), None)
-        self.assertEqual(BlueShard.shard_id(None), None)
+        assert BlueShard.shard_id('111101123456') == '0'
+        assert BlueShard.shard_id('0000f0123456') == 'f'
+        assert BlueShard.shard_id('') is None
+        assert BlueShard.shard_id(None) is None
 
         mac = encode_mac('0000f0123456')
-        self.assertEqual(BlueShard.shard_id(mac), 'f')
+        assert BlueShard.shard_id(mac) == 'f'
 
     def test_shard_model(self):
-        self.assertIs(BlueShard.shard_model('111101123456'), BlueShard0)
-        self.assertIs(BlueShard.shard_model('0000f0123456'), BlueShardF)
-        self.assertIs(BlueShard.shard_model(''), None)
-        self.assertIs(BlueShard.shard_model(None), None)
+        assert BlueShard.shard_model('111101123456') is BlueShard0
+        assert BlueShard.shard_model('0000f0123456') is BlueShardF
+        assert BlueShard.shard_model('') is None
+        assert BlueShard.shard_model(None) is None
 
         mac = encode_mac('0000f0123456')
-        self.assertEqual(BlueShard.shard_model(mac), BlueShardF)
+        assert BlueShard.shard_model(mac) is BlueShardF
 
     def test_init(self):
         blue = BlueShard0(mac='111101123456')
@@ -46,18 +45,18 @@ class TestBlueShard(DBTestCase):
 
         blues = (self.session.query(BlueShard0)
                              .filter(BlueShard0.mac == '111101123456')).all()
-        self.assertEqual(blues[0].mac, '111101123456')
+        assert blues[0].mac == '111101123456'
 
     def test_init_empty(self):
         blue = BlueShard0()
         self.session.add(blue)
-        with self.assertRaises(SQLAlchemyError):
+        with pytest.raises(SQLAlchemyError):
             self.session.flush()
 
     def test_init_fail(self):
         blue = BlueShard0(mac='abc')
         self.session.add(blue)
-        with self.assertRaises(SQLAlchemyError):
+        with pytest.raises(SQLAlchemyError):
             self.session.flush()
 
     def test_fields(self):
@@ -75,38 +74,38 @@ class TestBlueShard(DBTestCase):
         self.session.flush()
 
         blue = self.session.query(BlueShard0).first()
-        self.assertEqual(blue.mac, '111101123456')
-        self.assertEqual(blue.created, now)
-        self.assertEqual(blue.modified, now)
-        self.assertEqual(blue.lat, GB_LAT)
-        self.assertEqual(blue.max_lat, GB_LAT)
-        self.assertEqual(blue.min_lat, GB_LAT)
-        self.assertEqual(blue.lon, GB_LON)
-        self.assertEqual(blue.max_lon, GB_LON)
-        self.assertEqual(blue.min_lon, GB_LON)
-        self.assertEqual(blue.radius, 200)
-        self.assertEqual(blue.region, 'GB')
-        self.assertEqual(blue.samples, 10)
-        self.assertEqual(blue.source, ReportSource.gnss)
-        self.assertEqual(blue.weight, 1.5)
-        self.assertEqual(blue.last_seen, today)
-        self.assertEqual(blue.block_first, today)
-        self.assertEqual(blue.block_last, today)
-        self.assertEqual(blue.block_count, 1)
+        assert blue.mac == '111101123456'
+        assert blue.created == now
+        assert blue.modified == now
+        assert blue.lat == GB_LAT
+        assert blue.max_lat == GB_LAT
+        assert blue.min_lat == GB_LAT
+        assert blue.lon == GB_LON
+        assert blue.max_lon == GB_LON
+        assert blue.min_lon == GB_LON
+        assert blue.radius == 200
+        assert blue.region == 'GB'
+        assert blue.samples == 10
+        assert blue.source == ReportSource.gnss
+        assert blue.weight == 1.5
+        assert blue.last_seen == today
+        assert blue.block_first == today
+        assert blue.block_last == today
+        assert blue.block_count == 1
 
     def test_mac_unhex(self):
         stmt = 'insert into blue_shard_0 (mac) values (unhex("111101123456"))'
         self.session.execute(stmt)
         self.session.flush()
         blue = self.session.query(BlueShard0).one()
-        self.assertEqual(blue.mac, '111101123456')
+        assert blue.mac == '111101123456'
 
     def test_mac_hex(self):
         self.session.add(BlueShard0(mac='111101123456'))
         self.session.flush()
         stmt = 'select hex(`mac`) from blue_shard_0'
         row = self.session.execute(stmt).fetchone()
-        self.assertEqual(row, ('111101123456', ))
+        assert row == ('111101123456', )
 
     def test_score(self):
         now = util.utcnow()
@@ -114,4 +113,4 @@ class TestBlueShard(DBTestCase):
             mac='111101123456', created=now, modified=now,
             radius=10, samples=2,
         )
-        self.assertAlmostEqual(blue.score(now), 0.1, 2)
+        assert round(blue.score(now), 2) == 0.1

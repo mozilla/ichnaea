@@ -135,18 +135,17 @@ class BaseSourceTest(ConnectionTestCase):
     def check_should_search(self, query, should, results=None):
         if results is None:
             results = self.source.result_list()
-        self.assertIs(self.source.should_search(query, results), should)
+        assert self.source.should_search(query, results) is should
 
     def check_model_results(self, results, models, **kw):
         type_ = self.TestSource.result_type
 
         if not models:
-            self.assertEqual(len(results), 0)
+            assert len(results) == 0
             return
 
         expected = []
         if type_ is Position:
-            check_func = self.assertAlmostEqual
             for model in models:
                 expected.append({
                     'lat': kw.get('lat', model.lat),
@@ -160,7 +159,6 @@ class BaseSourceTest(ConnectionTestCase):
             results = sorted(results, key=operator.attrgetter('lat', 'lon'))
 
         elif type_ is Region:
-            check_func = self.assertEqual
             for model in models:
                 expected.append({
                     'region_code': model.code,
@@ -171,9 +169,9 @@ class BaseSourceTest(ConnectionTestCase):
             results = sorted(results, key=operator.attrgetter('region_code'))
 
         for expect, result in zip(expected, results):
-            self.assertEqual(type(result), type_)
+            assert type(result) is type_
             for key, value in expect.items():
-                check_func(getattr(result, key), value)
+                assert getattr(result, key) == value
 
 
 class BaseLocateTest(object):
@@ -221,23 +219,23 @@ class BaseLocateTest(object):
                         **kw)
 
     def check_queue(self, num):
-        self.assertEqual(self.queue.size(), num)
+        assert self.queue.size() == num
 
     def check_response(self, response, status):
-        self.assertEqual(response.content_type, 'application/json')
-        self.assertEqual(response.charset, 'UTF-8')
-        self.assertEqual(response.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(response.headers['Access-Control-Max-Age'], '2592000')
+        assert response.content_type == 'application/json'
+        assert response.charset == 'UTF-8'
+        assert response.headers['Access-Control-Allow-Origin'] == '*'
+        assert response.headers['Access-Control-Max-Age'] == '2592000'
         if status == 'ok':
-            self.assertEqual(response.json, self.ip_response)
+            assert response.json == self.ip_response
         elif status == 'invalid_key':
-            self.assertEqual(response.json, InvalidAPIKey.json_body())
+            assert response.json == InvalidAPIKey.json_body()
         elif status == 'not_found':
-            self.assertEqual(response.json, self.not_found.json_body())
+            assert response.json == self.not_found.json_body()
         elif status == 'parse_error':
-            self.assertEqual(response.json, ParseError.json_body())
+            assert response.json == ParseError.json_body()
         elif status == 'limit_exceeded':
-            self.assertEqual(response.json, DailyLimitExceeded.json_body())
+            assert response.json == DailyLimitExceeded.json_body()
         if status != 'ok':
             self.check_queue(0)
 
@@ -259,8 +257,8 @@ class BaseLocateTest(object):
         if fallback is not None:
             expected_names = set(expected_names).union(set(['fallback']))
 
-        self.assertEqual(response.content_type, 'application/json')
-        self.assertEqual(set(response.json.keys()), expected_names)
+        assert response.content_type == 'application/json'
+        assert set(response.json.keys()) == expected_names
 
         return expected
 
@@ -312,8 +310,8 @@ class CommonLocateTest(BaseLocateTest):
 
     def test_options(self):
         res = self._call(method='options', status=200)
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
 
     def test_unsupported_methods(self):
         self._call(method='delete', status=405)
@@ -328,12 +326,11 @@ class CommonLocateTest(BaseLocateTest):
             # ensure that a apiuser hyperloglog entry was added for today
             today = util.utcnow().date().strftime('%Y-%m-%d')
             expected = 'apiuser:%s:test:%s' % (self.metric_type, today)
-            self.assertEqual(
-                [key.decode('ascii') for key in self.redis_client.keys(
-                    'apiuser:*')], [expected])
+            assert ([key.decode('ascii') for key in self.redis_client.keys(
+                     'apiuser:*')] == [expected])
             # check that the ttl was set
             ttl = self.redis_client.ttl(expected)
-            self.assertTrue(7 * 24 * 3600 < ttl <= 8 * 24 * 3600)
+            assert 7 * 24 * 3600 < ttl <= 8 * 24 * 3600
 
     def test_empty_json(self):
         res = self._call(ip=self.test_ip, status=200)
@@ -381,7 +378,7 @@ class CommonLocateTest(BaseLocateTest):
             (self.metric_type + '.request',
                 [self.metric_path, 'key:none']),
         ])
-        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+        assert self.redis_client.keys('apiuser:*') == []
 
     def test_invalid_api_key(self, status=400, response='invalid_key'):
         res = self._call(api_key='invalid_key', ip=self.test_ip, status=status)
@@ -390,7 +387,7 @@ class CommonLocateTest(BaseLocateTest):
             (self.metric_type + '.request',
                 [self.metric_path, 'key:none']),
         ])
-        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+        assert self.redis_client.keys('apiuser:*') == []
 
     def test_unknown_api_key(self, status=400,
                              response='invalid_key', metric_key='invalid'):
@@ -400,7 +397,7 @@ class CommonLocateTest(BaseLocateTest):
             (self.metric_type + '.request',
                 [self.metric_path, 'key:' + metric_key]),
         ])
-        self.assertEqual(self.redis_client.keys('apiuser:*'), [])
+        assert self.redis_client.keys('apiuser:*') == []
 
     def test_gzip(self):
         wifis = WifiShardFactory.build_batch(2)
@@ -643,9 +640,9 @@ class CommonPositionTest(BaseLocateTest):
             res = self._call(body=query)
 
             send_json = mock.request_history[0].json()
-            self.assertEqual(len(send_json['cellTowers']), 2)
-            self.assertEqual(len(send_json['wifiAccessPoints']), 3)
-            self.assertEqual(send_json['cellTowers'][0]['radioType'], 'wcdma')
+            assert len(send_json['cellTowers']) == 2
+            assert len(send_json['wifiAccessPoints']) == 3
+            assert send_json['cellTowers'][0]['radioType'] == 'wcdma'
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         self.check_stats(counter=[
@@ -689,8 +686,8 @@ class CommonPositionTest(BaseLocateTest):
             res = self._call(body=query, ip=self.test_ip)
 
             send_json = mock.request_history[0].json()
-            self.assertEqual(len(send_json['cellTowers']), 2)
-            self.assertEqual(len(send_json['wifiAccessPoints']), 3)
+            assert len(send_json['cellTowers']) == 2
+            assert len(send_json['wifiAccessPoints']) == 3
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         self.check_stats(counter=[
@@ -715,7 +712,7 @@ class CommonPositionTest(BaseLocateTest):
         self.check_model_response(res, cell)
         middle = '1.1001,' in res.text
         end = '1.1001}' in res.text
-        self.assertTrue(middle or end, res.text)
+        assert middle or end
 
 
 class CommonLocateErrorTest(BaseLocateTest):

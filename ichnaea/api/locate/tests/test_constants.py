@@ -1,47 +1,48 @@
+import pytest
+
 from ichnaea.api.locate.constants import DataAccuracy
-from ichnaea.tests.base import TestCase
 
 
-class DataAccuracyTest(TestCase):
+class TestDataAccuracy(object):
 
     def test_compare(self):
-        self.assertTrue(DataAccuracy.high < DataAccuracy.medium)
-        self.assertTrue(DataAccuracy.high < DataAccuracy.low)
-        self.assertTrue(DataAccuracy.medium < DataAccuracy.low)
-        self.assertTrue(DataAccuracy.medium != DataAccuracy.high)
-        self.assertTrue(DataAccuracy.low == DataAccuracy.low)
-        self.assertTrue(DataAccuracy.low < DataAccuracy.none)
-        self.assertFalse(DataAccuracy.none == 'ab')
+        assert DataAccuracy.high < DataAccuracy.medium
+        assert DataAccuracy.high < DataAccuracy.low
+        assert DataAccuracy.medium < DataAccuracy.low
+        assert DataAccuracy.medium != DataAccuracy.high
+        assert DataAccuracy.low == DataAccuracy.low
+        assert DataAccuracy.low < DataAccuracy.none
+        assert not DataAccuracy.none == 'ab'
 
     def test_compare_number(self):
-        self.assertTrue(DataAccuracy.none == float('inf'))
-        self.assertTrue(DataAccuracy.low > 50000)
-        self.assertTrue(DataAccuracy.low > 50000.0)
-        self.assertTrue(DataAccuracy.medium == 50000)
-        self.assertTrue(DataAccuracy.medium >= 50000.0)
-        self.assertTrue(DataAccuracy.medium <= 50000)
-        self.assertFalse(DataAccuracy.medium != 50000.0)
-        self.assertTrue(500.0 <= DataAccuracy.high)
-        self.assertFalse(500.1 <= DataAccuracy.high)
+        assert DataAccuracy.none == float('inf')
+        assert DataAccuracy.low > 50000
+        assert DataAccuracy.low > 50000.0
+        assert DataAccuracy.medium == 50000
+        assert DataAccuracy.medium >= 50000.0
+        assert DataAccuracy.medium <= 50000
+        assert not DataAccuracy.medium != 50000.0
+        assert 500.0 <= DataAccuracy.high
+        assert 500.1 > DataAccuracy.high
 
     def test_uncomparable(self):
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             DataAccuracy.low < object()
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             DataAccuracy.low >= 'ab'
-        with self.assertRaises(TypeError):
+        with pytest.raises(TypeError):
             DataAccuracy.low > DataAccuracy
 
     def test_from_number(self):
-        self.assertEqual(DataAccuracy.from_number(1), DataAccuracy.high)
-        self.assertEqual(DataAccuracy.from_number(-0.1), DataAccuracy.high)
-        self.assertEqual(DataAccuracy.from_number(500), DataAccuracy.high)
-        self.assertEqual(DataAccuracy.from_number(500.1), DataAccuracy.medium)
-        self.assertEqual(DataAccuracy.from_number(10 ** 5), DataAccuracy.low)
-        self.assertEqual(DataAccuracy.from_number(10 ** 9), DataAccuracy.none)
-        with self.assertRaises(TypeError):
+        assert DataAccuracy.from_number(1) == DataAccuracy.high
+        assert DataAccuracy.from_number(-0.1) == DataAccuracy.high
+        assert DataAccuracy.from_number(500) == DataAccuracy.high
+        assert DataAccuracy.from_number(500.1) == DataAccuracy.medium
+        assert DataAccuracy.from_number(10 ** 5) == DataAccuracy.low
+        assert DataAccuracy.from_number(10 ** 9) == DataAccuracy.none
+        with pytest.raises(TypeError):
             DataAccuracy.from_number(None)
-        with self.assertRaises(ValueError):
+        with pytest.raises(ValueError):
             DataAccuracy.from_number('ab')
 
     def test_hash(self):
@@ -51,5 +52,4 @@ class DataAccuracyTest(TestCase):
             DataAccuracy.medium: 2,
             DataAccuracy.high: 3,
         }
-        self.assertEqual(set(accuracies.values()),
-                         set([0, 1, 2, 3]))
+        assert set(accuracies.values()) == set([0, 1, 2, 3])

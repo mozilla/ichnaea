@@ -42,9 +42,9 @@ class RegionBase(BaseLocateTest, AppTestCase):
             **kw)
 
         data = response.json
-        self.assertEqual(data['country_code'], expected['region'])
+        assert data['country_code'] == expected['region']
         if fallback is not None:
-            self.assertEqual(data['fallback'], fallback)
+            assert data['fallback'] == fallback
 
 
 class TestView(RegionBase, CommonLocateTest):
@@ -54,8 +54,8 @@ class TestView(RegionBase, CommonLocateTest):
     def test_geoip(self):
         res = self._call(ip=self.test_ip)
         self.check_response(res, 'ok')
-        self.assertEqual(res.headers['Access-Control-Allow-Origin'], '*')
-        self.assertEqual(res.headers['Access-Control-Max-Age'], '2592000')
+        assert res.headers['Access-Control-Allow-Origin'] == '*'
+        assert res.headers['Access-Control-Max-Age'] == '2592000'
         self.check_db_calls(rw=0, ro=0)
         self.check_stats(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),

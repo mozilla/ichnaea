@@ -1,16 +1,14 @@
 from datetime import datetime
 
 import colander
+import pytest
 import pytz
 
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.models import Radio
-from ichnaea.tests.base import (
-    CeleryAppTestCase,
-    TestCase,
-)
+from ichnaea.tests.base import CeleryAppTestCase
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
@@ -19,69 +17,66 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class TestSubmitSchema(TestCase):
-
-    schema = SUBMIT_V0_SCHEMA
+class TestSubmitSchema(object):
 
     def test_empty(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize({})
+        with pytest.raises(colander.Invalid):
+            SUBMIT_V0_SCHEMA.deserialize({})
 
     def test_empty_blue_entry(self):
         blue = BlueShardFactory.build()
-        data = self.schema.deserialize({'items': [
+        data = SUBMIT_V0_SCHEMA.deserialize({'items': [
             {'lat': blue.lat, 'lon': blue.lon, 'blue': [{}]},
         ]})
-        self.assertEqual(data, {'items': []})
+        assert data == {'items': []}
 
     def test_cell_radio(self):
         cell = CellShardFactory.build()
-        data = self.schema.deserialize({'items': [
+        data = SUBMIT_V0_SCHEMA.deserialize({'items': [
             {'lat': cell.lat, 'lon': cell.lon, 'cell': [{
                 'radio': 'UMTS', 'mcc': cell.mcc, 'mnc': cell.mnc,
                 'lac': cell.lac, 'cid': cell.cid,
             }]}
         ]})
-        self.assertEqual(
-            data['items'][0]['cellTowers'][0]['radioType'], 'wcdma')
+        assert data['items'][0]['cellTowers'][0]['radioType'] == 'wcdma'
 
         cell = CellShardFactory.build()
-        data = self.schema.deserialize({'items': [
+        data = SUBMIT_V0_SCHEMA.deserialize({'items': [
             {'lat': cell.lat, 'lon': cell.lon, 'cell': [{
                 'radio': 'foo', 'mcc': cell.mcc, 'mnc': cell.mnc,
                 'lac': cell.lac, 'cid': cell.cid,
             }]}
         ]})
-        self.assertTrue('radioType' not in data['items'][0]['cellTowers'][0])
+        assert 'radioType' not in data['items'][0]['cellTowers'][0]
 
     def test_empty_wifi_entry(self):
         wifi = WifiShardFactory.build()
-        data = self.schema.deserialize({'items': [
+        data = SUBMIT_V0_SCHEMA.deserialize({'items': [
             {'lat': wifi.lat, 'lon': wifi.lon, 'wifi': [{}]},
         ]})
-        self.assertEqual(data, {'items': []})
+        assert data == {'items': []}
 
     def test_minimal(self):
         wifi = WifiShardFactory.build()
-        data = self.schema.deserialize(
+        data = SUBMIT_V0_SCHEMA.deserialize(
             {'items': [{'lat': wifi.lat, 'lon': wifi.lon,
                         'wifi': [{'key': 'ab'}]}]})
-        self.assertTrue('items' in data)
-        self.assertEqual(len(data['items']), 1)
+        assert 'items' in data
+        assert len(data['items']) == 1
 
     def test_timestamp(self):
         wifi = WifiShardFactory.build()
 
-        data = self.schema.deserialize(
+        data = SUBMIT_V0_SCHEMA.deserialize(
             {'items': [{'time': '2016-04-07T03:33:20',
                         'wifi': [{'key': wifi.mac}]}]})
-        self.assertEqual(data['items'][0]['timestamp'], 146 * 10 ** 10)
+        assert data['items'][0]['timestamp'] == 146 * 10 ** 10
 
-        data = self.schema.deserialize(
+        data = SUBMIT_V0_SCHEMA.deserialize(
             {'items': [{'time': '1710-02-28',
                         'wifi': [{'key': wifi.mac}]}]})
         # 1710 was discarded and replaced by 'now'
-        self.assertTrue(data['items'][0]['timestamp'] > 10 ** 12)
+        assert data['items'][0]['timestamp'] > 10 ** 12
 
 
 class TestView(BaseSubmitTest, CeleryAppTestCase):
@@ -114,22 +109,22 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'signal': -101,
             }]},
         ])
-        self.assertEqual(res.body, b'')
+        assert res.body == b''
 
-        self.assertEqual(self.queue.size(), 1)
+        assert self.queue.size() == 1
         item = self.queue.dequeue()[0]
-        self.assertEqual(item['api_key'], None)
+        assert item['api_key'] is None
         report = item['report']
         position = report['position']
-        self.assertEqual(position['latitude'], blue.lat)
-        self.assertEqual(position['longitude'], blue.lon)
-        self.assertFalse('source' in position)
+        assert position['latitude'] == blue.lat
+        assert position['longitude'] == blue.lon
+        assert 'source' not in position
         blues = item['report']['bluetoothBeacons']
-        self.assertEqual(len(blues), 1)
-        self.assertEqual(blues[0]['macAddress'], blue.mac)
-        self.assertEqual(blues[0]['age'], 3000),
-        self.assertEqual(blues[0]['name'], 'beacon'),
-        self.assertEqual(blues[0]['signalStrength'], -101),
+        assert len(blues) == 1
+        assert blues[0]['macAddress'] == blue.mac
+        assert blues[0]['age'] == 3000
+        assert blues[0]['name'] == 'beacon'
+        assert blues[0]['signalStrength'] == -101
 
     def test_cell(self):
         now = util.utcnow()
@@ -153,37 +148,37 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'age': 1000, 'asu': 3, 'psc': 7, 'serving': 1,
                 'signal': -85, 'ta': 2}],
         }], api_key='test')
-        self.assertEqual(res.body, b'')
+        assert res.body == b''
 
-        self.assertEqual(self.queue.size(), 1)
+        assert self.queue.size() == 1
         item = self.queue.dequeue()[0]
-        self.assertEqual(item['api_key'], 'test')
+        assert item['api_key'] == 'test'
         report = item['report']
         timestamp = datetime.utcfromtimestamp(report['timestamp'] / 1000.0)
         timestamp = timestamp.replace(microsecond=0, tzinfo=pytz.UTC)
-        self.assertEqual(timestamp, today)
+        assert timestamp == today
         position = report['position']
-        self.assertAlmostEqual(position['latitude'], cell.lat)
-        self.assertAlmostEqual(position['longitude'], cell.lon)
-        self.assertAlmostEqual(position['accuracy'], 10.6)
-        self.assertAlmostEqual(position['altitude'], 123.1)
-        self.assertAlmostEqual(position['altitudeAccuracy'], 7.0)
-        self.assertAlmostEqual(position['heading'], 45.2)
-        self.assertAlmostEqual(position['pressure'], 1020.23)
-        self.assertAlmostEqual(position['speed'], 3.6)
-        self.assertAlmostEqual(position['source'], 'gnss')
+        assert position['latitude'] == cell.lat
+        assert position['longitude'] == cell.lon
+        assert position['accuracy'] == 10.6
+        assert position['altitude'] == 123.1
+        assert position['altitudeAccuracy'] == 7.0
+        assert position['heading'] == 45.2
+        assert position['pressure'] == 1020.23
+        assert position['speed'] == 3.6
+        assert position['source'] == 'gnss'
         cells = report['cellTowers']
-        self.assertEqual(cells[0]['radioType'], 'wcdma')
-        self.assertEqual(cells[0]['mobileCountryCode'], cell.mcc)
-        self.assertEqual(cells[0]['mobileNetworkCode'], cell.mnc)
-        self.assertEqual(cells[0]['locationAreaCode'], cell.lac)
-        self.assertEqual(cells[0]['cellId'], cell.cid)
-        self.assertEqual(cells[0]['age'], 1000)
-        self.assertEqual(cells[0]['asu'], 3)
-        self.assertEqual(cells[0]['primaryScramblingCode'], 7)
-        self.assertEqual(cells[0]['serving'], 1)
-        self.assertEqual(cells[0]['signalStrength'], -85)
-        self.assertEqual(cells[0]['timingAdvance'], 2)
+        assert cells[0]['radioType'] == 'wcdma'
+        assert cells[0]['mobileCountryCode'] == cell.mcc
+        assert cells[0]['mobileNetworkCode'] == cell.mnc
+        assert cells[0]['locationAreaCode'] == cell.lac
+        assert cells[0]['cellId'] == cell.cid
+        assert cells[0]['age'] == 1000
+        assert cells[0]['asu'] == 3
+        assert cells[0]['primaryScramblingCode'] == 7
+        assert cells[0]['serving'] == 1
+        assert cells[0]['signalStrength'] == -85
+        assert cells[0]['timingAdvance'] == 2
 
     def test_wifi(self):
         wifi = WifiShardFactory.build()
@@ -202,25 +197,25 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                       }]
         }])
 
-        self.assertEqual(self.queue.size(), 1)
+        assert self.queue.size() == 1
         item = self.queue.dequeue()[0]
-        self.assertEqual(item['api_key'], None)
+        assert item['api_key'] is None
         report = item['report']
         position = report['position']
-        self.assertEqual(position['latitude'], wifi.lat)
-        self.assertEqual(position['longitude'], wifi.lon)
-        self.assertEqual(position['accuracy'], 17.1)
-        self.assertFalse('altitude' in position)
-        self.assertFalse('altitudeAccuracy' in position)
-        self.assertFalse('source' in position)
+        assert position['latitude'] == wifi.lat
+        assert position['longitude'] == wifi.lon
+        assert position['accuracy'] == 17.1
+        assert 'altitude' not in position
+        assert 'altitudeAccuracy' not in position
+        assert 'source' not in position
         wifis = report['wifiAccessPoints']
-        self.assertEqual(wifis[0]['macAddress'], wifi.mac.upper())
-        self.assertEqual(wifis[0]['age'], 2500)
-        self.assertEqual(wifis[0]['channel'], 1)
-        self.assertEqual(wifis[0]['frequency'], 2437)
-        self.assertEqual(wifis[0]['signalStrength'], -70)
-        self.assertEqual(wifis[0]['signalToNoiseRatio'], 5)
-        self.assertEqual(wifis[0]['ssid'], 'my-wifi')
+        assert wifis[0]['macAddress'] == wifi.mac.upper()
+        assert wifis[0]['age'] == 2500
+        assert wifis[0]['channel'] == 1
+        assert wifis[0]['frequency'] == 2437
+        assert wifis[0]['signalStrength'] == -70
+        assert wifis[0]['signalToNoiseRatio'] == 5
+        assert wifis[0]['ssid'] == 'my-wifi'
 
     def test_batches(self):
         batch = self.queue.batch + 10
@@ -233,7 +228,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         # add a bad one, this will just be skipped
         items.append({'lat': 10.0, 'lon': 10.0, 'whatever': 'xx'})
         self._post(items)
-        self.assertEqual(self.queue.size(), batch)
+        assert self.queue.size() == batch
 
     def test_error(self):
         wifi = WifiShardFactory.build()
@@ -241,7 +236,7 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             '/v1/submit',
             [{'lat': wifi.lat, 'lon': wifi.lon, 'cell': []}],
             status=400)
-        self.assertEqual(res.json, ParseError.json_body())
+        assert res.json == ParseError.json_body()
         self.check_raven(['ParseError'])
 
     def test_error_missing_latlon(self):
@@ -256,4 +251,4 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
              'accuracy': 16.0},
             {'wifi': [{'key': wifi.mac}]},
         ])
-        self.assertEqual(self.queue.size(), 3)
+        assert self.queue.size() == 3

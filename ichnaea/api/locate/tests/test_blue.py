@@ -44,4 +44,4 @@ class TestBlue(BaseSourceTest):
         query.blue[1].signalStrength = -90
         results = self.source.search(query)
         self.check_model_results(results, [blue], lon=blue.lon + 0.0000048)
-        self.assertTrue(results.best().score > 1.0)
+        assert results.best().score > 1.0

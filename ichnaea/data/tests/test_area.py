@@ -40,13 +40,13 @@ class BaseTest(object):
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
-        self.assertAlmostEqual(area.lat, cell.lat)
-        self.assertAlmostEqual(area.lon, cell.lon)
-        self.assertEqual(area.radius, 0)
-        self.assertEqual(area.region, 'GB')
-        self.assertEqual(area.avg_cell_radius, cell.radius)
-        self.assertEqual(area.num_cells, 1)
-        self.assertEqual(area.last_seen, cell.last_seen)
+        assert area.lat == cell.lat
+        assert area.lon == cell.lon
+        assert area.radius == 0
+        assert area.region == 'GB'
+        assert area.avg_cell_radius == cell.radius
+        assert area.num_cells == 1
+        assert area.last_seen == cell.last_seen
 
     def test_remove(self):
         area = self.area_factory()
@@ -55,7 +55,7 @@ class BaseTest(object):
         areaid = encode_cellarea(*area.areaid)
         self.area_queue.enqueue([areaid])
         self.task.delay().get()
-        self.assertEqual(self.session.query(self.area_model).count(), 0)
+        assert self.session.query(self.area_model).count() == 0
 
     def test_update(self):
         today = util.utcnow().date()
@@ -75,13 +75,13 @@ class BaseTest(object):
         self.task.delay().get()
 
         self.session.refresh(area)
-        self.assertAlmostEqual(area.lat, cell.lat)
-        self.assertAlmostEqual(area.lon, cell.lon)
-        self.assertEqual(area.radius, 0)
-        self.assertEqual(area.region, 'GB')
-        self.assertEqual(area.avg_cell_radius, 250)
-        self.assertEqual(area.num_cells, 2)
-        self.assertEqual(area.last_seen, today)
+        assert area.lat == cell.lat
+        assert area.lon == cell.lon
+        assert area.radius == 0
+        assert area.region == 'GB'
+        assert area.avg_cell_radius == 250
+        assert area.num_cells == 2
+        assert area.last_seen == today
 
     def test_update_incomplete_cell(self):
         area = self.area_factory(radius=500)
@@ -99,9 +99,9 @@ class BaseTest(object):
         self.task.delay().get()
 
         self.session.refresh(area)
-        self.assertAlmostEqual(area.lat, cell.lat - 0.0001)
-        self.assertAlmostEqual(area.lon, cell.lon)
-        self.assertEqual(area.num_cells, 2)
+        assert round(area.lat, 7) == round(cell.lat - 0.0001, 7)
+        assert round(area.lon, 7) == round(cell.lon, 7)
+        assert area.num_cells == 2
 
     def test_region(self):
         cell = self.cell_factory(
@@ -116,7 +116,7 @@ class BaseTest(object):
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
-        self.assertEqual(area.region, 'IL')
+        assert area.region == 'IL'
 
     def test_region_outside(self):
         cell = self.cell_factory(
@@ -134,7 +134,7 @@ class BaseTest(object):
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
-        self.assertEqual(area.region, 'PR')
+        assert area.region == 'PR'
 
     def test_region_outside_tie(self):
         cell = self.cell_factory(
@@ -149,7 +149,7 @@ class BaseTest(object):
         self.task.delay().get()
 
         area = self.session.query(self.area_model).one()
-        self.assertEqual(area.region, 'PR')
+        assert area.region == 'PR'
 
 
 class TestArea(BaseTest, CeleryTestCase):

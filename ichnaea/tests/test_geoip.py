@@ -6,7 +6,6 @@ from maxminddb.const import (
     MODE_AUTO,
     MODE_MMAP,
 )
-import pytest
 import six
 
 from ichnaea.geocode import GEOCODER
@@ -15,137 +14,127 @@ from ichnaea.tests.base import (
     GEOIP_BAD_FILE,
     GEOIP_DATA,
     GEOIP_TEST_FILE,
-    LogTestCase,
-    TestCase,
 )
 
 
-@pytest.mark.usefixtures('geoip_db')
-class TestDatabase(LogTestCase):
+class TestDatabase(object):
 
     @classmethod
-    def _open_db(cls, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):
+    def _open_db(cls, raven_client, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):
         return geoip.configure_geoip(
-            filename, mode=mode, raven_client=cls.raven_client)
+            filename, mode=mode, raven_client=raven_client)
 
-    def test_open(self):
-        self.assertIsInstance(self.geoip_db, geoip.GeoIPWrapper)
+    def test_open(self, geoip_db):
+        assert isinstance(geoip_db, geoip.GeoIPWrapper)
 
-    def test_age(self):
-        self.assertTrue(isinstance(self.geoip_db.age, int))
+    def test_age(self, geoip_db):
+        assert isinstance(geoip_db.age, int)
         # the test file is older than two months, but not more than 10 years
-        self.assertTrue(self.geoip_db.age > 60)
-        self.assertTrue(self.geoip_db.age < 3650)
+        assert geoip_db.age > 60
+        assert geoip_db.age < 3650
 
-    def test_c_extension(self):
-        self.assertTrue(self.geoip_db.check_extension(),
-                        'The C extension was not installed correctly.')
+    def test_c_extension(self, geoip_db):
+        assert geoip_db.check_extension()
 
-    def test_c_extension_warning(self):
-        with self._open_db(mode=MODE_MMAP) as db:
-            self.assertFalse(db.check_extension())
-        self.check_raven(['RuntimeError: Maxmind C extension not installed'])
+    def test_c_extension_warning(self, raven):
+        with self._open_db(raven, mode=MODE_MMAP) as db:
+            assert not db.check_extension()
+        raven.check(['RuntimeError: Maxmind C extension not installed'])
 
-    def test_no_file(self):
-        with self._open_db('') as db:
-            self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_raven(['OSError: No geoip filename specified.'])
+    def test_no_file(self, raven):
+        with self._open_db(raven, '') as db:
+            assert isinstance(db, geoip.GeoIPNull)
+        raven.check(['OSError: No geoip filename specified.'])
 
-    def test_open_missing_file(self):
+    def test_open_missing_file(self, raven):
         tmpdir = tempfile.mkdtemp()
         try:
             filename = os.path.join(tmpdir, 'not_there')
-            with self._open_db(filename) as db:
-                self.assertTrue(isinstance(db, geoip.GeoIPNull))
+            with self._open_db(raven, filename) as db:
+                assert isinstance(db, geoip.GeoIPNull)
         finally:
             shutil.rmtree(tmpdir)
         if six.PY2:
-            self.check_raven(['IOError: No such file or directory'])
+            raven.check(['IOError: No such file or directory'])
         else:
-            self.check_raven(['FileNotFoundError'])
+            raven.check(['FileNotFoundError'])
 
-    def test_open_invalid_file(self):
+    def test_open_invalid_file(self, raven):
         with tempfile.NamedTemporaryFile() as temp:
             temp.write(b'Bucephalus')
             temp.seek(0)
-            with self._open_db(temp.name) as db:
-                self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_raven(['InvalidDatabaseError: Error opening database file'])
+            with self._open_db(raven, temp.name) as db:
+                assert isinstance(db, geoip.GeoIPNull)
+        raven.check(['InvalidDatabaseError: Error opening database file'])
 
-    def test_open_wrong_file_type(self):
-        with self._open_db(GEOIP_BAD_FILE) as db:
-            self.assertTrue(isinstance(db, geoip.GeoIPNull))
-        self.check_raven(['InvalidDatabaseError: Invalid database type'])
+    def test_open_wrong_file_type(self, raven):
+        with self._open_db(raven, GEOIP_BAD_FILE) as db:
+            assert isinstance(db, geoip.GeoIPNull)
+        raven.check(['InvalidDatabaseError: Invalid database type'])
 
-    def test_regions(self):
+    def test_regions(self, geoip_db):
         valid_regions = GEOCODER.valid_regions
         mapped_regions = set([geoip.GEOIP_GENC_MAP.get(r, r)
                               for r in geoip.REGION_SCORE.keys()])
-        self.assertEqual(mapped_regions - valid_regions, set())
+        assert mapped_regions - valid_regions == set()
         for region in mapped_regions:
-            radius, region_radius = self.geoip_db.radius(
+            radius, region_radius = geoip_db.radius(
                 region, default=None)
-            self.assertNotEqual(radius, None, region)
-            self.assertNotEqual(region_radius, None, region)
+            assert radius is not None
+            assert region_radius is not None
 
 
-@pytest.mark.usefixtures('geoip_db')
-class TestLookup(TestCase):
+class TestLookup(object):
 
-    def test_city(self):
+    def test_city(self, geoip_db):
         london = GEOIP_DATA['London']
-        result = self.geoip_db.lookup(london['ip'])
+        result = geoip_db.lookup(london['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
-            self.assertAlmostEqual(london[name], result[name])
+            assert round(london[name], 7) == result[name]
         for name in ('region_code', 'region_name', 'city', 'score'):
-            self.assertEqual(london[name], result[name])
+            assert london[name] == result[name]
 
-    def test_region(self):
+    def test_region(self, geoip_db):
         bhutan = GEOIP_DATA['Bhutan']
-        result = self.geoip_db.lookup(bhutan['ip'])
+        result = geoip_db.lookup(bhutan['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
-            self.assertAlmostEqual(bhutan[name], result[name])
+            assert round(bhutan[name], 7) == result[name]
         for name in ('region_code', 'region_name', 'city', 'score'):
-            self.assertEqual(bhutan[name], result[name])
+            assert bhutan[name] == result[name]
 
-    def test_ipv6(self):
-        result = self.geoip_db.lookup('2a02:ffc0::')
-        self.assertEqual(result['region_code'], 'GI')
-        self.assertEqual(result['region_name'], 'Gibraltar')
-        self.assertEqual(result['radius'], self.geoip_db.radius('GI')[0])
+    def test_ipv6(self, geoip_db):
+        result = geoip_db.lookup('2a02:ffc0::')
+        assert result['region_code'] == 'GI'
+        assert result['region_name'] == 'Gibraltar'
+        assert result['radius'] == geoip_db.radius('GI')[0]
 
-    def test_fail(self):
-        self.assertIsNone(self.geoip_db.lookup('127.0.0.1'))
+    def test_fail(self, geoip_db):
+        assert geoip_db.lookup('127.0.0.1') is None
 
-    def test_fail_bad_ip(self):
-        self.assertIsNone(self.geoip_db.lookup('546.839.319.-1'))
+    def test_fail_bad_ip(self, geoip_db):
+        assert geoip_db.lookup('546.839.319.-1') is None
 
     def test_with_dummy_db(self):
-        self.assertIsNone(geoip.GeoIPNull().lookup('200'))
+        assert geoip.GeoIPNull().lookup('200') is None
 
 
-@pytest.mark.usefixtures('geoip_db')
-class TestRadius(TestCase):
+class TestRadius(object):
 
-    def test_region(self):
-        self.assertTrue(self.geoip_db.radius('US')[0] > 1000000.0)
-        self.assertTrue(self.geoip_db.radius('XK')[0] > 50000.0)
+    def test_region(self, geoip_db):
+        assert geoip_db.radius('US')[0] > 1000000.0
+        assert geoip_db.radius('XK')[0] > 50000.0
 
-    def test_subdivision(self):
-        self.assertTrue(self.geoip_db.radius('RU')[0] > 2000000.0)
-        self.assertTrue(self.geoip_db.radius('RU', subs=['A'])[0] < 2000000.0)
+    def test_subdivision(self, geoip_db):
+        assert geoip_db.radius('RU')[0] > 2000000.0
+        assert geoip_db.radius('RU', subs=['A'])[0] < 2000000.0
 
-    def test_city(self):
-        self.assertTrue(self.geoip_db.radius('GB', city=2643743)[0] >
-                        geoip.CITY_RADIUS)
-        self.assertEqual(self.geoip_db.radius('RU', subs=['A'], city=1)[0],
-                         geoip.CITY_RADIUS)
-        self.assertTrue(self.geoip_db.radius('LI', city=1)[0] <
-                        geoip.CITY_RADIUS)
-        self.assertEqual(self.geoip_db.radius('US', city=1)[0],
-                         geoip.CITY_RADIUS)
+    def test_city(self, geoip_db):
+        assert geoip_db.radius('GB', city=2643743)[0] > geoip.CITY_RADIUS
+        assert geoip_db.radius(
+            'RU', subs=['A'], city=1)[0] == geoip.CITY_RADIUS
+        assert geoip_db.radius('LI', city=1)[0] < geoip.CITY_RADIUS
+        assert geoip_db.radius('US', city=1)[0] == geoip.CITY_RADIUS
 
-    def test_unknown(self):
-        self.assertEqual(self.geoip_db.radius('XX')[0], geoip.REGION_RADIUS)
-        self.assertEqual(self.geoip_db.radius('XX', city=1)[0],
-                         geoip.CITY_RADIUS)
+    def test_unknown(self, geoip_db):
+        assert geoip_db.radius('XX')[0] == geoip.REGION_RADIUS
+        assert geoip_db.radius('XX', city=1)[0] == geoip.CITY_RADIUS

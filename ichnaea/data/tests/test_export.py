@@ -21,10 +21,7 @@ from ichnaea.models import (
     CellShard,
     WifiShard,
 )
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    TestCase,
-)
+from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -148,7 +145,7 @@ class TestExporter(BaseExportTest):
                 ('queue_export_everything', 3),
                 ('queue_export_no_test', 1),
                 ('queue_export_query', 1)]:
-            self.assertEqual(self.queue_length(queue_key), num)
+            assert self.queue_length(queue_key) == num
 
     def test_retry(self):
         self.add_reports(3)
@@ -168,7 +165,7 @@ class TestExporter(BaseExportTest):
             finally:
                 DummyExporter._retry_wait = orig_wait
 
-        self.assertEqual(self.queue_length('queue_export_test'), 0)
+        assert self.queue_length('queue_export_test') == 0
 
 
 class TestGeosubmit(BaseExportTest):
@@ -193,25 +190,25 @@ class TestGeosubmit(BaseExportTest):
             mock.register_uri('POST', requests_mock.ANY, text='{}')
             update_incoming.delay().get()
 
-        self.assertEqual(mock.call_count, 1)
+        assert mock.call_count == 1
         req = mock.request_history[0]
 
         # check headers
-        self.assertEqual(req.headers['Content-Type'], 'application/json')
-        self.assertEqual(req.headers['Content-Encoding'], 'gzip')
-        self.assertEqual(req.headers['User-Agent'], 'ichnaea')
+        assert req.headers['Content-Type'] == 'application/json'
+        assert req.headers['Content-Encoding'] == 'gzip'
+        assert req.headers['User-Agent'] == 'ichnaea'
 
         body = util.decode_gzip(req.body)
         send_reports = simplejson.loads(body)['items']
-        self.assertEqual(len(send_reports), 3)
+        assert len(send_reports) == 3
 
         for field in ('accuracy', 'source', 'timestamp'):
             expect = [report['position'].get(field) for report in reports]
             gotten = [report['position'].get(field) for report in send_reports]
-            self.assertEqual(set(expect), set(gotten))
+            assert set(expect) == set(gotten)
 
-        self.assertEqual(
-            set([w['ssid'] for w in send_reports[0]['wifiAccessPoints']]),
+        assert (
+            set([w['ssid'] for w in send_reports[0]['wifiAccessPoints']]) ==
             set(['my-wifi']))
 
         self.check_stats(counter=[
@@ -244,26 +241,26 @@ class TestS3(BaseExportTest):
         with mock_s3(mock_keys):
             update_incoming.delay().get()
 
-        self.assertEqual(len(mock_keys), 4)
+        assert len(mock_keys) == 4
 
         keys = []
         test_export = None
         for mock_key in mock_keys:
-            self.assertTrue(mock_key.set_contents_from_string.called)
-            self.assertEqual(mock_key.content_encoding, 'gzip')
-            self.assertEqual(mock_key.content_type, 'application/json')
-            self.assertTrue(mock_key.key.startswith('backups/'))
-            self.assertTrue(mock_key.key.endswith('.json.gz'))
-            self.assertTrue(mock_key.close.called)
+            assert mock_key.set_contents_from_string.called
+            assert mock_key.content_encoding == 'gzip'
+            assert mock_key.content_type == 'application/json'
+            assert mock_key.key.startswith('backups/')
+            assert mock_key.key.endswith('.json.gz')
+            assert mock_key.close.called
             keys.append(mock_key.key)
             if 'test' in mock_key.key:
                 test_export = mock_key
 
         # extract second and third path segment from key names
         groups = [tuple(key.split('/')[1:3]) for key in keys]
-        self.assertEqual(set(groups),
-                         set([('gnss', 'test'), ('gnss', 'no_key'),
-                              ('gnss', 'e5444-794'), ('fused', 'e5444-794')]))
+        assert (set(groups) ==
+                set([('gnss', 'test'), ('gnss', 'no_key'),
+                     ('gnss', 'e5444-794'), ('fused', 'e5444-794')]))
 
         # check uploaded content
         args, kw = test_export.set_contents_from_string.call_args
@@ -271,10 +268,10 @@ class TestS3(BaseExportTest):
         uploaded_text = util.decode_gzip(uploaded_data)
 
         send_reports = simplejson.loads(uploaded_text)['items']
-        self.assertEqual(len(send_reports), 3)
+        assert len(send_reports) == 3
         expect = [report['position']['accuracy'] for report in reports]
         gotten = [report['position']['accuracy'] for report in send_reports]
-        self.assertEqual(set(expect), set(gotten))
+        assert set(expect) == set(gotten)
 
         self.check_stats(counter=[
             ('data.export.batch', 4, 1, ['key:backup']),
@@ -284,16 +281,16 @@ class TestS3(BaseExportTest):
         ])
 
 
-class TestInternalTransform(TestCase):
+class TestInternalTransform(object):
 
     transform = InternalTransform()
 
     def test_empty(self):
-        self.assertEqual(self.transform({}), {})
+        assert self.transform({}) == {}
 
     def test_position(self):
         timestamp = int(time.time() * 1000)
-        self.assertEqual(self.transform({
+        assert (self.transform({
             'position': {'latitude': 1.0,
                          'longitude': 2.0,
                          'accuracy': 30.1,
@@ -307,7 +304,7 @@ class TestInternalTransform(TestCase):
                          },
             'timestamp': timestamp,
             'wifiAccessPoints': [{'macAddress': 'abcdef123456'}],
-        }), {
+        }) == {
             'lat': 1.0,
             'lon': 2.0,
             'accuracy': 30.1,
@@ -322,23 +319,23 @@ class TestInternalTransform(TestCase):
         })
 
     def test_age(self):
-        self.assertEqual(self.transform({
+        assert (self.transform({
             'position': {'age': 1000},
             'bluetoothBeacons': [{'age': 2000}, {'macAddress': 'ab'}],
             'wifiAccessPoints': [{'age': -500}, {'age': 1500}],
-        }), {
+        }) == {
             'blue': [{'age': 1000}, {'age': -1000, 'mac': 'ab'}],
             'wifi': [{'age': -1500}, {'age': 500}],
         })
 
     def test_timestamp(self):
-        self.assertEqual(self.transform({
+        assert (self.transform({
             'timestamp': 1460700010000,
             'position': {'age': 2000},
             'bluetoothBeacons': [{'age': -3000}, {'macAddress': 'ab'}],
             'cellTowers': [{'age': 3000}, {'radioType': 'gsm'}],
             'wifiAccessPoints': [{'age': 1500}, {'age': -2500}],
-        }), {
+        }) == {
             'timestamp': 1460700008000,
             'blue': [{'age': -5000}, {'mac': 'ab', 'age': -2000}],
             'cell': [{'age': 1000}, {'radio': 'gsm', 'age': -2000}],
@@ -346,13 +343,13 @@ class TestInternalTransform(TestCase):
         })
 
     def test_blue(self):
-        self.assertEqual(self.transform({
+        assert (self.transform({
             'bluetoothBeacons': [{
                 'macAddress': 'abcdef123456',
                 'age': 3001,
                 'signalStrength': -90,
             }],
-        }), {
+        }) == {
             'blue': [{
                 'mac': 'abcdef123456',
                 'age': 3001,
@@ -361,7 +358,7 @@ class TestInternalTransform(TestCase):
         })
 
     def test_cell(self):
-        self.assertEqual(self.transform({
+        assert (self.transform({
             'cellTowers': [{
                 'radioType': 'gsm',
                 'mobileCountryCode': 262,
@@ -375,7 +372,7 @@ class TestInternalTransform(TestCase):
                 'signalStrength': -90,
                 'timingAdvance': 10,
             }],
-        }), {
+        }) == {
             'cell': [{
                 'radio': 'gsm',
                 'mcc': 262,
@@ -392,7 +389,7 @@ class TestInternalTransform(TestCase):
         })
 
     def test_wifi(self):
-        self.assertEqual(self.transform({
+        assert (self.transform({
             'wifiAccessPoints': [{
                 'macAddress': 'abcdef123456',
                 'age': 3001,
@@ -402,7 +399,7 @@ class TestInternalTransform(TestCase):
                 'signalToNoiseRatio': 80,
                 'signalStrength': -90,
             }],
-        }), {
+        }) == {
             'wifi': [{
                 'mac': 'abcdef123456',
                 'age': 3001,
@@ -467,9 +464,8 @@ class TestInternal(BaseExportTest):
             insert_msgs = [msg for msg in self.stats_client.msgs
                            if (msg.startswith('data.observation.insert') and
                                'type:' + name in msg)]
-            self.assertEqual(sum([int(msg.split(':')[1].split('|')[0])
-                                  for msg in insert_msgs]),
-                             total)
+            assert (sum([int(msg.split(':')[1].split('|')[0])
+                         for msg in insert_msgs]) == total)
 
     def test_blue(self):
         reports = self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
@@ -479,12 +475,12 @@ class TestInternal(BaseExportTest):
         blue_data = reports[0]['bluetoothBeacons'][0]
         shard = BlueShard.shard_model(blue_data['macAddress'])
         blues = self.session.query(shard).all()
-        self.assertEqual(len(blues), 1)
+        assert len(blues) == 1
         blue = blues[0]
-        self.assertEqual(blue.lat, position['latitude'])
-        self.assertEqual(blue.lon, position['longitude'])
-        self.assertEqual(blue.mac, blue_data['macAddress'])
-        self.assertEqual(blue.samples, 1)
+        assert blue.lat == position['latitude']
+        assert blue.lon == position['longitude']
+        assert blue.mac == blue_data['macAddress']
+        assert blue.samples == 1
 
     def test_blue_duplicated(self):
         self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
@@ -502,8 +498,8 @@ class TestInternal(BaseExportTest):
 
         shard = BlueShard.shard_model(mac)
         blues = self.session.query(shard).all()
-        self.assertEqual(len(blues), 1)
-        self.assertEqual(blues[0].samples, 1)
+        assert len(blues) == 1
+        assert blues[0].samples == 1
 
     def test_bluetooth_invalid(self):
         self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0,
@@ -518,18 +514,18 @@ class TestInternal(BaseExportTest):
         cell_data = reports[0]['cellTowers'][0]
         shard = CellShard.shard_model(cell_data['radioType'])
         cells = self.session.query(shard).all()
-        self.assertEqual(len(cells), 1)
+        assert len(cells) == 1
         cell = cells[0]
 
-        self.assertEqual(cell.lat, position['latitude'])
-        self.assertEqual(cell.lon, position['longitude'])
-        self.assertEqual(cell.radio.name, cell_data['radioType'])
-        self.assertEqual(cell.mcc, cell_data['mobileCountryCode'])
-        self.assertEqual(cell.mnc, cell_data['mobileNetworkCode'])
-        self.assertEqual(cell.lac, cell_data['locationAreaCode'])
-        self.assertEqual(cell.cid, cell_data['cellId'])
-        self.assertEqual(cell.psc, cell_data['primaryScramblingCode'])
-        self.assertEqual(cell.samples, 1)
+        assert cell.lat == position['latitude']
+        assert cell.lon == position['longitude']
+        assert cell.radio.name == cell_data['radioType']
+        assert cell.mcc == cell_data['mobileCountryCode']
+        assert cell.mnc == cell_data['mobileNetworkCode']
+        assert cell.lac == cell_data['locationAreaCode']
+        assert cell.cid == cell_data['cellId']
+        assert cell.psc == cell_data['primaryScramblingCode']
+        assert cell.samples == 1
 
     def test_cell_duplicated(self):
         self.add_reports(cell_factor=1, wifi_factor=0)
@@ -547,8 +543,8 @@ class TestInternal(BaseExportTest):
 
         shard = CellShard.shard_model(radio)
         cells = self.session.query(shard).all()
-        self.assertEqual(len(cells), 1)
-        self.assertEqual(cells[0].samples, 1)
+        assert len(cells) == 1
+        assert cells[0].samples == 1
 
     def test_cell_invalid(self):
         self.add_reports(cell_factor=1, wifi_factor=0, cell_mcc=-2)
@@ -568,12 +564,12 @@ class TestInternal(BaseExportTest):
         wifi_data = reports[0]['wifiAccessPoints'][0]
         shard = WifiShard.shard_model(wifi_data['macAddress'])
         wifis = self.session.query(shard).all()
-        self.assertEqual(len(wifis), 1)
+        assert len(wifis) == 1
         wifi = wifis[0]
-        self.assertEqual(wifi.lat, position['latitude'])
-        self.assertEqual(wifi.lon, position['longitude'])
-        self.assertEqual(wifi.mac, wifi_data['macAddress'])
-        self.assertEqual(wifi.samples, 1)
+        assert wifi.lat == position['latitude']
+        assert wifi.lon == position['longitude']
+        assert wifi.mac == wifi_data['macAddress']
+        assert wifi.samples == 1
 
     def test_wifi_duplicated(self):
         self.add_reports(cell_factor=0, wifi_factor=1)
@@ -591,8 +587,8 @@ class TestInternal(BaseExportTest):
 
         shard = WifiShard.shard_model(mac)
         wifis = self.session.query(shard).all()
-        self.assertEqual(len(wifis), 1)
-        self.assertEqual(wifis[0].samples, 1)
+        assert len(wifis) == 1
+        assert wifis[0].samples == 1
 
     def test_wifi_invalid(self):
         self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
@@ -612,7 +608,7 @@ class TestInternal(BaseExportTest):
         self._update_all()
 
         shard = WifiShard.shards()['0']
-        self.assertEqual(self.session.query(shard).count(), 1)
+        assert self.session.query(shard).count() == 1
         self.check_stats(counter=[
             ('data.report.upload', 1, 2, ['key:test']),
             ('data.report.drop', 1, 1, ['key:test']),
@@ -628,7 +624,5 @@ class TestInternal(BaseExportTest):
         self.add_reports(1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)
         self.add_reports(2, cell_factor=0, wifi_factor=2, lat=20.0, lon=-10.0)
         update_incoming.delay().get()
-        self.assertEqual(
-            self.celery_app.data_queues['update_datamap_ne'].size(), 1)
-        self.assertEqual(
-            self.celery_app.data_queues['update_datamap_sw'].size(), 1)
+        assert self.celery_app.data_queues['update_datamap_ne'].size() == 1
+        assert self.celery_app.data_queues['update_datamap_sw'].size() == 1

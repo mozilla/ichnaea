@@ -44,7 +44,7 @@ class TestStatCounter(CeleryTestCase):
         stat = (self.session.query(Stat)
                             .filter(Stat.key == stat_key)
                             .filter(Stat.time == time)).first()
-        self.assertEqual(stat.value, value)
+        assert stat.value == value
 
     def test_first_run(self):
         self.add_counter(StatKey.cell, self.today, 3)
@@ -120,7 +120,7 @@ class TestStatRegion(CeleryTestCase):
     def test_empty(self):
         update_statregion.delay().get()
         stats = self.session.query(RegionStat).all()
-        self.assertEqual(stats, [])
+        assert stats == []
 
     def test_update(self):
         area = CellAreaFactory(radio=Radio.gsm, num_cells=1)
@@ -142,15 +142,15 @@ class TestStatRegion(CeleryTestCase):
 
         update_statregion.delay().get()
         stats = self.session.query(RegionStat).all()
-        self.assertEqual(len(stats), 4)
+        assert len(stats) == 4
 
         for stat in stats:
             values = (stat.gsm, stat.wcdma, stat.lte, stat.blue, stat.wifi)
             if stat.region == 'DE':
-                self.assertEqual(values, (3, 3, 0, 0, 5))
+                assert values == (3, 3, 0, 0, 5)
             elif stat.region == 'CA':
-                self.assertEqual(values, (2, 0, 4, 2, 0))
+                assert values == (2, 0, 4, 2, 0)
             elif stat.region == 'GB':
-                self.assertEqual(values, (0, 0, 0, 3, 0))
+                assert values == (0, 0, 0, 3, 0)
             elif stat.region == 'US':
-                self.assertEqual(values, (0, 0, 0, 0, 6))
+                assert values == (0, 0, 0, 0, 6)

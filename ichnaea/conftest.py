@@ -112,7 +112,7 @@ def raven_client(request, global_raven_client):
 
 @pytest.yield_fixture(scope='function')
 def raven(raven_client):
-    yield None
+    yield raven_client
     messages = [msg['message'] for msg in raven_client.msgs]
     raven_client._clear()
     assert not messages
@@ -134,7 +134,7 @@ def stats_client(request, global_stats_client):
 
 @pytest.yield_fixture(scope='function')
 def stats(stats_client):
-    yield None
+    yield stats_client
     stats_client._clear()
 
 
@@ -174,7 +174,7 @@ def redis_client(request, global_redis_client):
 
 @pytest.yield_fixture(scope='function')
 def redis(redis_client):
-    yield None
+    yield redis_client
     redis_client.flushdb()
 
 

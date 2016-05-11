@@ -73,12 +73,8 @@ def _make_db(uri=SQLURI):
     return configure_db(uri)
 
 
-class TestCase(unittest.TestCase):
-    pass
-
-
 @pytest.mark.usefixtures('raven', 'stats')
-class LogTestCase(TestCase):
+class LogTestCase(unittest.TestCase):
 
     def find_stats_messages(self, msg_type, msg_name,
                             msg_value=None, msg_tags=(), _client=None):
@@ -126,31 +122,7 @@ class LogTestCase(TestCase):
         return result
 
     def check_raven(self, expected=None):
-        """Checks the raven message stream looking for the expected messages.
-
-        The expected argument should be a list of either names or tuples.
-
-        If it is a tuple, it should be a tuple of name and an expected count.
-
-        The names are matched via startswith against the captured exception
-        messages.
-        """
-        messages = [msg['message'] for msg in self.raven_client.msgs]
-        matched_msgs = []
-        if expected is None:
-            expected = ()
-        for exp in expected:
-            count = 1
-            name = exp
-            if isinstance(exp, tuple):
-                name, count = exp
-            matches = [msg for msg in self.raven_client.msgs
-                       if msg['message'].startswith(name)]
-            matched_msgs.extend(matches)
-            assert len(matches) == count, messages
-
-        for msg in matched_msgs:
-            self.raven_client.msgs.remove(msg)
+        self.raven_client.check(expected=expected)
 
     def check_stats(self, _client=None, total=None, **kw):
         """Checks a partial specification of messages to be found in

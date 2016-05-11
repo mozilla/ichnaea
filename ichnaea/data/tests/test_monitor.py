@@ -149,5 +149,4 @@ class TestMonitorAPIUsers(CeleryTestCase):
         ])
 
         # the too old key was deleted manually
-        self.assertFalse(
-            self.redis_client.exists('apiuser:submit:test:' + days_7))
+        assert not self.redis_client.exists('apiuser:submit:test:' + days_7)

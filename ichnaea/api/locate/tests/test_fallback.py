@@ -1,5 +1,6 @@
 import colander
 import mock
+import pytest
 import requests_mock
 from redis import RedisError
 from requests.exceptions import RequestException
@@ -25,7 +26,6 @@ from ichnaea.api.locate.tests.base import (
 from ichnaea.api.locate.tests.test_query import QueryTest
 from ichnaea import floatjson
 from ichnaea.models import Radio
-from ichnaea.tests.base import TestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -34,107 +34,102 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestExternalResult(TestCase):
+class TestExternalResult(object):
 
     def test_not_found(self):
         result = ExternalResult(None, None, None, None)
-        self.assertTrue(result.not_found())
+        assert result.not_found()
 
     def test_not_found_accuracy(self):
         result = ExternalResult(1.0, 1.0, None, None)
-        self.assertTrue(result.not_found())
+        assert result.not_found()
 
     def test_found(self):
         result = ExternalResult(1.0, 1.0, 10, None)
-        self.assertFalse(result.not_found())
+        assert not result.not_found()
 
     def test_found_fallback(self):
         result = ExternalResult(1.0, 1.0, 10, 'lacf')
-        self.assertFalse(result.not_found())
+        assert not result.not_found()
 
     def test_score(self):
         result = ExternalResult(1.0, 1.0, 10, None)
-        self.assertAlmostEqual(result.score, 10.0)
+        assert result.score == 10.0
 
     def test_score_fallback(self):
         result = ExternalResult(1.0, 1.0, 10, 'lacf')
-        self.assertAlmostEqual(result.score, 5.0)
+        assert result.score == 5.0
 
 
-class TestResultSchema(TestCase):
-
-    schema = RESULT_SCHEMA
+class TestResultSchema(object):
 
     def test_empty(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize({})
+        with pytest.raises(colander.Invalid):
+            RESULT_SCHEMA.deserialize({})
 
     def test_accuracy_float(self):
-        data = self.schema.deserialize(
+        data = RESULT_SCHEMA.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 11.6})
-        self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 11.6, 'fallback': None})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 11.6, 'fallback': None})
 
     def test_accuracy_missing(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize(
+        with pytest.raises(colander.Invalid):
+            RESULT_SCHEMA.deserialize(
                 {'location': {'lat': 1.0, 'lng': 1.0}, 'fallback': 'lacf'})
 
     def test_fallback(self):
-        data = self.schema.deserialize(
+        data = RESULT_SCHEMA.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0},
              'accuracy': 10.0, 'fallback': 'lacf'})
-        self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0,
-                   'fallback': 'lacf'})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': 'lacf'})
 
     def test_fallback_invalid(self):
-        data = self.schema.deserialize(
+        data = RESULT_SCHEMA.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0},
              'accuracy': 10.0, 'fallback': 'cidf'})
-        self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
 
     def test_fallback_missing(self):
-        data = self.schema.deserialize(
+        data = RESULT_SCHEMA.deserialize(
             {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 10.0})
-        self.assertEqual(
-            data, {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
 
     def test_location_incomplete(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize(
+        with pytest.raises(colander.Invalid):
+            RESULT_SCHEMA.deserialize(
                 {'location': {'lng': 1.0}, 'accuracy': 10.0,
                  'fallback': 'lacf'})
 
     def test_location_missing(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize({'accuracy': 10.0, 'fallback': 'lacf'})
+        with pytest.raises(colander.Invalid):
+            RESULT_SCHEMA.deserialize({'accuracy': 10.0, 'fallback': 'lacf'})
 
 
-class TestOutboundSchema(TestCase):
-
-    schema = OUTBOUND_SCHEMA
+class TestOutboundSchema(object):
 
     def test_empty(self):
-        self.assertEqual(self.schema.deserialize({}), {})
-        self.assertEqual(self.schema.deserialize({'unknown_field': 1}), {})
+        assert OUTBOUND_SCHEMA.deserialize({}) == {}
+        assert OUTBOUND_SCHEMA.deserialize({'unknown_field': 1}) == {}
 
     def test_fallback(self):
-        self.assertEqual(self.schema.deserialize(
-            {'fallbacks': {'ipf': False}}),
+        assert (OUTBOUND_SCHEMA.deserialize(
+            {'fallbacks': {'ipf': False}}) ==
             {'fallbacks': {}})
-        self.assertEqual(self.schema.deserialize(
-            {'fallbacks': {'lacf': False}}),
+        assert (OUTBOUND_SCHEMA.deserialize(
+            {'fallbacks': {'lacf': False}}) ==
             {'fallbacks': {'lacf': False}})
-        self.assertEqual(self.schema.deserialize(
-            {'fallbacks': {'ipf': True, 'lacf': False}}),
+        assert (OUTBOUND_SCHEMA.deserialize(
+            {'fallbacks': {'ipf': True, 'lacf': False}}) ==
             {'fallbacks': {'lacf': False}})
 
     def test_query(self):
         query = Query()
-        data = self.schema.deserialize(query.json())
-        self.assertEqual(data, {'fallbacks': {'lacf': True}})
+        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        assert data == {'fallbacks': {'lacf': True}}
 
     def test_blue(self):
         blues = BlueShardFactory.build_batch(2)
@@ -142,8 +137,8 @@ class TestOutboundSchema(TestCase):
             {'macAddress': blue.mac, 'age': 1500, 'name': 'beacon',
              'signalStrength': -90}
             for blue in blues])
-        data = self.schema.deserialize(query.json())
-        self.assertEqual(data, {
+        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        assert (data == {
             'bluetoothBeacons': [{
                 'macAddress': blues[0].mac,
                 'age': 1500,
@@ -172,8 +167,8 @@ class TestOutboundSchema(TestCase):
              'signalStrength': -70,
              'timingAdvance': 15,
              'unknown_field': 'foo'}])
-        data = self.schema.deserialize(query.json())
-        self.assertEqual(data, {
+        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        assert (data == {
             'cellTowers': [{
                 'radioType': cell.radio.name,
                 'mobileCountryCode': cell.mcc,
@@ -194,8 +189,8 @@ class TestOutboundSchema(TestCase):
             {'macAddress': wifi.mac, 'age': 2000,
              'signalStrength': -90, 'ssid': 'wifi'}
             for wifi in wifis])
-        data = self.schema.deserialize(query.json())
-        self.assertEqual(data, {
+        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        assert (data == {
             'wifiAccessPoints': [{
                 'macAddress': wifis[0].mac,
                 'age': 2000,
@@ -223,7 +218,7 @@ class TestCache(QueryTest):
     def test_get_blue(self):
         blues = BlueShardFactory.build_batch(2)
         query = self._query(blue=self.blue_model_query(blues))
-        self.assertEqual(self._cache().get(query), None)
+        assert self._cache().get(query) is None
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
         ])
@@ -235,7 +230,7 @@ class TestCache(QueryTest):
         query = self._query(blue=self.blue_model_query(blues))
         result = ExternalResult(blue.lat, blue.lon, blue.radius, None)
         cache.set(query, result)
-        self.assertEqual(cache.get(query), result)
+        assert cache.get(query) == result
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
@@ -243,7 +238,7 @@ class TestCache(QueryTest):
     def test_get_cell(self):
         cells = CellShardFactory.build_batch(1)
         query = self._query(cell=self.cell_model_query(cells))
-        self.assertEqual(self._cache().get(query), None)
+        assert self._cache().get(query) is None
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
         ])
@@ -255,9 +250,9 @@ class TestCache(QueryTest):
         result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
         cache.set(query, result, expire=60)
         keys = self.redis_client.keys('cache:fallback:cell:*')
-        self.assertEqual(len(keys), 1)
-        self.assertTrue(50 < self.redis_client.ttl(keys[0]) <= 60)
-        self.assertEqual(cache.get(query), result)
+        assert len(keys) == 1
+        assert 50 < self.redis_client.ttl(keys[0]) <= 60
+        assert cache.get(query) == result
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
@@ -269,9 +264,9 @@ class TestCache(QueryTest):
         result = ExternalResult(None, None, None, None)
         cache.set(query, result)
         keys = self.redis_client.keys('cache:fallback:cell:*')
-        self.assertEqual(len(keys), 1)
-        self.assertEqual(self.redis_client.get(keys[0]), b'"404"')
-        self.assertEqual(cache.get(query), result)
+        assert len(keys) == 1
+        assert self.redis_client.get(keys[0]) == b'"404"'
+        assert cache.get(query) == result
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
@@ -279,7 +274,7 @@ class TestCache(QueryTest):
     def test_get_cell_multi(self):
         cells = CellShardFactory.build_batch(2)
         query = self._query(cell=self.cell_model_query(cells))
-        self.assertEqual(self._cache().get(query), None)
+        assert self._cache().get(query) is None
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:bypassed']),
         ])
@@ -287,7 +282,7 @@ class TestCache(QueryTest):
     def test_get_wifi(self):
         wifis = WifiShardFactory.build_batch(2)
         query = self._query(wifi=self.wifi_model_query(wifis))
-        self.assertEqual(self._cache().get(query), None)
+        assert self._cache().get(query) is None
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
         ])
@@ -299,7 +294,7 @@ class TestCache(QueryTest):
         query = self._query(wifi=self.wifi_model_query(wifis))
         result = ExternalResult(wifi.lat, wifi.lon, wifi.radius, None)
         cache.set(query, result)
-        self.assertEqual(cache.get(query), result)
+        assert cache.get(query) == result
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
@@ -321,10 +316,10 @@ class TestCache(QueryTest):
         # check combined query, avg lat/lon, max accuracy
         query = self._query(wifi=self.wifi_model_query(wifis1 + wifis2))
         cached = cache.get(query)
-        self.assertAlmostEqual(cached[0], (wifis1[0].lat + wifis2[0].lat) / 2)
-        self.assertAlmostEqual(cached[1], wifis1[0].lon)
-        self.assertAlmostEqual(cached[2], 205.56, 2)
-        self.assertTrue(cached[3] is None)
+        assert cached[0] == (wifis1[0].lat + wifis2[0].lat) / 2.0
+        assert cached[1] == wifis1[0].lon
+        assert round(cached[2], 2) == 205.56
+        assert cached[3] is None
 
         # different lat/lon
         wifis3 = WifiShardFactory.build_batch(2, lat=wifis1[0].lat + 10.0)
@@ -335,7 +330,7 @@ class TestCache(QueryTest):
         # check combined query, inconsistent result
         query = self._query(
             wifi=self.wifi_model_query(wifis1 + wifis2 + wifis3))
-        self.assertEqual(cache.get(query), None)
+        assert cache.get(query) is None
 
         self.check_stats(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
@@ -350,15 +345,15 @@ class TestCache(QueryTest):
 
         query = self._query(cell=self.cell_model_query(cells),
                             wifi=self.wifi_model_query(wifis))
-        self.assertEqual(cache.get(query), None)
+        assert cache.get(query) is None
 
         query = self._query(blue=self.blue_model_query(blues),
                             cell=self.cell_model_query(cells))
-        self.assertEqual(cache.get(query), None)
+        assert cache.get(query) is None
 
         query = self._query(blue=self.blue_model_query(blues),
                             wifi=self.wifi_model_query(wifis))
-        self.assertEqual(cache.get(query), None)
+        assert cache.get(query) is None
 
         self.check_stats(counter=[
             ('locate.fallback.cache', 3, 1, ['status:bypassed']),
@@ -422,11 +417,11 @@ class TestFallback(BaseSourceTest):
             )
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
-            self.assertAlmostEqual(results.best().score, 5.0, 4)
+            assert results.best().score == 5.0
 
             request_json = mock_request.request_history[0].json()
 
-        self.assertEqual(request_json['fallbacks'], {'lacf': True})
+        assert request_json['fallbacks'] == {'lacf': True}
         self.check_stats(counter=[
             ('locate.fallback.lookup', ['fallback_name:fall', 'status:200']),
         ], timer=[
@@ -640,8 +635,8 @@ class TestFallback(BaseSourceTest):
                 results = self.source.search(query)
                 self.check_model_results(results, None)
 
-            self.assertTrue(mock_redis_client.pipeline.called)
-            self.assertFalse(mock_request.called)
+            assert mock_redis_client.pipeline.called
+            assert not mock_request.called
 
     def test_get_cache_redis_failure(self):
         cell = CellShardFactory.build()
@@ -658,8 +653,8 @@ class TestFallback(BaseSourceTest):
                 results = self.source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
-            self.assertTrue(mock_redis_client.mget.called)
-            self.assertTrue(mock_request.called)
+            assert mock_redis_client.mget.called
+            assert mock_request.called
 
         self.check_raven([('RedisError', 1)])
         self.check_stats(counter=[
@@ -684,9 +679,9 @@ class TestFallback(BaseSourceTest):
                 results = self.source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
-            self.assertTrue(mock_redis_client.mget.called)
-            self.assertTrue(mock_redis_client.mset.called)
-            self.assertTrue(mock_request.called)
+            assert mock_redis_client.mget.called
+            assert mock_redis_client.mset.called
+            assert mock_request.called
 
         self.check_raven([('RedisError', 1)])
         self.check_stats(counter=[
@@ -704,9 +699,9 @@ class TestFallback(BaseSourceTest):
             query.cell[0].signalStrength = -77
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
-            self.assertAlmostEqual(results.best().score, 5.0, 4)
+            assert results.best().score == 5.0
 
-            self.assertEqual(mock_request.call_count, 1)
+            assert mock_request.call_count == 1
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:miss']),
                 ('locate.fallback.lookup',
@@ -719,9 +714,9 @@ class TestFallback(BaseSourceTest):
             query.cell[0].signalStrength = -82
             results = self.source.search(query)
             self.check_model_results(results, [self.fallback_model])
-            self.assertAlmostEqual(results.best().score, 5.0, 4)
+            assert results.best().score == 5.0
 
-            self.assertEqual(mock_request.call_count, 1)
+            assert mock_request.call_count == 1
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:hit']),
                 ('locate.fallback.lookup',
@@ -745,7 +740,7 @@ class TestFallback(BaseSourceTest):
             results = self.source.search(query)
             self.check_model_results(results, None)
 
-            self.assertEqual(mock_request.call_count, 1)
+            assert mock_request.call_count == 1
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:miss']),
                 ('locate.fallback.lookup',
@@ -756,7 +751,7 @@ class TestFallback(BaseSourceTest):
             results = self.source.search(query)
             self.check_model_results(results, None)
 
-            self.assertEqual(mock_request.call_count, 1)
+            assert mock_request.call_count == 1
             self.check_stats(counter=[
                 ('locate.fallback.cache', ['status:hit']),
                 ('locate.fallback.lookup',
@@ -778,8 +773,8 @@ class TestFallback(BaseSourceTest):
                 results = self.source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
-            self.assertTrue(mock_redis_client.mget.called)
-            self.assertFalse(mock_redis_client.mset.called)
+            assert mock_redis_client.mget.called
+            assert not mock_redis_client.mset.called
 
         self.check_stats(counter=[
             ('locate.fallback.cache', ['status:hit']),

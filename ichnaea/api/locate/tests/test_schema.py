@@ -1,12 +1,12 @@
 from colander import Invalid
+import pytest
 
 from ichnaea.api.locate import schema
 from ichnaea.models import constants
 from ichnaea.models.constants import Radio
-from ichnaea.tests.base import TestCase
 
 
-class BaseCellTest(TestCase):
+class BaseCellTest(object):
 
     def compare(self, name, value, expect, radio='lte'):
         if name == 'radioType':
@@ -17,7 +17,7 @@ class BaseCellTest(TestCase):
             name: value,
             'radioType': radio,
         }
-        self.assertEqual(self.sample(item)[name], expect)
+        assert self.sample(item)[name] == expect
 
     def sample(self, item):
         value = {
@@ -39,38 +39,38 @@ class TestValidCellAreaLookupSchema(BaseCellTest):
         self.compare('radioType', 'gsm', Radio.gsm)
         self.compare('radioType', 'wcdma', Radio.wcdma)
         self.compare('radioType', 'lte', Radio.lte)
-        self.assertRaises(Invalid, self.sample, {'radioType': 'GSM'})
+        with pytest.raises(Invalid):
+            self.sample({'radioType': 'GSM'})
 
     def test_mcc(self):
         field = 'mobileCountryCode'
         self.compare(field, 262, 262)
-        self.assertRaises(Invalid, self.sample, {field: 101})
+        with pytest.raises(Invalid):
+            self.sample({field: 101})
 
     def test_mnc(self):
         field = 'mobileNetworkCode'
         max_mnc = constants.MAX_MNC
         self.compare(field, max_mnc, max_mnc)
-        self.assertRaises(Invalid, self.sample, {field: max_mnc + 1})
+        with pytest.raises(Invalid):
+            self.sample({field: max_mnc + 1})
 
     def test_asu(self):
         max_lte_asu = constants.MAX_CELL_ASU[Radio.lte]
         self.compare('asu', max_lte_asu, None, 'gsm')
         self.compare('asu', max_lte_asu, max_lte_asu, 'lte')
-        self.assertEqual(
-            self.sample({'radioType': 'gsm', 'asu': 15})['signalStrength'],
-            -83)
-        self.assertEqual(
-            self.sample({'radioType': 'wcdma', 'asu': 15})['signalStrength'],
-            -101)
-        self.assertEqual(
-            self.sample({'radioType': 'lte', 'asu': 15})['signalStrength'],
-            -125)
+        assert (self.sample(
+                {'radioType': 'gsm', 'asu': 15})['signalStrength'] == -83)
+        assert (self.sample(
+                {'radioType': 'wcdma', 'asu': 15})['signalStrength'] == -101)
+        assert (self.sample(
+                {'radioType': 'lte', 'asu': 15})['signalStrength'] == -125)
 
     def test_asu_signal(self):
         self.compare('signalStrength', -80, -80)
         item = self.sample({'asu': -80})
-        self.assertEqual(item['asu'], None)
-        self.assertEqual(item['signalStrength'], -80)
+        assert item['asu'] is None
+        assert item['signalStrength'] == -80
 
     def test_signal(self):
         max_lte_signal = constants.MAX_CELL_SIGNAL[Radio.lte]
@@ -85,8 +85,8 @@ class TestValidCellLookupSchema(BaseCellTest):
     def test_radio(self):
         item = self.sample({'radioType': 'gsm',
                             'cellId': constants.MAX_CID_GSM + 1})
-        self.assertEqual(item['cellId'], constants.MAX_CID_GSM + 1)
-        self.assertEqual(item['radioType'], Radio.wcdma)
+        assert item['cellId'] == constants.MAX_CID_GSM + 1
+        assert item['radioType'] == Radio.wcdma
 
     def test_psc(self):
         field = 'primaryScramblingCode'
@@ -95,14 +95,14 @@ class TestValidCellLookupSchema(BaseCellTest):
         self.compare(field, max_psc + 1, None, radio='lte')
 
 
-class TestValidWifiLookupSchema(TestCase):
+class TestValidWifiLookupSchema(object):
 
     _schema = schema.ValidWifiLookupSchema()
 
     def compare(self, channel, frequency, channel_expect, frequency_expect):
         sample = self.sample(channel=channel, frequency=frequency)
-        self.assertEqual(sample['channel'], channel_expect)
-        self.assertEqual(sample['frequency'], frequency_expect)
+        assert sample['channel'] == channel_expect
+        assert sample['frequency'] == frequency_expect
 
     def sample(self, **values):
         value = {

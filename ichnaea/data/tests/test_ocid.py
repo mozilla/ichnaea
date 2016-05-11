@@ -96,7 +96,7 @@ class TestExport(CeleryTestCase):
                     reader = csv.DictReader(gzip_file, CELL_FIELDS)
 
                     header = six.next(reader)
-                    self.assertTrue('area' in header.values())
+                    assert 'area' in header.values()
 
                     exported_cells = set()
                     for exported_cell in reader:
@@ -107,29 +107,31 @@ class TestExport(CeleryTestCase):
                         exported_cell = tuple(sorted(exported_cell_filtered))
                         exported_cells.add(exported_cell)
 
-                    self.assertEqual(cells, exported_cells)
+                    assert cells == exported_cells
 
     def test_export_diff(self):
         CellShardFactory.create_batch(10, radio=Radio.gsm)
         self.session.commit()
+        pattern = re.compile(
+            r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz')
 
         with mock_s3() as mock_key:
             cell_export_diff(_bucket='localhost.bucket')
-            pat = r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz'
-            self.assertRegex(mock_key.key, pat)
+            assert pattern.search(mock_key.key)
             method = mock_key.set_contents_from_filename
-            self.assertRegex(method.call_args[0][0], pat)
+            assert pattern.search(method.call_args[0][0])
 
     def test_export_full(self):
         CellShardFactory.create_batch(10, radio=Radio.gsm)
         self.session.commit()
+        pattern = re.compile(
+            r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz')
 
         with mock_s3() as mock_key:
             cell_export_full(_bucket='localhost.bucket')
-            pat = r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz'
-            self.assertRegex(mock_key.key, pat)
+            assert pattern.search(mock_key.key)
             method = mock_key.set_contents_from_filename
-            self.assertRegex(method.call_args[0][0], pat)
+            assert pattern.search(method.call_args[0][0])
 
 
 class TestImport(CeleryAppTestCase):
@@ -144,7 +146,7 @@ class TestImport(CeleryAppTestCase):
         stat = (self.session.query(Stat)
                             .filter(Stat.key == stat_key)
                             .filter(Stat.time == time)).first()
-        self.assertEqual(stat.value, value)
+        assert stat.value == value
 
     @contextmanager
     def get_csv(self, cell, lo=1, hi=10, time=1408604686):
@@ -191,11 +193,10 @@ class TestImport(CeleryAppTestCase):
         self.import_csv(
             CellShardFactory.build(radio=Radio.wcdma), cell_type='cell')
         cells = self.session.query(CellShard.shards()['wcdma']).all()
-        self.assertEqual(len(cells), 9)
+        assert len(cells) == 9
 
         areaids = set([cell.areaid for cell in cells])
-        self.assertEqual(
-            self.session.query(CellArea).count(), len(areaids))
+        assert self.session.query(CellArea).count() == len(areaids)
 
         update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell, 9)
@@ -203,11 +204,10 @@ class TestImport(CeleryAppTestCase):
     def test_import_local_ocid(self):
         self.import_csv(CellShardFactory.build(radio=Radio.wcdma))
         cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
-        self.assertEqual(len(cells), 9)
+        assert len(cells) == 9
 
         areaids = set([cell.areaid for cell in cells])
-        self.assertEqual(
-            self.session.query(CellAreaOCID).count(), len(areaids))
+        assert self.session.query(CellAreaOCID).count() == len(areaids)
 
         update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell_ocid, 9)
@@ -221,13 +221,12 @@ class TestImport(CeleryAppTestCase):
 
         self.import_csv(base_cell, time=old_time)
         cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
-        self.assertEqual(len(cells), 9)
+        assert len(cells) == 9
         update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell_ocid, 9)
 
         areaids = set([cell.areaid for cell in cells])
-        self.assertEqual(
-            self.session.query(CellAreaOCID).count(), len(areaids))
+        assert self.session.query(CellAreaOCID).count() == len(areaids)
 
         # update some entries
         self.import_csv(base_cell, lo=5, hi=13, time=new_time)
@@ -236,17 +235,16 @@ class TestImport(CeleryAppTestCase):
         model = CellShardOCID.shards()['wcdma']
         cells = (self.session.query(model)
                              .order_by(model.modified).all())
-        self.assertEqual(len(cells), 12)
+        assert len(cells) == 12
 
         for i in range(0, 4):
-            self.assertEqual(cells[i].modified, old_date)
+            assert cells[i].modified == old_date
 
         for i in range(4, 12):
-            self.assertEqual(cells[i].modified, new_date)
+            assert cells[i].modified == new_date
 
         areaids = set([cell.areaid for cell in cells])
-        self.assertEqual(
-            self.session.query(CellAreaOCID).count(), len(areaids))
+        assert self.session.query(CellAreaOCID).count() == len(areaids)
 
         update_statcounter.delay().get()
         self.check_stat(StatKey.unique_cell_ocid, 12)
@@ -263,8 +261,7 @@ class TestImport(CeleryAppTestCase):
         model = CellShardOCID.shards()['wcdma']
         cells = (self.session.query(model)
                              .order_by(model.modified).all())
-        self.assertEqual(len(cells), 9)
+        assert len(cells) == 9
 
         areaids = set([cell.areaid for cell in cells])
-        self.assertEqual(
-            self.session.query(CellAreaOCID).count(), len(areaids))
+        assert self.session.query(CellAreaOCID).count() == len(areaids)

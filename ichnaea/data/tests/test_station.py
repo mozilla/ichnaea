@@ -47,7 +47,7 @@ class BaseStationTest(object):
 
     def check_statcounter(self, stat_key, value):
         stat_counter = StatCounter(stat_key, util.utcnow())
-        self.assertEqual(stat_counter.get(self.redis_client), value)
+        assert stat_counter.get(self.redis_client) == value
 
     def _queue_and_update(self, obs, task):
         sharded_obs = defaultdict(list)
@@ -108,12 +108,12 @@ class TestDatabaseErrors(BaseStationTest, CeleryTestCase):
             CellUpdater._retry_wait = orig_wait
 
         # the inner task logic was called exactly twice
-        self.assertEqual(num[0], 2)
+        assert num[0] == 2
 
         shard = CellShard.shard_model(obs.cellid)
         cells = self.session.query(shard).all()
-        self.assertEqual(len(cells), 1)
-        self.assertEqual(cells[0].samples, 1)
+        assert len(cells) == 1
+        assert cells[0].samples == 1
 
         self.check_statcounter(StatKey.cell, 1)
         self.check_statcounter(StatKey.unique_cell, 1)
@@ -182,27 +182,27 @@ class StationTest(BaseStationTest):
         pass
 
     def check_blocked(self, station, first=None, last=None, count=None):
-        self.assertEqual(station.block_first, first)
-        self.assertEqual(station.block_last, last)
-        self.assertEqual(station.block_count, count)
+        assert station.block_first == first
+        assert station.block_last == last
+        assert station.block_count == count
 
     def check_dates(self, station, created, modified, last_seen=None):
-        self.assertEqual(station.created.date(), created)
-        self.assertEqual(station.modified.date(), modified)
-        self.assertEqual(station.last_seen, last_seen)
+        assert station.created.date() == created
+        assert station.modified.date() == modified
+        assert station.last_seen == last_seen
 
     def check_no_position(self, station):
-        self.assertEqual(station.last_seen, None)
-        self.assertEqual(station.lat, None)
-        self.assertEqual(station.lon, None)
-        self.assertEqual(station.max_lat, None)
-        self.assertEqual(station.min_lat, None)
-        self.assertEqual(station.max_lon, None)
-        self.assertEqual(station.min_lon, None)
-        self.assertEqual(station.radius, None)
-        self.assertEqual(station.samples, None)
-        self.assertEqual(station.source, None)
-        self.assertEqual(station.weight, None)
+        assert station.last_seen is None
+        assert station.lat is None
+        assert station.lon is None
+        assert station.max_lat is None
+        assert station.min_lat is None
+        assert station.max_lon is None
+        assert station.min_lon is None
+        assert station.radius is None
+        assert station.samples is None
+        assert station.source is None
+        assert station.weight is None
 
     def test_blocklist_skip(self):
         observations = self.obs_factory.build_batch(3)
@@ -222,7 +222,7 @@ class StationTest(BaseStationTest):
             if cell.blocked():
                 blocks.append(cell)
 
-        self.assertEqual(len(blocks), 1)
+        assert len(blocks) == 1
         self.check_blocked(blocks[0], self.ten_days.date(), self.today, 1)
 
         self.check_areas([observations[1], observations[2]])
@@ -244,17 +244,17 @@ class StationTest(BaseStationTest):
 
             self.check_areas([obs])
             station = self.get_station(obs)
-            self.assertAlmostEqual(station.lat, obs.lat - 0.00004)
-            self.assertAlmostEqual(station.max_lat, obs.lat + 0.0001)
-            self.assertAlmostEqual(station.min_lat, obs.lat - 0.0003)
-            self.assertAlmostEqual(station.lon, obs.lon - 0.00004)
-            self.assertAlmostEqual(station.max_lon, obs.lon + 0.0002)
-            self.assertAlmostEqual(station.min_lon, obs.lon - 0.0004)
-            self.assertEqual(station.radius, 38)
-            self.assertEqual(station.region, 'GB')
-            self.assertEqual(station.samples, 5)
-            self.assertEqual(station.source, source)
-            self.assertAlmostEqual(station.weight, 5.0, 2)
+            assert round(station.lat, 7) == round(obs.lat - 0.00004, 7)
+            assert round(station.max_lat, 7) == round(obs.lat + 0.0001, 7)
+            assert round(station.min_lat, 7) == round(obs.lat - 0.0003, 7)
+            assert round(station.lon, 7) == round(obs.lon - 0.00004, 7)
+            assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
+            assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
+            assert station.radius == 38
+            assert station.region == 'GB'
+            assert station.samples == 5
+            assert station.source == source
+            assert round(station.weight, 2) == 5.0
             self.check_blocked(station, None)
             self.check_dates(station, self.today, self.today, self.today)
 
@@ -292,17 +292,17 @@ class StationTest(BaseStationTest):
             obs = obs[0]
             self.check_areas([obs])
             station = self.get_station(obs)
-            self.assertEqual(station.lat, obs.lat)
-            self.assertEqual(station.max_lat, obs.lat)
-            self.assertEqual(station.min_lat, obs.lat)
-            self.assertEqual(station.lon, obs.lon)
-            self.assertEqual(station.max_lon, obs.lon)
-            self.assertEqual(station.min_lon, obs.lon)
-            self.assertEqual(station.radius, 0)
-            self.assertEqual(station.region, 'GB')
-            self.assertEqual(station.source, source)
-            self.assertEqual(station.samples, 3)
-            self.assertEqual(station.weight, 3.0)
+            assert station.lat == obs.lat
+            assert station.max_lat == obs.lat
+            assert station.min_lat == obs.lat
+            assert station.lon == obs.lon
+            assert station.max_lon == obs.lon
+            assert station.min_lon == obs.lon
+            assert station.radius == 0
+            assert station.region == 'GB'
+            assert station.source == source
+            assert station.samples == 3
+            assert station.weight == 3.0
             self.check_blocked(station, self.past.date(), self.past.date(), 1)
             self.check_dates(station, self.past.date(), self.today, self.today)
 
@@ -323,7 +323,7 @@ class StationTest(BaseStationTest):
             obs = obs[0]
             self.check_areas([])
             station = self.get_station(obs)
-            self.assertEqual(station.modified.date(), self.past.date())
+            assert station.modified.date() == self.past.date()
             self.check_blocked(station, self.past.date(), self.past.date(), 1)
             self.check_no_position(station)
 
@@ -379,7 +379,7 @@ class StationTest(BaseStationTest):
                 obs = obs[0]
                 self.check_areas([obs])
                 station = self.get_station(obs)
-                self.assertEqual(station.region, 'GB')
+                assert station.region == 'GB'
                 self.check_blocked(station, self.today, self.today, 1)
                 self.check_dates(station, self.past.date(), self.today)
                 self.check_no_position(station)
@@ -398,7 +398,7 @@ class StationTest(BaseStationTest):
                 obs = obs[0]
                 self.check_areas([obs])
                 station = self.get_station(obs)
-                self.assertEqual(station.region, 'GB')
+                assert station.region == 'GB'
                 self.check_blocked(station, self.today, self.today, 1)
                 self.check_dates(station, self.ten_days.date(), self.today)
                 self.check_no_position(station)
@@ -418,17 +418,17 @@ class StationTest(BaseStationTest):
         station = self.get_station(obs)
         self.check_blocked(station, None)
         self.check_dates(station, self.ten_days.date(), self.today, self.today)
-        self.assertAlmostEqual(station.lat, obs.lat)
-        self.assertAlmostEqual(station.max_lat, obs.lat)
-        self.assertAlmostEqual(station.min_lat, obs.lat)
-        self.assertAlmostEqual(station.lon, obs.lon)
-        self.assertAlmostEqual(station.max_lon, obs.lon)
-        self.assertAlmostEqual(station.min_lon, obs.lon)
-        self.assertEqual(station.radius, 0)
-        self.assertEqual(station.region, 'GB')
-        self.assertEqual(station.samples, 3)
-        self.assertEqual(station.source, ReportSource.gnss)
-        self.assertAlmostEqual(station.weight, 3.0, 2)
+        assert station.lat == obs.lat
+        assert station.max_lat == obs.lat
+        assert station.min_lat == obs.lat
+        assert station.lon == obs.lon
+        assert station.max_lon == obs.lon
+        assert station.min_lon == obs.lon
+        assert station.radius == 0
+        assert station.region == 'GB'
+        assert station.samples == 3
+        assert station.source == ReportSource.gnss
+        assert round(station.weight, 2) == 3.0
 
 
 class StationMacTest(StationTest):
@@ -475,16 +475,16 @@ class TestBlue(StationMacTest, CeleryTestCase):
             self.queue_and_update(obs)
 
             station = self.get_station(station)
-            self.assertAlmostEqual(station.lat, lat)
-            self.assertAlmostEqual(station.max_lat, lat)
-            self.assertAlmostEqual(station.min_lat, lat)
-            self.assertAlmostEqual(station.lon, lon - 0.0000305, 7)
-            self.assertAlmostEqual(station.max_lon, lon)
-            self.assertAlmostEqual(station.min_lon, lon - 0.0002)
-            self.assertEqual(station.radius, 12)
-            self.assertEqual(station.samples, 4)
-            self.assertEqual(station.source, source)
-            self.assertAlmostEqual(station.weight, 3.96, 2)
+            assert station.lat == lat
+            assert station.max_lat == lat
+            assert station.min_lat == lat
+            assert round(station.lon, 7) == round(lon - 0.0000305, 7)
+            assert station.max_lon == lon
+            assert round(station.min_lon, 7) == round(lon - 0.0002, 7)
+            assert station.radius == 12
+            assert station.samples == 4
+            assert station.source == source
+            assert round(station.weight, 2) == 3.96
 
 
 class TestWifi(StationMacTest, CeleryTestCase):
@@ -535,16 +535,16 @@ class TestWifi(StationMacTest, CeleryTestCase):
             self.queue_and_update(obs)
 
             station = self.get_station(station)
-            self.assertAlmostEqual(station.lat, lat)
-            self.assertAlmostEqual(station.max_lat, lat)
-            self.assertAlmostEqual(station.min_lat, lat)
-            self.assertAlmostEqual(station.lon, lon - 0.0019971, 7)
-            self.assertAlmostEqual(station.max_lon, lon)
-            self.assertAlmostEqual(station.min_lon, lon - 0.006)
-            self.assertEqual(station.radius, 278)
-            self.assertEqual(station.samples, 6)
-            self.assertEqual(station.source, source)
-            self.assertAlmostEqual(station.weight, 16.11, 2)
+            assert station.lat == lat
+            assert station.max_lat == lat
+            assert station.min_lat == lat
+            assert round(station.lon, 7) == round(lon - 0.0019971, 7)
+            assert station.max_lon == lon
+            assert round(station.min_lon, 7) == round(lon - 0.006, 7)
+            assert station.radius == 278
+            assert station.samples == 6
+            assert station.source == source
+            assert round(station.weight, 2) == 16.11
 
     def test_region(self):
         obs = []
@@ -565,10 +565,10 @@ class TestWifi(StationMacTest, CeleryTestCase):
         # to not re-trigger region determination
         station1 = self.get_station(station1)
         self.check_blocked(station1, None)
-        self.assertEqual(station1.region, 'FR')
+        assert station1.region == 'FR'
         station2 = self.get_station(station2)
         self.check_blocked(station2, None)
-        self.assertEqual(station2.region, 'CH')
+        assert station2.region == 'CH'
 
 
 class TestCell(StationTest, CeleryTestCase):
@@ -597,7 +597,7 @@ class TestCell(StationTest, CeleryTestCase):
         queued = set(queue.dequeue())
         cellids = [decode_cellid(ob.unique_key) for ob in obs]
         areaids = set([encode_cellarea(*cellid[:4]) for cellid in cellids])
-        self.assertEqual(queued, areaids)
+        assert queued == areaids
 
     def test_change(self):
         for source in (ReportSource.gnss, ReportSource.query):
@@ -623,13 +623,13 @@ class TestCell(StationTest, CeleryTestCase):
             obs = obs[0]
             self.check_areas([obs])
             station = self.get_station(station)
-            self.assertAlmostEqual(station.lat, lat)
-            self.assertAlmostEqual(station.max_lat, lat)
-            self.assertAlmostEqual(station.min_lat, lat)
-            self.assertAlmostEqual(station.lon, lon - 0.0015793, 7)
-            self.assertAlmostEqual(station.max_lon, lon)
-            self.assertAlmostEqual(station.min_lon, lon - 0.004)
-            self.assertEqual(station.radius, 168)
-            self.assertEqual(station.samples, 3)
-            self.assertEqual(station.source, source)
-            self.assertAlmostEqual(station.weight, 9.245, 3)
+            assert station.lat == lat
+            assert station.max_lat == lat
+            assert station.min_lat == lat
+            assert round(station.lon, 7) == round(lon - 0.0015793, 7)
+            assert station.max_lon == lon
+            assert round(station.min_lon, 7) == round(lon - 0.004, 7)
+            assert station.radius == 168
+            assert station.samples == 3
+            assert station.source == source
+            assert round(station.weight, 3) == 9.245

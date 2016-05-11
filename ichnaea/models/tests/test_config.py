@@ -17,12 +17,12 @@ class TestExportConfig(DBTestCase):
         self.session.flush()
 
         result = self.session.query(ExportConfig).get('internal')
-        self.assertEqual(result.name, 'internal')
-        self.assertEqual(result.batch, 100)
-        self.assertEqual(result.schema, 'internal')
-        self.assertEqual(result.url, 'internal://')
-        self.assertEqual(result.skip_keys, frozenset(skip_keys))
-        self.assertEqual(result.skip_sources, frozenset(skip_sources))
+        assert result.name == 'internal'
+        assert result.batch == 100
+        assert result.schema == 'internal'
+        assert result.url == 'internal://'
+        assert result.skip_keys == frozenset(skip_keys)
+        assert result.skip_sources == frozenset(skip_sources)
 
     def test_allowed(self):
         configs = [
@@ -38,7 +38,7 @@ class TestExportConfig(DBTestCase):
         def test(name, api_key, source, expected):
             row = (self.session.query(ExportConfig)
                                .filter(ExportConfig.name == name)).first()
-            self.assertEqual(row.allowed(api_key, source), expected)
+            assert row.allowed(api_key, source) == expected
 
         test('none', None, None, True)
         test('none', None, 'gnss', True)
@@ -82,7 +82,7 @@ class TestExportConfig(DBTestCase):
         def test(name, expected):
             row = (self.session.query(ExportConfig)
                                .filter(ExportConfig.name == name)).first()
-            self.assertEqual(row.skip_keys, expected)
+            assert row.skip_keys == expected
 
         test('none', None)
         test('list', frozenset())

@@ -1,4 +1,5 @@
 import colander
+import pytest
 
 from ichnaea.api.exceptions import LocationNotFoundV0
 from ichnaea.api.locate.constants import (
@@ -17,7 +18,6 @@ from ichnaea.models import Radio
 from ichnaea.tests.base import (
     AppTestCase,
     GEOIP_DATA,
-    TestCase,
 )
 from ichnaea.tests.factories import (
     BlueShardFactory,
@@ -26,23 +26,21 @@ from ichnaea.tests.factories import (
 )
 
 
-class TestSchema(TestCase):
-
-    schema = LOCATE_V0_SCHEMA
+class TestSchema(object):
 
     def test_empty(self):
-        data = self.schema.deserialize({})
-        self.assertEqual(
-            data, {'bluetoothBeacons': (), 'cellTowers': (),
-                   'fallbacks': None, 'wifiAccessPoints': ()})
+        data = LOCATE_V0_SCHEMA.deserialize({})
+        assert (data ==
+                {'bluetoothBeacons': (), 'cellTowers': (),
+                 'fallbacks': None, 'wifiAccessPoints': ()})
 
     def test_empty_cell_entry(self):
-        data = self.schema.deserialize({'cell': [{}]})
-        self.assertTrue('cellTowers' in data)
+        data = LOCATE_V0_SCHEMA.deserialize({'cell': [{}]})
+        assert 'cellTowers' in data
 
     def test_wrong_cell_data(self):
-        with self.assertRaises(colander.Invalid):
-            self.schema.deserialize(
+        with pytest.raises(colander.Invalid):
+            LOCATE_V0_SCHEMA.deserialize(
                 {'cell': [{'mcc': 'a', 'mnc': 2, 'lac': 3, 'cid': 4}]})
 
 
@@ -76,12 +74,12 @@ class LocateV0Base(BaseLocateTest, AppTestCase):
             **kw)
 
         data = response.json
-        self.assertEqual(data['status'], 'ok')
-        self.assertAlmostEqual(data['lat'], expected['lat'])
-        self.assertAlmostEqual(data['lon'], expected['lon'])
-        self.assertAlmostEqual(data['accuracy'], expected['accuracy'])
+        assert data['status'] == 'ok'
+        assert round(data['lat'], 7) == round(expected['lat'], 7)
+        assert round(data['lon'], 7) == round(expected['lon'], 7)
+        assert data['accuracy'] == expected['accuracy']
         if fallback is not None:
-            self.assertEqual(data['fallback'], fallback)
+            assert data['fallback'] == fallback
 
     def model_query(self, blues=(), cells=(), wifis=()):
         query = {}
@@ -146,7 +144,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
                  'accuracy:high', 'status:hit']),
         ])
         items = self.queue.dequeue()
-        self.assertEqual(items, [{
+        assert (items == [{
             'api_key': 'test',
             'source': 'query',
             'report': {
@@ -196,7 +194,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             ('request', [self.metric_path, 'method:post']),
         ])
         items = self.queue.dequeue()
-        self.assertEqual(items, [{
+        assert (items == [{
             'api_key': 'test',
             'source': 'query',
             'report': {
@@ -252,7 +250,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
                  'accuracy:high', 'status:hit']),
         ])
         items = self.queue.dequeue()
-        self.assertEqual(items, [{
+        assert (items == [{
             'api_key': 'test',
             'source': 'query',
             'report': {

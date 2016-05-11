@@ -24,7 +24,7 @@ class TestStatsAPI(LogTestCase):
         self.check_stats(timer=[('metric', 1)])
         msg = self.stats_client.msgs[0]
         value = float(msg.split('|')[0].split(':')[1])
-        self.assertTrue(0.7 < value < 10.0, msg)
+        assert 0.7 < value < 10.0
 
     def test_mixed(self):
         self.stats_client.gauge('metric', 3)

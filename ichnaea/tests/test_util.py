@@ -1,47 +1,49 @@
 from datetime import datetime
 
+import pytest
 from pytz import UTC
 
 from ichnaea.exceptions import GZIPDecodeError
-from ichnaea.tests.base import TestCase
 from ichnaea import util
 
 
-class TestUtil(TestCase):
+class TestUtil(object):
 
     gzip_foo = (b'\x1f\x8b\x08\x00\xed\x7f\x9aU\x02\xffK'
                 b'\xcb\xcf\x07\x00!es\x8c\x03\x00\x00\x00')
 
     def test_utcnow(self):
         now = util.utcnow()
-        self.assertTrue(isinstance(now, datetime))
-        self.assertEqual(now.tzinfo, UTC)
+        assert isinstance(now, datetime)
+        assert now.tzinfo == UTC
 
     def test_encode_gzip(self):
         data = util.encode_gzip(u'foo')
-        self.assertEqual(data[:4], self.gzip_foo[:4])
-        self.assertEqual(data[-13:], self.gzip_foo[-13:])
+        assert data[:4] == self.gzip_foo[:4]
+        assert data[-13:] == self.gzip_foo[-13:]
 
     def test_encode_gzip_bytes(self):
         data = util.encode_gzip(b'foo')
-        self.assertEqual(data[:4], self.gzip_foo[:4])
-        self.assertEqual(data[-13:], self.gzip_foo[-13:])
+        assert data[:4] == self.gzip_foo[:4]
+        assert data[-13:] == self.gzip_foo[-13:]
 
     def test_decode_gzip(self):
         data = util.decode_gzip(self.gzip_foo)
-        self.assertEqual(data, u'foo')
+        assert data == u'foo'
 
     def test_roundtrip_gzip(self):
         data = util.decode_gzip(util.encode_gzip(b'foo'))
-        self.assertEqual(data, u'foo')
+        assert data == u'foo'
 
     def test_no_encoding(self):
         data = util.encode_gzip(b'\x00ab', encoding=None)
-        self.assertTrue(isinstance(data, bytes))
+        assert isinstance(data, bytes)
         result = util.decode_gzip(data, encoding=None)
-        self.assertTrue(isinstance(result, bytes))
-        self.assertEqual(result, b'\x00ab')
+        assert isinstance(result, bytes)
+        assert result == b'\x00ab'
 
     def test_decode_gzip_error(self):
-        self.assertRaises(GZIPDecodeError, util.decode_gzip, self.gzip_foo[:1])
-        self.assertRaises(GZIPDecodeError, util.decode_gzip, self.gzip_foo[:5])
+        with pytest.raises(GZIPDecodeError):
+            util.decode_gzip(self.gzip_foo[:1])
+        with pytest.raises(GZIPDecodeError):
+            util.decode_gzip(self.gzip_foo[:5])
