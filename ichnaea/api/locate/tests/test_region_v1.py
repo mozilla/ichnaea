@@ -213,5 +213,6 @@ class TestError(RegionBase, CommonLocateErrorTest):
             'country_name': 'United Kingdom',
         }
 
-    def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=2)
+    def test_database_error(self, db_rw_drop_table, raven, stats):
+        super(TestError, self).test_database_error(
+            db_rw_drop_table, raven, stats, db_errors=2)

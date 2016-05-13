@@ -3,11 +3,10 @@ import webtest
 
 from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
+from ichnaea.db import configure_db
 from ichnaea.geoip import GeoIPNull
 from ichnaea.tests.base import (
-    _make_db,
-    AppTestCase,
-    ConnectionTestCase,
+    DBTestCase,
     REDIS_URI,
     SQLURI,
     TEST_CONFIG,
@@ -34,29 +33,29 @@ def _make_app(app_config=TEST_CONFIG,
     return webtest.TestApp(wsgiapp)
 
 
-class TestApp(ConnectionTestCase):
+class TestApp(object):
 
     def test_compiles(self):
         from ichnaea.webapp import app
         assert hasattr(app, 'wsgi_app')
 
-    def test_db_config(self):
+    def test_db_config(self, geoip_db, raven, redis, stats):
         app_config = DummyConfig({
             'database': {
                 'rw_url': SQLURI,
                 'ro_url': SQLURI,
             },
         })
-        app = _make_app(app_config=app_config,
-                        _geoip_db=self.geoip_db,
-                        _raven_client=self.raven_client,
-                        _redis_client=self.redis_client,
-                        _stats_client=self.stats_client,
-                        )
-        db_rw = app.app.registry.db_rw
-        db_ro = app.app.registry.db_ro
-        # the configured databases are working
         try:
+            app = _make_app(app_config=app_config,
+                            _geoip_db=geoip_db,
+                            _raven_client=raven,
+                            _redis_client=redis,
+                            _stats_client=stats,
+                            )
+            db_rw = app.app.registry.db_rw
+            db_ro = app.app.registry.db_ro
+            # the configured databases are working
             assert db_rw.ping()
             assert db_ro.ping()
         finally:
@@ -64,43 +63,42 @@ class TestApp(ConnectionTestCase):
             db_rw.close()
             db_ro.close()
 
-    def test_db_hooks(self):
-        db_rw = _make_db()
-        db_ro = _make_db()
+    def test_db_hooks(self, db_rw, db_ro, geoip_db, raven, redis, stats):
         app = _make_app(_db_rw=db_rw,
                         _db_ro=db_ro,
-                        _geoip_db=self.geoip_db,
-                        _raven_client=self.raven_client,
-                        _redis_client=self.redis_client,
-                        _stats_client=self.stats_client,
+                        _geoip_db=geoip_db,
+                        _raven_client=raven,
+                        _redis_client=redis,
+                        _stats_client=stats,
                         )
         # check that our _db hooks are passed through
         assert app.app.registry.db_rw is db_rw
         assert app.app.registry.db_ro is db_ro
-        db_rw.close()
-        db_ro.close()
 
-    def test_redis_config(self):
+    def test_redis_config(self, db_rw, db_ro, geoip_db, raven, stats):
         app_config = DummyConfig({
             'cache': {
                 'cache_url': REDIS_URI,
             },
         })
-        app = _make_app(app_config=app_config,
-                        _db_rw=self.db_rw,
-                        _db_ro=self.db_ro,
-                        _geoip_db=self.geoip_db,
-                        _raven_client=self.raven_client,
-                        _stats_client=self.stats_client)
-        redis_client = app.app.registry.redis_client
-        assert redis_client is not None
-        assert redis_client.connection_pool.connection_kwargs['db'] == 1
+        try:
+            app = _make_app(app_config=app_config,
+                            _db_rw=db_rw,
+                            _db_ro=db_ro,
+                            _geoip_db=geoip_db,
+                            _raven_client=raven,
+                            _stats_client=stats)
+            redis_client = app.app.registry.redis_client
+            assert redis_client is not None
+            assert redis_client.connection_pool.connection_kwargs['db'] == 1
+        finally:
+            redis_client.close()
 
 
-class TestHeartbeat(AppTestCase):
+class TestHeartbeat(DBTestCase):
 
-    def test_ok(self):
-        response = self.app.get('/__heartbeat__', status=200)
+    def test_ok(self, app):
+        response = app.get('/__heartbeat__', status=200)
         assert response.content_type == 'application/json'
         data = response.json
         timed_services = set(['database', 'geoip', 'redis'])
@@ -119,7 +117,7 @@ class TestHeartbeatErrors(object):
     @pytest.yield_fixture(scope='function')
     def broken_app(self, http_session, raven, stats):
         # Create database connections to the discard port.
-        db = _make_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
+        db = configure_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
 
         # Create a broken GeoIP database.
         geoip_db = GeoIPNull()
@@ -142,46 +140,51 @@ class TestHeartbeatErrors(object):
         geoip_db.close()
         redis_client.close()
 
-    def test_database_error(self, broken_app):
+    def test_database(self, broken_app):
         res = broken_app.get('/__heartbeat__', status=503)
         assert res.content_type == 'application/json'
         assert res.json['database'] == {'up': False, 'time': 0}
         assert res.headers['Access-Control-Allow-Origin'] == '*'
         assert res.headers['Access-Control-Max-Age'] == '2592000'
 
-    def test_geoip_error(self, broken_app):
+    def test_geoip(self, broken_app):
         res = broken_app.get('/__heartbeat__', status=503)
         assert res.content_type == 'application/json'
         assert res.json['geoip'] == \
             {'up': False, 'time': 0, 'age_in_days': -1}
 
-    def test_redis_error(self, broken_app):
+    def test_redis(self, broken_app):
         res = broken_app.get('/__heartbeat__', status=503)
         assert res.content_type == 'application/json'
         assert res.json['redis'] == {'up': False, 'time': 0}
 
+    def test_lbheartbeat(self, broken_app):
+        res = broken_app.get('/__lbheartbeat__', status=200)
+        assert res.content_type == 'application/json'
+        assert res.json['status'] == 'OK'
 
-class TestLBHeartbeat(AppTestCase):
 
-    def test_get(self):
-        res = self.app.get('/__lbheartbeat__', status=200)
+class TestLBHeartbeat(object):
+
+    def test_get(self, app):
+        res = app.get('/__lbheartbeat__', status=200)
         assert res.content_type == 'application/json'
         assert res.json['status'] == 'OK'
         assert res.headers['Access-Control-Allow-Origin'] == '*'
         assert res.headers['Access-Control-Max-Age'] == '2592000'
 
-    def test_head(self):
-        res = self.app.head('/__lbheartbeat__', status=200)
+    def test_head(self, app):
+        res = app.head('/__lbheartbeat__', status=200)
         assert res.content_type == 'application/json'
         assert res.body == b''
 
-    def test_post(self):
-        res = self.app.post('/__lbheartbeat__', status=200)
+    def test_post(self, app):
+        res = app.post('/__lbheartbeat__', status=200)
         assert res.content_type == 'application/json'
         assert res.json['status'] == 'OK'
 
-    def test_options(self):
-        res = self.app.options(
+    def test_options(self, app):
+        res = app.options(
             '/__lbheartbeat__', status=200, headers={
                 'Access-Control-Request-Method': 'POST',
                 'Origin': 'localhost.local',
@@ -191,25 +194,10 @@ class TestLBHeartbeat(AppTestCase):
         assert res.content_length is None
         assert res.content_type is None
 
-    def test_unsupported_methods(self):
-        self.app.delete('/__lbheartbeat__', status=405)
-        self.app.patch('/__lbheartbeat__', status=405)
-        self.app.put('/__lbheartbeat__', status=405)
-
-
-class TestLBHeartbeatDatabase(AppTestCase):
-
-    def test_database_error(self):
-        # self.app is a class variable, so we keep this test in
-        # its own class to avoid isolation problems
-
-        # create a database connection to the discard port
-        self.app.app.registry.db_ro = _make_db(
-            uri='mysql+pymysql://none:none@127.0.0.1:9/test_location')
-
-        res = self.app.get('/__lbheartbeat__', status=200)
-        assert res.content_type == 'application/json'
-        assert res.json['status'] == 'OK'
+    def test_unsupported_methods(self, app):
+        app.delete('/__lbheartbeat__', status=405)
+        app.patch('/__lbheartbeat__', status=405)
+        app.put('/__lbheartbeat__', status=405)
 
 
 class TestSettings(object):
@@ -219,10 +207,10 @@ class TestSettings(object):
         assert type(settings.max_requests_jitter) == int
 
 
-class TestVersion(AppTestCase):
+class TestVersion(object):
 
-    def test_ok(self):
-        response = self.app.get('/__version__', status=200)
+    def test_ok(self, app):
+        response = app.get('/__version__', status=200)
         assert response.content_type == 'application/json'
         data = response.json
         assert set(data.keys()) == set(['commit', 'source', 'tag', 'version'])

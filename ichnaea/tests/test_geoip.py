@@ -17,7 +17,7 @@ from ichnaea.tests.base import (
 )
 
 
-class TestDatabase(object):
+class TestGeoIP(object):
 
     @classmethod
     def _open_db(cls, raven_client, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):

@@ -15,10 +15,7 @@ from ichnaea.scripts.datamap import (
     merge_files,
     render_tiles,
 )
-from ichnaea.tests.base import (
-    _make_db,
-    CeleryTestCase,
-)
+from ichnaea.tests.base import CeleryTestCase
 from ichnaea import util
 
 GIT_ROOT = os.path.abspath(os.path.join(ROOT, os.pardir))
@@ -49,6 +46,7 @@ class TestMap(CeleryTestCase):
 
         lines = []
         rows = 0
+        db_url = str(self.db_rw.engine.url)
         with util.selfdestruct_tempdir() as temp_dir:
             quaddir = os.path.join(temp_dir, 'quadtrees')
             os.mkdir(quaddir)
@@ -59,8 +57,8 @@ class TestMap(CeleryTestCase):
                 filename = 'map_%s.csv.gz' % shard_id
                 filepath = os.path.join(temp_dir, filename)
                 result = export_file(
-                    None, filepath, shard.__tablename__,
-                    _db_rw=_make_db(), _session=self.session)
+                    db_url, filepath, shard.__tablename__,
+                    _session=self.session)
 
                 if not result:
                     assert not os.path.isfile(filepath)

@@ -715,14 +715,8 @@ class CommonPositionTest(BaseLocateTest):
 
 
 class CommonLocateErrorTest(BaseLocateTest):
-    # this is a standalone class to ensure DB isolation for dropping tables
 
-    @pytest.yield_fixture(scope='function', autouse=True)
-    def teardown(self, db_rw):
-        yield None
-        self.setup_tables(db_rw.engine)
-
-    def test_apikey_error(self, db_errors=0):
+    def test_apikey_error(self, db_rw_drop_table, raven, stats, db_errors=0):
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
@@ -731,10 +725,10 @@ class CommonLocateErrorTest(BaseLocateTest):
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(body=query, ip=self.test_ip)
         self.check_response(res, 'ok')
-        self.check_raven([('ProgrammingError', db_errors)])
+        raven.check([('ProgrammingError', db_errors)])
         self.check_queue(0)
 
-    def test_database_error(self, db_errors=0):
+    def test_database_error(self, db_rw_drop_table, raven, stats, db_errors=0):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
             CellShardOCIDFactory.build(radio=Radio.gsm),
@@ -768,4 +762,4 @@ class CommonLocateErrorTest(BaseLocateTest):
                      'accuracy:high', 'status:miss']),
             ])
 
-        self.check_raven([('ProgrammingError', db_errors)])
+        raven.check([('ProgrammingError', db_errors)])

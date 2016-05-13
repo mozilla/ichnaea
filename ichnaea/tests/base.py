@@ -26,6 +26,15 @@ GEOIP_BAD_FILE = os.path.join(
 SQLURI = os.environ.get('SQLURI')
 REDIS_URI = os.environ.get('REDIS_URI')
 
+
+ALEMBIC_CFG = Config()
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'script_location', 'alembic')
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'sqlalchemy.url', SQLURI)
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'sourceless', 'true')
+
 SESSION = {}
 
 # Some test-data constants
@@ -61,10 +70,6 @@ GB_LAT = 51.5
 GB_LON = -0.1
 GB_MCC = 234
 GB_MNC = 30
-
-
-def _make_db(uri=SQLURI):
-    return configure_db(uri)
 
 
 @pytest.mark.usefixtures('raven', 'stats')
@@ -170,7 +175,7 @@ class DBTestCase(LogTestCase):
 
     @classmethod
     def setup_database(cls):
-        db = _make_db()
+        db = configure_db(SQLURI)
         engine = db.engine
         cls.cleanup_tables(engine)
         cls.setup_tables(engine)
@@ -245,12 +250,13 @@ class DBTestCase(LogTestCase):
         setattr(request.cls, 'session', session)
         SESSION['default'] = session
 
-        if request.cls.track_connection_events:
+        track = getattr(request.cls, 'track_connection_events', False)
+        if track:
             self.setup_db_event_tracking(rw_conn, ro_conn)
 
         yield session
 
-        if request.cls.track_connection_events:
+        if track:
             self.teardown_db_event_tracking(rw_conn, ro_conn)
 
         del SESSION['default']
@@ -276,15 +282,7 @@ class DBTestCase(LogTestCase):
             trans = conn.begin()
             _Model.metadata.create_all(engine)
             # Now stamp the latest alembic version
-            alembic_cfg = Config()
-            alembic_cfg.set_section_option(
-                'alembic', 'script_location', 'alembic')
-            alembic_cfg.set_section_option(
-                'alembic', 'sqlalchemy.url', str(engine.url))
-            alembic_cfg.set_section_option(
-                'alembic', 'sourceless', 'true')
-
-            command.stamp(alembic_cfg, 'head')
+            command.stamp(ALEMBIC_CFG, 'head')
 
             # always add a test API key
             conn.execute(ApiKey.__table__.delete())
@@ -318,21 +316,22 @@ class DBTestCase(LogTestCase):
             trans.commit()
 
 
-@pytest.mark.usefixtures('data_queues', 'geoip_db', 'http_session', 'redis')
+@pytest.mark.usefixtures('data_queues', 'geoip_db', 'http_session',
+                         'raven', 'redis', 'stats')
 class ConnectionTestCase(DBTestCase):
     pass
 
 
-@pytest.mark.usefixtures('app', 'redis')
+@pytest.mark.usefixtures('app')
 class AppTestCase(DBTestCase):
     default_session = 'ro_session'
 
 
-@pytest.mark.usefixtures('celery', 'data_queues', 'http_session', 'redis')
+@pytest.mark.usefixtures('celery', 'data_queues', 'http_session')
 class CeleryTestCase(DBTestCase):
     pass
 
 
-@pytest.mark.usefixtures('app', 'celery', 'redis')
+@pytest.mark.usefixtures('app', 'celery')
 class CeleryAppTestCase(DBTestCase):
     default_session = 'rw_session'

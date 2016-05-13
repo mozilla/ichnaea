@@ -285,8 +285,10 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
 class TestError(LocateV0Base, CommonLocateErrorTest):
 
-    def test_apikey_error(self):
-        super(TestError, self).test_apikey_error(db_errors=1)
+    def test_apikey_error(self, db_rw_drop_table, raven, stats):
+        super(TestError, self).test_apikey_error(
+            db_rw_drop_table, raven, stats, db_errors=1)
 
-    def test_database_error(self):
-        super(TestError, self).test_database_error(db_errors=5)
+    def test_database_error(self, db_rw_drop_table, raven, stats):
+        super(TestError, self).test_database_error(
+            db_rw_drop_table, raven, stats, db_errors=5)

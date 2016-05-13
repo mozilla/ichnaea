@@ -2,7 +2,6 @@ from collections import defaultdict
 from datetime import timedelta
 
 import mock
-import pytest
 from sqlalchemy import text
 
 from ichnaea.data.station import CellUpdater
@@ -72,15 +71,7 @@ class TestDatabaseErrors(BaseStationTest, CeleryTestCase):
     def queue_and_update(self, obs):
         return self._queue_and_update(obs, update_cell)
 
-    @pytest.yield_fixture(scope='function', autouse=True)
-    def teardown(self, db_rw):
-        yield None
-        for model in CellShard.shards().values():
-            self.session.execute(text('drop table %s;' % model.__tablename__))
-
-        self.setup_tables(db_rw.engine)
-
-    def test_lock_timeout(self):
+    def test_lock_timeout(self, db_rw_drop_table):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
             radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
@@ -106,23 +97,26 @@ class TestDatabaseErrors(BaseStationTest, CeleryTestCase):
             self.session.execute('set session innodb_lock_wait_timeout = 1')
             with mock.patch.object(CellUpdater, 'add_area_update', mock_area):
                 self.queue_and_update([obs])
+
+            # the inner task logic was called exactly twice
+            assert num[0] == 2
+
+            shard = CellShard.shard_model(obs.cellid)
+            cells = self.session.query(shard).all()
+            assert len(cells) == 1
+            assert cells[0].samples == 1
+
+            self.check_statcounter(StatKey.cell, 1)
+            self.check_statcounter(StatKey.unique_cell, 1)
+            self.check_stats(
+                counter=[('data.observation.insert', 1, ['type:cell'])],
+                timer=[('task', 1, ['task:data.update_cell'])],
+            )
         finally:
             CellUpdater._retry_wait = orig_wait
-
-        # the inner task logic was called exactly twice
-        assert num[0] == 2
-
-        shard = CellShard.shard_model(obs.cellid)
-        cells = self.session.query(shard).all()
-        assert len(cells) == 1
-        assert cells[0].samples == 1
-
-        self.check_statcounter(StatKey.cell, 1)
-        self.check_statcounter(StatKey.unique_cell, 1)
-        self.check_stats(
-            counter=[('data.observation.insert', 1, ['type:cell'])],
-            timer=[('task', 1, ['task:data.update_cell'])],
-        )
+            for model in CellShard.shards().values():
+                self.session.execute(text(
+                    'drop table %s;' % model.__tablename__))
 
 
 class StationTest(BaseStationTest):

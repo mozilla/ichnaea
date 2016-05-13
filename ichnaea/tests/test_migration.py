@@ -2,7 +2,6 @@ import os.path
 
 from alembic import command as alembic_command
 from alembic.autogenerate import compare_metadata
-from alembic.config import Config
 from alembic.ddl.impl import _type_comparators
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -14,7 +13,7 @@ from sqlalchemy.sql import sqltypes
 from ichnaea.models import _Model  # NOQA
 
 from ichnaea.tests.base import (
-    _make_db,
+    ALEMBIC_CFG,
     DATA_DIRECTORY,
     DBTestCase,
 )
@@ -58,10 +57,8 @@ def db_compare_type(context, inspected_column,
 class TestMigration(object):
 
     @pytest.yield_fixture(scope='function')
-    def db(self):
-        db = _make_db()
-        yield db
-        db.close()
+    def db(self, db_rw):
+        yield db_rw
         # setup normal database schema again
         DBTestCase.setup_database()
 
@@ -88,19 +85,10 @@ class TestMigration(object):
         # we have no alembic base revision
         assert self.current_db_revision(db) is None
 
-        # configure alembic
-        alembic_cfg = Config()
-        alembic_cfg.set_section_option(
-            'alembic', 'script_location', 'alembic')
-        alembic_cfg.set_section_option(
-            'alembic', 'sqlalchemy.url', str(db.engine.url))
-        alembic_cfg.set_section_option(
-            'alembic', 'sourceless', 'true')
-
         # run the migration
         with db.engine.connect() as conn:
             trans = conn.begin()
-            alembic_command.upgrade(alembic_cfg, 'head')
+            alembic_command.upgrade(ALEMBIC_CFG, 'head')
             trans.commit()
 
         # afterwards the DB is stamped
@@ -108,7 +96,7 @@ class TestMigration(object):
         assert db_revision is not None
 
         # db revision matches latest alembic revision
-        alembic_script = ScriptDirectory.from_config(alembic_cfg)
+        alembic_script = ScriptDirectory.from_config(ALEMBIC_CFG)
         alembic_head = alembic_script.get_current_head()
         assert db_revision == alembic_head
 

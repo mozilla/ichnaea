@@ -27,6 +27,7 @@ from ichnaea.log import (
 )
 from ichnaea.queue import DataQueue
 from ichnaea.tests.base import (
+    DBTestCase,
     GEOIP_TEST_FILE,
     TEST_CONFIG,
 )
@@ -67,7 +68,6 @@ def database():
     from ichnaea import models  # NOQA
 
     # Setup clean database tables.
-    from ichnaea.tests.base import DBTestCase
     DBTestCase.setup_database()
 
 
@@ -82,6 +82,12 @@ def global_db_rw(request, database):
 def db_rw(request, global_db_rw):
     request.cls.db_rw = db = global_db_rw
     yield db
+
+
+@pytest.yield_fixture(scope='function')
+def db_rw_drop_table(db_rw):
+    yield db_rw
+    DBTestCase.setup_tables(db_rw.engine)
 
 
 @pytest.yield_fixture(scope='session')
@@ -208,8 +214,8 @@ def region_searcher(request, geoip_db, raven_client,
 
 
 @pytest.yield_fixture(scope='class')
-def app(request, db_rw, db_ro, geoip_db, http_session, raven_client,
-        redis_client, stats_client, position_searcher, region_searcher):
+def global_app(request, db_rw, db_ro, geoip_db, http_session, raven_client,
+               redis_client, stats_client, position_searcher, region_searcher):
     wsgiapp = main(
         TEST_CONFIG,
         _db_rw=db_rw,
@@ -226,9 +232,14 @@ def app(request, db_rw, db_ro, geoip_db, http_session, raven_client,
     yield app
 
 
+@pytest.yield_fixture(scope='function')
+def app(global_app, raven, redis, stats):
+    yield global_app
+
+
 @pytest.yield_fixture(scope='class')
-def celery(request, db_rw, geoip_db, raven_client,
-           redis_client, stats_client):
+def global_celery(request, db_rw, geoip_db, raven_client,
+                  redis_client, stats_client):
     request.cls.celery_app = celery_app
     celery_app.app_config = TEST_CONFIG
     celery_app.settings = TEST_CONFIG.asdict()
@@ -241,3 +252,8 @@ def celery(request, db_rw, geoip_db, raven_client,
         _stats_client=stats_client)
     yield celery_app
     shutdown_worker(celery_app)
+
+
+@pytest.yield_fixture(scope='function')
+def celery(global_celery, raven, redis, stats):
+    yield global_celery
