@@ -7,7 +7,7 @@ from ichnaea.tests.base import GEOIP_DATA
 @pytest.fixture(scope='class')
 def source(request, geoip_db, raven_client,
            redis_client, stats_client, data_queues):
-    request.cls.source = request.cls.TestSource(
+    request.cls.source = request.cls.Source(
         geoip_db=geoip_db,
         raven_client=raven_client,
         redis_client=redis_client,

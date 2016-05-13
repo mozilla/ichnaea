@@ -34,9 +34,9 @@ class SourceTest(object):
 
 class TestPosition(SourceTest, BaseSourceTest):
 
-    TestSource = GeoIPPositionSource
+    Source = GeoIPPositionSource
 
 
 class TestRegion(SourceTest, BaseSourceTest):
 
-    TestSource = GeoIPRegionSource
+    Source = GeoIPRegionSource

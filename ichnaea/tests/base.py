@@ -17,12 +17,6 @@ from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import CITY_RADII
 from ichnaea.models import _Model, ApiKey
 
-# make new unittest API's available under Python 2.6
-try:
-    import unittest2 as unittest  # NOQA
-except ImportError:
-    import unittest
-
 TEST_DIRECTORY = os.path.dirname(__file__)
 DATA_DIRECTORY = os.path.join(TEST_DIRECTORY, 'data')
 GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
@@ -74,7 +68,7 @@ def _make_db(uri=SQLURI):
 
 
 @pytest.mark.usefixtures('raven', 'stats')
-class LogTestCase(unittest.TestCase):
+class LogTestCase(object):
 
     def find_stats_messages(self, msg_type, msg_name,
                             msg_value=None, msg_tags=(), _client=None):
@@ -167,12 +161,11 @@ class LogTestCase(unittest.TestCase):
                     assert match == len(msgs)
 
 
-@pytest.mark.usefixtures('db_rw', 'db_ro')
 class DBTestCase(LogTestCase):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
-    default_session = 'db_rw_session'
+    default_session = 'rw_session'
     track_connection_events = False
 
     @classmethod
@@ -185,11 +178,13 @@ class DBTestCase(LogTestCase):
 
     @contextmanager
     def db_call_checker(self):
+        rw_conn = self.db_rw_session.bind
+        ro_conn = self.db_ro_session.bind
         try:
-            self.setup_db_event_tracking()
+            self.setup_db_event_tracking(rw_conn, ro_conn)
             yield self.check_db_calls
         finally:
-            self.teardown_db_event_tracking()
+            self.teardown_db_event_tracking(rw_conn, ro_conn)
 
     def check_db_calls(self, rw=None, ro=None):
         if rw is not None:
@@ -205,7 +200,7 @@ class DBTestCase(LogTestCase):
             'ro': {'calls': [], 'handler': None},
         }
 
-    def setup_db_event_tracking(self):
+    def setup_db_event_tracking(self, rw_conn, ro_conn):
         self.reset_db_event_tracking()
 
         def scoped_conn_event_handler(calls):
@@ -215,64 +210,65 @@ class DBTestCase(LogTestCase):
 
         rw_handler = scoped_conn_event_handler(self.db_events['rw']['calls'])
         self.db_events['rw']['handler'] = rw_handler
-        event.listen(self.rw_conn, 'before_cursor_execute',
+        event.listen(rw_conn, 'before_cursor_execute',
                      rw_handler, named=True)
 
         ro_handler = scoped_conn_event_handler(self.db_events['ro']['calls'])
         self.db_events['ro']['handler'] = ro_handler
-        event.listen(self.ro_conn, 'before_cursor_execute',
+        event.listen(ro_conn, 'before_cursor_execute',
                      ro_handler, named=True)
 
-    def teardown_db_event_tracking(self):
-        event.remove(self.ro_conn, 'before_cursor_execute',
+    def teardown_db_event_tracking(self, rw_conn, ro_conn):
+        event.remove(ro_conn, 'before_cursor_execute',
                      self.db_events['ro']['handler'])
-        event.remove(self.rw_conn, 'before_cursor_execute',
+        event.remove(rw_conn, 'before_cursor_execute',
                      self.db_events['rw']['handler'])
         self.reset_db_event_tracking()
 
-    def setUp(self):
-        super(DBTestCase, self).setUp()
-        self.rw_conn = self.db_rw.engine.connect()
-        self.rw_trans = self.rw_conn.begin()
-        self.db_rw.session_factory.configure(bind=self.rw_conn)
-        self.db_rw_session = self.db_rw.session()
-        self.ro_conn = self.db_ro.engine.connect()
-        self.ro_trans = self.ro_conn.begin()
-        self.db_ro.session_factory.configure(bind=self.ro_conn)
-        self.db_ro_session = self.db_ro.session()
+    @pytest.yield_fixture(scope='function', autouse=True)
+    def session(self, request, db_rw, db_ro):
+        rw_conn = db_rw.engine.connect()
+        rw_trans = rw_conn.begin()
+        db_rw.session_factory.configure(bind=rw_conn)
+        request.cls.db_rw_session = rw_session = db_rw.session()
+        ro_conn = db_ro.engine.connect()
+        ro_trans = ro_conn.begin()
+        db_ro.session_factory.configure(bind=ro_conn)
+        request.cls.db_ro_session = ro_session = db_ro.session()
 
         # set up a default session
-        default_session = getattr(self, self.default_session)
-        setattr(self, 'session', default_session)
-        SESSION['default'] = default_session
+        default_session = getattr(request.cls, 'default_session', 'rw_session')
+        if default_session == 'ro_session':
+            session = ro_session
+        else:
+            session = rw_session
+        setattr(request.cls, 'session', session)
+        SESSION['default'] = session
 
-        if self.track_connection_events:
-            self.setup_db_event_tracking()
+        if request.cls.track_connection_events:
+            self.setup_db_event_tracking(rw_conn, ro_conn)
 
-    def tearDown(self):
-        super(DBTestCase, self).tearDown()
-        if self.track_connection_events:
-            self.teardown_db_event_tracking()
+        yield session
+
+        if request.cls.track_connection_events:
+            self.teardown_db_event_tracking(rw_conn, ro_conn)
 
         del SESSION['default']
-        del self.session
+        del request.cls.session
 
-        self.ro_trans.rollback()
-        self.db_ro_session.close()
-        del self.db_ro_session
-        self.db_ro.session_factory.configure(bind=None)
-        self.ro_trans.close()
-        del self.ro_trans
-        self.ro_conn.close()
-        del self.ro_conn
-        self.rw_trans.rollback()
-        self.db_rw_session.close()
-        del self.db_rw_session
-        self.db_rw.session_factory.configure(bind=None)
-        self.rw_trans.close()
-        del self.rw_trans
-        self.rw_conn.close()
-        del self.rw_conn
+        ro_trans.rollback()
+        ro_session.close()
+        del request.cls.db_ro_session
+        db_ro.session_factory.configure(bind=None)
+        ro_trans.close()
+        ro_conn.close()
+
+        rw_trans.rollback()
+        rw_session.close()
+        del request.cls.db_rw_session
+        db_rw.session_factory.configure(bind=None)
+        rw_trans.close()
+        rw_conn.close()
 
     @classmethod
     def setup_tables(cls, engine):
@@ -329,7 +325,7 @@ class ConnectionTestCase(DBTestCase):
 
 @pytest.mark.usefixtures('app', 'redis')
 class AppTestCase(DBTestCase):
-    default_session = 'db_ro_session'
+    default_session = 'ro_session'
 
 
 @pytest.mark.usefixtures('celery', 'data_queues', 'http_session', 'redis')
@@ -339,4 +335,4 @@ class CeleryTestCase(DBTestCase):
 
 @pytest.mark.usefixtures('app', 'celery', 'redis')
 class CeleryAppTestCase(DBTestCase):
-    default_session = 'db_rw_session'
+    default_session = 'rw_session'

@@ -11,7 +11,7 @@ from ichnaea import util
 
 class TestRegionSource(BaseSourceTest):
 
-    TestSource = InternalRegionSource
+    Source = InternalRegionSource
     api_type = 'region'
 
     def test_blue(self):

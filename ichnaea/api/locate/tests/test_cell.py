@@ -18,7 +18,7 @@ from ichnaea import util
 
 class TestCellPosition(BaseSourceTest):
 
-    TestSource = CellPositionSource
+    Source = CellPositionSource
 
     def test_check_empty(self):
         query = self.model_query()
@@ -107,7 +107,7 @@ class TestCellPosition(BaseSourceTest):
 
 class TestOCIDPositionSource(BaseSourceTest):
 
-    TestSource = OCIDPositionSource
+    Source = OCIDPositionSource
 
     def test_check_empty(self):
         query = self.model_query()

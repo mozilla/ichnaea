@@ -6,6 +6,7 @@ from alembic.config import Config
 from alembic.ddl.impl import _type_comparators
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
+import pytest
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
@@ -17,11 +18,6 @@ from ichnaea.tests.base import (
     DATA_DIRECTORY,
     DBTestCase,
 )
-
-try:
-    import unittest2 as unittest  # NOQA
-except ImportError:
-    import unittest
 
 _compare_attrs = {
     sqltypes._Binary: ('length', ),
@@ -59,85 +55,61 @@ def db_compare_type(context, inspected_column,
     raise AssertionError('Unsupported DB type comparison.')
 
 
-class TestMigration(unittest.TestCase):
+class TestMigration(object):
 
-    base = SQL_BASE
-    rev = None
-
-    def setUp(self):
-        super(TestMigration, self).setUp()
-        self.db = _make_db()
-        # capture state of fresh database
-        self.head_metadata = self.inspect_db()
-        DBTestCase.cleanup_tables(self.db.engine)
-
-    def tearDown(self):
-        super(TestMigration, self).tearDown()
-        self.db.close()
-        del self.db
+    @pytest.yield_fixture(scope='function')
+    def db(self):
+        db = _make_db()
+        yield db
+        db.close()
         # setup normal database schema again
         DBTestCase.setup_database()
 
-    def alembic_config(self):
+    def current_db_revision(self, db):
+        with db.engine.connect() as conn:
+            result = conn.execute('select version_num from alembic_version')
+            alembic_rev = result.first()
+        return None if alembic_rev is None else alembic_rev[0]
+
+    def test_migration(self, db):
+        # capture state of fresh database
+        metadata = MetaData()
+        metadata.reflect(bind=db.engine)
+
+        # drop all tables
+        DBTestCase.cleanup_tables(db.engine)
+
+        # setup old database schema
+        with open(SQL_BASE) as fd:
+            sql_text = fd.read()
+        with db.engine.connect() as conn:
+            conn.execute(sql_text)
+
+        # we have no alembic base revision
+        assert self.current_db_revision(db) is None
+
+        # configure alembic
         alembic_cfg = Config()
         alembic_cfg.set_section_option(
             'alembic', 'script_location', 'alembic')
         alembic_cfg.set_section_option(
-            'alembic', 'sqlalchemy.url', str(self.db.engine.url))
+            'alembic', 'sqlalchemy.url', str(db.engine.url))
         alembic_cfg.set_section_option(
             'alembic', 'sourceless', 'true')
-        return alembic_cfg
 
-    def alembic_script(self):
-        return ScriptDirectory.from_config(self.alembic_config())
-
-    def current_db_revision(self):
-        with self.db.engine.connect() as conn:
-            result = conn.execute('select version_num from alembic_version')
-            alembic_rev = result.first()
-        if alembic_rev is None:
-            return None
-        return alembic_rev[0]
-
-    def inspect_db(self):
-        metadata = MetaData()
-        metadata.reflect(bind=self.db.engine)
-        return metadata
-
-    def setup_base_db(self):
-        with open(self.base) as fd:
-            sql_text = fd.read()
-        with self.db.engine.connect() as conn:
-            conn.execute(sql_text)
-
-    def run_migration(self, target='head'):
-        with self.db.engine.connect() as conn:
+        # run the migration
+        with db.engine.connect() as conn:
             trans = conn.begin()
-            alembic_command.upgrade(self.alembic_config(), target)
+            alembic_command.upgrade(alembic_cfg, 'head')
             trans.commit()
 
-    def stamp_db(self):
-        if self.rev:
-            with self.db.engine.connect() as conn:
-                trans = conn.begin()
-                alembic_command.stamp(self.alembic_config(), self.rev)
-                trans.commit()
-
-    def test_migration(self):
-        self.setup_base_db()
-        # we have no alembic base revision
-        assert self.current_db_revision() is None
-
-        # stamp the database with the correct version
-        self.stamp_db()
-
-        # run the migration, afterwards the DB is stamped
-        self.run_migration()
-        db_revision = self.current_db_revision()
+        # afterwards the DB is stamped
+        db_revision = self.current_db_revision(db)
         assert db_revision is not None
 
         # db revision matches latest alembic revision
-        alembic_head = self.alembic_script().get_current_head()
+        alembic_script = ScriptDirectory.from_config(alembic_cfg)
+        alembic_head = alembic_script.get_current_head()
         assert db_revision == alembic_head
 
         # compare the db schema from a migrated database to
@@ -146,8 +118,8 @@ class TestMigration(unittest.TestCase):
             'compare_type': db_compare_type,
             'compare_server_default': True,
         }
-        with self.db.engine.connect() as conn:
+        with db.engine.connect() as conn:
             context = MigrationContext.configure(connection=conn, opts=opts)
-            metadata_diff = compare_metadata(context, self.head_metadata)
+            metadata_diff = compare_metadata(context, metadata)
 
         assert metadata_diff == []

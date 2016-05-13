@@ -26,7 +26,7 @@ class BlueTestPositionSource(BluePositionMixin, PositionSource):
 
 class TestBlue(BaseSourceTest):
 
-    TestSource = BlueTestPositionSource
+    Source = BlueTestPositionSource
 
     def test_should_search(self):
         query = self.make_query()

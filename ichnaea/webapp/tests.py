@@ -1,3 +1,4 @@
+import pytest
 import webtest
 
 from ichnaea.cache import configure_redis
@@ -113,43 +114,49 @@ class TestHeartbeat(AppTestCase):
         assert 1 < data['geoip']['age_in_days'] < 1000
 
 
-class TestHeartbeatErrors(AppTestCase):
+class TestHeartbeatErrors(object):
 
-    def setUp(self):
-        super(TestHeartbeatErrors, self).setUp()
-        # create database connections to the discard port
-        db_uri = 'mysql+pymysql://none:none@127.0.0.1:9/none'
-        self.broken_db = _make_db(uri=db_uri)
-        self.app.app.registry.db_rw = self.broken_db
-        self.app.app.registry.db_ro = self.broken_db
-        # create broken geoip db
-        self.app.app.registry.geoip_db = GeoIPNull()
-        # create broken redis connection
-        self.broken_redis = configure_redis('redis://127.0.0.1:9/15')
-        self.app.app.registry.redis_client = self.broken_redis
+    @pytest.yield_fixture(scope='function')
+    def broken_app(self, http_session, raven, stats):
+        # Create database connections to the discard port.
+        db = _make_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
 
-    def tearDown(self):
-        super(TestHeartbeatErrors, self).tearDown()
-        self.broken_db.engine.pool.dispose()
-        del self.broken_db
-        self.broken_redis.close()
-        del self.broken_redis
+        # Create a broken GeoIP database.
+        geoip_db = GeoIPNull()
 
-    def test_database_error(self):
-        res = self.app.get('/__heartbeat__', status=503)
+        # Create a broken Redis client.
+        redis_client = configure_redis('redis://127.0.0.1:9/15')
+
+        app = _make_app(
+            _db_rw=db,
+            _db_ro=db,
+            _geoip_db=geoip_db,
+            _http_session=http_session,
+            _raven_client=raven,
+            _redis_client=redis_client,
+            _stats_client=stats,
+        )
+        yield app
+
+        db.close()
+        geoip_db.close()
+        redis_client.close()
+
+    def test_database_error(self, broken_app):
+        res = broken_app.get('/__heartbeat__', status=503)
         assert res.content_type == 'application/json'
         assert res.json['database'] == {'up': False, 'time': 0}
         assert res.headers['Access-Control-Allow-Origin'] == '*'
         assert res.headers['Access-Control-Max-Age'] == '2592000'
 
-    def test_geoip_error(self):
-        res = self.app.get('/__heartbeat__', status=503)
+    def test_geoip_error(self, broken_app):
+        res = broken_app.get('/__heartbeat__', status=503)
         assert res.content_type == 'application/json'
         assert res.json['geoip'] == \
             {'up': False, 'time': 0, 'age_in_days': -1}
 
-    def test_redis_error(self):
-        res = self.app.get('/__heartbeat__', status=503)
+    def test_redis_error(self, broken_app):
+        res = broken_app.get('/__heartbeat__', status=503)
         assert res.content_type == 'application/json'
         assert res.json['redis'] == {'up': False, 'time': 0}
 

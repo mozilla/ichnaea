@@ -38,7 +38,7 @@ class SourceTest(object):
 @pytest.mark.usefixtures('source')
 class TestPositionSource(SourceTest, ConnectionTestCase):
 
-    class TestSource(PositionSource):
+    class Source(PositionSource):
         fallback_field = 'fallback'
         source = DataSource.fallback
 
@@ -55,7 +55,7 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
 @pytest.mark.usefixtures('source')
 class TestRegionSource(SourceTest, ConnectionTestCase):
 
-    class TestSource(RegionSource):
+    class Source(RegionSource):
         fallback_field = 'ipf'
         source = DataSource.geoip
 

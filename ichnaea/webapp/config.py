@@ -94,7 +94,7 @@ def main(app_config, ping_connections=False,
         app_config.get('geoip', 'db_path'), raven_client=raven_client,
         _client=_geoip_db)
 
-    # needs to be the exact same as async.config
+    # needs to be the exact same as the update_incoming entry in async.config
     registry.data_queues = data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),

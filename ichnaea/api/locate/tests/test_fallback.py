@@ -363,11 +363,7 @@ class TestCache(QueryTest):
 class TestFallback(BaseSourceTest):
 
     fallback_model = DummyModel(lat=51.5366, lon=0.03989, radius=1500.0)
-    TestSource = FallbackPositionSource
-
-    @property
-    def api_key(self):
-        return ApiKeyFactory(allow_fallback=True)
+    Source = FallbackPositionSource
 
     @property
     def fallback_result(self):

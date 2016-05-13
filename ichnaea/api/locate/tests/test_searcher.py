@@ -77,7 +77,7 @@ class TestSearcher(SearcherTest):
         assert result is None
 
     def test_should_search(self):
-        class TestSource(RegionSource):
+        class Source(RegionSource):
 
             def should_search(self, query, results):
                 return False
@@ -88,7 +88,7 @@ class TestSearcher(SearcherTest):
         class TestSearcher(RegionSearcher):
             source_classes = (
                 ('test1', DummyRegionSource),
-                ('test2', TestSource),
+                ('test2', Source),
             )
 
         result = self._search(TestSearcher)

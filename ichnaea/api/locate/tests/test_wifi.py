@@ -25,7 +25,7 @@ class WifiTestPositionSource(WifiPositionMixin, PositionSource):
 
 class TestWifi(BaseSourceTest):
 
-    TestSource = WifiTestPositionSource
+    Source = WifiTestPositionSource
 
     def test_wifi(self):
         wifi = WifiShardFactory(radius=5, samples=50)

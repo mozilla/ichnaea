@@ -85,14 +85,13 @@ def bound_model_accuracy(model, accuracy):
 class BaseSourceTest(ConnectionTestCase):
 
     api_type = 'locate'
-    TestSource = None
-
-    @property
-    def api_key(self):
-        return ApiKeyFactory.build(valid_key='test')
+    Source = None
 
     def make_query(self, **kw):
-        api_key = kw.pop('api_key', self.api_key)
+        api_key = kw.pop(
+            'api_key',
+            ApiKeyFactory.build(valid_key='test', allow_fallback=True))
+
         return Query(
             api_key=api_key,
             api_type=self.api_type,
@@ -138,7 +137,7 @@ class BaseSourceTest(ConnectionTestCase):
         assert self.source.should_search(query, results) is should
 
     def check_model_results(self, results, models, **kw):
-        type_ = self.TestSource.result_type
+        type_ = self.Source.result_type
 
         if not models:
             assert len(results) == 0
@@ -718,9 +717,10 @@ class CommonPositionTest(BaseLocateTest):
 class CommonLocateErrorTest(BaseLocateTest):
     # this is a standalone class to ensure DB isolation for dropping tables
 
-    def tearDown(self):
-        self.setup_tables(self.db_rw.engine)
-        super(CommonLocateErrorTest, self).tearDown()
+    @pytest.yield_fixture(scope='function', autouse=True)
+    def teardown(self, db_rw):
+        yield None
+        self.setup_tables(db_rw.engine)
 
     def test_apikey_error(self, db_errors=0):
         cells = CellShardFactory.build_batch(2)

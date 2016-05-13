@@ -13,10 +13,6 @@ class TestDatabase(DBTestCase):
         assert self.db_rw.engine.name == 'mysql'
         assert self.db_ro.engine.name == 'mysql'
 
-    def test_sessions(self):
-        assert self.db_rw_session.bind.engine is self.db_rw.engine
-        assert self.db_ro_session.bind.engine is self.db_ro.engine
-
     def test_table_creation(self):
         result = self.session.execute('select * from cell_gsm;')
         assert result.first() is None

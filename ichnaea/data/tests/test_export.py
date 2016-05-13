@@ -121,8 +121,7 @@ class BaseExportTest(CeleryTestCase):
 
 class TestExporter(BaseExportTest):
 
-    def setUp(self):
-        super(TestExporter, self).setUp()
+    def test_queues(self):
         ApiKeyFactory(valid_key='test2')
         ExportConfigFactory(name='test', batch=3,
                             skip_keys=frozenset(['export_source']))
@@ -133,7 +132,6 @@ class TestExporter(BaseExportTest):
                             skip_sources=frozenset(['gnss']))
         self.session.flush()
 
-    def test_queues(self):
         self.add_reports(4)
         self.add_reports(1, api_key='test2')
         self.add_reports(2, api_key=None, source='gnss')
@@ -148,7 +146,9 @@ class TestExporter(BaseExportTest):
             assert self.queue_length(queue_key) == num
 
     def test_retry(self):
-        self.add_reports(3)
+        ExportConfigFactory(name='test', batch=1)
+        self.session.flush()
+        self.add_reports(1)
 
         num = [0]
         orig_wait = DummyExporter._retry_wait
@@ -170,15 +170,11 @@ class TestExporter(BaseExportTest):
 
 class TestGeosubmit(BaseExportTest):
 
-    def setUp(self):
-        super(TestGeosubmit, self).setUp()
+    def test_upload(self):
+        ApiKeyFactory(valid_key='e5444-794')
         ExportConfigFactory(
             name='test', batch=3, schema='geosubmit',
             url='http://127.0.0.1:9/v2/geosubmit?key=external')
-        self.session.flush()
-
-    def test_upload(self):
-        ApiKeyFactory(valid_key='e5444-794')
         self.session.flush()
 
         reports = []
@@ -221,14 +217,10 @@ class TestGeosubmit(BaseExportTest):
 
 class TestS3(BaseExportTest):
 
-    def setUp(self):
-        super(TestS3, self).setUp()
+    def test_upload(self):
         ExportConfigFactory(
             name='backup', batch=3, schema='s3',
             url='s3://bucket/backups/{source}/{api_key}/{year}/{month}/{day}')
-        self.session.flush()
-
-    def test_upload(self):
         ApiKeyFactory(valid_key='e5444-794')
         self.session.flush()
 
@@ -414,19 +406,19 @@ class TestInternalTransform(object):
 
 class TestInternal(BaseExportTest):
 
-    def setUp(self):
-        super(TestInternal, self).setUp()
-        ExportConfigFactory(name='internal', batch=0, schema='internal')
-        self.session.flush()
-
     def _pop_item(self):
         return self.queue.dequeue()[0]
 
     def _push_item(self, item):
         self.queue.enqueue([item])
 
-    def _update_all(self):
+    def _update_all(self, datamap_only=False):
+        ExportConfigFactory(name='internal', batch=0, schema='internal')
+        self.session.flush()
         update_incoming.delay().get()
+
+        if datamap_only:
+            return
 
         for shard_id in BlueShard.shards().keys():
             update_blue.delay(shard_id=shard_id).get()
@@ -623,6 +615,6 @@ class TestInternal(BaseExportTest):
     def test_datamap(self):
         self.add_reports(1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)
         self.add_reports(2, cell_factor=0, wifi_factor=2, lat=20.0, lon=-10.0)
-        update_incoming.delay().get()
+        self._update_all(datamap_only=True)
         assert self.celery_app.data_queues['update_datamap_ne'].size() == 1
         assert self.celery_app.data_queues['update_datamap_sw'].size() == 1
