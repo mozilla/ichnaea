@@ -175,6 +175,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
         query = self.model_query(cells=[cell])
         query['radio'] = cell.radio.name
+        query['cell'][0]['psc'] = cell.psc
         query['cell'][0]['signal'] = -70
         query['cell'][0]['ta'] = 1
 
@@ -204,6 +205,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
                     'mobileNetworkCode': cell.mnc,
                     'locationAreaCode': cell.lac,
                     'cellId': cell.cid,
+                    'primaryScramblingCode': cell.psc,
                     'signalStrength': -70,
                     'timingAdvance': 1,
                 }],

@@ -284,7 +284,7 @@ class BaseLocateTest(object):
                 if getattr(cell, 'cid', None) is not None:
                     cell_query['cellId'] = cell.cid
                 if getattr(cell, 'psc', None) is not None:
-                    cell_query['primaryScramblingCode'] = cell.cid
+                    cell_query['primaryScramblingCode'] = cell.psc
                 query['cellTowers'].append(cell_query)
         if wifis:
             query['wifiAccessPoints'] = []

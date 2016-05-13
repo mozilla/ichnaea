@@ -194,6 +194,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                     'mobileNetworkCode': cell.mnc,
                     'locationAreaCode': cell.lac,
                     'cellId': cell.cid,
+                    'primaryScramblingCode': cell.psc,
                     'signalStrength': -70,
                     'timingAdvance': 1,
                 }],
