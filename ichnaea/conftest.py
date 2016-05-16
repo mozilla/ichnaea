@@ -1,4 +1,3 @@
-from contextlib import contextmanager
 import gc
 import os
 import warnings
@@ -216,56 +215,6 @@ class DBTestCase(object):
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
 
     default_session = 'rw_session'
-    track_connection_events = False
-
-    @contextmanager
-    def db_call_checker(self):
-        rw_conn = self.db_rw_session.bind
-        ro_conn = self.db_ro_session.bind
-        try:
-            self.setup_db_event_tracking(rw_conn, ro_conn)
-            yield self.check_db_calls
-        finally:
-            self.teardown_db_event_tracking(rw_conn, ro_conn)
-
-    def check_db_calls(self, rw=None, ro=None):
-        if rw is not None:
-            events = self.db_events['rw']['calls']
-            assert len(events) == rw
-        if ro is not None:
-            events = self.db_events['ro']['calls']
-            assert len(events) == ro
-
-    def reset_db_event_tracking(self):
-        self.db_events = {
-            'rw': {'calls': [], 'handler': None},
-            'ro': {'calls': [], 'handler': None},
-        }
-
-    def setup_db_event_tracking(self, rw_conn, ro_conn):
-        self.reset_db_event_tracking()
-
-        def scoped_conn_event_handler(calls):
-            def conn_event_handler(**kw):
-                calls.append((kw['statement'], kw['parameters']))
-            return conn_event_handler
-
-        rw_handler = scoped_conn_event_handler(self.db_events['rw']['calls'])
-        self.db_events['rw']['handler'] = rw_handler
-        event.listen(rw_conn, 'before_cursor_execute',
-                     rw_handler, named=True)
-
-        ro_handler = scoped_conn_event_handler(self.db_events['ro']['calls'])
-        self.db_events['ro']['handler'] = ro_handler
-        event.listen(ro_conn, 'before_cursor_execute',
-                     ro_handler, named=True)
-
-    def teardown_db_event_tracking(self, rw_conn, ro_conn):
-        event.remove(ro_conn, 'before_cursor_execute',
-                     self.db_events['ro']['handler'])
-        event.remove(rw_conn, 'before_cursor_execute',
-                     self.db_events['rw']['handler'])
-        self.reset_db_event_tracking()
 
     @pytest.yield_fixture(scope='function')
     def session(self, request, db_rw, db_ro):
@@ -285,17 +234,9 @@ class DBTestCase(object):
             session = ro_session
         else:
             session = rw_session
+
         SESSION['default'] = session
-
-        track = getattr(request.cls, 'track_connection_events', False)
-        if track:
-            self.setup_db_event_tracking(rw_conn, ro_conn)
-
         yield session
-
-        if track:
-            self.teardown_db_event_tracking(rw_conn, ro_conn)
-
         del SESSION['default']
 
         ro_trans.rollback()
@@ -311,6 +252,29 @@ class DBTestCase(object):
         db_rw.session_factory.configure(bind=None)
         rw_trans.close()
         rw_conn.close()
+
+
+@pytest.yield_fixture(scope='function')
+def session_tracker(session):
+    db_events = []
+
+    def scoped_conn_event_handler(calls):
+        def conn_event_handler(**kw):
+            calls.append((kw['statement'], kw['parameters']))
+        return conn_event_handler
+
+    handler = scoped_conn_event_handler(db_events)
+    event.listen(session.bind,
+                 'before_cursor_execute',
+                 handler, named=True)
+
+    def checker(num=None):
+        if num is not None:
+            assert len(db_events) == num
+
+    yield checker
+
+    event.remove(session.bind, 'before_cursor_execute', handler)
 
 
 @pytest.yield_fixture(scope='session')

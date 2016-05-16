@@ -27,13 +27,13 @@ class TestCellPosition(DBTestCase, BaseSourceTest):
         results = source.result_list()
         assert not source.should_search(query, results)
 
-    def test_empty(self, geoip_db, http_session, session, source, stats):
+    def test_empty(self, geoip_db, http_session,
+                   session, session_tracker, source, stats):
         query = self.model_query(
             geoip_db, http_session, session, stats)
-        with self.db_call_checker() as check_db_calls:
-            results = source.search(query)
-            self.check_model_results(results, None)
-            check_db_calls(rw=0, ro=0)
+        results = source.search(query)
+        self.check_model_results(results, None)
+        session_tracker(0)
 
     def test_cell(self, geoip_db, http_session, session, source, stats):
         now = util.utcnow()
@@ -80,20 +80,19 @@ class TestCellPosition(DBTestCase, BaseSourceTest):
         assert results.best().score == cell.score(now) + cell2.score(now)
 
     def test_incomplete_keys(self, geoip_db, http_session,
-                             session, source, stats):
+                             session, session_tracker, source, stats):
         cells = CellAreaFactory.build_batch(4)
         cells[0].radio = None
         cells[1].mcc = None
         cells[2].mnc = None
         cells[3].lac = None
 
-        with self.db_call_checker() as check_db_calls:
-            query = self.model_query(
-                geoip_db, http_session, session, stats,
-                cells=cells)
-            results = source.result_list()
-            assert not source.should_search(query, results)
-            check_db_calls(rw=0, ro=0)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            cells=cells)
+        results = source.result_list()
+        assert not source.should_search(query, results)
+        session_tracker(0)
 
     def test_smallest_area(self, geoip_db, http_session,
                            session, source, stats):
@@ -137,13 +136,12 @@ class TestOCIDPositionSource(DBTestCase, BaseSourceTest):
         assert not source.should_search(query, results)
 
     def test_empty(self, geoip_db, http_session,
-                   session, source, stats):
+                   session, session_tracker, source, stats):
         query = self.model_query(
             geoip_db, http_session, session, stats)
-        with self.db_call_checker() as check_db_calls:
-            results = source.search(query)
-            self.check_model_results(results, None)
-            check_db_calls(rw=0, ro=0)
+        results = source.search(query)
+        self.check_model_results(results, None)
+        session_tracker(0)
 
     def test_cell(self, geoip_db, http_session, session, source, stats):
         now = util.utcnow()

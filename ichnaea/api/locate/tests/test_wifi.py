@@ -106,13 +106,12 @@ class TestWifi(DBTestCase, BaseSourceTest):
         assert not source.should_search(query, results)
 
     def test_empty(self, geoip_db, http_session,
-                   raven, redis, session, source, stats):
+                   raven, redis, session, session_tracker, source, stats):
         query = self.model_query(
             geoip_db, http_session, session, stats)
-        with self.db_call_checker() as check_db_calls:
-            results = source.search(query)
-            self.check_model_results(results, None)
-            check_db_calls(rw=0, ro=0)
+        results = source.search(query)
+        self.check_model_results(results, None)
+        session_tracker(0)
 
     def test_few_candidates(self, geoip_db, http_session,
                             session, source, stats):
