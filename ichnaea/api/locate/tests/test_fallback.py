@@ -24,6 +24,7 @@ from ichnaea.api.locate.tests.base import (
     DummyModel,
 )
 from ichnaea.api.locate.tests.test_query import QueryTest
+from ichnaea.conftest import DBTestCase
 from ichnaea import floatjson
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
@@ -206,101 +207,97 @@ class TestOutboundSchema(object):
         })
 
 
-class TestCache(QueryTest):
+@pytest.yield_fixture(scope='function')
+def cache(raven, redis, session, stats):
+    yield FallbackCache(raven, redis, stats)
 
-    def _cache(self):
-        return FallbackCache(
-            self.raven_client, self.redis_client, self.stats_client)
+
+class TestCache(DBTestCase, QueryTest):
 
     def _query(self, **kwargs):
         return Query(api_key=ApiKeyFactory(fallback_cache_expire=60), **kwargs)
 
-    def test_get_blue(self):
+    def test_get_blue(self, cache, stats):
         blues = BlueShardFactory.build_batch(2)
         query = self._query(blue=self.blue_model_query(blues))
-        assert self._cache().get(query) is None
-        self.check_stats(counter=[
+        assert cache.get(query) is None
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
         ])
 
-    def test_set_blue(self):
-        cache = self._cache()
+    def test_set_blue(self, cache, stats):
         blues = BlueShardFactory.build_batch(2)
         blue = blues[0]
         query = self._query(blue=self.blue_model_query(blues))
         result = ExternalResult(blue.lat, blue.lon, blue.radius, None)
         cache.set(query, result)
         assert cache.get(query) == result
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
 
-    def test_get_cell(self):
+    def test_get_cell(self, cache, stats):
         cells = CellShardFactory.build_batch(1)
         query = self._query(cell=self.cell_model_query(cells))
-        assert self._cache().get(query) is None
-        self.check_stats(counter=[
+        assert cache.get(query) is None
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
         ])
 
-    def test_set_cell(self):
-        cache = self._cache()
+    def test_set_cell(self, cache, redis, stats):
         cell = CellShardFactory.build()
         query = self._query(cell=self.cell_model_query([cell]))
         result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
         cache.set(query, result, expire=60)
-        keys = self.redis_client.keys('cache:fallback:cell:*')
+        keys = redis.keys('cache:fallback:cell:*')
         assert len(keys) == 1
-        assert 50 < self.redis_client.ttl(keys[0]) <= 60
+        assert 50 < redis.ttl(keys[0]) <= 60
         assert cache.get(query) == result
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
 
-    def test_set_cell_not_found(self):
-        cache = self._cache()
+    def test_set_cell_not_found(self, cache, redis, stats):
         cell = CellShardFactory.build()
         query = self._query(cell=self.cell_model_query([cell]))
         result = ExternalResult(None, None, None, None)
         cache.set(query, result)
-        keys = self.redis_client.keys('cache:fallback:cell:*')
+        keys = redis.keys('cache:fallback:cell:*')
         assert len(keys) == 1
-        assert self.redis_client.get(keys[0]) == b'"404"'
+        assert redis.get(keys[0]) == b'"404"'
         assert cache.get(query) == result
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
 
-    def test_get_cell_multi(self):
+    def test_get_cell_multi(self, cache, stats):
         cells = CellShardFactory.build_batch(2)
         query = self._query(cell=self.cell_model_query(cells))
-        assert self._cache().get(query) is None
-        self.check_stats(counter=[
+        assert cache.get(query) is None
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:bypassed']),
         ])
 
-    def test_get_wifi(self):
+    def test_get_wifi(self, cache, stats):
         wifis = WifiShardFactory.build_batch(2)
         query = self._query(wifi=self.wifi_model_query(wifis))
-        assert self._cache().get(query) is None
-        self.check_stats(counter=[
+        assert cache.get(query) is None
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:miss']),
         ])
 
-    def test_set_wifi(self):
-        cache = self._cache()
+    def test_set_wifi(self, cache, stats):
         wifis = WifiShardFactory.build_batch(2)
         wifi = wifis[0]
         query = self._query(wifi=self.wifi_model_query(wifis))
         result = ExternalResult(wifi.lat, wifi.lon, wifi.radius, None)
         cache.set(query, result)
         assert cache.get(query) == result
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
         ])
 
-    def test_set_wifi_inconsistent(self):
-        cache = self._cache()
+    def test_set_wifi_inconsistent(self, cache, stats):
         wifis1 = WifiShardFactory.build_batch(2)
         cache.set(
             self._query(wifi=self.wifi_model_query(wifis1)),
@@ -332,13 +329,12 @@ class TestCache(QueryTest):
             wifi=self.wifi_model_query(wifis1 + wifis2 + wifis3))
         assert cache.get(query) is None
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', 1, 1, ['status:hit']),
             ('locate.fallback.cache', 1, 1, ['status:inconsistent']),
         ])
 
-    def test_get_mixed(self):
-        cache = self._cache()
+    def test_get_mixed(self, cache, stats):
         blues = BlueShardFactory.build_batch(2)
         cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(2)
@@ -355,12 +351,12 @@ class TestCache(QueryTest):
                             wifi=self.wifi_model_query(wifis))
         assert cache.get(query) is None
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', 3, 1, ['status:bypassed']),
         ])
 
 
-class TestFallback(BaseSourceTest):
+class TestFallback(DBTestCase, BaseSourceTest):
 
     fallback_model = DummyModel(lat=51.5366, lon=0.03989, radius=1500.0)
     Source = FallbackPositionSource
@@ -397,7 +393,7 @@ class TestFallback(BaseSourceTest):
         client.mset.return_value = mock.Mock()
         return client
 
-    def test_success(self):
+    def test_success(self, geoip_db, http_session, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -405,26 +401,28 @@ class TestFallback(BaseSourceTest):
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
             query = self.model_query(
+                geoip_db, http_session, session, stats,
                 cells=[cell],
                 fallback={
                     'lacf': True,
                     'ipf': False,
                 },
             )
-            results = self.source.search(query)
+            results = source.search(query)
             self.check_model_results(results, [self.fallback_model])
             assert results.best().score == 5.0
 
             request_json = mock_request.request_history[0].json()
 
         assert request_json['fallbacks'] == {'lacf': True}
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.lookup', ['fallback_name:fall', 'status:200']),
         ], timer=[
             ('locate.fallback.lookup', ['fallback_name:fall']),
         ])
 
-    def test_failed_call(self):
+    def test_failed_call(self, geoip_db, http_session,
+                         raven, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -434,55 +432,67 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=raise_request_exception)
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-        self.check_raven([('RequestException', 1)])
+        raven.check([('RequestException', 1)])
 
-    def test_invalid_json(self):
+    def test_invalid_json(self, geoip_db, http_session,
+                          raven, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=['invalid json'])
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-        self.check_raven([('Invalid', 1)])
+        raven.check([('Invalid', 1)])
 
-    def test_malformed_json(self):
+    def test_malformed_json(self, geoip_db, http_session,
+                            raven, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, content=b'[invalid json')
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-        self.check_raven([('JSONDecodeError', 1)])
+        raven.check([('JSONDecodeError', 1)])
 
-    def test_403_response(self):
+    def test_403_response(self, geoip_db, http_session,
+                          raven, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, status_code=403)
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-        self.check_raven([('HTTPError', 1)])
-        self.check_stats(counter=[
+        raven.check([('HTTPError', 1)])
+        stats.check(counter=[
             ('locate.fallback.lookup', ['fallback_name:fall', 'status:403']),
         ])
 
-    def test_404_response(self):
+    def test_404_response(self, geoip_db, http_session,
+                          raven, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -491,101 +501,132 @@ class TestFallback(BaseSourceTest):
                 json=LocationNotFound.json_body(),
                 status_code=404)
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-        self.check_raven([('HTTPError', 0)])
-        self.check_stats(counter=[
+        raven.check([('HTTPError', 0)])
+        stats.check(counter=[
             ('locate.fallback.lookup', ['fallback_name:fall', 'status:404']),
         ])
 
-    def test_500_response(self):
+    def test_500_response(self, geoip_db, http_session,
+                          raven, session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, status_code=500)
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-        self.check_raven([('HTTPError', 1)])
-        self.check_stats(counter=[
+        raven.check([('HTTPError', 1)])
+        stats.check(counter=[
             ('locate.fallback.lookup', ['fallback_name:fall', 'status:500']),
         ], timer=[
             ('locate.fallback.lookup', ['fallback_name:fall']),
         ])
 
-    def test_api_key_disallows(self):
+    def test_api_key_disallows(self, geoip_db, http_session,
+                               session, source, stats):
         api_key = ApiKeyFactory.build(allow_fallback=False)
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
-        query = self.model_query(cells=cells, wifis=wifis, api_key=api_key)
-        self.check_should_search(query, False)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            cells=cells, wifis=wifis, api_key=api_key)
+        self.check_should_search(source, query, False)
 
-    def test_check_one_blue(self):
+    def test_check_one_blue(self, geoip_db, http_session,
+                            session, source, stats):
         blue = BlueShardFactory.build()
 
-        query = self.model_query(blues=[blue])
-        self.check_should_search(query, False)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            blues=[blue])
+        self.check_should_search(source, query, False)
 
-    def test_check_one_wifi(self):
+    def test_check_one_wifi(self, geoip_db, http_session,
+                            session, source, stats):
         wifi = WifiShardFactory.build()
 
-        query = self.model_query(wifis=[wifi])
-        self.check_should_search(query, False)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi])
+        self.check_should_search(source, query, False)
 
-    def test_check_empty(self):
-        query = self.model_query()
-        self.check_should_search(query, False)
+    def test_check_empty(self, geoip_db, http_session,
+                         session, source, stats):
+        query = self.model_query(
+            geoip_db, http_session, session, stats)
+        self.check_should_search(source, query, False)
 
-    def test_check_invalid_cell(self):
+    def test_check_invalid_cell(self, geoip_db, http_session,
+                                session, source, stats):
         malformed_cell = CellShardFactory.build()
         malformed_cell.mcc = 99999
 
-        query = self.model_query(cells=[malformed_cell])
-        self.check_should_search(query, False)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            cells=[malformed_cell])
+        self.check_should_search(source, query, False)
 
-    def test_check_invalid_wifi(self):
+    def test_check_invalid_wifi(self, geoip_db, http_session,
+                                session, source, stats):
         wifi = WifiShardFactory.build()
         malformed_wifi = WifiShardFactory.build()
         malformed_wifi.mac = 'abcd'
 
-        query = self.model_query(wifis=[wifi, malformed_wifi])
-        self.check_should_search(query, False)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi, malformed_wifi])
+        self.check_should_search(source, query, False)
 
-    def test_check_empty_result(self):
+    def test_check_empty_result(self, geoip_db, http_session,
+                                session, source, stats):
         wifis = WifiShardFactory.build_batch(2)
 
-        query = self.model_query(wifis=wifis)
-        self.check_should_search(query, True)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=wifis)
+        self.check_should_search(source, query, True)
 
-    def test_check_geoip_result(self):
-        london = self.london_model
+    def test_check_geoip_result(self, london_model, geoip_db, http_session,
+                                session, source, stats):
         wifis = WifiShardFactory.build_batch(2)
         results = PositionResultList(Position(
             source=DataSource.geoip,
-            lat=london.lat,
-            lon=london.lon,
-            accuracy=float(london.radius),
+            lat=london_model.lat,
+            lon=london_model.lon,
+            accuracy=float(london_model.radius),
             score=0.6))
 
-        query = self.model_query(wifis=wifis, ip=london.ip)
-        self.check_should_search(query, True, results=results)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=wifis, ip=london_model.ip)
+        self.check_should_search(source, query, True, results=results)
 
-    def test_check_already_good_result(self):
+    def test_check_already_good_result(self, geoip_db, http_session,
+                                       session, source, stats):
         wifis = WifiShardFactory.build_batch(2)
         results = PositionResultList(Position(
             source=DataSource.internal,
             lat=1.0, lon=1.0, accuracy=100.0, score=1.0))
 
-        query = self.model_query(wifis=wifis)
-        self.check_should_search(query, False, results=results)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=wifis)
+        self.check_should_search(source, query, False, results=results)
 
-    def test_rate_limit_allow(self):
+    def test_rate_limit_allow(self, geoip_db, http_session,
+                              session, source, stats):
         api_key = ApiKeyFactory.build(allow_fallback=True)
         cell = CellShardFactory()
 
@@ -594,11 +635,14 @@ class TestFallback(BaseSourceTest):
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
             for _ in range(api_key.fallback_ratelimit):
-                query = self.model_query(cells=[cell])
-                results = self.source.search(query)
+                query = self.model_query(
+                    geoip_db, http_session, session, stats,
+                    cells=[cell])
+                results = source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
-    def test_rate_limit_blocks(self):
+    def test_rate_limit_blocks(self, geoip_db, http_session,
+                               redis, session, source, stats):
         api_key = ApiKeyFactory.build(allow_fallback=True)
         cell = CellShardFactory()
 
@@ -606,17 +650,20 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            ratelimit_key = self.source._ratelimit_key(
+            ratelimit_key = source._ratelimit_key(
                 api_key.fallback_name,
                 api_key.fallback_ratelimit_interval,
             )
-            self.redis_client.set(ratelimit_key, api_key.fallback_ratelimit)
+            redis.set(ratelimit_key, api_key.fallback_ratelimit)
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
-    def test_rate_limit_redis_failure(self):
+    def test_rate_limit_redis_failure(self, geoip_db, http_session,
+                                      session, source, stats):
         cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.pipeline.side_effect = RedisError()
@@ -625,16 +672,19 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.source, 'redis_client',
+            with mock.patch.object(source, 'redis_client',
                                    mock_redis_client):
-                query = self.model_query(cells=[cell])
-                results = self.source.search(query)
+                query = self.model_query(
+                    geoip_db, http_session, session, stats,
+                    cells=[cell])
+                results = source.search(query)
                 self.check_model_results(results, None)
 
             assert mock_redis_client.pipeline.called
             assert not mock_request.called
 
-    def test_get_cache_redis_failure(self):
+    def test_get_cache_redis_failure(self, geoip_db, http_session,
+                                     raven, session, source, stats):
         cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.mget.side_effect = RedisError()
@@ -643,21 +693,24 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.source.cache, 'redis_client',
+            with mock.patch.object(source.cache, 'redis_client',
                                    mock_redis_client):
-                query = self.model_query(cells=[cell])
-                results = self.source.search(query)
+                query = self.model_query(
+                    geoip_db, http_session, session, stats,
+                    cells=[cell])
+                results = source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
             assert mock_redis_client.mget.called
             assert mock_request.called
 
-        self.check_raven([('RedisError', 1)])
-        self.check_stats(counter=[
+        raven.check([('RedisError', 1)])
+        stats.check(counter=[
             ('locate.fallback.cache', ['status:failure']),
         ])
 
-    def test_set_cache_redis_failure(self):
+    def test_set_cache_redis_failure(self, geoip_db, http_session,
+                                     raven, session, source, stats):
         cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.mget.return_value = []
@@ -669,36 +722,41 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.source.cache, 'redis_client',
+            with mock.patch.object(source.cache, 'redis_client',
                                    mock_redis_client):
-                query = self.model_query(cells=[cell])
-                results = self.source.search(query)
+                query = self.model_query(
+                    geoip_db, http_session, session, stats,
+                    cells=[cell])
+                results = source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
             assert mock_redis_client.mget.called
             assert mock_redis_client.mset.called
             assert mock_request.called
 
-        self.check_raven([('RedisError', 1)])
-        self.check_stats(counter=[
+        raven.check([('RedisError', 1)])
+        stats.check(counter=[
             ('locate.fallback.cache', ['status:miss']),
         ])
 
-    def test_cache_single_cell(self):
+    def test_cache_single_cell(self, geoip_db, http_session,
+                               session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            query = self.model_query(cells=[cell])
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
             query.cell[0].signalStrength = -77
-            results = self.source.search(query)
+            results = source.search(query)
             self.check_model_results(results, [self.fallback_model])
             assert results.best().score == 5.0
 
             assert mock_request.call_count == 1
-            self.check_stats(counter=[
+            stats.check(counter=[
                 ('locate.fallback.cache', ['status:miss']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:200']),
@@ -708,12 +766,12 @@ class TestFallback(BaseSourceTest):
 
             # vary the signal strength, not part of cache key
             query.cell[0].signalStrength = -82
-            results = self.source.search(query)
+            results = source.search(query)
             self.check_model_results(results, [self.fallback_model])
             assert results.best().score == 5.0
 
             assert mock_request.call_count == 1
-            self.check_stats(counter=[
+            stats.check(counter=[
                 ('locate.fallback.cache', ['status:hit']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:200']),
@@ -721,7 +779,8 @@ class TestFallback(BaseSourceTest):
                 ('locate.fallback.lookup', ['fallback_name:fall']),
             ])
 
-    def test_cache_empty_result(self):
+    def test_cache_empty_result(self, geoip_db, http_session,
+                                session, source, stats):
         cell = CellShardFactory.build()
 
         with requests_mock.Mocker() as mock_request:
@@ -732,29 +791,34 @@ class TestFallback(BaseSourceTest):
                 status_code=404
             )
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
             assert mock_request.call_count == 1
-            self.check_stats(counter=[
+            stats.check(counter=[
                 ('locate.fallback.cache', ['status:miss']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:404']),
             ])
 
-            query = self.model_query(cells=[cell])
-            results = self.source.search(query)
+            query = self.model_query(
+                geoip_db, http_session, session, stats,
+                cells=[cell])
+            results = source.search(query)
             self.check_model_results(results, None)
 
             assert mock_request.call_count == 1
-            self.check_stats(counter=[
+            stats.check(counter=[
                 ('locate.fallback.cache', ['status:hit']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:404']),
             ])
 
-    def test_dont_recache(self):
+    def test_dont_recache(self, geoip_db, http_session,
+                          session, source, stats):
         cell = CellShardFactory.build()
         mock_redis_client = self._mock_redis_client()
         mock_redis_client.mget.return_value = [self.fallback_cached_result]
@@ -763,15 +827,17 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(self.source.cache, 'redis_client',
+            with mock.patch.object(source.cache, 'redis_client',
                                    mock_redis_client):
-                query = self.model_query(cells=[cell])
-                results = self.source.search(query)
+                query = self.model_query(
+                    geoip_db, http_session, session, stats,
+                    cells=[cell])
+                results = source.search(query)
                 self.check_model_results(results, [self.fallback_model])
 
             assert mock_redis_client.mget.called
             assert not mock_redis_client.mset.called
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.fallback.cache', ['status:hit']),
         ])

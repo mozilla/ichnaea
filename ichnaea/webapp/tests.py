@@ -3,14 +3,14 @@ import webtest
 
 from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
-from ichnaea.db import configure_db
-from ichnaea.geoip import GeoIPNull
-from ichnaea.tests.base import (
+from ichnaea.conftest import (
     DBTestCase,
     REDIS_URI,
     SQLURI,
     TEST_CONFIG,
 )
+from ichnaea.db import configure_db
+from ichnaea.geoip import GeoIPNull
 from ichnaea.webapp.config import main
 
 
@@ -97,7 +97,7 @@ class TestApp(object):
 
 class TestHeartbeat(DBTestCase):
 
-    def test_ok(self, app):
+    def test_ok(self, app, session):
         response = app.get('/__heartbeat__', status=200)
         assert response.content_type == 'application/json'
         data = response.json

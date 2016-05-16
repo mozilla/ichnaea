@@ -7,7 +7,7 @@ from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
 )
-from ichnaea.tests.base import ConnectionTestCase
+from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
 
@@ -32,51 +32,52 @@ class DummyPositionSource(PositionSource):
         return self.result_type(lat=1.0, lon=1.0, accuracy=1000.0, score=0.5)
 
 
-class SearcherTest(ConnectionTestCase):
+class SearcherTest(DBTestCase):
 
     searcher = None
 
-    def _make_query(self, **kw):
-        return Query(api_key=ApiKeyFactory.build(valid_key='test'),
-                     api_type='locate',
-                     session=self.session,
-                     stats_client=self.stats_client,
-                     **kw)
-
-    def _init_searcher(self, klass):
-        return klass(
-            geoip_db=self.geoip_db,
-            raven_client=self.raven_client,
-            redis_client=self.redis_client,
-            stats_client=self.stats_client,
-            data_queues=self.data_queues,
+    def _search(self, data_queues, geoip_db, raven, redis, stats, session,
+                klass, **kw):
+        query = Query(
+            api_key=ApiKeyFactory.build(valid_key='test'),
+            api_type='locate',
+            session=session,
+            stats_client=stats,
+            **kw)
+        searcher = klass(
+            geoip_db=geoip_db,
+            raven_client=raven,
+            redis_client=redis,
+            stats_client=stats,
+            data_queues=data_queues,
         )
-
-    def _search(self, klass, **kw):
-        query = self._make_query(**kw)
-        searcher = self._init_searcher(klass)
         return searcher.search(query)
 
 
 class TestSearcher(SearcherTest):
 
-    def test_no_sources(self):
+    def test_no_sources(self, data_queues, geoip_db, raven,
+                        redis, stats, session):
         class TestSearcher(RegionSearcher):
             source_classes = ()
 
-        result = self._search(TestSearcher)
+        result = self._search(
+            data_queues, geoip_db, raven, redis, stats, session, TestSearcher)
         assert result is None
 
-    def test_no_result(self):
+    def test_no_result(self, data_queues, geoip_db, raven,
+                       redis, stats, session):
         class TestSearcher(RegionSearcher):
             source_classes = (
                 ('test', EmptySource),
             )
 
-        result = self._search(TestSearcher)
+        result = self._search(
+            data_queues, geoip_db, raven, redis, stats, session, TestSearcher)
         assert result is None
 
-    def test_should_search(self):
+    def test_should_search(self, data_queues, geoip_db,
+                           raven, redis, stats, session):
         class Source(RegionSource):
 
             def should_search(self, query, results):
@@ -91,19 +92,22 @@ class TestSearcher(SearcherTest):
                 ('test2', Source),
             )
 
-        result = self._search(TestSearcher)
+        result = self._search(
+            data_queues, geoip_db, raven, redis, stats, session, TestSearcher)
         assert result['region_code'] == 'DE'
 
 
 class TestPositionSearcher(SearcherTest):
 
-    def test_result(self):
+    def test_result(self, data_queues, geoip_db,
+                    raven, redis, stats, session):
         class TestSearcher(PositionSearcher):
             source_classes = (
                 ('test', DummyPositionSource),
             )
 
-        result = self._search(TestSearcher)
+        result = self._search(
+            data_queues, geoip_db, raven, redis, stats, session, TestSearcher)
         assert result['lat'] == 1.0
         assert result['lon'] == 1.0
         assert result['accuracy'] == 1000.0
@@ -112,12 +116,14 @@ class TestPositionSearcher(SearcherTest):
 
 class TestRegionSearcher(SearcherTest):
 
-    def test_result(self):
+    def test_result(self, data_queues, geoip_db,
+                    raven, redis, stats, session):
         class TestSearcher(RegionSearcher):
             source_classes = (
                 ('test', DummyRegionSource),
             )
 
-        result = self._search(TestSearcher)
+        result = self._search(
+            data_queues, geoip_db, raven, redis, stats, session, TestSearcher)
         assert result['region_code'] == 'DE'
         assert result['region_name'] == 'Germany'

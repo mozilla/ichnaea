@@ -10,11 +10,8 @@ from ichnaea.api.locate.result import (
     PositionResultList,
     Region,
 )
+from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
-from ichnaea.tests.base import (
-    ConnectionTestCase,
-    GEOIP_DATA,
-)
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -24,7 +21,7 @@ from ichnaea.tests.factories import (
 )
 
 
-class QueryTest(ConnectionTestCase):
+class QueryTest(object):
 
     london_ip = GEOIP_DATA['London']['ip']
 
@@ -70,7 +67,7 @@ class QueryTest(ConnectionTestCase):
         return query
 
 
-class TestQuery(QueryTest, ConnectionTestCase):
+class TestQuery(QueryTest):
 
     def test_empty(self):
         query = Query()
@@ -97,8 +94,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
         assert query.expected_accuracy is DataAccuracy.none
         assert query.geoip is None
 
-    def test_geoip(self):
-        query = Query(ip=self.london_ip, geoip_db=self.geoip_db)
+    def test_geoip(self, geoip_db):
+        query = Query(ip=self.london_ip, geoip_db=geoip_db)
         assert query.region == 'GB'
         assert query.geoip['city'] is True
         assert query.geoip['region_code'] == 'GB'
@@ -106,8 +103,8 @@ class TestQuery(QueryTest, ConnectionTestCase):
         assert query.ip == self.london_ip
         assert query.expected_accuracy is DataAccuracy.low
 
-    def test_geoip_malformed(self):
-        query = Query(ip='127.0.0.0.0.1', geoip_db=self.geoip_db)
+    def test_geoip_malformed(self, geoip_db):
+        query = Query(ip='127.0.0.0.0.1', geoip_db=geoip_db)
         assert query.region is None
         assert query.geoip is None
         assert query.ip is None
@@ -331,18 +328,11 @@ class TestQuery(QueryTest, ConnectionTestCase):
         with pytest.raises(ValueError):
             Query(api_type='something')
 
-    def test_session(self):
-        query = Query(session=self.session)
-        assert query.session == self.session
-
-    def test_stats_client(self):
-        query = Query(stats_client=self.stats_client)
-        assert query.stats_client == self.stats_client
-
 
 class TestQueryStats(QueryTest):
 
-    def _make_query(self, api_key=None, api_type='locate',
+    def _make_query(self, geoip_db, stats,
+                    api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or ApiKeyFactory.build(valid_key='test'),
@@ -350,44 +340,52 @@ class TestQueryStats(QueryTest):
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
-            geoip_db=self.geoip_db,
-            stats_client=self.stats_client,
+            geoip_db=geoip_db,
+            stats_client=stats,
             **kw)
         query.emit_query_stats()
         return query
 
-    def test_no_log(self):
+    def test_no_log(self, geoip_db, stats):
         api_key = ApiKeyFactory.build(valid_key=None)
-        self._make_query(api_key=api_key, api_type='locate')
-        self.check_stats(total=0)
+        self._make_query(
+            geoip_db, stats,
+            api_key=api_key, api_type='locate')
+        stats.check(total=0)
 
-    def test_empty(self):
-        self._make_query(ip=self.london_ip)
-        self.check_stats(counter=[
+    def test_empty(self, geoip_db, stats):
+        self._make_query(
+            geoip_db, stats,
+            ip=self.london_ip)
+        stats.check(counter=[
             ('locate.query',
                 ['key:test', 'region:GB',
                  'blue:none', 'cell:none', 'wifi:none']),
         ])
 
-    def test_one(self):
+    def test_one(self, geoip_db, stats):
         blues = BlueShardFactory.build_batch(1)
         cells = CellShardFactory.build_batch(1)
         wifis = WifiShardFactory.build_batch(1)
 
-        self._make_query(blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
-        self.check_stats(total=1, counter=[
+        self._make_query(
+            geoip_db, stats,
+            blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
+        stats.check(total=1, counter=[
             ('locate.query',
                 ['key:test', 'region:GB',
                  'blue:one', 'cell:one', 'wifi:one']),
         ])
 
-    def test_many(self):
+    def test_many(self, geoip_db, stats):
         blues = BlueShardFactory.build_batch(2)
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(3)
 
-        self._make_query(blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
-        self.check_stats(total=1, counter=[
+        self._make_query(
+            geoip_db, stats,
+            blue=blues, cell=cells, wifi=wifis, ip=self.london_ip)
+        stats.check(total=1, counter=[
             ('locate.query',
                 ['key:test', 'region:GB',
                  'blue:many', 'cell:many', 'wifi:many']),
@@ -411,7 +409,8 @@ class TestResultStats(QueryTest):
             accuracy=accuracy,
             score=0.5)
 
-    def _make_query(self, result, api_key=None, api_type='locate',
+    def _make_query(self, geoip_db, stats,
+                    result, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or ApiKeyFactory.build(valid_key='test'),
@@ -419,127 +418,149 @@ class TestResultStats(QueryTest):
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
-            geoip_db=self.geoip_db,
-            stats_client=self.stats_client,
+            geoip_db=geoip_db,
+            stats_client=stats,
             **kw)
         query.emit_result_stats(result)
         return query
 
-    def test_no_log(self):
+    def test_no_log(self, geoip_db, stats):
         api_key = ApiKeyFactory.build(valid_key=None)
-        self._make_query(self._make_result(),
-                         api_key=api_key, api_type='locate')
-        self.check_stats(total=0)
-
-    def test_region_api(self):
         self._make_query(
+            geoip_db, stats,
+            self._make_result(), api_key=api_key, api_type='locate')
+        stats.check(total=0)
+
+    def test_region_api(self, geoip_db, stats):
+        self._make_query(
+            geoip_db, stats,
             self._make_region_result(), api_type='region', ip=self.london_ip)
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('region.result',
                 ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_no_ip(self):
+    def test_no_ip(self, geoip_db, stats):
         self._make_query(
+            geoip_db, stats,
             self._make_result(), ip=self.london_ip, fallback={'ipf': False})
-        self.check_stats(total=0)
+        stats.check(total=0)
 
-        self._make_query(None, ip=self.london_ip, fallback={'ipf': False})
-        self.check_stats(total=0)
-
-    def test_none(self):
-        self._make_query(None, ip=self.london_ip)
-        self.check_stats(counter=[
-            ('locate.result',
-                ['key:test', 'region:GB', 'fallback_allowed:false',
-                 'accuracy:low', 'status:miss']),
-        ])
-
-    def test_low_miss(self):
-        self._make_query(self._make_result(), ip=self.london_ip)
-        self.check_stats(counter=[
-            ('locate.result',
-                ['key:test', 'region:GB', 'fallback_allowed:false',
-                 'accuracy:low', 'status:miss']),
-        ])
-
-    def test_low_hit(self):
         self._make_query(
+            geoip_db, stats,
+            None, ip=self.london_ip, fallback={'ipf': False})
+        stats.check(total=0)
+
+    def test_none(self, geoip_db, stats):
+        self._make_query(
+            geoip_db, stats,
+            None, ip=self.london_ip)
+        stats.check(counter=[
+            ('locate.result',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:low', 'status:miss']),
+        ])
+
+    def test_low_miss(self, geoip_db, stats):
+        self._make_query(
+            geoip_db, stats,
+            self._make_result(), ip=self.london_ip)
+        stats.check(counter=[
+            ('locate.result',
+                ['key:test', 'region:GB', 'fallback_allowed:false',
+                 'accuracy:low', 'status:miss']),
+        ])
+
+    def test_low_hit(self, geoip_db, stats):
+        self._make_query(
+            geoip_db, stats,
             self._make_result(accuracy=25000.0), ip=self.london_ip)
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_medium_miss(self):
+    def test_medium_miss(self, geoip_db, stats):
         cells = CellShardFactory.build_batch(1)
-        self._make_query(self._make_result(), cell=cells)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            self._make_result(), cell=cells)
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:miss']),
         ])
 
-    def test_medium_miss_low(self):
+    def test_medium_miss_low(self, geoip_db, stats):
         cells = CellShardFactory.build_batch(1)
-        self._make_query(self._make_result(accuracy=50000.1), cell=cells)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            self._make_result(accuracy=50000.1), cell=cells)
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:miss']),
         ])
 
-    def test_medium_hit(self):
+    def test_medium_hit(self, geoip_db, stats):
         cells = CellShardFactory.build_batch(1)
-        self._make_query(self._make_result(accuracy=50000.0), cell=cells)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            self._make_result(accuracy=50000.0), cell=cells)
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:medium', 'status:hit']),
         ])
 
-    def test_high_miss(self):
+    def test_high_miss(self, geoip_db, stats):
         wifis = WifiShardFactory.build_batch(2)
-        self._make_query(self._make_result(accuracy=2500.0), wifi=wifis)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            self._make_result(accuracy=2500.0), wifi=wifis)
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:high', 'status:miss']),
         ])
 
-    def test_high_hit(self):
+    def test_high_hit(self, geoip_db, stats):
         wifis = WifiShardFactory.build_batch(2)
-        self._make_query(self._make_result(accuracy=500.0), wifi=wifis)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            self._make_result(accuracy=500.0), wifi=wifis)
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
                  'accuracy:high', 'status:hit']),
         ])
 
-    def test_mixed_miss(self):
+    def test_mixed_miss(self, geoip_db, stats):
         wifis = WifiShardFactory.build_batch(2)
         self._make_query(
+            geoip_db, stats,
             self._make_result(accuracy=2001.0), wifi=wifis, ip=self.london_ip)
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:high', 'status:miss']),
         ])
 
-    def test_mixed_hit(self):
+    def test_mixed_hit(self, geoip_db, stats):
         cells = CellShardFactory.build_batch(2)
         self._make_query(
+            geoip_db, stats,
             self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip)
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('locate.result',
                 ['key:test', 'region:GB', 'fallback_allowed:false',
                  'accuracy:medium', 'status:hit']),
         ])
 
 
-class TestSourceStats(QueryTest, ConnectionTestCase):
+class TestSourceStats(QueryTest):
 
     def _make_results(self, accuracy=None):
         london = GEOIP_DATA['London']
@@ -549,7 +570,8 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
             accuracy=accuracy,
             score=0.5))
 
-    def _make_query(self, source, results, api_key=None, api_type='locate',
+    def _make_query(self, geoip_db, stats,
+                    source, results, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
             api_key=api_key or ApiKeyFactory.build(valid_key='test'),
@@ -557,37 +579,43 @@ class TestSourceStats(QueryTest, ConnectionTestCase):
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
             wifi=self.wifi_model_query(wifi),
-            geoip_db=self.geoip_db,
-            stats_client=self.stats_client,
+            geoip_db=geoip_db,
+            stats_client=stats,
             **kw)
         query.emit_source_stats(source, results)
         return query
 
-    def test_high_hit(self):
+    def test_high_hit(self, geoip_db, stats):
         wifis = WifiShardFactory.build_batch(2)
         results = self._make_results(accuracy=100.0)
-        self._make_query(DataSource.internal, results, wifi=wifis)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            DataSource.internal, results, wifi=wifis)
+        stats.check(counter=[
             ('locate.source',
                 ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ])
 
-    def test_high_miss(self):
+    def test_high_miss(self, geoip_db, stats):
         wifis = WifiShardFactory.build_batch(2)
         results = self._make_results(accuracy=10000.0)
-        self._make_query(DataSource.ocid, results, wifi=wifis)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            DataSource.ocid, results, wifi=wifis)
+        stats.check(counter=[
             ('locate.source',
                 ['key:test', 'region:none', 'source:ocid',
                  'accuracy:high', 'status:miss']),
         ])
 
-    def test_no_results(self):
+    def test_no_results(self, geoip_db, stats):
         wifis = WifiShardFactory.build_batch(2)
         results = PositionResultList()
-        self._make_query(DataSource.internal, results, wifi=wifis)
-        self.check_stats(counter=[
+        self._make_query(
+            geoip_db, stats,
+            DataSource.internal, results, wifi=wifis)
+        stats.check(counter=[
             ('locate.source',
                 ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:miss']),

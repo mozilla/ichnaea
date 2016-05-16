@@ -1,6 +1,7 @@
 from datetime import timedelta
 from random import randint
 
+from ichnaea.conftest import DBTestCase
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
@@ -8,31 +9,27 @@ from ichnaea.data.tasks import (
     monitor_queue_size,
 )
 from ichnaea.models import Radio
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    GEOIP_DATA,
-)
 from ichnaea.tests.factories import CellShardOCIDFactory
 from ichnaea import util
 
 
-class TestMonitor(CeleryTestCase):
+class TestMonitor(DBTestCase):
 
-    def test_monitor_api_keys_empty(self):
+    def test_monitor_api_keys_empty(self, celery, stats):
         monitor_api_key_limits.delay().get()
-        self.check_stats(gauge=[('api.limit', 0)])
+        stats.check(gauge=[('api.limit', 0)])
 
-    def test_monitor_api_keys_one(self):
+    def test_monitor_api_keys_one(self, celery, redis, stats):
         today = util.utcnow().strftime('%Y%m%d')
         rate_key = 'apilimit:no_key_1:v1.geolocate:' + today
-        self.redis_client.incr(rate_key, 13)
+        redis.incr(rate_key, 13)
 
         monitor_api_key_limits.delay().get()
-        self.check_stats(gauge=[
+        stats.check(gauge=[
             ('api.limit', ['key:no_key_1', 'path:v1.geolocate']),
         ])
 
-    def test_monitor_api_keys_multiple(self):
+    def test_monitor_api_keys_multiple(self, celery, redis, stats):
         now = util.utcnow()
         today = now.strftime('%Y%m%d')
         yesterday = (now - timedelta(hours=24)).strftime('%Y%m%d')
@@ -44,54 +41,51 @@ class TestMonitor(CeleryTestCase):
         for key, paths in data.items():
             for path, value in paths.items():
                 rate_key = 'apilimit:%s:%s:%s' % (key, path, today)
-                self.redis_client.incr(rate_key, value)
+                redis.incr(rate_key, value)
                 rate_key = 'apilimit:%s:%s:%s' % (key, path, yesterday)
-                self.redis_client.incr(rate_key, value - 10)
+                redis.incr(rate_key, value - 10)
 
         # add some other items into Redis
-        self.redis_client.lpush('default', 1, 2)
-        self.redis_client.set('cache_something', '{}')
+        redis.lpush('default', 1, 2)
+        redis.set('cache_something', '{}')
 
         monitor_api_key_limits.delay().get()
-        self.check_stats(gauge=[
+        stats.check(gauge=[
             ('api.limit', ['key:test', 'path:v1.geolocate']),
             ('api.limit', ['key:test', 'path:v1.search']),
             ('api.limit', ['key:no_key_1', 'path:v1.search']),
             ('api.limit', ['key:no_key_2', 'path:v1.geolocate']),
         ])
 
-    def test_monitor_ocid_import(self):
+    def test_monitor_ocid_import(self, celery, session, stats):
         now = util.utcnow()
         for radio, i in [(Radio.gsm, 21),
                          (Radio.wcdma, 16),
                          (Radio.gsm, 20),
                          (Radio.lte, 1)]:
             CellShardOCIDFactory(radio=radio, created=now - timedelta(hours=i))
-            self.session.flush()
+            session.flush()
             monitor_ocid_import.delay().get()
 
-        self.check_stats(gauge=[('table', 4, ['table:cell_ocid_age'])])
+        stats.check(gauge=[('table', 4, ['table:cell_ocid_age'])])
 
-    def test_monitor_queue_size(self):
+    def test_monitor_queue_size(self, celery, redis, stats):
         data = {
             'export_queue_internal': 3,
             'export_queue_backup:abcd-ef-1234': 7,
         }
-        for name in self.celery_app.all_queues:
+        for name in celery.all_queues:
             data[name] = randint(1, 10)
 
         for k, v in data.items():
-            self.redis_client.lpush(k, *range(v))
+            redis.lpush(k, *range(v))
 
         monitor_queue_size.delay().get()
-        self.check_stats(
+        stats.check(
             gauge=[('queue', 1, v, ['queue:' + k]) for k, v in data.items()])
 
 
-class TestMonitorAPIUsers(CeleryTestCase):
-
-    bhutan_ip = GEOIP_DATA['Bhutan']['ip']
-    london_ip = GEOIP_DATA['London']['ip']
+class TestMonitorAPIUsers(DBTestCase):
 
     @property
     def today(self):
@@ -101,23 +95,22 @@ class TestMonitorAPIUsers(CeleryTestCase):
     def today_str(self):
         return self.today.strftime('%Y-%m-%d')
 
-    def test_empty(self):
+    def test_empty(self, celery, stats):
         monitor_api_users.delay().get()
-        self.check_stats(gauge=[('submit.user', 0), ('locate.user', 0)])
+        stats.check(gauge=[('submit.user', 0), ('locate.user', 0)])
 
-    def test_one_day(self):
-        self.redis_client.pfadd(
-            'apiuser:submit:test:' + self.today_str,
-            self.bhutan_ip, self.london_ip)
-        self.redis_client.pfadd(
-            'apiuser:submit:valid_key:' + self.today_str,
-            self.bhutan_ip)
-        self.redis_client.pfadd(
-            'apiuser:locate:valid_key:' + self.today_str,
-            self.bhutan_ip)
+    def test_one_day(self, celery, geoip_data, redis, stats):
+        bhutan_ip = geoip_data['Bhutan']['ip']
+        london_ip = geoip_data['London']['ip']
+        redis.pfadd(
+            'apiuser:submit:test:' + self.today_str, bhutan_ip, london_ip)
+        redis.pfadd(
+            'apiuser:submit:valid_key:' + self.today_str, bhutan_ip)
+        redis.pfadd(
+            'apiuser:locate:valid_key:' + self.today_str, bhutan_ip)
 
         monitor_api_users.delay().get()
-        self.check_stats(gauge=[
+        stats.check(gauge=[
             ('submit.user', 1, 2, ['key:test', 'interval:1d']),
             ('submit.user', 1, 2, ['key:test', 'interval:7d']),
             ('submit.user', 1, 1, ['key:valid_key', 'interval:1d']),
@@ -126,22 +119,22 @@ class TestMonitorAPIUsers(CeleryTestCase):
             ('locate.user', 1, 1, ['key:valid_key', 'interval:7d']),
         ])
 
-    def test_many_days(self):
+    def test_many_days(self, celery, geoip_data, redis, stats):
+        bhutan_ip = geoip_data['Bhutan']['ip']
+        london_ip = geoip_data['London']['ip']
         days_6 = (self.today - timedelta(days=6)).strftime('%Y-%m-%d')
         days_7 = (self.today - timedelta(days=7)).strftime('%Y-%m-%d')
-        self.redis_client.pfadd(
-            'apiuser:submit:test:' + self.today_str,
-            '127.0.0.1', self.bhutan_ip)
+        redis.pfadd(
+            'apiuser:submit:test:' + self.today_str, '127.0.0.1', bhutan_ip)
         # add the same IPs + one new one again
-        self.redis_client.pfadd(
-            'apiuser:submit:test:' + days_6,
-            '127.0.0.1', self.bhutan_ip, self.london_ip)
+        redis.pfadd(
+            'apiuser:submit:test:' + days_6, '127.0.0.1', bhutan_ip, london_ip)
         # add one entry which is too old
-        self.redis_client.pfadd(
-            'apiuser:submit:test:' + days_7, self.bhutan_ip)
+        redis.pfadd(
+            'apiuser:submit:test:' + days_7, bhutan_ip)
 
         monitor_api_users.delay().get()
-        self.check_stats(gauge=[
+        stats.check(gauge=[
             ('submit.user', 1, 2, ['key:test', 'interval:1d']),
             # we count unique IPs over the entire 7 day period,
             # so it's just 3 uniques
@@ -149,4 +142,4 @@ class TestMonitorAPIUsers(CeleryTestCase):
         ])
 
         # the too old key was deleted manually
-        assert not self.redis_client.exists('apiuser:submit:test:' + days_7)
+        assert not redis.exists('apiuser:submit:test:' + days_7)

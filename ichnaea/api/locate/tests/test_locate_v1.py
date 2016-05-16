@@ -13,11 +13,9 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateTest,
     CommonPositionTest,
 )
+from ichnaea.conftest import DBTestCase
+from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
-from ichnaea.tests.base import (
-    AppTestCase,
-    GEOIP_DATA,
-)
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
@@ -65,7 +63,9 @@ class TestSchema(object):
         assert 'radio' not in data['cellTowers'][0]
 
 
-class LocateV1Base(BaseLocateTest, AppTestCase):
+class LocateV1Base(BaseLocateTest, DBTestCase):
+
+    default_session = 'ro_session'
 
     url = '/v1/geolocate'
     metric_path = 'path:v1.geolocate'
@@ -103,7 +103,7 @@ class LocateV1Base(BaseLocateTest, AppTestCase):
 
 class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
-    def test_blue(self):
+    def test_blue(self, app, data_queues, session, stats):
         blue = BlueShardFactory()
         offset = 0.00001
         blues = [
@@ -112,7 +112,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             BlueShardFactory(lat=blue.lat + offset * 2),
             BlueShardFactory(lat=None, lon=None),
         ]
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(blues=blues)
         blue_query = query['bluetoothBeacons']
@@ -120,10 +120,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         blue_query[1]['signalStrength'] = -150
         blue_query[1]['name'] = 'my-beacon'
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
-        self.check_queue(1)
-        self.check_stats(counter=[
+        self.check_queue(data_queues, 1)
+        stats.check(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
@@ -132,7 +132,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ])
-        items = self.queue.dequeue()
+        items = data_queues['update_incoming'].dequeue()
         assert (items == [{
             'api_key': 'test',
             'source': 'query',
@@ -158,9 +158,9 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_cell(self):
+    def test_cell(self, app, data_queues, session, stats):
         cell = CellShardFactory(radio=Radio.lte)
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['radioType'] = cell.radio.name
@@ -168,10 +168,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         query['cellTowers'][0]['signalStrength'] = -70
         query['cellTowers'][0]['timingAdvance'] = 1
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
-        self.check_queue(1)
-        self.check_stats(counter=[
+        self.check_queue(data_queues, 1)
+        stats.check(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
@@ -183,7 +183,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
-        items = self.queue.dequeue()
+        items = data_queues['update_incoming'].dequeue()
         assert (items == [{
             'api_key': 'test',
             'source': 'query',
@@ -208,9 +208,9 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_partial_cell(self):
+    def test_partial_cell(self, app, data_queues, session):
         cell = CellShardFactory()
-        self.session.flush()
+        session.flush()
 
         # simulate one neighboring incomplete cell
         query = self.model_query(cells=[cell])
@@ -222,11 +222,11 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         cell_two['psc'] = cell.psc + 1
         query['cellTowers'].append(cell_two)
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
-        self.check_queue(1)
+        self.check_queue(data_queues, 1)
 
-    def test_wifi(self):
+    def test_wifi(self, app, data_queues, session, stats):
         wifi = WifiShardFactory()
         offset = 0.00001
         wifis = [
@@ -235,7 +235,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             WifiShardFactory(lat=wifi.lat + offset * 2),
             WifiShardFactory(lat=None, lon=None),
         ]
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifiAccessPoints']
@@ -246,10 +246,10 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         wifi_query[2]['signalToNoiseRatio'] = 13
         wifi_query[3]['ssid'] = 'my-wifi'
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
-        self.check_queue(1)
-        self.check_stats(counter=[
+        self.check_queue(data_queues, 1)
+        stats.check(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
@@ -261,7 +261,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
-        items = self.queue.dequeue()
+        items = data_queues['update_incoming'].dequeue()
         assert (items == [{
             'api_key': 'test',
             'source': 'query',
@@ -292,51 +292,51 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_cell_mcc_mnc_strings(self):
+    def test_cell_mcc_mnc_strings(self, app, session):
         # mcc and mnc are officially defined as strings, where '01' is
         # different from '1'. In practice many systems ours included treat
         # them as integers, so both of these are encoded as 1 instead.
         # Some clients sends us these values as strings, some as integers,
         # so we want to make sure we support both.
         cell = CellShardFactory(mnc=1)
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['cellTowers'][0]['mobileCountryCode'] = str(cell.mcc)
         query['cellTowers'][0]['mobileNetworkCode'] = '01'
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_cell_radio_in_celltowers(self):
+    def test_cell_radio_in_celltowers(self, app, session):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         cell = CellShardFactory()
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['cellTowers'][0]['radio'] = cell.radio.name
         del query['cellTowers'][0]['radioType']
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_cell_radiotype_in_celltowers(self):
+    def test_cell_radiotype_in_celltowers(self, app, session):
         # This test covers an extension to the geolocate API
         cell = CellShardFactory()
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['cellTowers'][0]['radioType'] = cell.radio.name
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_cell_radio_in_celltowers_dupes(self):
+    def test_cell_radio_in_celltowers_dupes(self, app, session):
         # This test covers a bug related to FxOS calling the
         # geolocate API incorrectly.
         cell = CellShardFactory()
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['cellTowers'][0]['radio'] = cell.radio.name
@@ -345,14 +345,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         cell_two = query['cellTowers'][0].copy()
         query['cellTowers'].append(cell_two)
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_inconsistent_cell_radio(self):
+    def test_inconsistent_cell_radio(self, app, session):
         cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
         cell2 = CellShardFactory(radio=Radio.gsm, radius=35000, samples=5,
                                  lat=cell.lat + 0.0002, lon=cell.lon)
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell, cell2])
         query['radioType'] = Radio.lte.name
@@ -361,42 +361,46 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         del query['cellTowers'][0]['radioType']
         del query['cellTowers'][1]['radioType']
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_inconsistent_cell_radio_type(self):
+    def test_inconsistent_cell_radio_type(self, app, session):
         cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
         cell2 = CellShardFactory(radio=Radio.gsm, radius=35000, samples=5,
                                  lat=cell.lat + 0.0002, lon=cell.lon)
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell, cell2])
         query['radioType'] = Radio.lte.name
         query['cellTowers'][0]['radio'] = 'lte'
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_cdma_cell(self):
+    def test_cdma_cell(self, app, session):
         # Specifying a CDMA radio type works,
         # but the information is ignored.
         cell = CellShardFactory(radio=Radio.gsm, radius=15000)
         cell2 = CellShardFactory(radio=Radio.gsm, radius=35000,
                                  lat=cell.lat + 0.0002, lon=cell.lon)
         cell2.radio = Radio.cdma
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell, cell2])
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
 
 class TestError(LocateV1Base, CommonLocateErrorTest):
 
-    def test_apikey_error(self, db_rw_drop_table, raven, stats):
+    def test_apikey_error(self, app, data_queues,
+                          db_rw_drop_table, raven, session, stats):
         super(TestError, self).test_apikey_error(
-            db_rw_drop_table, raven, stats, db_errors=1)
+            app, data_queues, db_rw_drop_table,
+            raven, session, stats, db_errors=1)
 
-    def test_database_error(self, db_rw_drop_table, raven, stats):
+    def test_database_error(self, app, data_queues,
+                            db_rw_drop_table, raven, session, stats):
         super(TestError, self).test_database_error(
-            db_rw_drop_table, raven, stats, db_errors=5)
+            app, data_queues, db_rw_drop_table,
+            raven, session, stats, db_errors=5)

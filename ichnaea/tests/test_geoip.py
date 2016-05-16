@@ -10,19 +10,19 @@ import six
 
 from ichnaea.geocode import GEOCODER
 from ichnaea import geoip
-from ichnaea.tests.base import (
-    GEOIP_BAD_FILE,
-    GEOIP_DATA,
-    GEOIP_TEST_FILE,
-)
+from ichnaea.tests import DATA_DIRECTORY
+
+GEOIP_BAD_FILE = os.path.join(
+    DATA_DIRECTORY, 'GeoIP2-Connection-Type-Test.mmdb')
+GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
 
 
 class TestGeoIP(object):
 
     @classmethod
-    def _open_db(cls, raven_client, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):
+    def _open_db(cls, raven, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):
         return geoip.configure_geoip(
-            filename, mode=mode, raven_client=raven_client)
+            filename, mode=mode, raven_client=raven)
 
     def test_open(self, geoip_db):
         assert isinstance(geoip_db, geoip.GeoIPWrapper)
@@ -86,16 +86,16 @@ class TestGeoIP(object):
 
 class TestLookup(object):
 
-    def test_city(self, geoip_db):
-        london = GEOIP_DATA['London']
+    def test_city(self, geoip_data, geoip_db):
+        london = geoip_data['London']
         result = geoip_db.lookup(london['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             assert round(london[name], 7) == result[name]
         for name in ('region_code', 'region_name', 'city', 'score'):
             assert london[name] == result[name]
 
-    def test_region(self, geoip_db):
-        bhutan = GEOIP_DATA['Bhutan']
+    def test_region(self, geoip_data, geoip_db):
+        bhutan = geoip_data['Bhutan']
         result = geoip_db.lookup(bhutan['ip'])
         for name in ('latitude', 'longitude', 'radius', 'region_radius'):
             assert round(bhutan[name], 7) == result[name]

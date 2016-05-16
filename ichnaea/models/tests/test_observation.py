@@ -1,5 +1,10 @@
 import simplejson
 
+from ichnaea.conftest import (
+    GB_LAT,
+    GB_LON,
+    GB_MCC,
+)
 from ichnaea.models import (
     BlueObservation,
     BlueReport,
@@ -11,11 +16,6 @@ from ichnaea.models import (
     ReportSource,
     WifiObservation,
     WifiReport,
-)
-from ichnaea.tests.base import (
-    GB_LAT,
-    GB_LON,
-    GB_MCC,
 )
 from ichnaea.tests.factories import (
     BlueObservationFactory,

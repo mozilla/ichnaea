@@ -4,6 +4,7 @@ import os.path
 from mock import MagicMock, patch
 
 from ichnaea import ROOT
+from ichnaea.conftest import DBTestCase
 from ichnaea.models.content import (
     DataMap,
 )
@@ -15,7 +16,6 @@ from ichnaea.scripts.datamap import (
     merge_files,
     render_tiles,
 )
-from ichnaea.tests.base import CeleryTestCase
 from ichnaea import util
 
 GIT_ROOT = os.path.abspath(os.path.join(ROOT, os.pardir))
@@ -23,14 +23,14 @@ DATAMAPS_DIR = os.path.join(GIT_ROOT, 'datamaps')
 PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 
 
-class TestMap(CeleryTestCase):
+class TestMap(DBTestCase):
 
     def _check_quadtree(self, path):
         assert os.path.isdir(path)
         for name in ('1,0', 'meta'):
             assert os.path.isfile(os.path.join(path, name))
 
-    def test_files(self):
+    def test_files(self, db_rw, session):
         today = util.utcnow().date()
         rows = [
             dict(time=today, lat=12.345, lon=12.345),
@@ -41,12 +41,12 @@ class TestMap(CeleryTestCase):
             lat, lon = DataMap.scale(row['lat'], row['lon'])
             data = DataMap.shard_model(lat, lon)(
                 grid=(lat, lon), created=row['time'], modified=row['time'])
-            self.session.add(data)
-        self.session.flush()
+            session.add(data)
+        session.flush()
 
         lines = []
         rows = 0
-        db_url = str(self.db_rw.engine.url)
+        db_url = str(db_rw.engine.url)
         with util.selfdestruct_tempdir() as temp_dir:
             quaddir = os.path.join(temp_dir, 'quadtrees')
             os.mkdir(quaddir)
@@ -58,7 +58,7 @@ class TestMap(CeleryTestCase):
                 filepath = os.path.join(temp_dir, filename)
                 result = export_file(
                     db_url, filepath, shard.__tablename__,
-                    _session=self.session)
+                    _session=session)
 
                 if not result:
                     assert not os.path.isfile(filepath)
@@ -90,7 +90,7 @@ class TestMap(CeleryTestCase):
         assert (set([round(float(l[1]), 2) for l in lines]) ==
                 set([-11.0, 12.35]))
 
-    def test_main(self):
+    def test_main(self, raven, stats):
         with util.selfdestruct_tempdir() as temp_dir:
             mock_generate = MagicMock()
             with patch.object(datamap, 'generate', mock_generate):
@@ -103,8 +103,8 @@ class TestMap(CeleryTestCase):
                     '--output=%s' % temp_dir,
                 ]
                 main(argv,
-                     _raven_client=self.raven_client,
-                     _stats_client=self.stats_client)
+                     _raven_client=raven,
+                     _stats_client=stats)
 
                 assert len(mock_generate.mock_calls) == 1
                 args, kw = mock_generate.call_args

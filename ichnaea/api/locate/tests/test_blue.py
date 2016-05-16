@@ -4,6 +4,7 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
+from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import BlueShardFactory
 
 
@@ -24,24 +25,27 @@ class BlueTestPositionSource(BluePositionMixin, PositionSource):
         return self.search_blue(query)
 
 
-class TestBlue(BaseSourceTest):
+class TestBlue(DBTestCase, BaseSourceTest):
 
     Source = BlueTestPositionSource
 
-    def test_should_search(self):
-        query = self.make_query()
-        self.check_should_search(query, False)
+    def test_should_search(self, geoip_db, http_session,
+                           session, source, stats):
+        query = self.make_query(geoip_db, http_session, session, stats)
+        self.check_should_search(source, query, False)
 
-    def test_blue(self):
+    def test_blue(self, geoip_db, http_session, session, source, stats):
         blue = BlueShardFactory(radius=10, samples=50)
         blue2 = BlueShardFactory(
             lat=blue.lat, lon=blue.lon + 0.00001, radius=100,
             block_last=None, samples=100)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(blues=[blue, blue2])
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            blues=[blue, blue2])
         query.blue[0].signalStrength = -80
         query.blue[1].signalStrength = -90
-        results = self.source.search(query)
+        results = source.search(query)
         self.check_model_results(results, [blue], lon=blue.lon + 0.0000048)
         assert results.best().score > 1.0

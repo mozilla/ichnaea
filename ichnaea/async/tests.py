@@ -6,18 +6,18 @@ import tempfile
 from celery import signals
 
 from ichnaea.async.task import BaseTask
-from ichnaea.tests.base import CeleryTestCase
+from ichnaea.conftest import DBTestCase
 
 
-class TestBeat(CeleryTestCase):
+class TestBeat(DBTestCase):
 
-    def test_tasks(self):
+    def test_tasks(self, celery):
         tmpdir = tempfile.mkdtemp()
         filename = os.path.join(tmpdir, 'celerybeat-schedule')
-        beat_app = self.celery_app.Beat()
+        beat_app = celery.Beat()
         try:
             beat = beat_app.Service(
-                app=self.celery_app, schedule_filename=filename)
+                app=celery, schedule_filename=filename)
             signals.beat_init.send(sender=beat)
             # parses the schedule as a side-effect
             scheduler = beat.get_scheduler()
@@ -56,8 +56,8 @@ class TestBeat(CeleryTestCase):
             assert 'data.update_wifi_%x' % i in registered_tasks
 
 
-class TestWorkerConfig(CeleryTestCase):
+class TestWorkerConfig(DBTestCase):
 
-    def test_config(self):
-        assert self.celery_app.conf['CELERY_ALWAYS_EAGER']
-        assert 'redis' in self.celery_app.conf['CELERY_RESULT_BACKEND']
+    def test_config(self, celery):
+        assert celery.conf['CELERY_ALWAYS_EAGER']
+        assert 'redis' in celery.conf['CELERY_RESULT_BACKEND']

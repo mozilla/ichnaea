@@ -1,6 +1,11 @@
 import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
+from ichnaea.conftest import (
+    DBTestCase,
+    GB_LAT,
+    GB_LON,
+)
 from ichnaea.models import (
     encode_mac,
     ReportSource,
@@ -9,11 +14,6 @@ from ichnaea.models.wifi import (
     WifiShard,
     WifiShard0,
     WifiShardF,
-)
-from ichnaea.tests.base import (
-    DBTestCase,
-    GB_LAT,
-    GB_LON,
 )
 from ichnaea import util
 
@@ -38,31 +38,31 @@ class TestWifiShard(DBTestCase):
         mac = encode_mac('0000f0123456')
         assert WifiShard.shard_model(mac) is WifiShardF
 
-    def test_init(self):
+    def test_init(self, session):
         wifi = WifiShard0(mac='111101123456')
-        self.session.add(wifi)
-        self.session.flush()
+        session.add(wifi)
+        session.flush()
 
-        wifis = (self.session.query(WifiShard0)
-                             .filter(WifiShard0.mac == '111101123456')).all()
+        wifis = (session.query(WifiShard0)
+                        .filter(WifiShard0.mac == '111101123456')).all()
         assert wifis[0].mac == '111101123456'
 
-    def test_init_empty(self):
+    def test_init_empty(self, session):
         wifi = WifiShard0()
-        self.session.add(wifi)
+        session.add(wifi)
         with pytest.raises(SQLAlchemyError):
-            self.session.flush()
+            session.flush()
 
-    def test_init_fail(self):
+    def test_init_fail(self, session):
         wifi = WifiShard0(mac='abc')
-        self.session.add(wifi)
+        session.add(wifi)
         with pytest.raises(SQLAlchemyError):
-            self.session.flush()
+            session.flush()
 
-    def test_fields(self):
+    def test_fields(self, session):
         now = util.utcnow()
         today = now.date()
-        self.session.add(WifiShard.create(
+        session.add(WifiShard.create(
             mac='111101123456', created=now, modified=now,
             lat=GB_LAT, max_lat=GB_LAT, min_lat=GB_LAT,
             lon=GB_LON, max_lon=GB_LON, min_lon=GB_LON,
@@ -71,9 +71,9 @@ class TestWifiShard(DBTestCase):
             block_first=today, block_last=today, block_count=1,
             _raise_invalid=True,
         ))
-        self.session.flush()
+        session.flush()
 
-        wifi = self.session.query(WifiShard0).first()
+        wifi = session.query(WifiShard0).first()
         assert wifi.mac == '111101123456'
         assert wifi.created == now
         assert wifi.modified == now
@@ -93,18 +93,18 @@ class TestWifiShard(DBTestCase):
         assert wifi.block_last == today
         assert wifi.block_count == 1
 
-    def test_mac_unhex(self):
+    def test_mac_unhex(self, session):
         stmt = 'insert into wifi_shard_0 (mac) values (unhex("111101123456"))'
-        self.session.execute(stmt)
-        self.session.flush()
-        wifi = self.session.query(WifiShard0).one()
+        session.execute(stmt)
+        session.flush()
+        wifi = session.query(WifiShard0).one()
         assert wifi.mac == '111101123456'
 
-    def test_mac_hex(self):
-        self.session.add(WifiShard0(mac='111101123456'))
-        self.session.flush()
+    def test_mac_hex(self, session):
+        session.add(WifiShard0(mac='111101123456'))
+        session.flush()
         stmt = 'select hex(`mac`) from wifi_shard_0'
-        row = self.session.execute(stmt).fetchone()
+        row = session.execute(stmt).fetchone()
         assert row == ('111101123456', )
 
     def test_score(self):

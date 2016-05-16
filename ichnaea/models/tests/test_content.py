@@ -1,5 +1,6 @@
 import pytest
 
+from ichnaea.conftest import DBTestCase
 from ichnaea.models.content import (
     decode_datamap_grid,
     encode_datamap_grid,
@@ -8,7 +9,6 @@ from ichnaea.models.content import (
     Stat,
     StatKey,
 )
-from ichnaea.tests.base import DBTestCase
 from ichnaea import util
 
 
@@ -51,14 +51,14 @@ class TestDataMapCodec(object):
 
 class TestDataMap(DBTestCase):
 
-    def test_fields(self):
+    def test_fields(self, session):
         today = util.utcnow().date()
         lat = 12345
         lon = -23456
         model = DataMap.shard_model(lat, lon)
-        self.session.add(model(grid=(lat, lon), created=today, modified=today))
-        self.session.flush()
-        result = self.session.query(model).first()
+        session.add(model(grid=(lat, lon), created=today, modified=today))
+        session.flush()
+        result = session.query(model).first()
         assert result.grid == (lat, lon)
         assert result.created == today
         assert result.modified == today
@@ -77,42 +77,42 @@ class TestDataMap(DBTestCase):
         assert DataMap.shard_id(35999, 4999) == 'sw'
         assert DataMap.shard_id(-85000, -180000) == 'sw'
 
-    def test_grid_bytes(self):
+    def test_grid_bytes(self, session):
         lat = 12000
         lon = 34000
         grid = encode_datamap_grid(lat, lon)
         model = DataMap.shard_model(lat, lon)
-        self.session.add(model(grid=grid))
-        self.session.flush()
-        result = self.session.query(model).first()
+        session.add(model(grid=grid))
+        session.flush()
+        result = session.query(model).first()
         assert result.grid == (lat, lon)
 
-    def test_grid_none(self):
-        self.session.add(DataMap.shard_model(0, 0)(grid=None))
+    def test_grid_none(self, session):
+        session.add(DataMap.shard_model(0, 0)(grid=None))
         with pytest.raises(Exception):
-            self.session.flush()
+            session.flush()
 
-    def test_grid_length(self):
-        self.session.add(DataMap.shard_model(0, 9)(grid=b'\x00' * 9))
+    def test_grid_length(self, session):
+        session.add(DataMap.shard_model(0, 9)(grid=b'\x00' * 9))
         with pytest.raises(Exception):
-            self.session.flush()
+            session.flush()
 
-    def test_grid_list(self):
+    def test_grid_list(self, session):
         lat = 1000
         lon = -2000
-        self.session.add(DataMap.shard_model(lat, lon)(grid=[lat, lon]))
+        session.add(DataMap.shard_model(lat, lon)(grid=[lat, lon]))
         with pytest.raises(Exception):
-            self.session.flush()
+            session.flush()
 
 
 class TestRegionStat(DBTestCase):
 
-    def test_fields(self):
-        self.session.add(RegionStat(
+    def test_fields(self, session):
+        session.add(RegionStat(
             region='GB', gsm=1, wcdma=2, lte=3, blue=4, wifi=5))
-        self.session.flush()
+        session.flush()
 
-        result = self.session.query(RegionStat).first()
+        result = session.query(RegionStat).first()
         assert result.region == 'GB'
         assert result.gsm == 1
         assert result.wcdma == 2
@@ -123,22 +123,22 @@ class TestRegionStat(DBTestCase):
 
 class TestStat(DBTestCase):
 
-    def test_fields(self):
+    def test_fields(self, session):
         utcday = util.utcnow().date()
-        self.session.add(Stat(key=StatKey.cell, time=utcday, value=13))
-        self.session.flush()
+        session.add(Stat(key=StatKey.cell, time=utcday, value=13))
+        session.flush()
 
-        result = self.session.query(Stat).first()
+        result = session.query(Stat).first()
         assert result.key == StatKey.cell
         assert result.time == utcday
         assert result.value == 13
 
-    def test_enum(self):
+    def test_enum(self, session):
         utcday = util.utcnow().date()
-        self.session.add(Stat(key=StatKey.cell, time=utcday, value=13))
-        self.session.flush()
+        session.add(Stat(key=StatKey.cell, time=utcday, value=13))
+        session.flush()
 
-        result = self.session.query(Stat).first()
+        result = session.query(Stat).first()
         assert result.key == StatKey.cell
         assert int(result.key) == 1
         assert result.key.name == 'cell'

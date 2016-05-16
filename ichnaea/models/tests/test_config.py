@@ -1,22 +1,22 @@
 import uuid
 
+from ichnaea.conftest import DBTestCase
 from ichnaea.models.config import ExportConfig
-from ichnaea.tests.base import DBTestCase
 
 
 class TestExportConfig(DBTestCase):
 
-    def test_fields(self):
+    def test_fields(self, session):
         skip_keys = [uuid.uuid4().hex for i in range(3)]
         skip_sources = ['query', 'fused']
-        self.session.add(ExportConfig(
+        session.add(ExportConfig(
             name='internal', batch=100,
             schema='internal', url='internal://',
             skip_keys=skip_keys, skip_sources=skip_sources,
         ))
-        self.session.flush()
+        session.flush()
 
-        result = self.session.query(ExportConfig).get('internal')
+        result = session.query(ExportConfig).get('internal')
         assert result.name == 'internal'
         assert result.batch == 100
         assert result.schema == 'internal'
@@ -24,7 +24,7 @@ class TestExportConfig(DBTestCase):
         assert result.skip_keys == frozenset(skip_keys)
         assert result.skip_sources == frozenset(skip_sources)
 
-    def test_allowed(self):
+    def test_allowed(self, session):
         configs = [
             ExportConfig(name='none', skip_keys=None, skip_sources=None),
             ExportConfig(name='test', skip_keys=['test'], skip_sources=None),
@@ -32,12 +32,12 @@ class TestExportConfig(DBTestCase):
             ExportConfig(name='query', skip_keys=['test', 'test2'],
                          skip_sources=['query']),
         ]
-        self.session.add_all(configs)
-        self.session.commit()
+        session.add_all(configs)
+        session.commit()
 
         def test(name, api_key, source, expected):
-            row = (self.session.query(ExportConfig)
-                               .filter(ExportConfig.name == name)).first()
+            row = (session.query(ExportConfig)
+                          .filter(ExportConfig.name == name)).first()
             assert row.allowed(api_key, source) == expected
 
         test('none', None, None, True)
@@ -66,7 +66,7 @@ class TestExportConfig(DBTestCase):
         test('query', 'test', 'query', False)
         test('query', 'test2', None, False)
 
-    def test_skip_keys(self):
+    def test_skip_keys(self, session):
         non_ascii = b'\xc3\xa4'.decode('utf-8')
         configs = [
             ExportConfig(name='none', skip_keys=None),
@@ -76,12 +76,12 @@ class TestExportConfig(DBTestCase):
             ExportConfig(name='two', skip_keys=['ab', 'cd']),
             ExportConfig(name='unicode', skip_keys=['ab', non_ascii]),
         ]
-        self.session.add_all(configs)
-        self.session.commit()
+        session.add_all(configs)
+        session.commit()
 
         def test(name, expected):
-            row = (self.session.query(ExportConfig)
-                               .filter(ExportConfig.name == name)).first()
+            row = (session.query(ExportConfig)
+                          .filter(ExportConfig.name == name)).first()
             assert row.skip_keys == expected
 
         test('none', None)

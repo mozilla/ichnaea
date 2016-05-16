@@ -6,6 +6,7 @@ import mock
 import requests_mock
 import simplejson
 
+from ichnaea.conftest import DBTestCase
 from ichnaea.data.export import (
     DummyExporter,
     InternalTransform,
@@ -21,7 +22,6 @@ from ichnaea.models import (
     CellShard,
     WifiShard,
 )
-from ichnaea.tests.base import CeleryTestCase
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -47,13 +47,13 @@ def mock_s3(mock_keys):
             yield mock_key
 
 
-class BaseExportTest(CeleryTestCase):
+class BaseExportTest(object):
 
-    @property
-    def queue(self):
-        return self.celery_app.data_queues['update_incoming']
+    def queue(self, celery):
+        return celery.data_queues['update_incoming']
 
-    def add_reports(self, num=1, blue_factor=0, cell_factor=1, wifi_factor=2,
+    def add_reports(self, celery, num=1,
+                    blue_factor=0, cell_factor=1, wifi_factor=2,
                     blue_key=None, cell_mcc=None, wifi_key=None,
                     api_key='test', lat=None, lon=None, source=None):
         reports = []
@@ -112,16 +112,16 @@ class BaseExportTest(CeleryTestCase):
                   'source': rep['position'].get('source', 'gnss'),
                   'report': rep} for rep in reports]
 
-        self.queue.enqueue(items)
+        self.queue(celery).enqueue(items)
         return reports
 
-    def queue_length(self, redis_key):
-        return self.redis_client.llen(redis_key)
+    def queue_length(self, redis, redis_key):
+        return redis.llen(redis_key)
 
 
-class TestExporter(BaseExportTest):
+class TestExporter(DBTestCase, BaseExportTest):
 
-    def test_queues(self):
+    def test_queues(self, celery, redis, session):
         ApiKeyFactory(valid_key='test2')
         ExportConfigFactory(name='test', batch=3,
                             skip_keys=frozenset(['export_source']))
@@ -130,12 +130,12 @@ class TestExporter(BaseExportTest):
                             skip_keys=frozenset(['test', 'test_1']))
         ExportConfigFactory(name='query', batch=2,
                             skip_sources=frozenset(['gnss']))
-        self.session.flush()
+        session.flush()
 
-        self.add_reports(4)
-        self.add_reports(1, api_key='test2')
-        self.add_reports(2, api_key=None, source='gnss')
-        self.add_reports(1, api_key='test', source='query')
+        self.add_reports(celery, 4)
+        self.add_reports(celery, 1, api_key='test2')
+        self.add_reports(celery, 2, api_key=None, source='gnss')
+        self.add_reports(celery, 1, api_key='test', source='query')
         update_incoming.delay().get()
 
         for queue_key, num in [
@@ -143,12 +143,12 @@ class TestExporter(BaseExportTest):
                 ('queue_export_everything', 3),
                 ('queue_export_no_test', 1),
                 ('queue_export_query', 1)]:
-            assert self.queue_length(queue_key) == num
+            assert self.queue_length(redis, queue_key) == num
 
-    def test_retry(self):
+    def test_retry(self, celery, redis, session):
         ExportConfigFactory(name='test', batch=1)
-        self.session.flush()
-        self.add_reports(1)
+        session.flush()
+        self.add_reports(celery, 1)
 
         num = [0]
         orig_wait = DummyExporter._retry_wait
@@ -165,22 +165,25 @@ class TestExporter(BaseExportTest):
             finally:
                 DummyExporter._retry_wait = orig_wait
 
-        assert self.queue_length('queue_export_test') == 0
+        assert self.queue_length(redis, 'queue_export_test') == 0
 
 
-class TestGeosubmit(BaseExportTest):
+class TestGeosubmit(DBTestCase, BaseExportTest):
 
-    def test_upload(self):
+    def test_upload(self, celery, session, stats):
         ApiKeyFactory(valid_key='e5444-794')
         ExportConfigFactory(
             name='test', batch=3, schema='geosubmit',
             url='http://127.0.0.1:9/v2/geosubmit?key=external')
-        self.session.flush()
+        session.flush()
 
         reports = []
-        reports.extend(self.add_reports(1, source='gnss'))
-        reports.extend(self.add_reports(1, api_key='e5444e9f-7946'))
-        reports.extend(self.add_reports(1, api_key=None, source='fused'))
+        reports.extend(self.add_reports(
+            celery, 1, source='gnss'))
+        reports.extend(self.add_reports(
+            celery, 1, api_key='e5444e9f-7946'))
+        reports.extend(self.add_reports(
+            celery, 1, api_key=None, source='fused'))
 
         with requests_mock.Mocker() as mock:
             mock.register_uri('POST', requests_mock.ANY, text='{}')
@@ -207,7 +210,7 @@ class TestGeosubmit(BaseExportTest):
             set([w['ssid'] for w in send_reports[0]['wifiAccessPoints']]) ==
             set(['my-wifi']))
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('data.export.batch', 1, 1, ['key:test']),
             ('data.export.upload', 1, ['key:test', 'status:200']),
         ], timer=[
@@ -215,19 +218,19 @@ class TestGeosubmit(BaseExportTest):
         ])
 
 
-class TestS3(BaseExportTest):
+class TestS3(DBTestCase, BaseExportTest):
 
-    def test_upload(self):
+    def test_upload(self, celery, session, stats):
         ExportConfigFactory(
             name='backup', batch=3, schema='s3',
             url='s3://bucket/backups/{source}/{api_key}/{year}/{month}/{day}')
         ApiKeyFactory(valid_key='e5444-794')
-        self.session.flush()
+        session.flush()
 
-        reports = self.add_reports(3)
-        self.add_reports(3, api_key='e5444-794', source='gnss')
-        self.add_reports(3, api_key='e5444-794', source='fused')
-        self.add_reports(3, api_key=None)
+        reports = self.add_reports(celery, 3)
+        self.add_reports(celery, 3, api_key='e5444-794', source='gnss')
+        self.add_reports(celery, 3, api_key='e5444-794', source='fused')
+        self.add_reports(celery, 3, api_key=None)
 
         mock_keys = []
         with mock_s3(mock_keys):
@@ -265,7 +268,7 @@ class TestS3(BaseExportTest):
         gotten = [report['position']['accuracy'] for report in send_reports]
         assert set(expect) == set(gotten)
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('data.export.batch', 4, 1, ['key:backup']),
             ('data.export.upload', 4, ['key:backup', 'status:success']),
         ], timer=[
@@ -404,17 +407,17 @@ class TestInternalTransform(object):
         })
 
 
-class TestInternal(BaseExportTest):
+class TestInternal(DBTestCase, BaseExportTest):
 
-    def _pop_item(self):
-        return self.queue.dequeue()[0]
+    def _pop_item(self, celery):
+        return self.queue(celery).dequeue()[0]
 
-    def _push_item(self, item):
-        self.queue.enqueue([item])
+    def _push_item(self, celery, item):
+        self.queue(celery).enqueue([item])
 
-    def _update_all(self, datamap_only=False):
+    def _update_all(self, session, datamap_only=False):
         ExportConfigFactory(name='internal', batch=0, schema='internal')
-        self.session.flush()
+        session.flush()
         update_incoming.delay().get()
 
         if datamap_only:
@@ -429,17 +432,17 @@ class TestInternal(BaseExportTest):
         for shard_id in WifiShard.shards().keys():
             update_wifi.delay(shard_id=shard_id).get()
 
-    def test_stats(self):
+    def test_stats(self, celery, session, stats):
         ApiKeyFactory(valid_key='e5444-794')
-        self.session.flush()
+        session.flush()
 
-        self.add_reports(3)
-        self.add_reports(3, api_key='e5444-794', source='gnss')
-        self.add_reports(3, api_key='e5444-794', source='fused')
-        self.add_reports(3, api_key=None)
-        self._update_all()
+        self.add_reports(celery, 3)
+        self.add_reports(celery, 3, api_key='e5444-794', source='gnss')
+        self.add_reports(celery, 3, api_key='e5444-794', source='fused')
+        self.add_reports(celery, 3, api_key=None)
+        self._update_all(session)
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('data.export.batch', 1, 1, ['key:internal']),
             ('data.report.upload', 2, 3),
             ('data.report.upload', 1, 3, ['key:test']),
@@ -453,20 +456,21 @@ class TestInternal(BaseExportTest):
         # we get a variable number of statsd messages and are only
         # interested in the sum-total
         for name, total in (('cell', 12), ('wifi', 24)):
-            insert_msgs = [msg for msg in self.stats_client.msgs
+            insert_msgs = [msg for msg in stats.msgs
                            if (msg.startswith('data.observation.insert') and
                                'type:' + name in msg)]
             assert (sum([int(msg.split(':')[1].split('|')[0])
                          for msg in insert_msgs]) == total)
 
-    def test_blue(self):
-        reports = self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
-        self._update_all()
+    def test_blue(self, celery, session):
+        reports = self.add_reports(
+            celery, blue_factor=1, cell_factor=0, wifi_factor=0)
+        self._update_all(session)
 
         position = reports[0]['position']
         blue_data = reports[0]['bluetoothBeacons'][0]
         shard = BlueShard.shard_model(blue_data['macAddress'])
-        blues = self.session.query(shard).all()
+        blues = session.query(shard).all()
         assert len(blues) == 1
         blue = blues[0]
         assert blue.lat == position['latitude']
@@ -474,10 +478,11 @@ class TestInternal(BaseExportTest):
         assert blue.mac == blue_data['macAddress']
         assert blue.samples == 1
 
-    def test_blue_duplicated(self):
-        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0)
+    def test_blue_duplicated(self, celery, session):
+        self.add_reports(
+            celery, blue_factor=1, cell_factor=0, wifi_factor=0)
         # duplicate the Bluetooth entry inside the report
-        item = self._pop_item()
+        item = self._pop_item(celery)
         report = item['report']
         blue = report['bluetoothBeacons'][0]
         mac = blue['macAddress']
@@ -485,27 +490,28 @@ class TestInternal(BaseExportTest):
         report['bluetoothBeacons'].append(blue.copy())
         report['bluetoothBeacons'][1]['signalStrength'] += 2
         report['bluetoothBeacons'][2]['signalStrength'] -= 2
-        self._push_item(item)
-        self._update_all()
+        self._push_item(celery, item)
+        self._update_all(session)
 
         shard = BlueShard.shard_model(mac)
-        blues = self.session.query(shard).all()
+        blues = session.query(shard).all()
         assert len(blues) == 1
         assert blues[0].samples == 1
 
-    def test_bluetooth_invalid(self):
-        self.add_reports(blue_factor=1, cell_factor=0, wifi_factor=0,
-                         blue_key='abcd')
-        self._update_all()
+    def test_bluetooth_invalid(self, celery, session):
+        self.add_reports(
+            celery, blue_factor=1, cell_factor=0, wifi_factor=0,
+            blue_key='abcd')
+        self._update_all(session)
 
-    def test_cell(self):
-        reports = self.add_reports(cell_factor=1, wifi_factor=0)
-        self._update_all()
+    def test_cell(self, celery, session):
+        reports = self.add_reports(celery, cell_factor=1, wifi_factor=0)
+        self._update_all(session)
 
         position = reports[0]['position']
         cell_data = reports[0]['cellTowers'][0]
         shard = CellShard.shard_model(cell_data['radioType'])
-        cells = self.session.query(shard).all()
+        cells = session.query(shard).all()
         assert len(cells) == 1
         cell = cells[0]
 
@@ -519,10 +525,10 @@ class TestInternal(BaseExportTest):
         assert cell.psc == cell_data['primaryScramblingCode']
         assert cell.samples == 1
 
-    def test_cell_duplicated(self):
-        self.add_reports(cell_factor=1, wifi_factor=0)
+    def test_cell_duplicated(self, celery, session):
+        self.add_reports(celery, cell_factor=1, wifi_factor=0)
         # duplicate the cell entry inside the report
-        item = self._pop_item()
+        item = self._pop_item(celery)
         report = item['report']
         cell = report['cellTowers'][0]
         radio = cell['radioType']
@@ -530,32 +536,32 @@ class TestInternal(BaseExportTest):
         report['cellTowers'].append(cell.copy())
         report['cellTowers'][1]['signalStrength'] += 2
         report['cellTowers'][2]['signalStrength'] -= 2
-        self._push_item(item)
-        self._update_all()
+        self._push_item(celery, item)
+        self._update_all(session)
 
         shard = CellShard.shard_model(radio)
-        cells = self.session.query(shard).all()
+        cells = session.query(shard).all()
         assert len(cells) == 1
         assert cells[0].samples == 1
 
-    def test_cell_invalid(self):
-        self.add_reports(cell_factor=1, wifi_factor=0, cell_mcc=-2)
-        self._update_all()
+    def test_cell_invalid(self, celery, session, stats):
+        self.add_reports(celery, cell_factor=1, wifi_factor=0, cell_mcc=-2)
+        self._update_all(session)
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
             ('data.report.drop', 1, 1, ['key:test']),
             ('data.observation.drop', 1, 1, ['type:cell', 'key:test']),
         ])
 
-    def test_wifi(self):
-        reports = self.add_reports(cell_factor=0, wifi_factor=1)
-        self._update_all()
+    def test_wifi(self, celery, session):
+        reports = self.add_reports(celery, cell_factor=0, wifi_factor=1)
+        self._update_all(session)
 
         position = reports[0]['position']
         wifi_data = reports[0]['wifiAccessPoints'][0]
         shard = WifiShard.shard_model(wifi_data['macAddress'])
-        wifis = self.session.query(shard).all()
+        wifis = session.query(shard).all()
         assert len(wifis) == 1
         wifi = wifis[0]
         assert wifi.lat == position['latitude']
@@ -563,10 +569,10 @@ class TestInternal(BaseExportTest):
         assert wifi.mac == wifi_data['macAddress']
         assert wifi.samples == 1
 
-    def test_wifi_duplicated(self):
-        self.add_reports(cell_factor=0, wifi_factor=1)
+    def test_wifi_duplicated(self, celery, session):
+        self.add_reports(celery, cell_factor=0, wifi_factor=1)
         # duplicate the wifi entry inside the report
-        item = self._pop_item()
+        item = self._pop_item(celery)
         report = item['report']
         wifi = report['wifiAccessPoints'][0]
         mac = wifi['macAddress']
@@ -574,47 +580,49 @@ class TestInternal(BaseExportTest):
         report['wifiAccessPoints'].append(wifi.copy())
         report['wifiAccessPoints'][1]['signalStrength'] += 2
         report['wifiAccessPoints'][2]['signalStrength'] -= 2
-        self._push_item(item)
-        self._update_all()
+        self._push_item(celery, item)
+        self._update_all(session)
 
         shard = WifiShard.shard_model(mac)
-        wifis = self.session.query(shard).all()
+        wifis = session.query(shard).all()
         assert len(wifis) == 1
         assert wifis[0].samples == 1
 
-    def test_wifi_invalid(self):
-        self.add_reports(cell_factor=0, wifi_factor=1, wifi_key='abcd')
-        self._update_all()
+    def test_wifi_invalid(self, celery, session, stats):
+        self.add_reports(celery, cell_factor=0, wifi_factor=1, wifi_key='abcd')
+        self._update_all(session)
 
-        self.check_stats(counter=[
+        stats.check(counter=[
             ('data.report.upload', 1, 1, ['key:test']),
             ('data.report.drop', 1, 1, ['key:test']),
             ('data.observation.drop', 1, 1, ['type:wifi', 'key:test']),
         ])
 
-    def test_position_invalid(self):
-        self.add_reports(1, cell_factor=0, wifi_factor=1,
+    def test_position_invalid(self, celery, session, stats):
+        self.add_reports(celery, 1, cell_factor=0, wifi_factor=1,
                          wifi_key='000000123456', lat=-90.1)
-        self.add_reports(1, cell_factor=0, wifi_factor=1,
+        self.add_reports(celery, 1, cell_factor=0, wifi_factor=1,
                          wifi_key='000000234567')
-        self._update_all()
+        self._update_all(session)
 
         shard = WifiShard.shards()['0']
-        assert self.session.query(shard).count() == 1
-        self.check_stats(counter=[
+        assert session.query(shard).count() == 1
+        stats.check(counter=[
             ('data.report.upload', 1, 2, ['key:test']),
             ('data.report.drop', 1, 1, ['key:test']),
             ('data.observation.insert', 1, 1, ['type:wifi']),
             ('data.observation.upload', 1, 1, ['type:wifi', 'key:test']),
         ])
 
-    def test_no_observations(self):
-        self.add_reports(1, cell_factor=0, wifi_factor=0)
-        self._update_all()
+    def test_no_observations(self, celery, session):
+        self.add_reports(celery, 1, cell_factor=0, wifi_factor=0)
+        self._update_all(session)
 
-    def test_datamap(self):
-        self.add_reports(1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)
-        self.add_reports(2, cell_factor=0, wifi_factor=2, lat=20.0, lon=-10.0)
-        self._update_all(datamap_only=True)
-        assert self.celery_app.data_queues['update_datamap_ne'].size() == 1
-        assert self.celery_app.data_queues['update_datamap_sw'].size() == 1
+    def test_datamap(self, celery, session):
+        self.add_reports(
+            celery, 1, cell_factor=0, wifi_factor=2, lat=50.0, lon=10.0)
+        self.add_reports(
+            celery, 2, cell_factor=0, wifi_factor=2, lat=20.0, lon=-10.0)
+        self._update_all(session, datamap_only=True)
+        assert celery.data_queues['update_datamap_ne'].size() == 1
+        assert celery.data_queues['update_datamap_sw'].size() == 1

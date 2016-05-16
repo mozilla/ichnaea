@@ -7,6 +7,7 @@ from mock import MagicMock, patch
 from pyramid.testing import DummyRequest
 from pyramid import testing
 
+from ichnaea.conftest import DBTestCase
 from ichnaea.content.views import (
     configure_content,
     ContentViews,
@@ -15,7 +16,6 @@ from ichnaea.models.content import (
     Stat,
     StatKey,
 )
-from ichnaea.tests.base import AppTestCase
 from ichnaea import util
 
 
@@ -114,17 +114,19 @@ class TestContentViews(object):
         assert result['map_token'] == 'pk.123456'
 
 
-class TestFunctionalContent(AppTestCase):
+class TestFunctionalContent(DBTestCase):
 
-    def test_content_pages(self):
-        self.app.get('/', status=200)
-        self.app.get('/contact', status=200)
-        self.app.get('/leaders', status=301)
-        self.app.get('/leaders/weekly', status=301)
-        self.app.get('/map', status=200)
-        self.app.get('/privacy', status=200)
-        self.app.get('/stats', status=200)
-        self.check_stats(counter=[
+    default_session = 'ro_session'
+
+    def test_content_pages(self, app, session, stats):
+        app.get('/', status=200)
+        app.get('/contact', status=200)
+        app.get('/leaders', status=301)
+        app.get('/leaders/weekly', status=301)
+        app.get('/map', status=200)
+        app.get('/privacy', status=200)
+        app.get('/stats', status=200)
+        stats.check(counter=[
             ('request', ['path:', 'method:get', 'status:200']),
             ('request', ['path:map', 'method:get', 'status:200']),
         ], timer=[
@@ -132,8 +134,8 @@ class TestFunctionalContent(AppTestCase):
             ('request', ['path:map', 'method:get']),
         ])
 
-    def test_csp(self):
-        result = self.app.get('/', status=200)
+    def test_csp(self, app, session):
+        result = app.get('/', status=200)
         assert 'Content-Security-Policy' in result.headers
         csp = result.headers['Content-Security-Policy']
         # make sure CSP_BASE interpolation worked
@@ -141,7 +143,7 @@ class TestFunctionalContent(AppTestCase):
         # make sure map assets url interpolation worked
         assert '127.0.0.1:7001' in csp
 
-    def test_downloads(self):
+    def test_downloads(self, app, session):
         mock_conn = MagicMock(name='conn')
         mock_bucket = MagicMock(name='bucket')
         mock_conn.return_value.lookup.return_value = mock_bucket
@@ -161,80 +163,80 @@ class TestFunctionalContent(AppTestCase):
             MockKey('diff-cell-export-2016-02-26T120000.csv.gz', 1000),
         ]
         with patch.object(boto, 'connect_s3', mock_conn):
-            result = self.app.get('/downloads', status=200)
+            result = app.get('/downloads', status=200)
             assert '0kB' not in result.text
             assert '1kB' in result.text
             assert '8kB' in result.text
 
         # calling the page again should use the cache
         with patch.object(boto, 'connect_s3', mock_conn):
-            result = self.app.get('/downloads', status=200)
+            result = app.get('/downloads', status=200)
             assert '1kB' in result.text
 
         # The mock / S3 API was only called once
         assert len(mock_bucket.list.mock_calls) == 1
 
-    def test_favicon(self):
-        self.app.get('/favicon.ico', status=200)
-        self.check_stats(total=0)
+    def test_favicon(self, app, session, stats):
+        app.get('/favicon.ico', status=200)
+        stats.check(total=0)
 
-    def test_touchicon(self):
-        self.app.get('/apple-touch-icon-precomposed.png', status=200)
-        self.check_stats(total=0)
+    def test_touchicon(self, app, session, stats):
+        app.get('/apple-touch-icon-precomposed.png', status=200)
+        stats.check(total=0)
 
-    def test_hsts_header(self):
-        result = self.app.get('/', status=200)
+    def test_hsts_header(self, app, session):
+        result = app.get('/', status=200)
         assert 'Strict-Transport-Security' in result.headers
 
-    def test_frame_options_header(self):
-        result = self.app.get('/', status=200)
+    def test_frame_options_header(self, app, session):
+        result = app.get('/', status=200)
         assert 'X-Frame-Options' in result.headers
 
-    def test_not_found(self):
-        self.app.get('/nobody-is-home', status=404)
-        self.check_stats(total=0)
+    def test_not_found(self, app, session, stats):
+        app.get('/nobody-is-home', status=404)
+        stats.check(total=0)
 
-    def test_image_file(self):
-        self.app.get('/static/css/images/icons-000000@2x.png', status=200)
-        self.check_stats(total=0)
+    def test_image_file(self, app, session, stats):
+        app.get('/static/css/images/icons-000000@2x.png', status=200)
+        stats.check(total=0)
 
-    def test_robots_txt(self):
-        self.app.get('/robots.txt', status=200)
-        self.check_stats(total=0)
+    def test_robots_txt(self, app, session, stats):
+        app.get('/robots.txt', status=200)
+        stats.check(total=0)
 
-    def test_map_json(self):
-        result = self.app.get('/map.json', status=200)
+    def test_map_json(self, app, session):
+        result = app.get('/map.json', status=200)
         assert (result.json['tiles_url'] ==
                 'http://127.0.0.1:7001/static/tiles/')
 
-    def test_stats_regions(self):
-        self.app.get('/stats/regions', status=200)
+    def test_stats_regions(self, app, session):
+        app.get('/stats/regions', status=200)
 
-    def test_stats_blue_json(self):
+    def test_stats_blue_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        self.session.add(
+        session.add(
             Stat(key=StatKey.unique_blue, time=today, value=2))
-        self.session.commit()
-        result = self.app.get('/stats_blue.json', status=200)
+        session.commit()
+        result = app.get('/stats_blue.json', status=200)
         assert (result.json == {
             'series': [
                 {'data': [[first_of_month, 2]],
                  'title': 'MLS Bluetooth'},
             ]}
         )
-        second_result = self.app.get('/stats_blue.json', status=200)
+        second_result = app.get('/stats_blue.json', status=200)
         assert second_result.json == result.json
 
-    def test_stats_cell_json(self):
+    def test_stats_cell_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        self.session.add(
+        session.add(
             Stat(key=StatKey.unique_cell, time=today, value=2))
-        self.session.add(
+        session.add(
             Stat(key=StatKey.unique_cell_ocid, time=today, value=5))
-        self.session.commit()
-        result = self.app.get('/stats_cell.json', status=200)
+        session.commit()
+        result = app.get('/stats_cell.json', status=200)
         assert (result.json == {
             'series': [
                 {'data': [[first_of_month, 2]],
@@ -243,37 +245,39 @@ class TestFunctionalContent(AppTestCase):
                  'title': 'OCID Cells'},
             ]}
         )
-        second_result = self.app.get('/stats_cell.json', status=200)
+        second_result = app.get('/stats_cell.json', status=200)
         assert second_result.json == result.json
 
-    def test_stats_wifi_json(self):
+    def test_stats_wifi_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        self.session.add(
+        session.add(
             Stat(key=StatKey.unique_wifi, time=today, value=2))
-        self.session.commit()
-        result = self.app.get('/stats_wifi.json', status=200)
+        session.commit()
+        result = app.get('/stats_wifi.json', status=200)
         assert (result.json == {
             'series': [
                 {'data': [[first_of_month, 2]],
                  'title': 'MLS WiFi'},
             ]}
         )
-        second_result = self.app.get('/stats_wifi.json', status=200)
+        second_result = app.get('/stats_wifi.json', status=200)
         assert second_result.json == result.json
 
 
-class TestFunctionalContentViews(AppTestCase):
+class TestFunctionalContentViews(DBTestCase):
+
+    default_session = 'ro_session'
 
     @contextmanager
-    def _make_view(self, request):
+    def _make_view(self, request, redis, session):
         with testing.testConfig(request=request) as config:
             config.include('pyramid_chameleon')
-            setattr(request, 'db_ro_session', self.session)
-            setattr(request.registry, 'redis_client', self.redis_client)
+            setattr(request, 'db_ro_session', session)
+            setattr(request.registry, 'redis_client', redis)
             yield ContentViews(request)
 
-    def test_stats(self):
+    def test_stats(self, redis, session):
         today = util.utcnow().date()
         stats = [
             Stat(key=StatKey.blue, time=today, value=2200000),
@@ -284,10 +288,10 @@ class TestFunctionalContentViews(AppTestCase):
             Stat(key=StatKey.unique_cell_ocid, time=today, value=1500000),
             Stat(key=StatKey.unique_wifi, time=today, value=2000000),
         ]
-        self.session.add_all(stats)
-        self.session.commit()
+        session.add_all(stats)
+        session.commit()
         request = DummyRequest()
-        with self._make_view(request) as view:
+        with self._make_view(request, redis, session) as view:
             result = view.stats_view()
 
         assert result['page_title'] == 'Statistics'
@@ -305,14 +309,14 @@ class TestFunctionalContentViews(AppTestCase):
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
-        with self._make_view(request) as view:
+        with self._make_view(request, redis, session) as view:
             request.db_ro_session = None
             second_result = view.stats_view()
         assert second_result == result
 
-    def test_stats_regions(self):
+    def test_stats_regions(self, redis, session):
         request = DummyRequest()
-        with self._make_view(request) as view:
+        with self._make_view(request, redis, session) as view:
             result = view.stats_regions_view()
 
         assert result['page_title'] == 'Region Statistics'
@@ -320,7 +324,7 @@ class TestFunctionalContentViews(AppTestCase):
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         request = DummyRequest()
-        with self._make_view(request) as view:
+        with self._make_view(request, redis, session) as view:
             request.db_ro_session = None
             second_result = view.stats_regions_view()
         assert second_result == result

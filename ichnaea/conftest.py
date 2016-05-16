@@ -1,9 +1,17 @@
+from contextlib import contextmanager
 import gc
 import os
 import warnings
 
+from alembic import command
+from alembic.config import Config as AlembicConfig
 from maxminddb.const import MODE_AUTO
 import pytest
+from sqlalchemy import (
+    event,
+    inspect,
+    text,
+)
 import webtest
 
 from ichnaea.api.locate.searcher import (
@@ -13,11 +21,16 @@ from ichnaea.api.locate.searcher import (
 from ichnaea.async.app import celery_app
 from ichnaea.async.config import (
     init_worker,
-    shutdown_worker,
+    shutdown_worker as shutdown_celery,
 )
 from ichnaea.cache import configure_redis
+from ichnaea.config import read_config
 from ichnaea.db import configure_db
-from ichnaea.geoip import configure_geoip
+from ichnaea.geocode import GEOCODER
+from ichnaea.geoip import (
+    CITY_RADII,
+    configure_geoip,
+)
 from ichnaea.http import configure_http_session
 from ichnaea.log import (
     configure_raven,
@@ -25,16 +38,64 @@ from ichnaea.log import (
     DebugRavenClient,
     DebugStatsClient,
 )
-from ichnaea.queue import DataQueue
-from ichnaea.tests.base import (
-    DBTestCase,
-    GEOIP_TEST_FILE,
-    TEST_CONFIG,
+from ichnaea.models import (
+    _Model,
+    ApiKey,
 )
-from ichnaea.webapp.config import main
+from ichnaea.queue import DataQueue
+from ichnaea.tests import DATA_DIRECTORY
+from ichnaea.webapp.config import (
+    main,
+    shutdown_worker as shutdown_app,
+)
 
 REDIS_URI = os.environ.get('REDIS_URI')
 SQLURI = os.environ.get('SQLURI')
+
+# Module global to hold active session, used by factory-boy
+SESSION = {}
+
+TEST_CONFIG = read_config(filename=os.path.join(DATA_DIRECTORY, 'test.ini'))
+
+GB_LAT = 51.5
+GB_LON = -0.1
+GB_MCC = 234
+GB_MNC = 30
+
+GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
+
+GEOIP_DATA = {
+    'London': {
+        'city': True,
+        'region_code': 'GB',
+        'region_name': 'United Kingdom',
+        'ip': '81.2.69.192',
+        'latitude': 51.5142,
+        'longitude': -0.0931,
+        'radius': CITY_RADII[2643743],
+        'region_radius': GEOCODER.region_max_radius('GB'),
+        'score': 0.8,
+    },
+    'Bhutan': {
+        'city': False,
+        'region_code': 'BT',
+        'region_name': 'Bhutan',
+        'ip': '67.43.156.1',
+        'latitude': 27.5,
+        'longitude': 90.5,
+        'radius': GEOCODER.region_max_radius('BT'),
+        'region_radius': GEOCODER.region_max_radius('BT'),
+        'score': 0.9,
+    },
+}
+
+ALEMBIC_CFG = AlembicConfig()
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'script_location', 'alembic')
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'sqlalchemy.url', SQLURI)
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'sourceless', 'true')
 
 
 @pytest.yield_fixture(scope='session', autouse=True)
@@ -62,13 +123,60 @@ def package():
             print(obj)
 
 
+def setup_tables(engine):
+    with engine.connect() as conn:
+        trans = conn.begin()
+        _Model.metadata.create_all(engine)
+        # Now stamp the latest alembic version
+        command.stamp(ALEMBIC_CFG, 'head')
+
+        # always add a test API key
+        conn.execute(ApiKey.__table__.delete())
+
+        key1 = ApiKey.__table__.insert().values(
+            valid_key='test', allow_fallback=False, allow_locate=True,
+            fallback_name='fall',
+            fallback_url='http://127.0.0.1:9/?api',
+            fallback_ratelimit=10,
+            fallback_ratelimit_interval=60,
+            fallback_cache_expire=60,
+        )
+        conn.execute(key1)
+        key2 = ApiKey.__table__.insert().values(
+            valid_key='export', allow_fallback=False, allow_locate=False)
+        conn.execute(key2)
+
+        trans.commit()
+
+
+def cleanup_tables(engine):
+    # reflect and delete all tables, not just those known to
+    # our current code version / models
+    inspector = inspect(engine)
+    with engine.connect() as conn:
+        trans = conn.begin()
+        names = inspector.get_table_names()
+        if names:
+            tables = '`' + '`, `'.join(names) + '`'
+            conn.execute(text('DROP TABLE %s' % tables))
+        trans.commit()
+
+
+def setup_database():
+    db = configure_db(SQLURI)
+    engine = db.engine
+    cleanup_tables(engine)
+    setup_tables(engine)
+    db.close()
+
+
 @pytest.fixture(scope='session')
 def database():
     # Make sure all models are imported.
     from ichnaea import models  # NOQA
 
     # Setup clean database tables.
-    DBTestCase.setup_database()
+    setup_database()
 
 
 @pytest.yield_fixture(scope='session')
@@ -87,7 +195,7 @@ def db_rw(request, global_db_rw):
 @pytest.yield_fixture(scope='function')
 def db_rw_drop_table(db_rw):
     yield db_rw
-    DBTestCase.setup_tables(db_rw.engine)
+    setup_tables(db_rw.engine)
 
 
 @pytest.yield_fixture(scope='session')
@@ -103,16 +211,112 @@ def db_ro(request, global_db_ro):
     yield db
 
 
+class DBTestCase(object):
+    # Inspired by a blog post:
+    # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
+
+    default_session = 'rw_session'
+    track_connection_events = False
+
+    @contextmanager
+    def db_call_checker(self):
+        rw_conn = self.db_rw_session.bind
+        ro_conn = self.db_ro_session.bind
+        try:
+            self.setup_db_event_tracking(rw_conn, ro_conn)
+            yield self.check_db_calls
+        finally:
+            self.teardown_db_event_tracking(rw_conn, ro_conn)
+
+    def check_db_calls(self, rw=None, ro=None):
+        if rw is not None:
+            events = self.db_events['rw']['calls']
+            assert len(events) == rw
+        if ro is not None:
+            events = self.db_events['ro']['calls']
+            assert len(events) == ro
+
+    def reset_db_event_tracking(self):
+        self.db_events = {
+            'rw': {'calls': [], 'handler': None},
+            'ro': {'calls': [], 'handler': None},
+        }
+
+    def setup_db_event_tracking(self, rw_conn, ro_conn):
+        self.reset_db_event_tracking()
+
+        def scoped_conn_event_handler(calls):
+            def conn_event_handler(**kw):
+                calls.append((kw['statement'], kw['parameters']))
+            return conn_event_handler
+
+        rw_handler = scoped_conn_event_handler(self.db_events['rw']['calls'])
+        self.db_events['rw']['handler'] = rw_handler
+        event.listen(rw_conn, 'before_cursor_execute',
+                     rw_handler, named=True)
+
+        ro_handler = scoped_conn_event_handler(self.db_events['ro']['calls'])
+        self.db_events['ro']['handler'] = ro_handler
+        event.listen(ro_conn, 'before_cursor_execute',
+                     ro_handler, named=True)
+
+    def teardown_db_event_tracking(self, rw_conn, ro_conn):
+        event.remove(ro_conn, 'before_cursor_execute',
+                     self.db_events['ro']['handler'])
+        event.remove(rw_conn, 'before_cursor_execute',
+                     self.db_events['rw']['handler'])
+        self.reset_db_event_tracking()
+
+    @pytest.yield_fixture(scope='function')
+    def session(self, request, db_rw, db_ro):
+        rw_conn = db_rw.engine.connect()
+        rw_trans = rw_conn.begin()
+        db_rw.session_factory.configure(bind=rw_conn)
+        request.cls.db_rw_session = rw_session = db_rw.session()
+
+        ro_conn = db_ro.engine.connect()
+        ro_trans = ro_conn.begin()
+        db_ro.session_factory.configure(bind=ro_conn)
+        request.cls.db_ro_session = ro_session = db_ro.session()
+
+        # set up a default session
+        default_session = getattr(request.cls, 'default_session', 'rw_session')
+        if default_session == 'ro_session':
+            session = ro_session
+        else:
+            session = rw_session
+        SESSION['default'] = session
+
+        track = getattr(request.cls, 'track_connection_events', False)
+        if track:
+            self.setup_db_event_tracking(rw_conn, ro_conn)
+
+        yield session
+
+        if track:
+            self.teardown_db_event_tracking(rw_conn, ro_conn)
+
+        del SESSION['default']
+
+        ro_trans.rollback()
+        ro_session.close()
+        del request.cls.db_ro_session
+        db_ro.session_factory.configure(bind=None)
+        ro_trans.close()
+        ro_conn.close()
+
+        rw_trans.rollback()
+        rw_session.close()
+        del request.cls.db_rw_session
+        db_rw.session_factory.configure(bind=None)
+        rw_trans.close()
+        rw_conn.close()
+
+
 @pytest.yield_fixture(scope='session')
-def global_raven_client(request):
+def raven_client():
     raven_client = configure_raven(
         None, transport='sync', _client=DebugRavenClient())
-    yield raven_client
-
-
-@pytest.yield_fixture(scope='class')
-def raven_client(request, global_raven_client):
-    request.cls.raven_client = raven_client = global_raven_client
     yield raven_client
 
 
@@ -124,18 +328,12 @@ def raven(raven_client):
     assert not messages
 
 
-@pytest.yield_fixture(scope='class')
-def global_stats_client(request):
+@pytest.yield_fixture(scope='session')
+def stats_client():
     stats_client = configure_stats(
         None, _client=DebugStatsClient(tag_support=True))
     yield stats_client
     stats_client.close()
-
-
-@pytest.yield_fixture(scope='class')
-def stats_client(request, global_stats_client):
-    request.cls.stats_client = stats_client = global_stats_client
-    yield stats_client
 
 
 @pytest.yield_fixture(scope='function')
@@ -145,37 +343,30 @@ def stats(stats_client):
 
 
 @pytest.yield_fixture(scope='session')
-def global_http_session(request):
+def http_session():
     http_session = configure_http_session(size=1)
     yield http_session
     http_session.close()
 
 
-@pytest.yield_fixture(scope='class')
-def http_session(request, global_http_session):
-    request.cls.http_session = http_session = global_http_session
-    yield http_session
+@pytest.yield_fixture(scope='session')
+def geoip_data():
+    yield GEOIP_DATA
 
 
-@pytest.yield_fixture(scope='class')
-def geoip_db(request, raven_client):
-    request.cls.geoip_db = geoip_db = configure_geoip(
+@pytest.yield_fixture(scope='session')
+def geoip_db(raven_client):
+    geoip_db = configure_geoip(
         GEOIP_TEST_FILE, mode=MODE_AUTO, raven_client=raven_client)
     yield geoip_db
     geoip_db.close()
 
 
 @pytest.yield_fixture(scope='session')
-def global_redis_client(request):
+def redis_client():
     redis_client = configure_redis(REDIS_URI)
     yield redis_client
     redis_client.close()
-
-
-@pytest.yield_fixture(scope='class')
-def redis_client(request, global_redis_client):
-    request.cls.redis_client = redis_client = global_redis_client
-    yield redis_client
 
 
 @pytest.yield_fixture(scope='function')
@@ -184,42 +375,43 @@ def redis(redis_client):
     redis_client.flushdb()
 
 
-@pytest.yield_fixture(scope='class')
-def data_queues(request, redis_client):
-    request.cls.data_queues = data_queues = {
+@pytest.yield_fixture(scope='session')
+def data_queues(redis_client):
+    data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
     }
     yield data_queues
 
 
-@pytest.yield_fixture(scope='class')
-def position_searcher(request, geoip_db, raven_client,
-                      redis_client, stats_client, data_queues):
-    request.cls.position_searcher = searcher = configure_position_searcher(
+@pytest.yield_fixture(scope='session')
+def position_searcher(data_queues, geoip_db,
+                      raven_client, redis_client, stats_client):
+    searcher = configure_position_searcher(
         geoip_db=geoip_db, raven_client=raven_client,
         redis_client=redis_client, stats_client=stats_client,
         data_queues=data_queues)
     yield searcher
 
 
-@pytest.yield_fixture(scope='class')
-def region_searcher(request, geoip_db, raven_client,
-                    redis_client, stats_client, data_queues):
-    request.cls.region_searcher = searcher = configure_region_searcher(
+@pytest.yield_fixture(scope='session')
+def region_searcher(data_queues, geoip_db,
+                    raven_client, redis_client, stats_client):
+    searcher = configure_region_searcher(
         geoip_db=geoip_db, raven_client=raven_client,
         redis_client=redis_client, stats_client=stats_client,
         data_queues=data_queues)
     yield searcher
 
 
-@pytest.yield_fixture(scope='class')
-def global_app(request, db_rw, db_ro, geoip_db, http_session, raven_client,
-               redis_client, stats_client, position_searcher, region_searcher):
+@pytest.yield_fixture(scope='session')
+def global_app(global_db_rw, global_db_ro, geoip_db, http_session,
+               raven_client, redis_client, stats_client,
+               position_searcher, region_searcher):
     wsgiapp = main(
         TEST_CONFIG,
-        _db_rw=db_rw,
-        _db_ro=db_ro,
+        _db_rw=global_db_rw,
+        _db_ro=global_db_ro,
         _geoip_db=geoip_db,
         _http_session=http_session,
         _raven_client=raven_client,
@@ -228,8 +420,9 @@ def global_app(request, db_rw, db_ro, geoip_db, http_session, raven_client,
         _position_searcher=position_searcher,
         _region_searcher=region_searcher,
     )
-    request.cls.app = app = webtest.TestApp(wsgiapp)
+    app = webtest.TestApp(wsgiapp)
     yield app
+    shutdown_app(app.app)
 
 
 @pytest.yield_fixture(scope='function')
@@ -237,21 +430,20 @@ def app(global_app, raven, redis, stats):
     yield global_app
 
 
-@pytest.yield_fixture(scope='class')
-def global_celery(request, db_rw, geoip_db, raven_client,
-                  redis_client, stats_client):
-    request.cls.celery_app = celery_app
+@pytest.yield_fixture(scope='session')
+def global_celery(global_db_rw, geoip_db,
+                  raven_client, redis_client, stats_client):
     celery_app.app_config = TEST_CONFIG
     celery_app.settings = TEST_CONFIG.asdict()
     init_worker(
         celery_app,
-        _db_rw=db_rw,
+        _db_rw=global_db_rw,
         _geoip_db=geoip_db,
         _raven_client=raven_client,
         _redis_client=redis_client,
         _stats_client=stats_client)
     yield celery_app
-    shutdown_worker(celery_app)
+    shutdown_celery(celery_app)
 
 
 @pytest.yield_fixture(scope='function')

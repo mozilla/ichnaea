@@ -12,6 +12,13 @@ from ichnaea.api.locate.constants import (
     CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
+from ichnaea.conftest import (
+    GB_LAT,
+    GB_LON,
+    GB_MCC,
+    GB_MNC,
+    SESSION,
+)
 from ichnaea.models import (
     ApiKey,
     BlueObservation,
@@ -27,13 +34,6 @@ from ichnaea.models import (
     ReportSource,
     WifiShard,
     WifiObservation,
-)
-from ichnaea.tests.base import (
-    GB_LAT,
-    GB_LON,
-    GB_MCC,
-    GB_MNC,
-    SESSION,
 )
 from ichnaea import util
 

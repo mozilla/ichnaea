@@ -11,6 +11,7 @@ import requests_mock
 import six
 
 from ichnaea.cache import redis_pipeline
+from ichnaea.conftest import DBTestCase
 from ichnaea.data.ocid import (
     ImportLocal,
     write_stations_to_csv,
@@ -31,10 +32,6 @@ from ichnaea.models import (
     Radio,
     Stat,
     StatKey,
-)
-from ichnaea.tests.base import (
-    CeleryTestCase,
-    CeleryAppTestCase,
 )
 from ichnaea.tests.factories import CellShardFactory
 from ichnaea import util
@@ -60,9 +57,9 @@ class FakeTask(object):
         self.app = app
 
 
-class TestExport(CeleryTestCase):
+class TestExport(DBTestCase):
 
-    def test_local_export(self):
+    def test_local_export(self, celery, session):
         cell_fixture_fields = (
             'radio', 'cid', 'lat', 'lon', 'mnc', 'mcc', 'lac')
         base_cell = CellShardFactory.build(radio=Radio.wcdma)
@@ -85,11 +82,11 @@ class TestExport(CeleryTestCase):
 
         # add one incomplete / unprocessed cell
         CellShardFactory(cid=210, lat=None, lon=None, **cell_key)
-        self.session.commit()
+        session.commit()
 
         with util.selfdestruct_tempdir() as temp_dir:
             path = os.path.join(temp_dir, 'export.csv.gz')
-            write_stations_to_csv(self.session, path)
+            write_stations_to_csv(session, path)
 
             with util.gzip_open(path, 'r') as gzip_wrapper:
                 with gzip_wrapper as gzip_file:
@@ -109,9 +106,9 @@ class TestExport(CeleryTestCase):
 
                     assert cells == exported_cells
 
-    def test_export_diff(self):
+    def test_export_diff(self, celery, session):
         CellShardFactory.create_batch(10, radio=Radio.gsm)
-        self.session.commit()
+        session.commit()
         pattern = re.compile(
             r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz')
 
@@ -121,9 +118,9 @@ class TestExport(CeleryTestCase):
             method = mock_key.set_contents_from_filename
             assert pattern.search(method.call_args[0][0])
 
-    def test_export_full(self):
+    def test_export_full(self, celery, session):
         CellShardFactory.create_batch(10, radio=Radio.gsm)
-        self.session.commit()
+        session.commit()
         pattern = re.compile(
             r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz')
 
@@ -134,18 +131,18 @@ class TestExport(CeleryTestCase):
             assert pattern.search(method.call_args[0][0])
 
 
-class TestImport(CeleryAppTestCase):
+class TestImport(DBTestCase):
 
     @property
     def today(self):
         return util.utcnow().date()
 
-    def check_stat(self, stat_key, value, time=None):
+    def check_stat(self, session, stat_key, value, time=None):
         if time is None:
             time = self.today
-        stat = (self.session.query(Stat)
-                            .filter(Stat.key == stat_key)
-                            .filter(Stat.time == time)).first()
+        stat = (session.query(Stat)
+                       .filter(Stat.key == stat_key)
+                       .filter(Stat.time == time)).first()
         assert stat.value == value
 
     @contextmanager
@@ -178,63 +175,71 @@ class TestImport(CeleryAppTestCase):
                     gzip_file.write(txt)
             yield path
 
-    def import_csv(self, cell, lo=1, hi=10, time=1408604686, cell_type='ocid'):
-        task = FakeTask(self.celery_app)
+    def import_csv(self, celery, redis, session, cell,
+                   lo=1, hi=10, time=1408604686, cell_type='ocid'):
+        task = FakeTask(celery)
         with self.get_csv(cell, lo=lo, hi=hi, time=time) as path:
-            with redis_pipeline(self.redis_client) as pipe:
+            with redis_pipeline(redis) as pipe:
                 ImportLocal(task, cell_type=cell_type)(
-                    pipe, self.session, filename=path)
+                    pipe, session, filename=path)
         if cell_type == 'ocid':
             update_cellarea_ocid.delay().get()
         else:
             update_cellarea.delay().get()
 
-    def test_import_local_cell(self):
+    def test_import_local_cell(self, celery, redis, session):
         self.import_csv(
+            celery, redis, session,
             CellShardFactory.build(radio=Radio.wcdma), cell_type='cell')
-        cells = self.session.query(CellShard.shards()['wcdma']).all()
+        cells = session.query(CellShard.shards()['wcdma']).all()
         assert len(cells) == 9
 
         areaids = set([cell.areaid for cell in cells])
-        assert self.session.query(CellArea).count() == len(areaids)
+        assert session.query(CellArea).count() == len(areaids)
 
         update_statcounter.delay().get()
-        self.check_stat(StatKey.unique_cell, 9)
+        self.check_stat(session, StatKey.unique_cell, 9)
 
-    def test_import_local_ocid(self):
-        self.import_csv(CellShardFactory.build(radio=Radio.wcdma))
-        cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
+    def test_import_local_ocid(self, celery, redis, session):
+        self.import_csv(
+            celery, redis, session,
+            CellShardFactory.build(radio=Radio.wcdma))
+        cells = session.query(CellShardOCID.shards()['wcdma']).all()
         assert len(cells) == 9
 
         areaids = set([cell.areaid for cell in cells])
-        assert self.session.query(CellAreaOCID).count() == len(areaids)
+        assert session.query(CellAreaOCID).count() == len(areaids)
 
         update_statcounter.delay().get()
-        self.check_stat(StatKey.unique_cell_ocid, 9)
+        self.check_stat(session, StatKey.unique_cell_ocid, 9)
 
-    def test_import_local_delta(self):
+    def test_import_local_delta(self, celery, redis, session):
         base_cell = CellShardFactory.build(radio=Radio.wcdma)
         old_time = 1407000000
         new_time = 1408000000
         old_date = datetime.utcfromtimestamp(old_time).replace(tzinfo=UTC)
         new_date = datetime.utcfromtimestamp(new_time).replace(tzinfo=UTC)
 
-        self.import_csv(base_cell, time=old_time)
-        cells = self.session.query(CellShardOCID.shards()['wcdma']).all()
+        self.import_csv(
+            celery, redis, session,
+            base_cell, time=old_time)
+        cells = session.query(CellShardOCID.shards()['wcdma']).all()
         assert len(cells) == 9
         update_statcounter.delay().get()
-        self.check_stat(StatKey.unique_cell_ocid, 9)
+        self.check_stat(session, StatKey.unique_cell_ocid, 9)
 
         areaids = set([cell.areaid for cell in cells])
-        assert self.session.query(CellAreaOCID).count() == len(areaids)
+        assert session.query(CellAreaOCID).count() == len(areaids)
 
         # update some entries
-        self.import_csv(base_cell, lo=5, hi=13, time=new_time)
-        self.session.commit()
+        self.import_csv(
+            celery, redis, session,
+            base_cell, lo=5, hi=13, time=new_time)
+        session.commit()
 
         model = CellShardOCID.shards()['wcdma']
-        cells = (self.session.query(model)
-                             .order_by(model.modified).all())
+        cells = (session.query(model)
+                        .order_by(model.modified).all())
         assert len(cells) == 12
 
         for i in range(0, 4):
@@ -244,12 +249,12 @@ class TestImport(CeleryAppTestCase):
             assert cells[i].modified == new_date
 
         areaids = set([cell.areaid for cell in cells])
-        assert self.session.query(CellAreaOCID).count() == len(areaids)
+        assert session.query(CellAreaOCID).count() == len(areaids)
 
         update_statcounter.delay().get()
-        self.check_stat(StatKey.unique_cell_ocid, 12)
+        self.check_stat(session, StatKey.unique_cell_ocid, 12)
 
-    def test_import_external(self):
+    def test_import_external(self, celery, session):
         with self.get_csv(CellShardFactory.build(radio=Radio.wcdma)) as path:
             with open(path, 'rb') as gzip_file:
                 with requests_mock.Mocker() as req_m:
@@ -259,9 +264,9 @@ class TestImport(CeleryAppTestCase):
         update_cellarea_ocid.delay().get()
 
         model = CellShardOCID.shards()['wcdma']
-        cells = (self.session.query(model)
-                             .order_by(model.modified).all())
+        cells = (session.query(model)
+                        .order_by(model.modified).all())
         assert len(cells) == 9
 
         areaids = set([cell.areaid for cell in cells])
-        assert self.session.query(CellAreaOCID).count() == len(areaids)
+        assert session.query(CellAreaOCID).count() == len(areaids)

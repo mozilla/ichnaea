@@ -7,6 +7,7 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionMixin
+from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import WifiShardFactory
 from ichnaea import util
 
@@ -23,34 +24,41 @@ class WifiTestPositionSource(WifiPositionMixin, PositionSource):
         return self.search_wifi(query)
 
 
-class TestWifi(BaseSourceTest):
+class TestWifi(DBTestCase, BaseSourceTest):
 
     Source = WifiTestPositionSource
 
-    def test_wifi(self):
+    def test_wifi(self, geoip_db, http_session,
+                  session, source, stats):
         wifi = WifiShardFactory(radius=5, samples=50)
         wifi2 = WifiShardFactory(
             lat=wifi.lat, lon=wifi.lon + 0.00001, radius=5, samples=100)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi, wifi2])
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi, wifi2])
         query.wifi[0].signalStrength = -60
         query.wifi[1].signalStrength = -80
-        results = self.source.search(query)
+        results = source.search(query)
         self.check_model_results(results, [wifi], lon=wifi.lon + 0.000004)
         assert results.best().score > 1.0
 
-    def test_wifi_no_position(self):
+    def test_wifi_no_position(self, geoip_db, http_session,
+                              session, source, stats):
         wifi = WifiShardFactory()
         wifi2 = WifiShardFactory(lat=wifi.lat, lon=wifi.lon)
         wifi3 = WifiShardFactory(lat=None, lon=wifi.lon, radius=None)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi, wifi2, wifi3])
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi, wifi2, wifi3])
+        results = source.search(query)
         self.check_model_results(results, [wifi])
 
-    def test_wifi_temp_blocked(self):
+    def test_wifi_temp_blocked(self, geoip_db, http_session,
+                               session, source, stats):
         today = util.utcnow()
         yesterday = today - timedelta(days=1)
         wifi = WifiShardFactory(radius=200)
@@ -60,13 +68,16 @@ class TestWifi(BaseSourceTest):
             block_first=yesterday.date(),
             block_last=yesterday.date(),
             block_count=1)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi, wifi2])
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi, wifi2])
+        results = source.search(query)
         self.check_model_results(results, None)
 
-    def test_wifi_permanent_blocked(self):
+    def test_wifi_permanent_blocked(self, geoip_db, http_session,
+                                    session, source, stats):
         now = util.utcnow()
         last_week = now - timedelta(days=7)
         three_months = now - timedelta(days=90)
@@ -79,84 +90,106 @@ class TestWifi(BaseSourceTest):
             block_first=three_months.date(),
             block_last=last_week.date(),
             block_count=4)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi, wifi2])
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi, wifi2])
+        results = source.search(query)
         self.check_model_results(results, None)
 
-    def test_check_empty(self):
-        query = self.model_query()
-        results = self.source.result_list()
-        assert not self.source.should_search(query, results)
+    def test_check_empty(self, geoip_db, http_session,
+                         session, source, stats):
+        query = self.model_query(
+            geoip_db, http_session, session, stats)
+        results = source.result_list()
+        assert not source.should_search(query, results)
 
-    def test_empty(self):
-        query = self.model_query()
+    def test_empty(self, geoip_db, http_session,
+                   raven, redis, session, source, stats):
+        query = self.model_query(
+            geoip_db, http_session, session, stats)
         with self.db_call_checker() as check_db_calls:
-            results = self.source.search(query)
+            results = source.search(query)
             self.check_model_results(results, None)
             check_db_calls(rw=0, ro=0)
 
-    def test_few_candidates(self):
+    def test_few_candidates(self, geoip_db, http_session,
+                            session, source, stats):
         wifis = WifiShardFactory.create_batch(2)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifis[0]])
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifis[0]])
+        results = source.search(query)
         self.check_model_results(results, None)
 
-    def test_few_matches(self):
+    def test_few_matches(self, geoip_db, http_session,
+                         session, source, stats):
         wifis = WifiShardFactory.create_batch(3)
         wifis[0].lat = None
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=wifis[:2])
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=wifis[:2])
+        results = source.search(query)
         self.check_model_results(results, None)
 
-    def test_ignore_outlier(self):
+    def test_ignore_outlier(self, geoip_db, http_session,
+                            session, source, stats):
         wifi = WifiShardFactory()
         wifis = WifiShardFactory.create_batch(
             3, lat=wifi.lat, lon=wifi.lon, radius=5)
         wifis[0].lat = wifi.lat + 0.00001
         wifis[1].lat = wifi.lat + 0.00002
         wifis[2].lat = wifi.lat + 1.0
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi] + wifis)
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi] + wifis)
+        results = source.search(query)
         self.check_model_results(results, [wifi], lat=wifi.lat + 0.00001)
         assert round(results.best().score, 4) == 0.15
 
-    def test_not_closeby(self):
+    def test_not_closeby(self, geoip_db, http_session,
+                         session, source, stats):
         wifi = WifiShardFactory()
         wifis = [
             WifiShardFactory(lat=wifi.lat + 0.00001, lon=wifi.lon),
             WifiShardFactory(lat=wifi.lat + 1.0, lon=wifi.lon),
             WifiShardFactory(lat=wifi.lat + 1.00001, lon=wifi.lon),
         ]
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi, wifis[1]])
-        results = self.source.search(query)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi, wifis[1]])
+        results = source.search(query)
         self.check_model_results(results, None)
 
-    def test_multiple_clusters(self):
+    def test_multiple_clusters(self, geoip_db, http_session,
+                               session, source, stats):
         wifi11 = WifiShardFactory()
         wifi12 = WifiShardFactory(lat=wifi11.lat, lon=wifi11.lon)
         wifi21 = WifiShardFactory(lat=wifi11.lat + 1.0, lon=wifi11.lon + 1.0)
         wifi22 = WifiShardFactory(lat=wifi21.lat, lon=wifi21.lon)
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=[wifi11, wifi12, wifi21, wifi22])
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=[wifi11, wifi12, wifi21, wifi22])
         query.wifi[0].signalStrength = -100
         query.wifi[1].signalStrength = -80
         query.wifi[2].signalStrength = -100
         query.wifi[3].signalStrength = -54
-        results = self.source.search(query)
+        results = source.search(query)
         self.check_model_results(results, [wifi11, wifi21])
 
-    def test_cluster_score_over_size(self):
+    def test_cluster_score_over_size(self, geoip_db, http_session,
+                                     session, source, stats):
         now = util.utcnow()
         yesterday = now - timedelta(days=1)
         last_week = now - timedelta(days=7)
@@ -177,11 +210,12 @@ class TestWifi(BaseSourceTest):
         wifi22 = WifiShardFactory(
             lat=wifi21.lat, lon=wifi21.lon,
             samples=50, created=three_months, modified=last_week)
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(
+            geoip_db, http_session, session, stats,
             wifis=[wifi11, wifi12, wifi13, wifi21, wifi22])
-        results = self.source.search(query)
+        results = source.search(query)
         assert len(results) == 2
         best_result = results.best()
         assert round(best_result.lat, 7) == round(wifi21.lat, 7)
@@ -194,7 +228,8 @@ class TestWifi(BaseSourceTest):
         assert round(other_result.lat, 4) == round(wifi11.lat, 4)
         assert round(other_result.lon, 4) == round(wifi11.lon, 4)
 
-    def test_top_results_in_noisy_cluster(self):
+    def test_top_results_in_noisy_cluster(self, geoip_db, http_session,
+                                          session, source, stats):
         now = util.utcnow()
         # all these should wind up in the same cluster since
         # the WiFis are spaced in increments of (+0.1m, +0.12m)
@@ -204,30 +239,35 @@ class TestWifi(BaseSourceTest):
             wifis.append(WifiShardFactory(lat=wifi1.lat + i * 0.000001,
                                           lon=wifi1.lon + i * 0.0000012,
                                           samples=100 - i))
-        self.session.flush()
+        session.flush()
 
         # calculate expected result
         score = sum([wifi.score(now) for wifi in wifis])
 
-        query = self.model_query(wifis=wifis)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=wifis)
         for i, entry in enumerate(query.wifi):
             entry.signalStrength = -50 - i
 
-        results = self.source.search(query)
+        results = source.search(query)
         result = results.best()
         assert round(result.lat, 4) == round(wifi1.lat, 4)
         assert round(result.lon, 4) == round(wifi1.lon, 4)
         assert round(result.score, 4) == round(score, 4)
 
-    def test_weight(self):
+    def test_weight(self, geoip_db, http_session,
+                    session, source, stats):
         wifi1 = WifiShardFactory.build()
         wifis = []
         for i in range(4):
             wifis.append(WifiShardFactory(lat=wifi1.lat + i * 0.0001,
                                           lon=wifi1.lon + i * 0.00012))
-        self.session.flush()
+        session.flush()
 
-        query = self.model_query(wifis=wifis)
+        query = self.model_query(
+            geoip_db, http_session, session, stats,
+            wifis=wifis)
         query.wifi[0].signalStrength = -10
         query.wifi[0].age = 0
         query.wifi[1].signalStrength = -40
@@ -236,7 +276,7 @@ class TestWifi(BaseSourceTest):
         query.wifi[2].age = 16000
         query.wifi[3].signalStrength = -100
 
-        results = self.source.search(query)
+        results = source.search(query)
         result = results.best()
         assert round(result.lat, 7) == wifi1.lat + 0.0000009
         assert round(result.lon, 7) == wifi1.lon + 0.0000006

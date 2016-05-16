@@ -6,7 +6,7 @@ import pytest
 from ichnaea.models import Radio
 from ichnaea.api.submit.schema_v2 import SUBMIT_V2_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
-from ichnaea.tests.base import CeleryAppTestCase
+from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
@@ -35,7 +35,7 @@ class TestSubmitSchema(object):
         assert data['items'][0]['timestamp'] > 10 ** 12
 
 
-class TestView(BaseSubmitTest, CeleryAppTestCase):
+class TestView(DBTestCase, BaseSubmitTest):
 
     url = '/v2/geosubmit'
     metric_path = 'path:v2.geosubmit'
@@ -61,9 +61,9 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             query['cellTowers'][0]['radioType'] = cell.radio.name
         return (cell, query)
 
-    def test_bluetooth(self):
+    def test_bluetooth(self, app, celery, session):
         blue = BlueShardFactory.build()
-        self._post([{
+        self._post(app, [{
             'position': {
                 'latitude': blue.lat,
                 'longitude': blue.lon,
@@ -83,8 +83,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             }]},
         ])
 
-        assert self.queue.size() == 1
-        item = self.queue.dequeue()[0]
+        assert self.queue(celery).size() == 1
+        item = self.queue(celery).dequeue()[0]
         report = item['report']
         assert 'timestamp' in report
         position = report['position']
@@ -100,10 +100,10 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         wifis = report['wifiAccessPoints']
         assert len(wifis) == 0
 
-    def test_cell(self):
+    def test_cell(self, app, celery, session):
         now_ms = int(time.time() * 1000)
         cell = CellShardFactory.build(radio=Radio.wcdma)
-        response = self._post([{
+        response = self._post(app, [{
             'carrier': 'Some Carrier',
             'homeMobileCountryCode': cell.mcc,
             'homeMobileNetworkCode': cell.mnc,
@@ -141,8 +141,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         assert response.content_type == 'application/json'
         assert response.json == {}
 
-        assert self.queue.size() == 1
-        item = self.queue.dequeue()[0]
+        assert self.queue(celery).size() == 1
+        item = self.queue(celery).dequeue()[0]
         assert item['api_key'] == 'test'
         report = item['report']
         assert report['timestamp'] == now_ms
@@ -177,9 +177,9 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         assert cells[0]['timingAdvance'] == 1
         assert 'xtra_field' not in cells[0]
 
-    def test_wifi(self):
+    def test_wifi(self, app, celery, session):
         wifi = WifiShardFactory.build()
-        self._post([{
+        self._post(app, [{
             'position': {
                 'latitude': wifi.lat,
                 'longitude': wifi.lon,
@@ -198,8 +198,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
             }]},
         ])
 
-        assert self.queue.size() == 1
-        item = self.queue.dequeue()[0]
+        assert self.queue(celery).size() == 1
+        item = self.queue(celery).dequeue()[0]
         assert item['api_key'] is None
         report = item['report']
         assert 'timestamp' in report
@@ -218,8 +218,8 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         assert wifis[0]['ssid'] == 'my-wifi'
         assert 'xtra_field' not in wifis[0]
 
-    def test_batches(self):
-        batch = self.queue.batch + 10
+    def test_batches(self, app, celery, session):
+        batch = self.queue(celery).batch + 10
         wifis = WifiShardFactory.build_batch(batch)
         items = [{
             'position': {
@@ -231,12 +231,12 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
 
         # add a bad one, this will just be skipped
         items.append({'latitude': 10.0, 'longitude': 10.0, 'whatever': 'xx'})
-        self._post(items)
-        assert self.queue.size() == batch
+        self._post(app, items)
+        assert self.queue(celery).size() == batch
 
-    def test_error(self):
+    def test_error(self, app, celery, raven, session):
         wifi = WifiShardFactory.build()
-        self._post([{
+        self._post(app, [{
             'position': {
                 'latitude': wifi.lat,
                 'longitude': wifi.lon,
@@ -245,12 +245,12 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
                 'macAddress': 10,
             }],
         }], status=400)
-        assert self.queue.size() == 0
-        self.check_raven([('ParseError', 1)])
+        assert self.queue(celery).size() == 0
+        raven.check([('ParseError', 1)])
 
-    def test_error_missing_latlon(self):
+    def test_error_missing_latlon(self, app, celery, session):
         wifi = WifiShardFactory.build()
-        self._post([{
+        self._post(app, [{
             'position': {
                 'latitude': wifi.lat,
                 'longitude': wifi.lon,
@@ -265,4 +265,4 @@ class TestView(BaseSubmitTest, CeleryAppTestCase):
         }, {
             'wifiAccessPoints': [{'macAddress': wifi.mac}],
         }])
-        assert self.queue.size() == 3
+        assert self.queue(celery).size() == 3

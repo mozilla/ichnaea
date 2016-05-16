@@ -1,5 +1,3 @@
-import pytest
-
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
@@ -10,33 +8,31 @@ from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
 )
-from ichnaea.tests.base import ConnectionTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
 
 class SourceTest(object):
 
-    def _make_query(self, **kw):
+    def _make_query(self, geoip_db, stats, **kw):
         return Query(
             api_key=ApiKeyFactory.build(valid_key='test'),
-            geoip_db=self.geoip_db,
-            stats_client=self.stats_client,
+            geoip_db=geoip_db,
+            stats_client=stats,
             **kw)
 
-    def test_init(self):
-        assert self.source.geoip_db == self.geoip_db
-        assert self.source.raven_client == self.raven_client
-        assert self.source.redis_client == self.redis_client
-        assert self.source.stats_client == self.stats_client
+    def test_init(self, geoip_db, raven, redis, source, stats):
+        assert source.geoip_db == geoip_db
+        assert source.raven_client == raven
+        assert source.redis_client == redis
+        assert source.stats_client == stats
 
-    def test_should_search(self):
-        query = self._make_query()
-        results = self.source.result_list()
-        assert self.source.should_search(query, results)
+    def test_should_search(self, geoip_db, source, stats):
+        query = self._make_query(geoip_db, stats)
+        results = source.result_list()
+        assert source.should_search(query, results)
 
 
-@pytest.mark.usefixtures('source')
-class TestPositionSource(SourceTest, ConnectionTestCase):
+class TestPositionSource(SourceTest):
 
     class Source(PositionSource):
         fallback_field = 'fallback'
@@ -45,15 +41,14 @@ class TestPositionSource(SourceTest, ConnectionTestCase):
         def search(self, query):
             return self.result_list()
 
-    def test_empty(self):
-        query = self._make_query()
-        results = self.source.search(query)
+    def test_empty(self, geoip_db, source, stats):
+        query = self._make_query(geoip_db, stats)
+        results = source.search(query)
         assert len(results) == 0
         assert type(results) is PositionResultList
 
 
-@pytest.mark.usefixtures('source')
-class TestRegionSource(SourceTest, ConnectionTestCase):
+class TestRegionSource(SourceTest):
 
     class Source(RegionSource):
         fallback_field = 'ipf'
@@ -62,8 +57,8 @@ class TestRegionSource(SourceTest, ConnectionTestCase):
         def search(self, query):
             return self.result_list()
 
-    def test_empty(self):
-        query = self._make_query()
-        results = self.source.search(query)
+    def test_empty(self, geoip_db, source, stats):
+        query = self._make_query(geoip_db, stats)
+        results = source.search(query)
         assert len(results) == 0
         assert type(results) is RegionResultList

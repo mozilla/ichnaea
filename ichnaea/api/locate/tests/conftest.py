@@ -1,29 +1,42 @@
 import pytest
 
 from ichnaea.api.locate.tests.base import DummyModel
-from ichnaea.tests.base import GEOIP_DATA
 
 
-@pytest.fixture(scope='class')
-def source(request, geoip_db, raven_client,
-           redis_client, stats_client, data_queues):
-    request.cls.source = request.cls.Source(
+@pytest.yield_fixture(scope='class')
+def cls_source(request, data_queues, geoip_db, http_session,
+               raven_client, redis_client, stats_client):
+    source = request.cls.Source(
         geoip_db=geoip_db,
         raven_client=raven_client,
         redis_client=redis_client,
         stats_client=stats_client,
         data_queues=data_queues,
     )
-    bhutan = GEOIP_DATA['Bhutan']
-    request.cls.bhutan_model = DummyModel(
+    yield source
+
+
+@pytest.yield_fixture(scope='function')
+def source(cls_source, raven, redis, stats):
+    yield cls_source
+
+
+@pytest.yield_fixture(scope='session')
+def bhutan_model(geoip_data):
+    bhutan = geoip_data['Bhutan']
+    yield DummyModel(
         lat=bhutan['latitude'],
         lon=bhutan['longitude'],
         radius=bhutan['radius'],
         code=bhutan['region_code'],
         name=bhutan['region_name'],
         ip=bhutan['ip'])
-    london = GEOIP_DATA['London']
-    request.cls.london_model = DummyModel(
+
+
+@pytest.yield_fixture(scope='session')
+def london_model(geoip_data):
+    london = geoip_data['London']
+    yield DummyModel(
         lat=london['latitude'],
         lon=london['longitude'],
         radius=london['radius'],

@@ -190,7 +190,8 @@ class DebugRavenClient(RavenClient):
         self.state.set_success()
 
     def check(self, expected=()):
-        """Checks the raven message stream looking for the expected messages.
+        """
+        Checks the raven message stream looking for the expected messages.
 
         The expected argument should be a list of either names or tuples.
 
@@ -298,3 +299,80 @@ class DebugStatsClient(StatsClient):
 
     def _send_to_server(self, packet):
         self.msgs.append(packet)
+
+    def _find_messages(self, msg_type, msg_name, msg_value=None, msg_tags=()):
+        data = {
+            'counter': [],
+            'timer': [],
+            'gauge': [],
+            'histogram': [],
+            'meter': [],
+            'set': [],
+        }
+        for msg in self.msgs:
+            tags = ()
+            if '|#' in msg:
+                parts = msg.split('|#')
+                tags = parts[-1].split(',')
+                msg = parts[0]
+            suffix = msg.split('|')[-1]
+            name, value = msg.split('|')[0].split(':')
+            value = int(value)
+            if suffix == 'g':
+                data['gauge'].append((name, value, tags))
+            elif suffix == 'ms':
+                data['timer'].append((name, value, tags))
+            elif suffix.startswith('c'):
+                data['counter'].append((name, value, tags))
+            elif suffix == 'h':
+                data['histogram'].append((name, value, tags))
+            elif suffix == 'm':  # pragma: no cover
+                data['meter'].append((name, value, tags))
+            elif suffix == 's':
+                data['set'].append((name, value, tags))
+
+        result = []
+        for msg in data.get(msg_type):
+            if msg[0] == msg_name:
+                if msg_value is None or msg[1] == msg_value:
+                    if not msg_tags or msg[2] == msg_tags:
+                        result.append((msg[0], msg[1], msg[2]))
+        return result
+
+    def check(self, total=None, **kw):
+        """
+        Checks a partial specification of messages to be found in
+        the stats message stream.
+        """
+        if total is not None:
+            assert total == len(self.msgs)
+
+        for (msg_type, preds) in kw.items():
+            for pred in preds:
+                match = 1
+                value = None
+                tags = ()
+                if isinstance(pred, str):
+                    name = pred
+                elif isinstance(pred, tuple):
+                    if len(pred) == 2:
+                        (name, match) = pred
+                        if isinstance(match, list):
+                            tags = match
+                            match = 1
+                    elif len(pred) == 3:
+                        (name, match, value) = pred
+                        if isinstance(value, list):
+                            tags = value
+                            value = None
+                    elif len(pred) == 4:
+                        (name, match, value, tags) = pred
+                    else:  # pragma: no cover
+                        raise TypeError('wanted 2, 3 or 4 tuple, got %s'
+                                        % type(pred))
+                else:  # pragma: no cover
+                    raise TypeError('wanted str or tuple, got %s'
+                                    % type(pred))
+                msgs = self._find_messages(msg_type, name, value, tags)
+                if isinstance(match, int):
+                    assert match == len(msgs)

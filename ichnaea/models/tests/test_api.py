@@ -1,15 +1,15 @@
 import uuid
 
+from ichnaea.conftest import DBTestCase
 from ichnaea.models.api import ApiKey
 from ichnaea.tests.factories import ApiKeyFactory
-from ichnaea.tests.base import DBTestCase
 
 
 class TestApiKey(DBTestCase):
 
-    def test_fields(self):
+    def test_fields(self, session):
         key = uuid.uuid4().hex
-        self.session.add(ApiKey(
+        session.add(ApiKey(
             valid_key=key, maxreq=10,
             allow_fallback=True, allow_locate=True,
             fallback_name='test_fallback',
@@ -18,9 +18,9 @@ class TestApiKey(DBTestCase):
             fallback_ratelimit_interval=60,
             fallback_cache_expire=86400,
         ))
-        self.session.flush()
+        session.flush()
 
-        result = self.session.query(ApiKey).get(key)
+        result = session.query(ApiKey).get(key)
         assert result.valid_key == key
         assert result.maxreq == 10
         assert result.allow_fallback is True
@@ -31,23 +31,23 @@ class TestApiKey(DBTestCase):
         assert result.fallback_ratelimit_interval == 60
         assert result.fallback_cache_expire == 86400
 
-    def test_get(self):
+    def test_get(self, session):
         key = uuid.uuid4().hex
-        self.session.add(ApiKey(valid_key=key, shortname='foo'))
-        self.session.flush()
+        session.add(ApiKey(valid_key=key, shortname='foo'))
+        session.flush()
 
-        result = ApiKey.get(self.session, key)
+        result = ApiKey.get(session, key)
         assert isinstance(result, ApiKey)
         # shortname wasn't loaded at first
         assert 'shortname' not in result.__dict__
         # but is eagerly loaded
         assert result.shortname == 'foo'
 
-    def test_get_miss(self):
-        result = ApiKey.get(self.session, 'unknown')
+    def test_get_miss(self, session):
+        result = ApiKey.get(session, 'unknown')
         assert result is None
 
-    def test_allowed(self):
+    def test_allowed(self, session):
         api_key = ApiKeyFactory(allow_locate=True)
         assert api_key.allowed('locate')
         assert api_key.allowed('region')
@@ -56,7 +56,7 @@ class TestApiKey(DBTestCase):
         assert not ApiKeyFactory(allow_locate=None).allowed('locate')
         assert not ApiKeyFactory(allow_locate=False).allowed('locate')
 
-    def test_can_fallback(self):
+    def test_can_fallback(self, session):
         assert ApiKeyFactory(allow_fallback=True).can_fallback()
         assert not ApiKeyFactory(allow_fallback=False).can_fallback()
         assert not ApiKeyFactory(allow_fallback=None).can_fallback()

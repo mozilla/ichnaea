@@ -129,7 +129,7 @@ def main(app_config, ping_connections=False,
     return config.make_wsgi_app()
 
 
-def shutdown_worker(app):  # pragma: no cover
+def shutdown_worker(app):
     registry = getattr(app, 'registry', None)
     if registry is not None:
         registry.db_ro.close()

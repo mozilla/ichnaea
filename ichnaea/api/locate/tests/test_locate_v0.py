@@ -14,11 +14,9 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateTest,
     CommonPositionTest,
 )
+from ichnaea.conftest import DBTestCase
+from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
-from ichnaea.tests.base import (
-    AppTestCase,
-    GEOIP_DATA,
-)
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
@@ -44,7 +42,9 @@ class TestSchema(object):
                 {'cell': [{'mcc': 'a', 'mnc': 2, 'lac': 3, 'cid': 4}]})
 
 
-class LocateV0Base(BaseLocateTest, AppTestCase):
+class LocateV0Base(BaseLocateTest, DBTestCase):
+
+    default_session = 'ro_session'
 
     url = '/v1/search'
     metric_path = 'path:v1.search'
@@ -114,7 +114,7 @@ class LocateV0Base(BaseLocateTest, AppTestCase):
 
 class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
-    def test_blue(self):
+    def test_blue(self, app, data_queues, session, stats):
         blue = BlueShardFactory()
         offset = 0.00001
         blues = [
@@ -123,7 +123,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             BlueShardFactory(lat=blue.lat + offset * 2),
             BlueShardFactory(lat=None, lon=None),
         ]
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(blues=blues)
         blue_query = query['blue']
@@ -131,10 +131,10 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
         blue_query[1]['signal'] = -150
         blue_query[1]['name'] = 'my-beacon'
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
-        self.check_queue(1)
-        self.check_stats(counter=[
+        self.check_queue(data_queues, 1)
+        stats.check(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
@@ -143,7 +143,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
                 ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ])
-        items = self.queue.dequeue()
+        items = data_queues['update_incoming'].dequeue()
         assert (items == [{
             'api_key': 'test',
             'source': 'query',
@@ -169,9 +169,9 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_cell(self):
+    def test_cell(self, app, data_queues, session, stats):
         cell = CellShardFactory(radio=Radio.lte)
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['radio'] = cell.radio.name
@@ -179,10 +179,10 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
         query['cell'][0]['signal'] = -70
         query['cell'][0]['ta'] = 1
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, cell)
-        self.check_queue(1)
-        self.check_stats(counter=[
+        self.check_queue(data_queues, 1)
+        stats.check(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
@@ -194,7 +194,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
         ])
-        items = self.queue.dequeue()
+        items = data_queues['update_incoming'].dequeue()
         assert (items == [{
             'api_key': 'test',
             'source': 'query',
@@ -219,7 +219,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_wifi(self):
+    def test_wifi(self, app, data_queues, session, stats):
         wifi = WifiShardFactory()
         offset = 0.00001
         wifis = [
@@ -228,7 +228,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             WifiShardFactory(lat=wifi.lat + offset * 2),
             WifiShardFactory(lat=None, lon=None),
         ]
-        self.session.flush()
+        session.flush()
 
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifi']
@@ -239,10 +239,10 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
         wifi_query[2]['signalToNoiseRatio'] = 13
         wifi_query[3]['ssid'] = 'my-wifi'
 
-        res = self._call(body=query)
+        res = self._call(app, body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
-        self.check_queue(1)
-        self.check_stats(counter=[
+        self.check_queue(data_queues, 1)
+        stats.check(counter=[
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
             (self.metric_type + '.result',
                 ['key:test', 'region:none', 'fallback_allowed:false',
@@ -251,7 +251,7 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
                 ['key:test', 'region:none', 'source:internal',
                  'accuracy:high', 'status:hit']),
         ])
-        items = self.queue.dequeue()
+        items = data_queues['update_incoming'].dequeue()
         assert (items == [{
             'api_key': 'test',
             'source': 'query',
@@ -285,10 +285,14 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
 class TestError(LocateV0Base, CommonLocateErrorTest):
 
-    def test_apikey_error(self, db_rw_drop_table, raven, stats):
+    def test_apikey_error(self, app, data_queues,
+                          db_rw_drop_table, raven, session, stats):
         super(TestError, self).test_apikey_error(
-            db_rw_drop_table, raven, stats, db_errors=1)
+            app, data_queues, db_rw_drop_table,
+            raven, session, stats, db_errors=1)
 
-    def test_database_error(self, db_rw_drop_table, raven, stats):
+    def test_database_error(self, app, data_queues,
+                            db_rw_drop_table, raven, session, stats):
         super(TestError, self).test_database_error(
-            db_rw_drop_table, raven, stats, db_errors=5)
+            app, data_queues, db_rw_drop_table,
+            raven, session, stats, db_errors=5)

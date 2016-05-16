@@ -9,14 +9,15 @@ import pytest
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
+from ichnaea.conftest import (
+    ALEMBIC_CFG,
+    cleanup_tables,
+    setup_database,
+)
 # make sure all models are imported
 from ichnaea.models import _Model  # NOQA
 
-from ichnaea.tests.base import (
-    ALEMBIC_CFG,
-    DATA_DIRECTORY,
-    DBTestCase,
-)
+from ichnaea.tests import DATA_DIRECTORY
 
 _compare_attrs = {
     sqltypes._Binary: ('length', ),
@@ -60,7 +61,7 @@ class TestMigration(object):
     def db(self, db_rw):
         yield db_rw
         # setup normal database schema again
-        DBTestCase.setup_database()
+        setup_database()
 
     def current_db_revision(self, db):
         with db.engine.connect() as conn:
@@ -74,7 +75,7 @@ class TestMigration(object):
         metadata.reflect(bind=db.engine)
 
         # drop all tables
-        DBTestCase.cleanup_tables(db.engine)
+        cleanup_tables(db.engine)
 
         # setup old database schema
         with open(SQL_BASE) as fd:
