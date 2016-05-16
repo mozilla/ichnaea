@@ -4,7 +4,6 @@ import webtest
 from ichnaea.cache import configure_redis
 from ichnaea.config import DummyConfig
 from ichnaea.conftest import (
-    DBTestCase,
     REDIS_URI,
     SQLURI,
     TEST_CONFIG,
@@ -95,7 +94,7 @@ class TestApp(object):
             redis_client.close()
 
 
-class TestHeartbeat(DBTestCase):
+class TestHeartbeat(object):
 
     def test_ok(self, app, session):
         response = app.get('/__heartbeat__', status=200)

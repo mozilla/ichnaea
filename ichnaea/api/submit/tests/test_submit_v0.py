@@ -7,7 +7,6 @@ import pytz
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
-from ichnaea.conftest import DBTestCase
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
     BlueShardFactory,
@@ -79,7 +78,7 @@ class TestSubmitSchema(object):
         assert data['items'][0]['timestamp'] > 10 ** 12
 
 
-class TestView(DBTestCase, BaseSubmitTest):
+class TestView(BaseSubmitTest):
 
     url = '/v1/submit'
     metric_path = 'path:v1.submit'

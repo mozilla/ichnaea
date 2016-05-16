@@ -5,7 +5,6 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateErrorTest,
     CommonLocateTest,
 )
-from ichnaea.conftest import DBTestCase
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
     BlueShardFactory,
@@ -15,7 +14,7 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class RegionBase(BaseLocateTest, DBTestCase):
+class RegionBase(BaseLocateTest):
 
     default_session = 'ro_session'
 

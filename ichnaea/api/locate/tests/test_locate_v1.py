@@ -13,7 +13,6 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateTest,
     CommonPositionTest,
 )
-from ichnaea.conftest import DBTestCase
 from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
@@ -63,7 +62,7 @@ class TestSchema(object):
         assert 'radio' not in data['cellTowers'][0]
 
 
-class LocateV1Base(BaseLocateTest, DBTestCase):
+class LocateV1Base(BaseLocateTest):
 
     default_session = 'ro_session'
 

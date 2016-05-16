@@ -1,6 +1,5 @@
 from ichnaea.api.locate.internal import InternalRegionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.conftest import DBTestCase
 from ichnaea.geocode import GEOCODER
 from ichnaea.tests.factories import (
     BlueShardFactory,
@@ -10,7 +9,7 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class TestRegionSource(DBTestCase, BaseSourceTest):
+class TestRegionSource(BaseSourceTest):
 
     Source = InternalRegionSource
     api_type = 'region'

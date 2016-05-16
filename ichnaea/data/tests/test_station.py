@@ -4,7 +4,6 @@ from datetime import timedelta
 import mock
 from sqlalchemy import text
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import (
     update_blue,
@@ -61,7 +60,7 @@ class BaseStationTest(object):
             task.delay(shard_id=shard_id).get()
 
 
-class TestDatabaseErrors(DBTestCase, BaseStationTest):
+class TestDatabaseErrors(BaseStationTest):
     # this is a standalone class to ensure DB isolation
 
     queue_prefix = 'update_cell_'
@@ -436,7 +435,7 @@ class StationMacTest(StationTest):
         return {'mac': model.mac}
 
 
-class TestBlue(DBTestCase, StationMacTest):
+class TestBlue(StationMacTest):
 
     max_radius = BLUE_MAX_RADIUS
     obs_factory = BlueObservationFactory
@@ -485,7 +484,7 @@ class TestBlue(DBTestCase, StationMacTest):
             assert round(station.weight, 2) == 3.96
 
 
-class TestWifi(DBTestCase, StationMacTest):
+class TestWifi(StationMacTest):
 
     max_radius = WIFI_MAX_RADIUS
     obs_factory = WifiObservationFactory
@@ -570,7 +569,7 @@ class TestWifi(DBTestCase, StationMacTest):
         assert station2.region == 'CH'
 
 
-class TestCell(DBTestCase, StationTest):
+class TestCell(StationTest):
 
     max_radius = CELL_MAX_RADIUS
     obs_factory = CellObservationFactory

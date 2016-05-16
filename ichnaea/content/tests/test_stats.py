@@ -4,7 +4,6 @@ from datetime import date, timedelta
 
 import genc
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.content.stats import (
     global_stats,
     histogram,
@@ -23,7 +22,7 @@ def unixtime(value):
     return timegm(value.timetuple()) * 1000
 
 
-class TestStats(DBTestCase):
+class TestStats(object):
 
     def test_global_stats(self, session):
         day = util.utcnow().date() - timedelta(1)

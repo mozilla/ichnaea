@@ -1,11 +1,10 @@
 import uuid
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.models.api import ApiKey
 from ichnaea.tests.factories import ApiKeyFactory
 
 
-class TestApiKey(DBTestCase):
+class TestApiKey(object):
 
     def test_fields(self, session):
         key = uuid.uuid4().hex

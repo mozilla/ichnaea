@@ -4,7 +4,6 @@ from ichnaea.api.locate.constants import (
 )
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import BlueShardFactory
 
 
@@ -25,7 +24,7 @@ class BlueTestPositionSource(BluePositionMixin, PositionSource):
         return self.search_blue(query)
 
 
-class TestBlue(DBTestCase, BaseSourceTest):
+class TestBlue(BaseSourceTest):
 
     Source = BlueTestPositionSource
 

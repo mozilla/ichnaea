@@ -4,7 +4,6 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from ichnaea.conftest import (
-    DBTestCase,
     GB_LAT,
     GB_LON,
     GB_MCC,
@@ -104,7 +103,7 @@ class TestCellCodec(object):
         assert type(value[0]) is Radio
 
 
-class TestCellShard(DBTestCase):
+class TestCellShard(object):
 
     def test_fields(self, session):
         now = util.utcnow()
@@ -218,7 +217,7 @@ class TestCellShard(DBTestCase):
         assert round(cell.score(now), 2) == 0.1
 
 
-class TestCellShardOCID(DBTestCase):
+class TestCellShardOCID(object):
 
     def test_areaid(self, session):
         cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
@@ -303,7 +302,7 @@ class TestCellShardOCID(DBTestCase):
         assert round(cell.score(now), 2) == 0.1
 
 
-class TestCellArea(DBTestCase):
+class TestCellArea(object):
 
     def test_areaid(self, session):
         areaid = (Radio.gsm, GB_MCC, GB_MNC, 1)
@@ -432,7 +431,7 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         assert round(area.score(now), 2) == 0.1
 
 
-class TestCellAreaOCID(DBTestCase):
+class TestCellAreaOCID(object):
 
     def test_region(self, session):
         areaid = encode_cellarea(Radio.gsm, GB_MCC, GB_MNC, 123)

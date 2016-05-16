@@ -2,7 +2,6 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from ichnaea.conftest import (
-    DBTestCase,
     GB_LAT,
     GB_LON,
 )
@@ -18,7 +17,7 @@ from ichnaea.models.wifi import (
 from ichnaea import util
 
 
-class TestWifiShard(DBTestCase):
+class TestWifiShard(object):
 
     def test_shard_id(self):
         assert WifiShard.shard_id('111101123456') == '0'

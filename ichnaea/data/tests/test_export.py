@@ -6,7 +6,6 @@ import mock
 import requests_mock
 import simplejson
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.export import (
     DummyExporter,
     InternalTransform,
@@ -119,7 +118,7 @@ class BaseExportTest(object):
         return redis.llen(redis_key)
 
 
-class TestExporter(DBTestCase, BaseExportTest):
+class TestExporter(BaseExportTest):
 
     def test_queues(self, celery, redis, session):
         ApiKeyFactory(valid_key='test2')
@@ -168,7 +167,7 @@ class TestExporter(DBTestCase, BaseExportTest):
         assert self.queue_length(redis, 'queue_export_test') == 0
 
 
-class TestGeosubmit(DBTestCase, BaseExportTest):
+class TestGeosubmit(BaseExportTest):
 
     def test_upload(self, celery, session, stats):
         ApiKeyFactory(valid_key='e5444-794')
@@ -218,7 +217,7 @@ class TestGeosubmit(DBTestCase, BaseExportTest):
         ])
 
 
-class TestS3(DBTestCase, BaseExportTest):
+class TestS3(BaseExportTest):
 
     def test_upload(self, celery, session, stats):
         ExportConfigFactory(
@@ -407,7 +406,7 @@ class TestInternalTransform(object):
         })
 
 
-class TestInternal(DBTestCase, BaseExportTest):
+class TestInternal(BaseExportTest):
 
     def _pop_item(self, celery):
         return self.queue(celery).dequeue()[0]

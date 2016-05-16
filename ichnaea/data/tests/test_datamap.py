@@ -1,7 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.tasks import update_datamap
 from ichnaea.models.content import (
     DataMap,
@@ -10,7 +9,7 @@ from ichnaea.models.content import (
 from ichnaea import util
 
 
-class TestDataMap(DBTestCase):
+class TestDataMap(object):
 
     @property
     def today(self):

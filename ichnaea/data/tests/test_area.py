@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.tasks import (
     update_cellarea,
     update_cellarea_ocid,
@@ -152,7 +151,7 @@ class BaseTest(object):
         assert area.region == 'PR'
 
 
-class TestArea(DBTestCase, BaseTest):
+class TestArea(BaseTest):
 
     area_model = CellArea
     area_factory = CellAreaFactory
@@ -163,7 +162,7 @@ class TestArea(DBTestCase, BaseTest):
         return celery.data_queues['update_cellarea']
 
 
-class TestAreaOCID(DBTestCase, BaseTest):
+class TestAreaOCID(BaseTest):
 
     area_model = CellAreaOCID
     area_factory = CellAreaOCIDFactory

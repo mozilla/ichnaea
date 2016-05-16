@@ -3,11 +3,10 @@ import warnings
 from pymysql import err
 from sqlalchemy import text
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.models.wifi import WifiShard0
 
 
-class TestDatabase(DBTestCase):
+class TestDatabase(object):
 
     def test_constructors(self, db_rw, db_ro):
         assert db_rw.engine.name == 'mysql'

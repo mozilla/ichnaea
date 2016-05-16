@@ -179,16 +179,10 @@ def database():
 
 
 @pytest.yield_fixture(scope='session')
-def global_db_rw(request, database):
+def db_rw(database):
     db = configure_db(SQLURI)
     yield db
     db.close()
-
-
-@pytest.yield_fixture(scope='class')
-def db_rw(request, global_db_rw):
-    request.cls.db_rw = db = global_db_rw
-    yield db
 
 
 @pytest.yield_fixture(scope='function')
@@ -198,64 +192,66 @@ def db_rw_drop_table(db_rw):
 
 
 @pytest.yield_fixture(scope='session')
-def global_db_ro(request, database):
+def db_ro(database):
     db = configure_db(SQLURI)
     yield db
     db.close()
 
 
-@pytest.yield_fixture(scope='class')
-def db_ro(request, global_db_ro):
-    request.cls.db_ro = db = global_db_ro
-    yield db
-
-
-class DBTestCase(object):
+@pytest.yield_fixture(scope='function')
+def session(request, db_rw, db_ro):
     # Inspired by a blog post:
     # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
+    rw_conn = db_rw.engine.connect()
+    rw_trans = rw_conn.begin()
+    db_rw.session_factory.configure(bind=rw_conn)
+    rw_session = db_rw.session()
 
-    default_session = 'rw_session'
+    ro_conn = db_ro.engine.connect()
+    ro_trans = ro_conn.begin()
+    db_ro.session_factory.configure(bind=ro_conn)
+    request.cls.db_ro_session = ro_session = db_ro.session()
 
-    @pytest.yield_fixture(scope='function')
-    def session(self, request, db_rw, db_ro):
-        rw_conn = db_rw.engine.connect()
-        rw_trans = rw_conn.begin()
-        db_rw.session_factory.configure(bind=rw_conn)
-        request.cls.db_rw_session = rw_session = db_rw.session()
+    # Set up a default session.
+    default_session = getattr(request.cls, 'default_session', 'rw_session')
+    if default_session == 'ro_session':
+        session = ro_session
+    else:
+        session = rw_session
 
-        ro_conn = db_ro.engine.connect()
-        ro_trans = ro_conn.begin()
-        db_ro.session_factory.configure(bind=ro_conn)
-        request.cls.db_ro_session = ro_session = db_ro.session()
+    # Set the global session context for factory-boy.
+    SESSION['default'] = session
+    yield session
+    del SESSION['default']
 
-        # set up a default session
-        default_session = getattr(request.cls, 'default_session', 'rw_session')
-        if default_session == 'ro_session':
-            session = ro_session
-        else:
-            session = rw_session
+    ro_trans.rollback()
+    ro_session.close()
+    del request.cls.db_ro_session
+    db_ro.session_factory.configure(bind=None)
+    ro_trans.close()
+    ro_conn.close()
 
-        SESSION['default'] = session
-        yield session
-        del SESSION['default']
-
-        ro_trans.rollback()
-        ro_session.close()
-        del request.cls.db_ro_session
-        db_ro.session_factory.configure(bind=None)
-        ro_trans.close()
-        ro_conn.close()
-
-        rw_trans.rollback()
-        rw_session.close()
-        del request.cls.db_rw_session
-        db_rw.session_factory.configure(bind=None)
-        rw_trans.close()
-        rw_conn.close()
+    rw_trans.rollback()
+    rw_session.close()
+    db_rw.session_factory.configure(bind=None)
+    rw_trans.close()
+    rw_conn.close()
 
 
 @pytest.yield_fixture(scope='function')
 def session_tracker(session):
+    """
+    This install an event handler into the active session, which
+    tracks all SQL statements that are send via the session.
+
+    The yielded checker can be called with an integer argument,
+    representing the number of expected SQL statements, for example::
+
+        session_tracker(0)
+
+    would only succeed if no SQL statements where made.
+    """
+
     db_events = []
 
     def scoped_conn_event_handler(calls):
@@ -278,39 +274,12 @@ def session_tracker(session):
 
 
 @pytest.yield_fixture(scope='session')
-def raven_client():
-    raven_client = configure_raven(
-        None, transport='sync', _client=DebugRavenClient())
-    yield raven_client
-
-
-@pytest.yield_fixture(scope='function')
-def raven(raven_client):
-    yield raven_client
-    messages = [msg['message'] for msg in raven_client.msgs]
-    raven_client._clear()
-    assert not messages
-
-
-@pytest.yield_fixture(scope='session')
-def stats_client():
-    stats_client = configure_stats(
-        None, _client=DebugStatsClient(tag_support=True))
-    yield stats_client
-    stats_client.close()
-
-
-@pytest.yield_fixture(scope='function')
-def stats(stats_client):
-    yield stats_client
-    stats_client._clear()
-
-
-@pytest.yield_fixture(scope='session')
-def http_session():
-    http_session = configure_http_session(size=1)
-    yield http_session
-    http_session.close()
+def data_queues(redis_client):
+    data_queues = {
+        'update_incoming': DataQueue('update_incoming', redis_client,
+                                     batch=100, compress=True),
+    }
+    yield data_queues
 
 
 @pytest.yield_fixture(scope='session')
@@ -327,6 +296,28 @@ def geoip_db(raven_client):
 
 
 @pytest.yield_fixture(scope='session')
+def http_session():
+    http_session = configure_http_session(size=1)
+    yield http_session
+    http_session.close()
+
+
+@pytest.yield_fixture(scope='session')
+def raven_client():
+    raven_client = configure_raven(
+        None, transport='sync', _client=DebugRavenClient())
+    yield raven_client
+
+
+@pytest.yield_fixture(scope='function')
+def raven(raven_client):
+    yield raven_client
+    messages = [msg['message'] for msg in raven_client.msgs]
+    raven_client._clear()
+    assert not messages
+
+
+@pytest.yield_fixture(scope='session')
 def redis_client():
     redis_client = configure_redis(REDIS_URI)
     yield redis_client
@@ -340,12 +331,17 @@ def redis(redis_client):
 
 
 @pytest.yield_fixture(scope='session')
-def data_queues(redis_client):
-    data_queues = {
-        'update_incoming': DataQueue('update_incoming', redis_client,
-                                     batch=100, compress=True),
-    }
-    yield data_queues
+def stats_client():
+    stats_client = configure_stats(
+        None, _client=DebugStatsClient(tag_support=True))
+    yield stats_client
+    stats_client.close()
+
+
+@pytest.yield_fixture(scope='function')
+def stats(stats_client):
+    yield stats_client
+    stats_client._clear()
 
 
 @pytest.yield_fixture(scope='session')
@@ -369,13 +365,13 @@ def region_searcher(data_queues, geoip_db,
 
 
 @pytest.yield_fixture(scope='session')
-def global_app(global_db_rw, global_db_ro, geoip_db, http_session,
+def global_app(db_rw, db_ro, geoip_db, http_session,
                raven_client, redis_client, stats_client,
                position_searcher, region_searcher):
     wsgiapp = main(
         TEST_CONFIG,
-        _db_rw=global_db_rw,
-        _db_ro=global_db_ro,
+        _db_rw=db_rw,
+        _db_ro=db_ro,
         _geoip_db=geoip_db,
         _http_session=http_session,
         _raven_client=raven_client,
@@ -395,13 +391,13 @@ def app(global_app, raven, redis, stats):
 
 
 @pytest.yield_fixture(scope='session')
-def global_celery(global_db_rw, geoip_db,
+def global_celery(db_rw, geoip_db,
                   raven_client, redis_client, stats_client):
     celery_app.app_config = TEST_CONFIG
     celery_app.settings = TEST_CONFIG.asdict()
     init_worker(
         celery_app,
-        _db_rw=global_db_rw,
+        _db_rw=db_rw,
         _geoip_db=geoip_db,
         _raven_client=raven_client,
         _redis_client=redis_client,

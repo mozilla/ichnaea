@@ -6,10 +6,9 @@ import tempfile
 from celery import signals
 
 from ichnaea.async.task import BaseTask
-from ichnaea.conftest import DBTestCase
 
 
-class TestBeat(DBTestCase):
+class TestBeat(object):
 
     def test_tasks(self, celery):
         tmpdir = tempfile.mkdtemp()
@@ -56,7 +55,7 @@ class TestBeat(DBTestCase):
             assert 'data.update_wifi_%x' % i in registered_tasks
 
 
-class TestWorkerConfig(DBTestCase):
+class TestWorkerConfig(object):
 
     def test_config(self, celery):
         assert celery.conf['CELERY_ALWAYS_EAGER']

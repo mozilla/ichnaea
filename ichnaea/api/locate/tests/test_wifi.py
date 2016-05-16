@@ -7,7 +7,6 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionMixin
-from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import WifiShardFactory
 from ichnaea import util
 
@@ -24,7 +23,7 @@ class WifiTestPositionSource(WifiPositionMixin, PositionSource):
         return self.search_wifi(query)
 
 
-class TestWifi(DBTestCase, BaseSourceTest):
+class TestWifi(BaseSourceTest):
 
     Source = WifiTestPositionSource
 

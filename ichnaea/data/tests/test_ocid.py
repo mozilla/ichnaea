@@ -11,7 +11,6 @@ import requests_mock
 import six
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.ocid import (
     ImportLocal,
     write_stations_to_csv,
@@ -57,7 +56,7 @@ class FakeTask(object):
         self.app = app
 
 
-class TestExport(DBTestCase):
+class TestExport(object):
 
     def test_local_export(self, celery, session):
         cell_fixture_fields = (
@@ -131,7 +130,7 @@ class TestExport(DBTestCase):
             assert pattern.search(method.call_args[0][0])
 
 
-class TestImport(DBTestCase):
+class TestImport(object):
 
     @property
     def today(self):

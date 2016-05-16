@@ -7,7 +7,6 @@ from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
 )
-from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import ApiKeyFactory
 
 
@@ -32,7 +31,7 @@ class DummyPositionSource(PositionSource):
         return self.result_type(lat=1.0, lon=1.0, accuracy=1000.0, score=0.5)
 
 
-class SearcherTest(DBTestCase):
+class SearcherTest(object):
 
     searcher = None
 

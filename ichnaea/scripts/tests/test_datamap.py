@@ -4,7 +4,6 @@ import os.path
 from mock import MagicMock, patch
 
 from ichnaea import ROOT
-from ichnaea.conftest import DBTestCase
 from ichnaea.models.content import (
     DataMap,
 )
@@ -23,7 +22,7 @@ DATAMAPS_DIR = os.path.join(GIT_ROOT, 'datamaps')
 PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 
 
-class TestMap(DBTestCase):
+class TestMap(object):
 
     def _check_quadtree(self, path):
         assert os.path.isdir(path)

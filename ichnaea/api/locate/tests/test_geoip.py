@@ -3,7 +3,6 @@ from ichnaea.api.locate.geoip import (
     GeoIPRegionSource,
 )
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.conftest import DBTestCase
 
 
 class SourceTest(object):
@@ -44,11 +43,11 @@ class SourceTest(object):
         assert 0.5 < results.best().score < 1.0
 
 
-class TestPosition(SourceTest, DBTestCase, BaseSourceTest):
+class TestPosition(SourceTest, BaseSourceTest):
 
     Source = GeoIPPositionSource
 
 
-class TestRegion(SourceTest, DBTestCase, BaseSourceTest):
+class TestRegion(SourceTest, BaseSourceTest):
 
     Source = GeoIPRegionSource

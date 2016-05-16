@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.tasks import (
     update_statcounter,
     update_statregion,
@@ -21,7 +20,7 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class TestStatCounter(DBTestCase):
+class TestStatCounter(object):
 
     @property
     def today(self):
@@ -115,7 +114,7 @@ class TestStatCounter(DBTestCase):
         self.check_stat(session, StatKey.unique_cell_ocid, self.today, 7)
 
 
-class TestStatRegion(DBTestCase):
+class TestStatRegion(object):
 
     def test_empty(self, celery, session):
         update_statregion.delay().get()

@@ -14,7 +14,6 @@ from ichnaea.api.locate.tests.base import (
     CommonLocateTest,
     CommonPositionTest,
 )
-from ichnaea.conftest import DBTestCase
 from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
@@ -42,7 +41,7 @@ class TestSchema(object):
                 {'cell': [{'mcc': 'a', 'mnc': 2, 'lac': 3, 'cid': 4}]})
 
 
-class LocateV0Base(BaseLocateTest, DBTestCase):
+class LocateV0Base(BaseLocateTest):
 
     default_session = 'ro_session'
 

@@ -2,7 +2,6 @@ import pytest
 from sqlalchemy.exc import SQLAlchemyError
 
 from ichnaea.conftest import (
-    DBTestCase,
     GB_LAT,
     GB_LON,
 )
@@ -18,7 +17,7 @@ from ichnaea.models.blue import (
 from ichnaea import util
 
 
-class TestBlueShard(DBTestCase):
+class TestBlueShard(object):
 
     def test_shard_id(self):
         assert BlueShard.shard_id('111101123456') == '0'

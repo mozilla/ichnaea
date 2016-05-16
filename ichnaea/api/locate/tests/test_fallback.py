@@ -24,7 +24,6 @@ from ichnaea.api.locate.tests.base import (
     DummyModel,
 )
 from ichnaea.api.locate.tests.test_query import QueryTest
-from ichnaea.conftest import DBTestCase
 from ichnaea import floatjson
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
@@ -212,7 +211,7 @@ def cache(raven, redis, session, stats):
     yield FallbackCache(raven, redis, stats)
 
 
-class TestCache(DBTestCase, QueryTest):
+class TestCache(QueryTest):
 
     def _query(self, **kwargs):
         return Query(api_key=ApiKeyFactory(fallback_cache_expire=60), **kwargs)
@@ -356,7 +355,7 @@ class TestCache(DBTestCase, QueryTest):
         ])
 
 
-class TestFallback(DBTestCase, BaseSourceTest):
+class TestFallback(BaseSourceTest):
 
     fallback_model = DummyModel(lat=51.5366, lon=0.03989, radius=1500.0)
     Source = FallbackPositionSource

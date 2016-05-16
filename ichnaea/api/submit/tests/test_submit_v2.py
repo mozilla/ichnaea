@@ -6,7 +6,6 @@ import pytest
 from ichnaea.models import Radio
 from ichnaea.api.submit.schema_v2 import SUBMIT_V2_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
-from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
@@ -35,7 +34,7 @@ class TestSubmitSchema(object):
         assert data['items'][0]['timestamp'] > 10 ** 12
 
 
-class TestView(DBTestCase, BaseSubmitTest):
+class TestView(BaseSubmitTest):
 
     url = '/v2/geosubmit'
     metric_path = 'path:v2.geosubmit'

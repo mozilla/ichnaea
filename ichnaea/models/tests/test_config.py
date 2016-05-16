@@ -1,10 +1,9 @@
 import uuid
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.models.config import ExportConfig
 
 
-class TestExportConfig(DBTestCase):
+class TestExportConfig(object):
 
     def test_fields(self, session):
         skip_keys = [uuid.uuid4().hex for i in range(3)]

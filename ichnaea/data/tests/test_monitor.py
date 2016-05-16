@@ -1,7 +1,6 @@
 from datetime import timedelta
 from random import randint
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
@@ -13,7 +12,7 @@ from ichnaea.tests.factories import CellShardOCIDFactory
 from ichnaea import util
 
 
-class TestMonitor(DBTestCase):
+class TestMonitor(object):
 
     def test_monitor_api_keys_empty(self, celery, stats):
         monitor_api_key_limits.delay().get()
@@ -85,7 +84,7 @@ class TestMonitor(DBTestCase):
             gauge=[('queue', 1, v, ['queue:' + k]) for k, v in data.items()])
 
 
-class TestMonitorAPIUsers(DBTestCase):
+class TestMonitorAPIUsers(object):
 
     @property
     def today(self):

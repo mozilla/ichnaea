@@ -7,7 +7,6 @@ from ichnaea.api.locate.constants import (
     CELLAREA_MIN_ACCURACY,
 )
 from ichnaea.api.locate.tests.base import BaseSourceTest
-from ichnaea.conftest import DBTestCase
 from ichnaea.tests.factories import (
     CellAreaFactory,
     CellAreaOCIDFactory,
@@ -17,7 +16,7 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class TestCellPosition(DBTestCase, BaseSourceTest):
+class TestCellPosition(BaseSourceTest):
 
     Source = CellPositionSource
 
@@ -124,7 +123,7 @@ class TestCellPosition(DBTestCase, BaseSourceTest):
             results, [areas[0]], accuracy=CELLAREA_MIN_ACCURACY)
 
 
-class TestOCIDPositionSource(DBTestCase, BaseSourceTest):
+class TestOCIDPositionSource(BaseSourceTest):
 
     Source = OCIDPositionSource
 

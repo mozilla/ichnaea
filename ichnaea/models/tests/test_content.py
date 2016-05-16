@@ -1,6 +1,5 @@
 import pytest
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.models.content import (
     decode_datamap_grid,
     encode_datamap_grid,
@@ -49,7 +48,7 @@ class TestDataMapCodec(object):
                 90000, 180000, codec='base64') == b'AAK/IAAFfkA=')
 
 
-class TestDataMap(DBTestCase):
+class TestDataMap(object):
 
     def test_fields(self, session):
         today = util.utcnow().date()
@@ -105,7 +104,7 @@ class TestDataMap(DBTestCase):
             session.flush()
 
 
-class TestRegionStat(DBTestCase):
+class TestRegionStat(object):
 
     def test_fields(self, session):
         session.add(RegionStat(
@@ -121,7 +120,7 @@ class TestRegionStat(DBTestCase):
         assert result.wifi == 5
 
 
-class TestStat(DBTestCase):
+class TestStat(object):
 
     def test_fields(self, session):
         utcday = util.utcnow().date()

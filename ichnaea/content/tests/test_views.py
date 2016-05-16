@@ -7,7 +7,6 @@ from mock import MagicMock, patch
 from pyramid.testing import DummyRequest
 from pyramid import testing
 
-from ichnaea.conftest import DBTestCase
 from ichnaea.content.views import (
     configure_content,
     ContentViews,
@@ -114,7 +113,7 @@ class TestContentViews(object):
         assert result['map_token'] == 'pk.123456'
 
 
-class TestFunctionalContent(DBTestCase):
+class TestFunctionalContent(object):
 
     default_session = 'ro_session'
 
@@ -265,7 +264,7 @@ class TestFunctionalContent(DBTestCase):
         assert second_result.json == result.json
 
 
-class TestFunctionalContentViews(DBTestCase):
+class TestFunctionalContentViews(object):
 
     default_session = 'ro_session'
 
