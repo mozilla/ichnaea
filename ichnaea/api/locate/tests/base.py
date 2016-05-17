@@ -290,7 +290,7 @@ class BaseLocateTest(object):
 class CommonLocateTest(BaseLocateTest):
     # tests for all locate API's incl. region
 
-    def test_get(self, app, data_queues, session, stats):
+    def test_get(self, app, data_queues, stats):
         res = self._call(app, ip=self.test_ip, method='get', status=200)
         self.check_response(data_queues, res, 'ok')
         self.check_queue(data_queues, 0)
@@ -300,17 +300,17 @@ class CommonLocateTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:get']),
         ])
 
-    def test_options(self, app, session):
+    def test_options(self, app):
         res = self._call(app, method='options', status=200)
         assert res.headers['Access-Control-Allow-Origin'] == '*'
         assert res.headers['Access-Control-Max-Age'] == '2592000'
 
-    def test_unsupported_methods(self, app, session):
+    def test_unsupported_methods(self, app):
         self._call(app, method='delete', status=405)
         self._call(app, method='patch', status=405)
         self._call(app, method='put', status=405)
 
-    def test_empty_body(self, app, data_queues, redis, session):
+    def test_empty_body(self, app, data_queues, redis):
         res = self._call(app, '', ip=self.test_ip, method='post', status=200)
         self.check_response(data_queues, res, 'ok')
         self.check_queue(data_queues, 0)
@@ -324,7 +324,7 @@ class CommonLocateTest(BaseLocateTest):
             ttl = redis.ttl(expected)
             assert 7 * 24 * 3600 < ttl <= 8 * 24 * 3600
 
-    def test_empty_json(self, app, data_queues, session, stats):
+    def test_empty_json(self, app, data_queues, stats):
         res = self._call(app, ip=self.test_ip, status=200)
         self.check_response(data_queues, res, 'ok')
         self.check_queue(data_queues, 0)
@@ -346,7 +346,7 @@ class CommonLocateTest(BaseLocateTest):
                      'accuracy:low', 'status:hit']),
             ])
 
-    def test_error_no_json(self, app, data_queues, session, stats):
+    def test_error_no_json(self, app, data_queues, stats):
         res = self._call(app, '\xae', method='post', status=400)
         self.check_response(data_queues, res, 'parse_error')
         stats.check(counter=[
@@ -354,16 +354,16 @@ class CommonLocateTest(BaseLocateTest):
                 [self.metric_path, 'key:test']),
         ])
 
-    def test_error_no_mapping(self, app, data_queues, session):
+    def test_error_no_mapping(self, app, data_queues):
         res = self._call(app, [1], status=400)
         self.check_response(data_queues, res, 'parse_error')
 
-    def test_error_invalid_key(self, app, data_queues, session):
+    def test_error_invalid_key(self, app, data_queues):
         res = self._call(app, {'foo': 0}, ip=self.test_ip, status=200)
         self.check_response(data_queues, res, 'ok')
         self.check_queue(data_queues, 0)
 
-    def test_no_api_key(self, app, data_queues, redis, session, stats,
+    def test_no_api_key(self, app, data_queues, redis, stats,
                         status=400, response='invalid_key'):
         res = self._call(app, api_key=None, ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
@@ -373,7 +373,7 @@ class CommonLocateTest(BaseLocateTest):
         ])
         assert redis.keys('apiuser:*') == []
 
-    def test_invalid_api_key(self, app, data_queues, redis, session, stats,
+    def test_invalid_api_key(self, app, data_queues, redis, stats,
                              status=400, response='invalid_key'):
         res = self._call(
             app, api_key='invalid_key', ip=self.test_ip, status=status)
@@ -384,7 +384,7 @@ class CommonLocateTest(BaseLocateTest):
         ])
         assert redis.keys('apiuser:*') == []
 
-    def test_unknown_api_key(self, app, data_queues, redis, session, stats,
+    def test_unknown_api_key(self, app, data_queues, redis, stats,
                              status=400, response='invalid_key',
                              metric_key='invalid'):
         res = self._call(
@@ -396,7 +396,7 @@ class CommonLocateTest(BaseLocateTest):
         ])
         assert redis.keys('apiuser:*') == []
 
-    def test_gzip(self, app, data_queues, session):
+    def test_gzip(self, app, data_queues):
         wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
 
@@ -412,9 +412,9 @@ class CommonLocateTest(BaseLocateTest):
 class CommonPositionTest(BaseLocateTest):
     # tests for only the locate_v1 and locate_v2 API's
 
-    def test_api_key_limit(self, app, data_queues, redis, session):
-        api_key = ApiKeyFactory(maxreq=5)
-        session.flush()
+    def test_api_key_limit(self, app, data_queues, redis, ro_session):
+        api_key = ApiKeyFactory(session=ro_session, maxreq=5)
+        ro_session.flush()
 
         # exhaust today's limit
         dstamp = util.utcnow().strftime('%Y%m%d')
@@ -426,14 +426,14 @@ class CommonPositionTest(BaseLocateTest):
             app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
         self.check_response(data_queues, res, 'limit_exceeded')
 
-    def test_api_key_blocked(self, app, data_queues, session):
-        api_key = ApiKeyFactory(allow_locate=False)
+    def test_api_key_blocked(self, app, data_queues, ro_session):
+        api_key = ApiKeyFactory(session=ro_session, allow_locate=False)
 
         res = self._call(
             app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
         self.check_response(data_queues, res, 'invalid_key')
 
-    def test_blue_not_found(self, app, data_queues, session, stats):
+    def test_blue_not_found(self, app, data_queues, stats):
         blues = BlueShardFactory.build_batch(2)
 
         query = self.model_query(blues=blues)
@@ -456,7 +456,7 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_cell_not_found(self, app, data_queues, session, stats):
+    def test_cell_not_found(self, app, data_queues, stats):
         cell = CellShardFactory.build()
 
         query = self.model_query(cells=[cell])
@@ -479,15 +479,15 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_cell_invalid_lac(self, app, data_queues, session):
+    def test_cell_invalid_lac(self, app, data_queues):
         cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, status=self.not_found.code)
         self.check_response(data_queues, res, 'not_found')
 
-    def test_cell_lte_radio(self, app, session, stats):
-        cell = CellShardFactory(radio=Radio.lte)
-        session.flush()
+    def test_cell_lte_radio(self, app, ro_session, stats):
+        cell = CellShardFactory(session=ro_session, radio=Radio.lte)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
@@ -497,9 +497,9 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
         ])
 
-    def test_cellarea(self, app, session, stats):
-        cell = CellAreaFactory()
-        session.flush()
+    def test_cellarea(self, app, ro_session, stats):
+        cell = CellAreaFactory(session=ro_session)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
@@ -518,9 +518,9 @@ class CommonPositionTest(BaseLocateTest):
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_cellarea_with_lacf(self, app, session, stats):
-        cell = CellAreaFactory()
-        session.flush()
+    def test_cellarea_with_lacf(self, app, ro_session, stats):
+        cell = CellAreaFactory(session=ro_session)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         query['fallbacks'] = {'lacf': True}
@@ -541,9 +541,9 @@ class CommonPositionTest(BaseLocateTest):
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_cellarea_without_lacf(self, app, data_queues, session, stats):
-        cell = CellAreaFactory()
-        session.flush()
+    def test_cellarea_without_lacf(self, app, data_queues, ro_session, stats):
+        cell = CellAreaFactory(session=ro_session)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         query['fallbacks'] = {'lacf': False}
@@ -556,9 +556,9 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
         ])
 
-    def test_cellarea_with_different_fallback(self, app, session, stats):
-        cell = CellAreaFactory()
-        session.flush()
+    def test_cellarea_with_different_fallback(self, app, ro_session, stats):
+        cell = CellAreaFactory(session=ro_session)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         query['fallbacks'] = {'ipf': True}
@@ -573,7 +573,7 @@ class CommonPositionTest(BaseLocateTest):
                  'accuracy:low', 'status:hit', 'source:internal']),
         ])
 
-    def test_wifi_not_found(self, app, data_queues, session, stats):
+    def test_wifi_not_found(self, app, data_queues, stats):
         wifis = WifiShardFactory.build_batch(2)
 
         query = self.model_query(wifis=wifis)
@@ -596,7 +596,7 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_ip_fallback_disabled(self, app, data_queues, session, stats):
+    def test_ip_fallback_disabled(self, app, data_queues, stats):
         res = self._call(app, body={
             'fallbacks': {
                 'ipf': 0,
@@ -612,15 +612,16 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_fallback(self, app, session, stats):
+    def test_fallback(self, app, ro_session, stats):
         # this tests a cell + wifi based query which gets a cell based
         # internal result and continues on to the fallback to get a
         # better wifi based result
-        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
+        cells = CellShardFactory.create_batch(
+            2, session=ro_session, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        api_key = ApiKey.get(session, 'test')
+        api_key = ApiKey.get(ro_session, 'test')
         api_key.allow_fallback = True
-        session.flush()
+        ro_session.flush()
 
         with requests_mock.Mocker() as mock:
             response_result = {
@@ -661,12 +662,13 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_fallback_used_with_geoip(self, app, session, stats):
-        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
+    def test_fallback_used_with_geoip(self, app, ro_session, stats):
+        cells = CellShardFactory.create_batch(
+            2, session=ro_session, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        api_key = ApiKey.get(session, 'test')
+        api_key = ApiKey.get(ro_session, 'test')
         api_key.allow_fallback = True
-        session.flush()
+        ro_session.flush()
 
         with requests_mock.Mocker() as mock:
             response_result = {
@@ -700,9 +702,10 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_floatjson(self, app, session):
-        cell = CellShardFactory(lat=51.5, lon=(3.3 / 3 + 0.0001))
-        session.flush()
+    def test_floatjson(self, app, ro_session):
+        cell = CellShardFactory(
+            session=ro_session, lat=51.5, lon=(3.3 / 3 + 0.0001))
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
@@ -715,11 +718,11 @@ class CommonPositionTest(BaseLocateTest):
 class CommonLocateErrorTest(BaseLocateTest):
 
     def test_apikey_error(self, app, data_queues, db_rw_drop_table,
-                          raven, session, stats, db_errors=0):
+                          raven, ro_session, stats, db_errors=0):
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
-        session.execute(text('drop table %s;' % ApiKey.__tablename__))
+        ro_session.execute(text('drop table %s;' % ApiKey.__tablename__))
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(app, body=query, ip=self.test_ip)
@@ -728,7 +731,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         self.check_queue(data_queues, 0)
 
     def test_database_error(self, app, data_queues, db_rw_drop_table,
-                            raven, session, stats, db_errors=0):
+                            raven, ro_session, stats, db_errors=0):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
             CellShardOCIDFactory.build(radio=Radio.gsm),
@@ -740,11 +743,11 @@ class CommonLocateErrorTest(BaseLocateTest):
         wifis = WifiShardFactory.build_batch(2)
 
         for model in (CellArea, CellAreaOCID):
-            session.execute(text('drop table %s;' % model.__tablename__))
+            ro_session.execute(text('drop table %s;' % model.__tablename__))
         for name in set([cell.__tablename__ for cell in cells]):
-            session.execute(text('drop table %s;' % name))
+            ro_session.execute(text('drop table %s;' % name))
         for name in set([wifi.__tablename__ for wifi in wifis]):
-            session.execute(text('drop table %s;' % name))
+            ro_session.execute(text('drop table %s;' % name))
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(app, body=query, ip=self.test_ip)

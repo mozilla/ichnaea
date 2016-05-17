@@ -57,14 +57,14 @@ class BaseSQLFactory(SQLAlchemyModelFactory):
         strategy = factory.CREATE_STRATEGY
 
     @classmethod
-    def _create(cls, constructor, _session=None, *args, **kwargs):
+    def _create(cls, constructor, session=None, *args, **kwargs):
         """Create an instance of the model, and save it to the database."""
         if ismethod(constructor) and '_raise_invalid' not in kwargs:
             kwargs['_raise_invalid'] = True
         obj = constructor(*args, **kwargs)
-        if _session is None:
-            _session = SESSION['default']
-        _session.add(obj)
+        if session is None:
+            session = SESSION['default']
+        session.add(obj)
         return obj
 
 

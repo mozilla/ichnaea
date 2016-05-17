@@ -71,22 +71,22 @@ class TestDatabaseErrors(BaseStationTest):
         return self._queue_and_update(celery, obs, update_cell)
 
     def test_lock_timeout(self, celery, db_rw_drop_table,
-                          redis, session, stats):
+                          redis, ro_session, session, stats):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
             radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
             lac=obs.lac, cid=obs.cid,
             samples=10,
         )
-        self.db_ro_session.add(cell)
-        self.db_ro_session.flush()
+        ro_session.add(cell)
+        ro_session.flush()
 
         orig_add_area = CellUpdater.add_area_update
         orig_wait = CellUpdater._retry_wait
         num = [0]
 
         def mock_area(self, updated_areas, key,
-                      num=num, ro_session=self.db_ro_session):
+                      num=num, ro_session=ro_session):
             orig_add_area(self, updated_areas, key)
             num[0] += 1
             if num[0] == 2:

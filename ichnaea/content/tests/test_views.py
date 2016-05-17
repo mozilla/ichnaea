@@ -115,9 +115,7 @@ class TestContentViews(object):
 
 class TestFunctionalContent(object):
 
-    default_session = 'ro_session'
-
-    def test_content_pages(self, app, session, stats):
+    def test_content_pages(self, app, stats):
         app.get('/', status=200)
         app.get('/contact', status=200)
         app.get('/leaders', status=301)
@@ -133,7 +131,7 @@ class TestFunctionalContent(object):
             ('request', ['path:map', 'method:get']),
         ])
 
-    def test_csp(self, app, session):
+    def test_csp(self, app):
         result = app.get('/', status=200)
         assert 'Content-Security-Policy' in result.headers
         csp = result.headers['Content-Security-Policy']
@@ -142,7 +140,7 @@ class TestFunctionalContent(object):
         # make sure map assets url interpolation worked
         assert '127.0.0.1:7001' in csp
 
-    def test_downloads(self, app, session):
+    def test_downloads(self, app):
         mock_conn = MagicMock(name='conn')
         mock_bucket = MagicMock(name='bucket')
         mock_conn.return_value.lookup.return_value = mock_bucket
@@ -175,48 +173,48 @@ class TestFunctionalContent(object):
         # The mock / S3 API was only called once
         assert len(mock_bucket.list.mock_calls) == 1
 
-    def test_favicon(self, app, session, stats):
+    def test_favicon(self, app, stats):
         app.get('/favicon.ico', status=200)
         stats.check(total=0)
 
-    def test_touchicon(self, app, session, stats):
+    def test_touchicon(self, app, stats):
         app.get('/apple-touch-icon-precomposed.png', status=200)
         stats.check(total=0)
 
-    def test_hsts_header(self, app, session):
+    def test_hsts_header(self, app):
         result = app.get('/', status=200)
         assert 'Strict-Transport-Security' in result.headers
 
-    def test_frame_options_header(self, app, session):
+    def test_frame_options_header(self, app):
         result = app.get('/', status=200)
         assert 'X-Frame-Options' in result.headers
 
-    def test_not_found(self, app, session, stats):
+    def test_not_found(self, app, stats):
         app.get('/nobody-is-home', status=404)
         stats.check(total=0)
 
-    def test_image_file(self, app, session, stats):
+    def test_image_file(self, app, stats):
         app.get('/static/css/images/icons-000000@2x.png', status=200)
         stats.check(total=0)
 
-    def test_robots_txt(self, app, session, stats):
+    def test_robots_txt(self, app, stats):
         app.get('/robots.txt', status=200)
         stats.check(total=0)
 
-    def test_map_json(self, app, session):
+    def test_map_json(self, app):
         result = app.get('/map.json', status=200)
         assert (result.json['tiles_url'] ==
                 'http://127.0.0.1:7001/static/tiles/')
 
-    def test_stats_regions(self, app, session):
+    def test_stats_regions(self, app):
         app.get('/stats/regions', status=200)
 
-    def test_stats_blue_json(self, app, session):
+    def test_stats_blue_json(self, app, ro_session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        session.add(
+        ro_session.add(
             Stat(key=StatKey.unique_blue, time=today, value=2))
-        session.commit()
+        ro_session.commit()
         result = app.get('/stats_blue.json', status=200)
         assert (result.json == {
             'series': [
@@ -227,14 +225,14 @@ class TestFunctionalContent(object):
         second_result = app.get('/stats_blue.json', status=200)
         assert second_result.json == result.json
 
-    def test_stats_cell_json(self, app, session):
+    def test_stats_cell_json(self, app, ro_session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        session.add(
+        ro_session.add(
             Stat(key=StatKey.unique_cell, time=today, value=2))
-        session.add(
+        ro_session.add(
             Stat(key=StatKey.unique_cell_ocid, time=today, value=5))
-        session.commit()
+        ro_session.commit()
         result = app.get('/stats_cell.json', status=200)
         assert (result.json == {
             'series': [
@@ -247,12 +245,12 @@ class TestFunctionalContent(object):
         second_result = app.get('/stats_cell.json', status=200)
         assert second_result.json == result.json
 
-    def test_stats_wifi_json(self, app, session):
+    def test_stats_wifi_json(self, app, ro_session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        session.add(
+        ro_session.add(
             Stat(key=StatKey.unique_wifi, time=today, value=2))
-        session.commit()
+        ro_session.commit()
         result = app.get('/stats_wifi.json', status=200)
         assert (result.json == {
             'series': [
@@ -266,17 +264,15 @@ class TestFunctionalContent(object):
 
 class TestFunctionalContentViews(object):
 
-    default_session = 'ro_session'
-
     @contextmanager
-    def _make_view(self, request, redis, session):
+    def _make_view(self, request, redis, ro_session):
         with testing.testConfig(request=request) as config:
             config.include('pyramid_chameleon')
-            setattr(request, 'db_ro_session', session)
+            setattr(request, 'db_ro_session', ro_session)
             setattr(request.registry, 'redis_client', redis)
             yield ContentViews(request)
 
-    def test_stats(self, redis, session):
+    def test_stats(self, redis, ro_session):
         today = util.utcnow().date()
         stats = [
             Stat(key=StatKey.blue, time=today, value=2200000),
@@ -287,10 +283,10 @@ class TestFunctionalContentViews(object):
             Stat(key=StatKey.unique_cell_ocid, time=today, value=1500000),
             Stat(key=StatKey.unique_wifi, time=today, value=2000000),
         ]
-        session.add_all(stats)
-        session.commit()
+        ro_session.add_all(stats)
+        ro_session.commit()
         request = DummyRequest()
-        with self._make_view(request, redis, session) as view:
+        with self._make_view(request, redis, ro_session) as view:
             result = view.stats_view()
 
         assert result['page_title'] == 'Statistics'
@@ -308,14 +304,14 @@ class TestFunctionalContentViews(object):
 
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
-        with self._make_view(request, redis, session) as view:
+        with self._make_view(request, redis, ro_session) as view:
             request.db_ro_session = None
             second_result = view.stats_view()
         assert second_result == result
 
-    def test_stats_regions(self, redis, session):
+    def test_stats_regions(self, redis, ro_session):
         request = DummyRequest()
-        with self._make_view(request, redis, session) as view:
+        with self._make_view(request, redis, ro_session) as view:
             result = view.stats_regions_view()
 
         assert result['page_title'] == 'Region Statistics'
@@ -323,7 +319,7 @@ class TestFunctionalContentViews(object):
         # call the view again, without a working db session, so
         # we can be sure to use the cached result
         request = DummyRequest()
-        with self._make_view(request, redis, session) as view:
+        with self._make_view(request, redis, ro_session) as view:
             request.db_ro_session = None
             second_result = view.stats_regions_view()
         assert second_result == result

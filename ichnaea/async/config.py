@@ -116,7 +116,7 @@ def init_beat(beat, celery_app):
 
 
 def init_worker(celery_app,
-                _db_rw=None, _db_ro=None, _geoip_db=None,
+                _db_rw=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
     """
     Configure the passed in celery app, usually stored in
@@ -129,8 +129,6 @@ def init_worker(celery_app,
 
     The parameters starting with an underscore are test-only hooks
     to provide pre-configured connection objects.
-
-    :param _db_ro: Ignored, read-only database connection isn't used.
     """
 
     # configure outside connections

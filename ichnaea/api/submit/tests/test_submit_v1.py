@@ -58,7 +58,7 @@ class TestView(BaseSubmitTest):
             query['cellTowers'][0]['radioType'] = cell.radio.name
         return (cell, query)
 
-    def test_blue(self, app, celery, session):
+    def test_blue(self, app, celery):
         blue = BlueShardFactory.build()
         self._post(app, [{
             'latitude': blue.lat,
@@ -88,7 +88,7 @@ class TestView(BaseSubmitTest):
         assert blues[0]['name'] == 'my-beacon'
         assert 'xtra_field' not in blues[0]
 
-    def test_cell(self, app, celery, session):
+    def test_cell(self, app, celery):
         now_ms = int(time.time() * 1000)
         cell = CellShardFactory.build(radio=Radio.wcdma)
         response = self._post(app, [{
@@ -162,7 +162,7 @@ class TestView(BaseSubmitTest):
         assert cells[0]['timingAdvance'] == 1
         assert 'xtra_field' not in cells[0]
 
-    def test_wifi(self, app, celery, session):
+    def test_wifi(self, app, celery):
         wifi = WifiShardFactory.build()
         self._post(app, [{
             'latitude': wifi.lat,
@@ -200,7 +200,7 @@ class TestView(BaseSubmitTest):
         assert wifis[0]['ssid'] == 'my-wifi'
         assert 'xtra_field' not in wifis[0]
 
-    def test_batches(self, app, celery, session):
+    def test_batches(self, app, celery):
         batch = self.queue(celery).batch + 10
         wifis = WifiShardFactory.build_batch(batch)
         items = [{'latitude': wifi.lat,
@@ -213,7 +213,7 @@ class TestView(BaseSubmitTest):
         self._post(app, items)
         assert self.queue(celery).size() == batch
 
-    def test_error(self, app, celery, raven, session):
+    def test_error(self, app, celery, raven):
         wifi = WifiShardFactory.build()
         self._post(app, [{
             'latitude': wifi.lat,
@@ -225,7 +225,7 @@ class TestView(BaseSubmitTest):
         assert self.queue(celery).size() == 0
         raven.check([('ParseError', 1)])
 
-    def test_error_missing_latlon(self, app, celery, session):
+    def test_error_missing_latlon(self, app, celery):
         wifi = WifiShardFactory.build()
         self._post(app, [
             {'latitude': wifi.lat,
@@ -239,7 +239,7 @@ class TestView(BaseSubmitTest):
         ])
         assert self.queue(celery).size() == 3
 
-    def test_error_invalid_float(self, app, celery, session):
+    def test_error_invalid_float(self, app, celery):
         wifi = WifiShardFactory.build()
         self._post(app, [{
             'latitude': wifi.lat,

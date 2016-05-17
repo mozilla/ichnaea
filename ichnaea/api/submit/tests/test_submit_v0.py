@@ -95,7 +95,7 @@ class TestView(BaseSubmitTest):
             query['cell'][0]['radio'] = cell.radio.name
         return (cell, query)
 
-    def test_blue(self, app, celery, session):
+    def test_blue(self, app, celery):
         blue = BlueShardFactory.build()
         res = self._post(app, [{
             'lat': blue.lat,
@@ -125,7 +125,7 @@ class TestView(BaseSubmitTest):
         assert blues[0]['name'] == 'beacon'
         assert blues[0]['signalStrength'] == -101
 
-    def test_cell(self, app, celery, session):
+    def test_cell(self, app, celery):
         now = util.utcnow()
         today = now.replace(hour=0, minute=0, second=0)
         cell = CellShardFactory.build(radio=Radio.umts)
@@ -179,7 +179,7 @@ class TestView(BaseSubmitTest):
         assert cells[0]['signalStrength'] == -85
         assert cells[0]['timingAdvance'] == 2
 
-    def test_wifi(self, app, celery, session):
+    def test_wifi(self, app, celery):
         wifi = WifiShardFactory.build()
         self._post(app, [{
             'lat': wifi.lat,
@@ -216,7 +216,7 @@ class TestView(BaseSubmitTest):
         assert wifis[0]['signalToNoiseRatio'] == 5
         assert wifis[0]['ssid'] == 'my-wifi'
 
-    def test_batches(self, app, celery, session):
+    def test_batches(self, app, celery):
         batch = self.queue(celery).batch + 10
         wifis = WifiShardFactory.build_batch(batch)
         items = [{'lat': wifi.lat,
@@ -229,7 +229,7 @@ class TestView(BaseSubmitTest):
         self._post(app, items)
         assert self.queue(celery).size() == batch
 
-    def test_error(self, app, celery, raven, session):
+    def test_error(self, app, celery, raven):
         wifi = WifiShardFactory.build()
         res = app.post_json(
             '/v1/submit',
@@ -238,7 +238,7 @@ class TestView(BaseSubmitTest):
         assert res.json == ParseError.json_body()
         raven.check(['ParseError'])
 
-    def test_error_missing_latlon(self, app, celery, session):
+    def test_error_missing_latlon(self, app, celery):
         wifi = WifiShardFactory.build()
         self._post(app, [
             {'lat': wifi.lat,

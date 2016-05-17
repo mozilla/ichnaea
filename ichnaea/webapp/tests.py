@@ -14,12 +14,11 @@ from ichnaea.webapp.config import main
 
 
 def _make_app(app_config=TEST_CONFIG,
-              _db_rw=None, _db_ro=None, _http_session=None, _geoip_db=None,
+              _db_ro=None, _http_session=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None,
               _position_searcher=None, _region_searcher=None):
     wsgiapp = main(
         app_config,
-        _db_rw=_db_rw,
         _db_ro=_db_ro,
         _geoip_db=_geoip_db,
         _http_session=_http_session,
@@ -52,29 +51,18 @@ class TestApp(object):
                             _redis_client=redis,
                             _stats_client=stats,
                             )
-            db_rw = app.app.registry.db_rw
             db_ro = app.app.registry.db_ro
-            # the configured databases are working
-            assert db_rw.ping()
+            # The configured database is working.
             assert db_ro.ping()
         finally:
-            # clean up the new db engine's _make_app created
-            db_rw.close()
+            # Clean up the new db engine's _make_app created.
             db_ro.close()
 
-    def test_db_hooks(self, db_rw, db_ro, geoip_db, raven, redis, stats):
-        app = _make_app(_db_rw=db_rw,
-                        _db_ro=db_ro,
-                        _geoip_db=geoip_db,
-                        _raven_client=raven,
-                        _redis_client=redis,
-                        _stats_client=stats,
-                        )
-        # check that our _db hooks are passed through
-        assert app.app.registry.db_rw is db_rw
+    def test_db_hooks(self, app, db_ro):
+        # Check that our _db hooks are passed through.
         assert app.app.registry.db_ro is db_ro
 
-    def test_redis_config(self, db_rw, db_ro, geoip_db, raven, stats):
+    def test_redis_config(self, db_ro, geoip_db, raven, stats):
         app_config = DummyConfig({
             'cache': {
                 'cache_url': REDIS_URI,
@@ -82,7 +70,6 @@ class TestApp(object):
         })
         try:
             app = _make_app(app_config=app_config,
-                            _db_rw=db_rw,
                             _db_ro=db_ro,
                             _geoip_db=geoip_db,
                             _raven_client=raven,
@@ -96,7 +83,7 @@ class TestApp(object):
 
 class TestHeartbeat(object):
 
-    def test_ok(self, app, session):
+    def test_ok(self, app):
         response = app.get('/__heartbeat__', status=200)
         assert response.content_type == 'application/json'
         data = response.json
@@ -125,7 +112,6 @@ class TestHeartbeatErrors(object):
         redis_client = configure_redis('redis://127.0.0.1:9/15')
 
         app = _make_app(
-            _db_rw=db,
             _db_ro=db,
             _geoip_db=geoip_db,
             _http_session=http_session,

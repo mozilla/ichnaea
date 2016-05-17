@@ -185,12 +185,6 @@ def db_rw(database):
     db.close()
 
 
-@pytest.yield_fixture(scope='function')
-def db_rw_drop_table(db_rw):
-    yield db_rw
-    setup_tables(db_rw.engine)
-
-
 @pytest.yield_fixture(scope='session')
 def db_ro(database):
     db = configure_db(SQLURI)
@@ -199,37 +193,19 @@ def db_ro(database):
 
 
 @pytest.yield_fixture(scope='function')
-def session(request, db_rw, db_ro):
-    # Inspired by a blog post:
-    # http://sontek.net/blog/detail/writing-tests-for-pyramid-and-sqlalchemy
+def db_rw_drop_table(db_rw):
+    yield db_rw
+    setup_tables(db_rw.engine)
+
+
+@pytest.yield_fixture(scope='function')
+def rw_session(db_rw):
     rw_conn = db_rw.engine.connect()
     rw_trans = rw_conn.begin()
     db_rw.session_factory.configure(bind=rw_conn)
     rw_session = db_rw.session()
 
-    ro_conn = db_ro.engine.connect()
-    ro_trans = ro_conn.begin()
-    db_ro.session_factory.configure(bind=ro_conn)
-    request.cls.db_ro_session = ro_session = db_ro.session()
-
-    # Set up a default session.
-    default_session = getattr(request.cls, 'default_session', 'rw_session')
-    if default_session == 'ro_session':
-        session = ro_session
-    else:
-        session = rw_session
-
-    # Set the global session context for factory-boy.
-    SESSION['default'] = session
-    yield session
-    del SESSION['default']
-
-    ro_trans.rollback()
-    ro_session.close()
-    del request.cls.db_ro_session
-    db_ro.session_factory.configure(bind=None)
-    ro_trans.close()
-    ro_conn.close()
+    yield rw_session
 
     rw_trans.rollback()
     rw_session.close()
@@ -239,7 +215,23 @@ def session(request, db_rw, db_ro):
 
 
 @pytest.yield_fixture(scope='function')
-def session_tracker(session):
+def ro_session(db_ro):
+    ro_conn = db_ro.engine.connect()
+    ro_trans = ro_conn.begin()
+    db_ro.session_factory.configure(bind=ro_conn)
+    ro_session = db_ro.session()
+
+    yield ro_session
+
+    ro_trans.rollback()
+    ro_session.close()
+    db_ro.session_factory.configure(bind=None)
+    ro_trans.close()
+    ro_conn.close()
+
+
+@pytest.yield_fixture(scope='function')
+def rw_session_tracker(rw_session):
     """
     This install an event handler into the active session, which
     tracks all SQL statements that are send via the session.
@@ -247,7 +239,42 @@ def session_tracker(session):
     The yielded checker can be called with an integer argument,
     representing the number of expected SQL statements, for example::
 
-        session_tracker(0)
+        rw_session_tracker(0)
+
+    would only succeed if no SQL statements where made.
+    """
+
+    db_events = []
+
+    def scoped_conn_event_handler(calls):
+        def conn_event_handler(**kw):  # pragma: no cover
+            calls.append((kw['statement'], kw['parameters']))
+        return conn_event_handler
+
+    handler = scoped_conn_event_handler(db_events)
+    event.listen(rw_session.bind,
+                 'before_cursor_execute',
+                 handler, named=True)
+
+    def checker(num=None):
+        if num is not None:
+            assert len(db_events) == num
+
+    yield checker
+
+    event.remove(rw_session.bind, 'before_cursor_execute', handler)
+
+
+@pytest.yield_fixture(scope='function')
+def ro_session_tracker(ro_session):
+    """
+    This install an event handler into the active session, which
+    tracks all SQL statements that are send via the session.
+
+    The yielded checker can be called with an integer argument,
+    representing the number of expected SQL statements, for example::
+
+        ro_session_tracker(0)
 
     would only succeed if no SQL statements where made.
     """
@@ -260,7 +287,7 @@ def session_tracker(session):
         return conn_event_handler
 
     handler = scoped_conn_event_handler(db_events)
-    event.listen(session.bind,
+    event.listen(ro_session.bind,
                  'before_cursor_execute',
                  handler, named=True)
 
@@ -270,7 +297,15 @@ def session_tracker(session):
 
     yield checker
 
-    event.remove(session.bind, 'before_cursor_execute', handler)
+    event.remove(ro_session.bind, 'before_cursor_execute', handler)
+
+
+@pytest.yield_fixture(scope='function')
+def session(rw_session):
+    # Set the global session context for factory-boy.
+    SESSION['default'] = rw_session
+    yield rw_session
+    del SESSION['default']
 
 
 @pytest.yield_fixture(scope='session')
@@ -365,12 +400,11 @@ def region_searcher(data_queues, geoip_db,
 
 
 @pytest.yield_fixture(scope='session')
-def global_app(db_rw, db_ro, geoip_db, http_session,
+def global_app(db_ro, geoip_db, http_session,
                raven_client, redis_client, stats_client,
                position_searcher, region_searcher):
     wsgiapp = main(
         TEST_CONFIG,
-        _db_rw=db_rw,
         _db_ro=db_ro,
         _geoip_db=geoip_db,
         _http_session=http_session,
@@ -386,7 +420,7 @@ def global_app(db_rw, db_ro, geoip_db, http_session,
 
 
 @pytest.yield_fixture(scope='function')
-def app(global_app, raven, redis, stats):
+def app(global_app, raven, redis, ro_session, stats):
     yield global_app
 
 
@@ -407,5 +441,5 @@ def global_celery(db_rw, geoip_db,
 
 
 @pytest.yield_fixture(scope='function')
-def celery(global_celery, raven, redis, stats):
+def celery(global_celery, raven, redis, rw_session, stats):
     yield global_celery

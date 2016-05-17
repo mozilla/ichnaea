@@ -83,16 +83,12 @@ def db_tween_factory(handler, registry):
             ro_session = getattr(request, '_db_ro_session', None)
             if ro_session is not None:
                 # always rollback/close the `read-only` ro sessions
-                if request.registry.db_rw != request.registry.db_ro:
-                    # The db_rw and db_ro will only be the same
-                    # during tests.
-                    try:
-                        ro_session.rollback()
-                    except DatabaseError:  # pragma: no cover
-                        registry.raven_client.captureException()
-                        pass
-                    finally:
-                        ro_session.close()
+                try:
+                    ro_session.rollback()
+                except DatabaseError:  # pragma: no cover
+                    registry.raven_client.captureException()
+                finally:
+                    ro_session.close()
         return response
 
     return db_tween

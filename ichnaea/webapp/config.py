@@ -29,7 +29,7 @@ from ichnaea.webapp.monitor import configure_monitor
 
 
 def main(app_config, ping_connections=False,
-         _db_rw=None, _db_ro=None, _geoip_db=None, _http_session=None,
+         _db_ro=None, _geoip_db=None, _http_session=None,
          _raven_client=None, _redis_client=None, _stats_client=None,
          _position_searcher=None, _region_searcher=None):
     """
@@ -73,8 +73,6 @@ def main(app_config, ping_connections=False,
     # configure outside connections
     registry = config.registry
 
-    registry.db_rw = configure_db(
-        app_config.get('database', 'rw_url'), _db=_db_rw)
     registry.db_ro = configure_db(
         app_config.get('database', 'ro_url'), _db=_db_ro)
 
@@ -134,8 +132,6 @@ def shutdown_worker(app):
     if registry is not None:
         registry.db_ro.close()
         del registry.db_ro
-        registry.db_rw.close()
-        del registry.db_rw
         del registry.raven_client
         registry.redis_client.close()
         del registry.redis_client

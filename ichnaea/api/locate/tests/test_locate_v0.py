@@ -43,8 +43,6 @@ class TestSchema(object):
 
 class LocateV0Base(BaseLocateTest):
 
-    default_session = 'ro_session'
-
     url = '/v1/search'
     metric_path = 'path:v1.search'
     metric_type = 'locate'
@@ -113,16 +111,16 @@ class LocateV0Base(BaseLocateTest):
 
 class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
-    def test_blue(self, app, data_queues, session, stats):
-        blue = BlueShardFactory()
+    def test_blue(self, app, data_queues, ro_session, stats):
+        blue = BlueShardFactory(session=ro_session)
         offset = 0.00001
         blues = [
             blue,
-            BlueShardFactory(lat=blue.lat + offset),
-            BlueShardFactory(lat=blue.lat + offset * 2),
-            BlueShardFactory(lat=None, lon=None),
+            BlueShardFactory(session=ro_session, lat=blue.lat + offset),
+            BlueShardFactory(session=ro_session, lat=blue.lat + offset * 2),
+            BlueShardFactory(session=ro_session, lat=None, lon=None),
         ]
-        session.flush()
+        ro_session.flush()
 
         query = self.model_query(blues=blues)
         blue_query = query['blue']
@@ -168,9 +166,9 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_cell(self, app, data_queues, session, stats):
-        cell = CellShardFactory(radio=Radio.lte)
-        session.flush()
+    def test_cell(self, app, data_queues, ro_session, stats):
+        cell = CellShardFactory(session=ro_session, radio=Radio.lte)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         query['radio'] = cell.radio.name
@@ -218,16 +216,16 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_wifi(self, app, data_queues, session, stats):
-        wifi = WifiShardFactory()
+    def test_wifi(self, app, data_queues, ro_session, stats):
+        wifi = WifiShardFactory(session=ro_session)
         offset = 0.00001
         wifis = [
             wifi,
-            WifiShardFactory(lat=wifi.lat + offset),
-            WifiShardFactory(lat=wifi.lat + offset * 2),
-            WifiShardFactory(lat=None, lon=None),
+            WifiShardFactory(session=ro_session, lat=wifi.lat + offset),
+            WifiShardFactory(session=ro_session, lat=wifi.lat + offset * 2),
+            WifiShardFactory(session=ro_session, lat=None, lon=None),
         ]
-        session.flush()
+        ro_session.flush()
 
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifi']
@@ -285,13 +283,13 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 class TestError(LocateV0Base, CommonLocateErrorTest):
 
     def test_apikey_error(self, app, data_queues,
-                          db_rw_drop_table, raven, session, stats):
+                          db_rw_drop_table, raven, ro_session, stats):
         super(TestError, self).test_apikey_error(
             app, data_queues, db_rw_drop_table,
-            raven, session, stats, db_errors=1)
+            raven, ro_session, stats, db_errors=1)
 
     def test_database_error(self, app, data_queues,
-                            db_rw_drop_table, raven, session, stats):
+                            db_rw_drop_table, raven, ro_session, stats):
         super(TestError, self).test_database_error(
             app, data_queues, db_rw_drop_table,
-            raven, session, stats, db_errors=5)
+            raven, ro_session, stats, db_errors=5)

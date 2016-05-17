@@ -38,7 +38,7 @@ class BaseSubmitTest(object):
         cell, query = self._one_cell_query()
         return self._post(app, [query], status=status)
 
-    def test_gzip(self, app, celery, session):
+    def test_gzip(self, app, celery):
         cell, query = self._one_cell_query()
         data = {'items': [query]}
         body = util.encode_gzip(dumps(data))
@@ -50,7 +50,7 @@ class BaseSubmitTest(object):
         assert res.headers['Access-Control-Max-Age'] == '2592000'
         assert self.queue(celery).size() == 1
 
-    def test_malformed_gzip(self, app, celery, raven, session):
+    def test_malformed_gzip(self, app, celery, raven):
         headers = {'Content-Encoding': 'gzip'}
         app.post(
             self.url, 'invalid', headers=headers,
@@ -58,32 +58,32 @@ class BaseSubmitTest(object):
         assert self.queue(celery).size() == 0
         raven.check([('ParseError', 1)])
 
-    def test_error_get(self, app, raven, session):
+    def test_error_get(self, app, raven):
         res = app.get(self.url, status=400)
         assert res.json == ParseError.json_body()
         raven.check([('ParseError', 1)])
 
-    def test_error_empty_body(self, app, raven, session):
+    def test_error_empty_body(self, app, raven):
         res = app.post(self.url, '', status=400)
         assert res.json == ParseError.json_body()
         raven.check([('ParseError', 1)])
 
-    def test_error_empty_json(self, app, raven, session):
+    def test_error_empty_json(self, app, raven):
         res = app.post_json(self.url, {}, status=400)
         assert res.json == ParseError.json_body()
         raven.check([('ParseError', 1)])
 
-    def test_error_no_json(self, app, raven, session):
+    def test_error_no_json(self, app, raven):
         res = app.post(self.url, '\xae', status=400)
         assert res.json == ParseError.json_body()
         raven.check([('ParseError', 1)])
 
-    def test_error_no_mapping(self, app, raven, session):
+    def test_error_no_mapping(self, app, raven):
         res = app.post_json(self.url, [1], status=400)
         assert res.json == ParseError.json_body()
         raven.check([('ParseError', 1)])
 
-    def test_error_redis_failure(self, app, raven, session, stats):
+    def test_error_redis_failure(self, app, raven, stats):
         mock_queue = mock.Mock()
         mock_queue.side_effect = RedisError()
 
@@ -98,7 +98,7 @@ class BaseSubmitTest(object):
             ('request', [self.metric_path, 'method:post', 'status:503']),
         ])
 
-    def test_log_api_key_none(self, app, redis, session, stats):
+    def test_log_api_key_none(self, app, redis, stats):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key=None)
         stats.check(counter=[
@@ -106,7 +106,7 @@ class BaseSubmitTest(object):
         ])
         assert redis.keys('apiuser:*') == []
 
-    def test_log_api_key_invalid(self, app, redis, session, stats):
+    def test_log_api_key_invalid(self, app, redis, stats):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key='invalid_key')
         stats.check(counter=[
@@ -114,7 +114,7 @@ class BaseSubmitTest(object):
         ])
         assert redis.keys('apiuser:*') == []
 
-    def test_log_api_key_unknown(self, app, redis, session, stats):
+    def test_log_api_key_unknown(self, app, redis, stats):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key='abcdefg')
         stats.check(counter=[
@@ -122,7 +122,7 @@ class BaseSubmitTest(object):
         ])
         assert redis.keys('apiuser:*') == []
 
-    def test_log_stats(self, app, redis, session, stats):
+    def test_log_stats(self, app, redis, stats):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key='test')
         stats.check(counter=[
@@ -139,12 +139,12 @@ class BaseSubmitTest(object):
             [k.decode('ascii') for k in redis.keys('apiuser:*')] ==
             ['apiuser:submit:test:%s' % today.strftime('%Y-%m-%d')])
 
-    def test_options(self, app, session):
+    def test_options(self, app):
         res = app.options(self.url, status=200)
         assert res.headers['Access-Control-Allow-Origin'] == '*'
         assert res.headers['Access-Control-Max-Age'] == '2592000'
 
-    def test_radio_duplicated(self, app, celery, session):
+    def test_radio_duplicated(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
         query[self.radio_id] = Radio.gsm.name
         query[self.cells_id][0][self.radio_id] = Radio.lte.name
@@ -153,20 +153,20 @@ class BaseSubmitTest(object):
         cells = item['report']['cellTowers']
         assert cells[0]['radioType'] == Radio.lte.name
 
-    def test_radio_invalid(self, app, celery, session):
+    def test_radio_invalid(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
         query[self.cells_id][0][self.radio_id] = '18'
         self._post(app, [query])
         item = self.queue(celery).dequeue()[0]
         assert 'radioType' not in item['report']['cellTowers'][0]
 
-    def test_radio_missing(self, app, celery, session):
+    def test_radio_missing(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
         self._post(app, [query])
         item = self.queue(celery).dequeue()[0]
         assert 'radioType' not in item['report']['cellTowers']
 
-    def test_radio_missing_in_observation(self, app, celery, session):
+    def test_radio_missing_in_observation(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
         query[self.radio_id] = cell.radio.name
         self._post(app, [query])
@@ -174,7 +174,7 @@ class BaseSubmitTest(object):
         cells = item['report']['cellTowers']
         assert cells[0]['radioType'] == cell.radio.name
 
-    def test_radio_missing_top_level(self, app, celery, session):
+    def test_radio_missing_top_level(self, app, celery):
         cell, query = self._one_cell_query()
         self._post(app, [query])
         item = self.queue(celery).dequeue()[0]
