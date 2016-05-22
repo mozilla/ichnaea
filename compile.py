@@ -23,6 +23,7 @@ PYTHON_2_INCOMPATIBLE = [
     'gevent/_socket3.py',
     'gunicorn/workers/_gaiohttp.py',
     'linecache2/tests/inspect_fodder2.py',
+    'pymysql/tests/test_cursor.py',
 ]
 # files excluded when run under Python 3.x
 PYTHON_3_INCOMPATIBLE = [
