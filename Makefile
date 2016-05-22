@@ -56,7 +56,7 @@ ifeq ($(findstring 3.,$(TRAVIS_PYTHON_VERSION)), 3.)
 endif
 
 ifeq ($(TESTS), ichnaea)
-	TEST_ARG = --cov-config=.coveragerc --cov=ichnaea ichnaea
+	TEST_ARG = --durations=10 --cov-config=.coveragerc --cov=ichnaea ichnaea
 else
 	TEST_ARG = $(TESTS)
 endif
