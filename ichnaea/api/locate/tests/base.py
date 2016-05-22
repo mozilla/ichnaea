@@ -215,7 +215,6 @@ class BaseLocateTest(object):
 
     def check_response(self, data_queues, response, status):
         assert response.content_type == 'application/json'
-        assert response.charset == 'UTF-8'
         assert response.headers['Access-Control-Allow-Origin'] == '*'
         assert response.headers['Access-Control-Max-Age'] == '2592000'
         if status == 'ok':
@@ -710,8 +709,8 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
-        middle = '1.1001,' in res.text
-        end = '1.1001}' in res.text
+        middle = b'1.1001,' in res.body
+        end = b'1.1001}' in res.body
         assert middle or end
 
 
