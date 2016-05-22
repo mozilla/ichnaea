@@ -1,6 +1,7 @@
 """Database related functionality."""
 
 from contextlib import contextmanager
+from pymysql.connections import Connection
 from pymysql.err import DatabaseError
 
 from sqlalchemy import (
@@ -14,6 +15,11 @@ from sqlalchemy.orm.session import Session
 from sqlalchemy.pool import Pool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
+
+
+# Workaround for a bug introduced in PyMySQL 0.7.3, see:
+# https://github.com/PyMySQL/PyMySQL/pull/463
+Connection._sock = None
 
 
 @compiles(Insert, 'mysql')

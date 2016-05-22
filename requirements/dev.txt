@@ -1,7 +1,7 @@
 alabaster==0.7.8
 Babel==2.3.4
 beautifulsoup4==4.4.1
-coverage==4.0.3
+coverage==4.1
 Cython==0.24
 docutils==0.12
 factory_boy==2.6.1  # rq.filter: <2.7.0

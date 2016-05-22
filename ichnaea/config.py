@@ -43,8 +43,8 @@ class Config(ConfigParser):
     :param filename: The path to a configuration file.
     """
 
-    def __init__(self, filename):
-        ConfigParser.__init__(self)
+    def __init__(self, filename, **kw):
+        super(Config, self).__init__(**kw)
         # let's read the file
         if isinstance(filename, string_types):
             self.filename = filename
@@ -53,13 +53,13 @@ class Config(ConfigParser):
             self.filename = None
             self.read_file(filename)
 
-    def get(self, section, option, default=None):
+    def get(self, section, option, default=None, **kw):
         """
         A get method which returns the default argument when the option
         cannot be found instead of raising an exception.
         """
         try:
-            value = ConfigParser.get(self, section, option)
+            value = super(Config, self).get(section, option, **kw)
         except (NoOptionError, NoSectionError):  # pragma: no cover
             value = default
         return value
