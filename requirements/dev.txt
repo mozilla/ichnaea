@@ -10,7 +10,7 @@ funcsigs==1.0 ; python_version < "3.3"
 imagesize==0.7.1
 Jinja2==2.8.0
 mock==2.0.0
-pbr==1.9.1
+pbr==1.10.0
 pluggy==0.3.1
 py==1.4.31
 Pygments==2.1.3

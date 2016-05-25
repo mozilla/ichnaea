@@ -13,9 +13,9 @@
     "bower_components"
   ],
   "dependencies": {
-    "datatables": "1.10.11",
+    "datatables": "1.10.12",
     "flot": "0.8.3",
-    "jquery": "2.2.3",
+    "jquery": "2.2.4",
     "leaflet.locatecontrol": "0.45.1",
     "leaflet-hash": "mlevans/leaflet-hash#d73fc84d8c",
     "mapbox.js": "2.4.0",
