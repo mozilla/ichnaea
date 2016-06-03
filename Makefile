@@ -95,18 +95,23 @@ ifneq ($(TRAVIS), true)
 	cd docker/redis; docker build -t mozilla-ichnaea/redis:latest .
 endif
 
+MYSQL_RET ?= 1
 mysql: docker
+	# Wait to confirm that MySQL has started.
+	MYSQL_RET=$(MYSQL_RET); \
+	while [ $${MYSQL_RET} -ne 0 ] ; do \
+		echo "Trying MySQL..." ; \
+	    nc -dz $(MYSQL_HOST) $(MYSQL_PORT) ; \
+		MYSQL_RET=$$? ; \
+	    sleep 0.5 ; \
+	    done; \
+	true
+
 ifeq ($(TRAVIS), true)
 	mysql -u$(MYSQL_USER) -h localhost -e \
 		"CREATE DATABASE IF NOT EXISTS $(MYSQL_TEST_DB)" || echo
-else
-	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) \
-		--host="$(MYSQL_HOST)" --port="$(MYSQL_PORT)" \
-		-e \ "CREATE DATABASE IF NOT EXISTS $(MYSQL_DB)" || echo
-	mysql -u$(MYSQL_USER) -p$(MYSQL_PWD) \
-		--host="$(MYSQL_HOST)" --port="$(MYSQL_PORT)" \
-		-e "CREATE DATABASE IF NOT EXISTS  $(MYSQL_TEST_DB)" || echo
 endif
+
 
 $(PYTHON):
 ifeq ($(TRAVIS), true)
@@ -178,7 +183,7 @@ endif
 
 release: release_install release_compile
 
-init_db:
+init_db: mysql
 	$(BIN)/location_initdb --initdb
 
 css: docker-images
