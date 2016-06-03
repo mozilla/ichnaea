@@ -64,10 +64,10 @@ Now run the following command to get the code:
     cd ichnaea
 
 In order to run the code you need to have Python 2.6, 2.7 or 3.4 installed
-on your system. The default Makefile also assumes a `virtualenv-2.6`
+on your system. The default Makefile also assumes a `virtualenv`
 command is globally available. If this isn't true for your system,
 please create a virtualenv manually inside the ichnaea folder before
-continuing (``/path/to/virtualenv .``).
+continuing (``/path/to/virtualenv --python=python2.6 .``).
 
 Then run make which is going to take quite a while the first time:
 
@@ -119,7 +119,7 @@ CSS / JS / Images
 -----------------
 
 The project depends on a number of external web assets. Those dependencies
-are tracked via npm and bower.
+are tracked via npm and bower in files under `docker/node`.
 
 In order to install them, run:
 
@@ -128,21 +128,15 @@ In order to install them, run:
     make css
     make js
 
-This will install a couple of build tools under `node_modules` and various
-assets under `bower_components`. It will also copy, compile and minify
-files into various folders under `ichnaea/content/static/`.
+This will install build tools and bower assets inside a docker container.
+It will also copy, compile and minify files in various folders under
+`ichnaea/content/static/`.
 
 To check if the external assets are outdated run:
 
 .. code-block:: bash
 
-    ./node_modules/.bin/bower list
-
-To force-update the build tools run:
-
-.. code-block:: bash
-
-    make node_modules -B
+    docker run --rm -it mozilla-ichnaea/node:latest bower list
 
 
 Cleanup

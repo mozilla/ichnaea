@@ -1,7 +1,7 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-BUILD_DIRS = .tox bin bower_components build datamaps dist include \
-	lib lib64 libmaxminddb man node_modules pngquant share
+BUILD_DIRS = .tox bin build datamaps dist include \
+	lib lib64 libmaxminddb man pngquant share
 TESTS ?= ichnaea
 TRAVIS ?= false
 
@@ -63,21 +63,18 @@ endif
 
 INSTALL = $(PIP) install --no-deps --disable-pip-version-check
 
-BOWER_ROOT = $(HERE)/bower_components
 STATIC_ROOT = $(HERE)/ichnaea/content/static
 CSS_ROOT = $(STATIC_ROOT)/css
 FONT_ROOT = $(STATIC_ROOT)/fonts
 IMG_ROOT = $(STATIC_ROOT)/images
 JS_ROOT = $(STATIC_ROOT)/js
 
-NODE_BIN = $(HERE)/node_modules/.bin
-BOWER = $(NODE_BIN)/bower
-BROWSERIFY = $(NODE_BIN)/browserify
-CLEANCSS = cd $(CSS_ROOT) && $(NODE_BIN)/cleancss -d --source-map
-UGLIFYJS = cd $(JS_ROOT) && $(NODE_BIN)/uglifyjs
+NODE_BIN = docker run --rm -a STDIN -a STDOUT -i mozilla-ichnaea/node:latest
+CLEANCSS = $(NODE_BIN) cleancss -d
+UGLIFYJS = $(NODE_BIN) uglifyjs -c --stats
 
 
-.PHONY: all bower js mysql pip init_db css js test clean shell docs \
+.PHONY: all js mysql pip init_db css js test clean shell docs \
 	docker docker-images \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
@@ -94,6 +91,7 @@ endif
 docker-images:
 ifneq ($(TRAVIS), true)
 	cd docker/mysql; docker build -t mozilla-ichnaea/mysql:latest .
+	cd docker/node; docker build -t mozilla-ichnaea/node:latest .
 	cd docker/redis; docker build -t mozilla-ichnaea/redis:latest .
 endif
 
@@ -183,70 +181,98 @@ release: release_install release_compile
 init_db:
 	$(BIN)/location_initdb --initdb
 
-node_modules:
-	npm install -d $(HERE)
-	npm dedupe
-	npm shrinkwrap --dev
+css: docker-images
+	$(NODE_BIN) cat \
+		bower_components/mozilla-tabzilla/css/tabzilla.css > \
+		$(CSS_ROOT)/tabzilla.css
 
-bower: node_modules
-	$(BOWER) install
-
-css: bower
-	cp $(BOWER_ROOT)/mozilla-tabzilla/css/tabzilla.css $(CSS_ROOT)/
 	mkdir -p $(CSS_ROOT)/../media/img/
-	cp $(BOWER_ROOT)/mozilla-tabzilla/media/img/* $(CSS_ROOT)/../media/img/
+	$(NODE_BIN) cat \
+		bower_components/mozilla-tabzilla/media/img/tabzilla-static.png > \
+		$(CSS_ROOT)/../media/img/tabzilla-static.png
+	$(NODE_BIN) cat \
+		bower_components/mozilla-tabzilla/media/img/tabzilla-static-high-res.png > \
+		$(CSS_ROOT)/../media/img/tabzilla-static-high-res.png
 
-	$(CLEANCSS) -o bundle-base.css tabzilla.css base.css
+	cd $(CSS_ROOT) && \
+		cat tabzilla.css base.css | \
+		$(CLEANCSS) > bundle-base.css
 
-	cp $(BOWER_ROOT)/datatables/media/css/jquery.dataTables.css $(CSS_ROOT)/
-	$(CLEANCSS) -o bundle-stat-regions.css jquery.dataTables.css
+	$(NODE_BIN) cat \
+		bower_components/datatables/media/css/jquery.dataTables.css > \
+		$(CSS_ROOT)/jquery.dataTables.css
+	cd $(CSS_ROOT) && \
+		cat jquery.dataTables.css | \
+		$(CLEANCSS) > bundle-stat-regions.css
 
-	cp $(BOWER_ROOT)/font-awesome/fonts/* $(FONT_ROOT)/
-	cp $(BOWER_ROOT)/font-awesome/css/font-awesome.css $(CSS_ROOT)/
-	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.css $(CSS_ROOT)/
+	$(NODE_BIN) cat \
+		bower_components/font-awesome/css/font-awesome.css > \
+		$(CSS_ROOT)/font-awesome.css
+	$(NODE_BIN) cat \
+		bower_components/mapbox.js/mapbox.uncompressed.css > \
+		$(CSS_ROOT)/mapbox.uncompressed.css
+	cd $(CSS_ROOT) && \
+		cat font-awesome.css mapbox.uncompressed.css | \
+		$(CLEANCSS) > bundle-map.css
+
 	mkdir -p $(CSS_ROOT)/images/
-	cp -R $(BOWER_ROOT)/mapbox.js/images/*.png $(CSS_ROOT)/images/
-	$(CLEANCSS) -o bundle-map.css font-awesome.css mapbox.uncompressed.css
+	cd $(CSS_ROOT)/images/ && \
+		$(NODE_BIN) tar c -C bower_components/mapbox.js/images/ . | \
+		tar x -
+	rm -f $(CSS_ROOT)/images/render.sh
+	cd $(FONT_ROOT) && \
+		$(NODE_BIN) tar c -C bower_components/font-awesome/fonts/ . | \
+		tar x -
 
-js: bower
-	$(UGLIFYJS) \
-		privacy.js \
-		-o bundle-privacy.js -c --stats \
-		--source-map bundle-privacy.js.map
 
-	cp $(BOWER_ROOT)/jquery/dist/jquery.js $(JS_ROOT)
-	$(UGLIFYJS) \
+js: docker-images
+	cd $(JS_ROOT) && cat \
+		privacy.js | \
+		$(UGLIFYJS) > bundle-privacy.js
+
+	$(NODE_BIN) cat \
+		bower_components/jquery/dist/jquery.js > \
+		$(JS_ROOT)/jquery.js
+	cd $(JS_ROOT) && cat \
 		ga.js \
-		jquery.js \
-		-o bundle-base.js -c --stats \
-		--source-map bundle-base.js.map
+		jquery.js | \
+		$(UGLIFYJS) > bundle-base.js
 
-	cp $(BOWER_ROOT)/datatables/media/js/jquery.dataTables.js $(JS_ROOT)
-	$(UGLIFYJS) \
+	$(NODE_BIN) cat \
+		bower_components/datatables/media/js/jquery.dataTables.js > \
+		$(JS_ROOT)/jquery.dataTables.js
+	cd $(JS_ROOT) && cat \
 		jquery.dataTables.js \
-		stat-regions.js \
-		-o bundle-stat-regions.js -c --stats \
-		--source-map bundle-stat-regions.js.map
+		stat-regions.js | \
+		$(UGLIFYJS) > bundle-stat-regions.js
 
-	cp $(BOWER_ROOT)/flot/jquery.flot.js $(JS_ROOT)
-	cp $(BOWER_ROOT)/flot/jquery.flot.time.js $(JS_ROOT)
-	$(UGLIFYJS) \
+	$(NODE_BIN) cat \
+		bower_components/flot/jquery.flot.js > \
+		$(JS_ROOT)/jquery.flot.js
+	$(NODE_BIN) cat \
+		bower_components/flot/jquery.flot.time.js > \
+		$(JS_ROOT)/jquery.flot.time.js
+	cd $(JS_ROOT) && cat \
 		jquery.flot.js \
 		jquery.flot.time.js \
-		stat.js \
-		-o bundle-stat.js -c --stats \
-		--source-map bundle-stat.js.map
+		stat.js | \
+		$(UGLIFYJS) > bundle-stat.js
 
-	cp $(BOWER_ROOT)/mapbox.js/mapbox.uncompressed.js $(JS_ROOT)
-	cp $(BOWER_ROOT)/leaflet-hash/leaflet-hash.js $(JS_ROOT)
-	cp $(BOWER_ROOT)/leaflet.locatecontrol/src/L.Control.Locate.js $(JS_ROOT)
-	$(UGLIFYJS) \
+	$(NODE_BIN) cat \
+		bower_components/mapbox.js/mapbox.uncompressed.js > \
+		$(JS_ROOT)/mapbox.uncompressed.js
+	$(NODE_BIN) cat \
+		bower_components/leaflet-hash/leaflet-hash.js > \
+		$(JS_ROOT)/leaflet-hash.js
+	$(NODE_BIN) cat \
+		bower_components/leaflet.locatecontrol/src/L.Control.Locate.js > \
+		$(JS_ROOT)/L.Control.Locate.js
+	cd $(JS_ROOT) && cat \
 		mapbox.uncompressed.js \
 		leaflet-hash.js \
 		L.Control.Locate.js \
-		map.js \
-		-o bundle-map.js -c --stats \
-		--source-map bundle-map.js.map
+		map.js | \
+		$(UGLIFYJS) > bundle-map.js
 
 clean:
 	rm -rf $(BUILD_DIRS)
