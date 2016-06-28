@@ -33,6 +33,15 @@ class SourceTest(object):
         self.check_model_results(results, [london_model])
         assert 0.5 < results.best().score < 1.0
 
+    def test_city2(self, london2_model, geoip_db, http_session,
+                   session, source, stats):
+        query = self.make_query(
+            geoip_db, http_session, session, stats,
+            ip=london2_model.ip)
+        results = source.search(query)
+        self.check_model_results(results, [london2_model])
+        assert 0.5 < results.best().score < 1.0
+
     def test_region(self, bhutan_model, geoip_db, http_session,
                     session, source, stats):
         query = self.make_query(

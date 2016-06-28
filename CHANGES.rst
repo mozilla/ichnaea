@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use the accuracy_radius field from the GeoIP database.
+
 - Remove ipf fallback from responses for queries based only on GeoIP data.
 
 20160525130100

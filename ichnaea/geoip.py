@@ -291,7 +291,9 @@ class GeoIPWrapper(Reader):
             return None
 
         code = GEOIP_GENC_MAP.get(region.iso_code, region.iso_code).upper()
-        radius, region_radius = self.radius(code, subs=subs, city=city)
+        radius, region_radius = self.radius(
+            code, location, subs=subs, city=city)
+
         score = 0.9
         if city:
             score = REGION_SCORE.get(code, 0.3)
@@ -307,7 +309,8 @@ class GeoIPWrapper(Reader):
             'score': score,
         }
 
-    def radius(self, code, subs=None, city=None, default=REGION_RADIUS):
+    def radius(self, code, location,
+               subs=None, city=None, default=REGION_RADIUS):
         """
         Return the best radius guess for the given region code.
 
@@ -332,6 +335,9 @@ class GeoIPWrapper(Reader):
         # radius for really small regions. E.g. Vatican City cannot
         # be larger than the Vatican as a region.
         radius = region_radius
+
+        if location.accuracy_radius:
+            radius = min(float(location.accuracy_radius * 1000.0), radius)
 
         if subs:
             radius = min(SUB_RADII.get(code, SUB_RADIUS), radius)

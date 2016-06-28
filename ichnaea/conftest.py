@@ -75,6 +75,17 @@ GEOIP_DATA = {
         'region_radius': GEOCODER.region_max_radius('GB'),
         'score': 0.8,
     },
+    'London2': {
+        'city': True,
+        'region_code': 'GB',
+        'region_name': 'United Kingdom',
+        'ip': '81.2.69.144',
+        'latitude': 51.5142,
+        'longitude': -0.0931,
+        'radius': 3000.0,
+        'region_radius': GEOCODER.region_max_radius('GB'),
+        'score': 0.8,
+    },
     'Bhutan': {
         'city': False,
         'region_code': 'BT',

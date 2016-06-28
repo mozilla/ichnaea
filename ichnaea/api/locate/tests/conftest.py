@@ -43,3 +43,15 @@ def london_model(geoip_data):
         code=london['region_code'],
         name=london['region_name'],
         ip=london['ip'])
+
+
+@pytest.yield_fixture(scope='session')
+def london2_model(geoip_data):
+    london = geoip_data['London2']
+    yield DummyModel(
+        lat=london['latitude'],
+        lon=london['longitude'],
+        radius=london['radius'],
+        code=london['region_code'],
+        name=london['region_name'],
+        ip=london['ip'])
