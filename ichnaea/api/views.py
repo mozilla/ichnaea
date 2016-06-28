@@ -3,8 +3,8 @@ Implementation of a API specific HTTP service view.
 """
 
 import colander
+from ipaddress import ip_address
 import simplejson as json
-import six
 
 from ichnaea.api.exceptions import (
     DailyLimitExceeded,
@@ -17,11 +17,6 @@ from ichnaea.models.api import ApiKey
 from ichnaea.models.constants import VALID_APIKEY_REGEX
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
-
-if six.PY2:  # pragma: no cover
-    from ipaddr import IPAddress as ip_address  # NOQA
-else:  # pragma: no cover
-    from ipaddress import ip_address
 
 
 class BaseAPIView(BaseView):
@@ -40,8 +35,11 @@ class BaseAPIView(BaseView):
         self.stats_client = request.registry.stats_client
 
     def log_unique_ip(self, valid_key):
+        addr = self.request.client_addr
+        if isinstance(addr, bytes):  # pragma: no cover
+            addr = addr.decode('ascii')
         try:
-            ip = str(ip_address(self.request.client_addr))
+            ip = str(ip_address(addr))
         except ValueError:  # pragma: no cover
             ip = None
         if ip:

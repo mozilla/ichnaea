@@ -24,14 +24,13 @@ gunicorn==19.6.0
 hiredis==0.2.0
 idna==2.1
 importlib==1.0.3 ; python_version < '3.0'
-ipaddr==2.1.11 ; python_version < '3.0'
 ipaddress==1.0.16 ; python_version < '3.0'
 iso8601==0.1.11
 kombu==3.0.35
 linecache2==1.0.0 ; python_version < '3.0'
 Mako==1.0.4
 MarkupSafe==0.23
-maxminddb==1.2.0  # optional C extension, version also in Makefile
+maxminddb==1.2.1  # version also in Makefile
 mobile-codes==0.7
 ndg-httpsclient==0.4.1
 numpy==1.10.4  # rq.filter: <1.11.0
@@ -39,7 +38,7 @@ ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9
 pycparser==2.14
-PyMySQL==0.7.4
+PyMySQL==0.7.5
 pyopenssl==16.0.0
 pyramid==1.6.1  # rq.filter: <1.7.0
 pyramid-chameleon==0.3

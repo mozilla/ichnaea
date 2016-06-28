@@ -1,6 +1,6 @@
 """Code representing a query."""
 
-import six
+from ipaddress import ip_address
 
 from ichnaea.api.locate.constants import (
     DataAccuracy,
@@ -19,11 +19,6 @@ try:
     from collections import OrderedDict
 except ImportError:  # pragma: no cover
     from ordereddict import OrderedDict
-
-if six.PY2:  # pragma: no cover
-    from ipaddr import IPAddress as ip_address  # NOQA
-else:  # pragma: no cover
-    from ipaddress import ip_address
 
 METRIC_MAPPING = {
     0: 'none',
@@ -135,6 +130,8 @@ class Query(object):
     def ip(self, value):
         if not value:
             value = None
+        elif isinstance(value, bytes):  # pragma: no cover
+            value = value.decode('ascii')
         try:
             valid = str(ip_address(value))
         except ValueError:
