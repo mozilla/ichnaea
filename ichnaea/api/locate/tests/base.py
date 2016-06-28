@@ -213,12 +213,16 @@ class BaseLocateTest(object):
     def check_queue(self, data_queues, num):
         assert data_queues['update_incoming'].size() == num
 
-    def check_response(self, data_queues, response, status):
+    def check_response(self, data_queues, response, status, fallback=None):
         assert response.content_type == 'application/json'
         assert response.headers['Access-Control-Allow-Origin'] == '*'
         assert response.headers['Access-Control-Max-Age'] == '2592000'
         if status == 'ok':
-            assert response.json == self.ip_response
+            body = dict(response.json)
+            if fallback:
+                assert body['fallback'] == fallback
+                del body['fallback']
+            assert body == self.ip_response
         elif status == 'invalid_key':
             assert response.json == InvalidAPIKey.json_body()
         elif status == 'not_found':
@@ -717,7 +721,8 @@ class CommonPositionTest(BaseLocateTest):
 class CommonLocateErrorTest(BaseLocateTest):
 
     def test_apikey_error(self, app, data_queues, db_rw_drop_table,
-                          raven, ro_session, stats, db_errors=0):
+                          raven, ro_session, stats,
+                          db_errors=1, fallback='ipf'):
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
@@ -725,12 +730,13 @@ class CommonLocateErrorTest(BaseLocateTest):
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(app, body=query, ip=self.test_ip)
-        self.check_response(data_queues, res, 'ok')
+        self.check_response(data_queues, res, 'ok', fallback=fallback)
         raven.check([('ProgrammingError', db_errors)])
         self.check_queue(data_queues, 0)
 
     def test_database_error(self, app, data_queues, db_rw_drop_table,
-                            raven, ro_session, stats, db_errors=0):
+                            raven, ro_session, stats,
+                            db_errors=5, fallback='ipf'):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
             CellShardOCIDFactory.build(radio=Radio.gsm),
@@ -750,7 +756,7 @@ class CommonLocateErrorTest(BaseLocateTest):
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(app, body=query, ip=self.test_ip)
-        self.check_response(data_queues, res, 'ok')
+        self.check_response(data_queues, res, 'ok', fallback=fallback)
         self.check_queue(data_queues, 0)
         stats.check(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),

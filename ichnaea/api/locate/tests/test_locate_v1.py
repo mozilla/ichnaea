@@ -75,7 +75,6 @@ class LocateV1Base(BaseLocateTest):
             'location': {'lat': london['latitude'],
                          'lng': london['longitude']},
             'accuracy': london['radius'],
-            'fallback': 'ipf',
         }
 
     def check_model_response(self, response, model,
@@ -395,15 +394,4 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
 
 class TestError(LocateV1Base, CommonLocateErrorTest):
-
-    def test_apikey_error(self, app, data_queues,
-                          db_rw_drop_table, raven, ro_session, stats):
-        super(TestError, self).test_apikey_error(
-            app, data_queues, db_rw_drop_table,
-            raven, ro_session, stats, db_errors=1)
-
-    def test_database_error(self, app, data_queues,
-                            db_rw_drop_table, raven, ro_session, stats):
-        super(TestError, self).test_database_error(
-            app, data_queues, db_rw_drop_table,
-            raven, ro_session, stats, db_errors=5)
+    pass

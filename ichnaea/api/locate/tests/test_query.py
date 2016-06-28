@@ -85,14 +85,17 @@ class TestQuery(QueryTest):
         assert query.geoip_db is None
         assert query.stats_client is None
         assert query.expected_accuracy is DataAccuracy.none
+        assert query.geoip_only is None
 
-    def test_fallback(self):
-        query = Query(fallback={'ipf': False}, ip=self.london_ip)
+    def test_fallback(self, geoip_db):
+        query = Query(
+            fallback={'ipf': False}, ip=self.london_ip, geoip_db=geoip_db)
         assert query.fallback.ipf is False
         assert query.fallback.lacf is True
         assert query.ip == self.london_ip
         assert query.expected_accuracy is DataAccuracy.none
-        assert query.geoip is None
+        assert query.geoip is not None
+        assert query.geoip_only is True
 
     def test_geoip(self, geoip_db):
         query = Query(ip=self.london_ip, geoip_db=geoip_db)
@@ -102,12 +105,14 @@ class TestQuery(QueryTest):
         assert query.geoip['region_name'] == 'United Kingdom'
         assert query.ip == self.london_ip
         assert query.expected_accuracy is DataAccuracy.low
+        assert query.geoip_only is True
 
     def test_geoip_malformed(self, geoip_db):
         query = Query(ip='127.0.0.0.0.1', geoip_db=geoip_db)
         assert query.region is None
         assert query.geoip is None
         assert query.ip is None
+        assert query.geoip_only is None
 
     def test_blue(self):
         blues = BlueShardFactory.build_batch(2)
@@ -116,6 +121,7 @@ class TestQuery(QueryTest):
 
         assert len(query.blue) == 2
         assert query.expected_accuracy is DataAccuracy.high
+        assert query.geoip_only is False
 
         for blue in query.blue:
             assert blue.age == 10
@@ -169,6 +175,7 @@ class TestQuery(QueryTest):
 
         assert len(query.cell) == 1
         assert query.expected_accuracy is DataAccuracy.medium
+        assert query.geoip_only is False
 
         query_cell = query.cell[0]
         for key, value in cell_query[0].items():
@@ -217,6 +224,7 @@ class TestQuery(QueryTest):
         assert len(query.cell) == 0
         assert len(query.cell_area) == 1
         assert query.expected_accuracy is DataAccuracy.low
+        assert query.geoip_only is False
 
     def test_cell_area_duplicated(self):
         cell = CellShardFactory.build()
@@ -256,6 +264,7 @@ class TestQuery(QueryTest):
 
         assert len(query.wifi) == 2
         assert query.expected_accuracy is DataAccuracy.high
+        assert query.geoip_only is False
 
         for wifi in query.wifi:
             assert wifi.age == 30
@@ -313,6 +322,7 @@ class TestQuery(QueryTest):
             cell=self.cell_model_query(cells),
             wifi=self.wifi_model_query(wifis))
         assert query.expected_accuracy is DataAccuracy.high
+        assert query.geoip_only is False
 
     def test_api_key(self):
         api_key = ApiKeyFactory.build()

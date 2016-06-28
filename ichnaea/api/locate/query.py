@@ -118,6 +118,15 @@ class Query(object):
         return self._geoip
 
     @property
+    def geoip_only(self):
+        """Did the query contain only GeoIP data?"""
+        if self.blue or self.cell or self.cell_area or self.wifi:
+            return False
+        if self.geoip:
+            return True
+        return None
+
+    @property
     def ip(self):
         """The validated IP address."""
         return self._ip

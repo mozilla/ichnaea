@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove ipf fallback from responses for queries based only on GeoIP data.
 
 20160525130100
 **************

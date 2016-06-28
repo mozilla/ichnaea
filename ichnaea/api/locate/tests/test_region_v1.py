@@ -26,7 +26,6 @@ class RegionBase(BaseLocateTest):
         return {
             'country_code': 'GB',
             'country_name': 'United Kingdom',
-            'fallback': 'ipf',
         }
 
     def check_model_response(self, response, model,
@@ -219,15 +218,14 @@ class TestView(RegionBase, CommonLocateTest):
 
 class TestError(RegionBase, CommonLocateErrorTest):
 
-    @property
-    def ip_response(self):
-        return {
-            'country_code': 'GB',
-            'country_name': 'United Kingdom',
-        }
+    def test_apikey_error(self, app, data_queues,
+                          db_rw_drop_table, raven, ro_session, stats):
+        super(TestError, self).test_apikey_error(
+            app, data_queues, db_rw_drop_table,
+            raven, ro_session, stats, db_errors=0, fallback=None)
 
     def test_database_error(self, app, data_queues,
                             db_rw_drop_table, raven, ro_session, stats):
         super(TestError, self).test_database_error(
             app, data_queues, db_rw_drop_table,
-            raven, ro_session, stats, db_errors=2)
+            raven, ro_session, stats, db_errors=2, fallback=None)
