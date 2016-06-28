@@ -3,23 +3,23 @@ amqp==1.4.9  # rq.filter: <2.0
 anyjson==0.3.3
 argparse==1.4.0 ; python_version < '2.7'
 billiard==3.3.0.23
-boto==2.40.0
+boto==2.41.0
 celery==3.1.23
 certifi==2016.2.28
-cffi==1.6.0
+cffi==1.7.0
 Chameleon==2.24
 colander==1.2  # rq.filter: <1.3
 configparser==3.5.0
 contextlib2==0.5.1 ; python_version < '3.2'
-cryptography==1.3.2
+cryptography==1.4
 datadog==0.12.0
-decorator==4.0.9
+decorator==4.0.10
 enum34==1.0.4 ; python_version < '3.0'
-filechunkio==1.6
+filechunkio==1.8
 genc==0.2
 geoip2==2.3.0
 gevent==1.1.1
-greenlet==0.4.9
+greenlet==0.4.10
 gunicorn==19.6.0
 hiredis==0.2.0
 idna==2.1
@@ -33,8 +33,8 @@ Mako==1.0.4
 MarkupSafe==0.23
 maxminddb==1.2.0  # optional C extension, version also in Makefile
 mobile-codes==0.7
-ndg-httpsclient==0.4.0
-numpy==1.10.4  # rq.filter: !=1.11.0
+ndg-httpsclient==0.4.1
+numpy==1.10.4  # rq.filter: <1.11.0
 ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9
@@ -43,9 +43,9 @@ PyMySQL==0.7.4
 pyopenssl==16.0.0
 pyramid==1.6.1  # rq.filter: <1.7.0
 pyramid-chameleon==0.3
-python-editor==1.0
+python-editor==1.0.1
 pytz==2016.4
-raven==5.19.0
+raven==5.21.0
 redis==2.10.5
 repoze.lru==0.6
 requests==2.10.0
@@ -65,4 +65,4 @@ venusian==1.0
 WebOb==1.6.1
 wsgiref==0.1.2 ; python_version < '3.0'
 zope.deprecation==4.1.2
-zope.interface==4.1.3
+zope.interface==4.1.3  # rq.filter: <4.2.0
