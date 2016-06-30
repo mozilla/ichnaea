@@ -58,7 +58,9 @@
     <p class="text-justified">
         We export both a daily snapshot of the entire cell network collection
         as well as hourly differential updates. File names contain either the
-        word <i>diff</i> or <i>full</i> to specify their type.
+        word <i>diff</i> or <i>full</i> to specify their type. The full cell
+        export is limited to those cell networks whose position has been
+        confirmed in the 12 months.
     </p>
 
     <h4>Full Cell Exports</h4>

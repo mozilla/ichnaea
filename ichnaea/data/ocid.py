@@ -21,12 +21,17 @@ from ichnaea.models import (
 from ichnaea import util
 
 
-def write_stations_to_csv(session, path, start_time=None, end_time=None):
+def write_stations_to_csv(session, path, today,
+                          start_time=None, end_time=None):
     where = 'radio != 1 AND lat IS NOT NULL AND lon IS NOT NULL'
-    if None not in (start_time, end_time):
+    if start_time is not None and end_time is not None:
         where = where + ' AND modified >= "%s" AND modified < "%s"'
         fmt = '%Y-%m-%d %H:%M:%S'
         where = where % (start_time.strftime(fmt), end_time.strftime(fmt))
+    else:
+        # limit to cells modified in the last 12 months
+        one_year = today - timedelta(days=365)
+        where = where + ' AND modified >= "%s"' % one_year.strftime('%Y-%m-%d')
 
     header_row = [
         'radio', 'mcc', 'net', 'area', 'cell', 'unit',
@@ -101,6 +106,7 @@ class CellExport(object):
             return
 
         now = util.utcnow()
+        today = now.date()
         start_time = None
         end_time = None
 
@@ -120,7 +126,7 @@ class CellExport(object):
             path = os.path.join(temp_dir, filename)
             with self.task.db_session(commit=False) as session:
                 write_stations_to_csv(
-                    session, path,
+                    session, path, today,
                     start_time=start_time, end_time=end_time)
             self.write_stations_to_s3(path, bucket)
 
