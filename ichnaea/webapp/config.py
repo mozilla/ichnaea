@@ -77,8 +77,7 @@ def main(app_config, ping_connections=False,
         app_config.get('database', 'ro_url'), _db=_db_ro)
 
     registry.raven_client = raven_client = configure_raven(
-        app_config.get('sentry', 'dsn'),
-        transport='gevent', _client=_raven_client)
+        app_config, transport='gevent', _client=_raven_client)
 
     registry.redis_client = redis_client = configure_redis(
         app_config.get('cache', 'cache_url'), _client=_redis_client)

@@ -67,48 +67,6 @@ in version 2 format. Both GeoLite and commercial databases will work.
     db_path = /path/to/GeoIP2-City.mmdb
 
 
-Sentry
-------
-
-The sentry section contains settings related to a Sentry server.
-
-The ``dsn`` setting needs to contain a valid DSN project entry.
-
-.. code-block:: ini
-
-    [sentry]
-    dsn = https://public_key:secret_key@localhost/project_id
-
-
-StatsD
-------
-
-The statsd section contains settings related to a StatsD service. The
-project uses a lot of metrics as further detailed in
-:ref:`the metrics documentation <metrics>`.
-
-The ``host`` and ``port`` settings determine how to connect to the service
-via UDP.
-
-Since a single StatsD service usually supports multiple different projects,
-the ``metric_prefix`` setting can be used to prefix all metrics emitted
-by this project with a unique name.
-
-The ``tag_support`` setting can either be ``false`` or ``true`` and declares
-whether or not the StatsD service supports metric tags.
-`Datadog <https://www.datadoghq.com/>`_ is an example of a service that
-supports tags. If ``tag_support`` is false, the tags will be emitted as
-part of the standard metric name.
-
-.. code-block:: ini
-
-    [statsd]
-    host = localhost
-    port = 8125
-    metric_prefix = location
-    tag_support = true
-
-
 Optional Sections
 =================
 
@@ -149,6 +107,48 @@ page listing the available download files using a specific file name pattern
 for daily full and hourly differential files.
 
 For the :term:`OpenCellID` service, the URL must end with a slash.
+
+
+Sentry
+------
+
+The sentry section contains settings related to a Sentry server.
+
+The ``dsn`` setting needs to contain a valid DSN project entry.
+
+.. code-block:: ini
+
+    [sentry]
+    dsn = https://public_key:secret_key@localhost/project_id
+
+
+StatsD
+------
+
+The statsd section contains settings related to a StatsD service. The
+project uses a lot of metrics as further detailed in
+:ref:`the metrics documentation <metrics>`.
+
+The ``host`` and ``port`` settings determine how to connect to the service
+via UDP.
+
+Since a single StatsD service usually supports multiple different projects,
+the ``metric_prefix`` setting can be used to prefix all metrics emitted
+by this project with a unique name.
+
+The ``tag_support`` setting can either be ``false`` or ``true`` and declares
+whether or not the StatsD service supports metric tags.
+`Datadog <https://www.datadoghq.com/>`_ is an example of a service that
+supports tags. If ``tag_support`` is false, the tags will be emitted as
+part of the standard metric name.
+
+.. code-block:: ini
+
+    [statsd]
+    host = localhost
+    port = 8125
+    metric_prefix = location
+    tag_support = true
 
 
 Web

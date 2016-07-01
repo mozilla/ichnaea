@@ -32,19 +32,8 @@ RAVEN_TRANSPORTS = {
 }  #: Mapping of raven transport names to classes.
 
 
-def get_raven_client():  # pragma: no cover
-    """Return the globally configured raven client."""
-    return RAVEN_CLIENT
-
-
-def set_raven_client(client):
-    """Set the global raven client."""
-    global RAVEN_CLIENT
-    RAVEN_CLIENT = client
-    return RAVEN_CLIENT
-
-
-def configure_raven(config, transport=None, _client=None):  # pragma: no cover
+def configure_raven(app_config, transport=None,
+                    _client=None):  # pragma: no cover
     """
     Configure, globally set and return a :class:`raven.Client` instance.
 
@@ -52,27 +41,24 @@ def configure_raven(config, transport=None, _client=None):  # pragma: no cover
                       :data:`RAVEN_TRANSPORTS` keys.
     :param _client: Test-only hook to provide a pre-configured client.
     """
+    global RAVEN_CLIENT
     if _client is not None:
-        return set_raven_client(_client)
+        RAVEN_CLIENT = _client
+        return _client
 
     transport = RAVEN_TRANSPORTS.get(transport)
     if not transport:
         raise ValueError('No valid raven transport was configured.')
 
-    client = RavenClient(dsn=config, transport=transport, release=RELEASE)
-    return set_raven_client(client)
+    dsn = None
+    if app_config and 'sentry' in app_config:
+        section = app_config.get_map('sentry', {})
+        dsn = section.get('dsn', None)
 
-
-def get_stats_client():  # pragma: no cover
-    """Return the globally configured statsd client."""
-    return STATS_CLIENT
-
-
-def set_stats_client(client):
-    """Set the global statsd client."""
-    global STATS_CLIENT
-    STATS_CLIENT = client
-    return STATS_CLIENT
+    klass = RavenClient if dsn is not None else DebugRavenClient
+    client = klass(dsn=dsn, transport=transport, release=RELEASE)
+    RAVEN_CLIENT = client
+    return client
 
 
 def configure_stats(app_config, _client=None):  # pragma: no cover
@@ -82,26 +68,39 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
+    global STATS_CLIENT
     if _client is not None:
-        return set_stats_client(_client)
+        STATS_CLIENT = _client
+        return _client
 
-    if not app_config:
-        host = 'localhost'
-        port = 8125
-        namespace = 'location'
-        tag_support = False
-    else:
+    klass = DebugStatsClient
+    host = 'localhost'
+    port = 9
+    namespace = 'location'
+    tag_support = True
+
+    if app_config and 'statsd' in app_config:
         section = app_config.get_map('statsd', {})
-        host = section.get('host', 'localhost').strip()
-        port = int(section.get('port', 8125))
+        host = section.get('host', None)
+        port = section.get('port', None)
+        if host is not None and port is not None:
+            klass = StatsClient
+        if host is not None:
+            host = host.strip()
+        else:
+            host = 'localhost'
+        if port is not None:
+            port = int(port)
+        else:
+            port = 9
         namespace = section.get('metric_prefix', 'location').strip()
         tag_support = asbool(section.get('tag_support', 'false').strip())
 
-    client = StatsClient(
+    client = klass(
         host=host, port=port, namespace=namespace,
         tag_support=tag_support)
-
-    return set_stats_client(client)
+    STATS_CLIENT = client
+    return client
 
 
 def configure_logging():
@@ -176,7 +175,7 @@ class DebugRavenClient(RavenClient):
 
     def __init__(self, *args, **kw):
         super(DebugRavenClient, self).__init__(*args, **kw)
-        self.msgs = deque(maxlen=100)
+        self.msgs = deque(maxlen=10)
 
     def _clear(self):
         self.msgs.clear()

@@ -137,8 +137,7 @@ def main(argv, _db_rw=None, _raven_client=None):  # pragma: no cover
         db_rw = configure_db(
             alembic_section['sqlalchemy.url'], _db=_db_rw)
         configure_raven(
-            location_cfg.get('sentry', 'dsn'),
-            transport='sync', _client=_raven_client)
+            location_cfg, transport='sync', _client=_raven_client)
 
         engine = db_rw.engine
         create_schema(engine, alembic_cfg, location_cfg)

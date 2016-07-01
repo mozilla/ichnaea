@@ -405,8 +405,7 @@ def main(argv, _raven_client=None, _stats_client=None):
         db_url = conf.get('database', 'rw_url')
 
         raven_client = configure_raven(
-            conf.get('sentry', 'dsn'),
-            transport='sync', _client=_raven_client)
+            conf, transport='sync', _client=_raven_client)
 
         stats_client = configure_stats(conf, _client=_stats_client)
 

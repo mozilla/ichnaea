@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Make statsd and sentry optional service dependencies.
+
 - Disable the web site content by default.
 
 - #490: Limit full cell export to cells which were modified in the last year.
