@@ -144,6 +144,10 @@ class StationTest(BaseStationTest):
     def past(self):
         return self.now - timedelta(days=50)
 
+    @property
+    def one_year(self):
+        return self.now - timedelta(days=367)
+
     def displace(self, lat, lon, bearing=0.0, distance=0.0):
         distance = (self.max_radius + 10.0) * distance
         return destination(lat, lon, bearing, distance)
@@ -399,7 +403,26 @@ class StationTest(BaseStationTest):
                 self.check_dates(station, self.ten_days.date(), self.today)
                 self.check_no_position(station)
 
-    def test_replace(self, celery, session):
+    def test_block_inconsistent_obs_old_station(self, celery, session):
+        for obs_source in (ReportSource.gnss, ReportSource.query):
+            for station_source in (ReportSource.gnss, ReportSource.query):
+                obs = self.make_obs(source=obs_source, distance=1.0)
+                self.station_factory(
+                    created=self.one_year, modified=self.one_year,
+                    last_seen=self.one_year.date(),
+                    source=station_source, **self.key(obs[0]))
+                session.commit()
+                self.queue_and_update(celery, obs)
+
+                obs = obs[0]
+                self.check_areas(celery, [obs])
+                station = self.get_station(session, obs)
+                assert station.region == 'GB'
+                self.check_blocked(station, self.today, self.today, 1)
+                self.check_dates(station, self.one_year.date(), self.today)
+                self.check_no_position(station)
+
+    def test_replace_query_station(self, celery, session):
         obs = self.make_obs(source=ReportSource.gnss)
         self.station_factory(
             samples=10, weight=15.0,
@@ -425,6 +448,36 @@ class StationTest(BaseStationTest):
         assert station.samples == 3
         assert station.source == ReportSource.gnss
         assert round(station.weight, 2) == 3.0
+
+    def test_replace_old_station(self, celery, session):
+        for obs_source in (ReportSource.gnss, ReportSource.query):
+            for station_source in (ReportSource.gnss, ReportSource.query):
+                obs = self.make_obs(source=obs_source)
+                lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
+                self.station_factory(
+                    lat=lat, lon=lon, created=self.one_year,
+                    modified=self.one_year, last_seen=self.one_year.date(),
+                    source=station_source, **self.key(obs[0]))
+                session.commit()
+                self.queue_and_update(celery, obs)
+
+                obs = obs[0]
+                self.check_areas(celery, [obs])
+                station = self.get_station(session, obs)
+
+                self.check_blocked(station, None)
+                self.check_dates(station, self.one_year.date(),
+                                 self.today, self.today)
+                assert station.lat == obs.lat
+                assert station.max_lat == obs.lat
+                assert station.min_lat == obs.lat
+                assert station.lon == obs.lon
+                assert station.max_lon == obs.lon
+                assert station.min_lon == obs.lon
+                assert station.radius == 0
+                assert station.region == 'GB'
+                assert station.samples == 3
+                assert station.source == obs_source
 
 
 class StationMacTest(StationTest):

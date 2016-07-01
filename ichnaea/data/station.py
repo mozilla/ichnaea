@@ -1,4 +1,5 @@
 from collections import defaultdict
+from datetime import timedelta
 import time
 
 import numpy
@@ -36,6 +37,7 @@ class StationState(object):
 
     MAX_DIST_METERS = None
     MAX_OLD_WEIGHT = 10000.0
+    MAX_OLD_DAYS = 365
 
     def __init__(self, station_key, station,
                  source, observations, now, today):
@@ -45,6 +47,7 @@ class StationState(object):
         self.observations = observations
         self.now = now
         self.today = today
+        self.one_year = today - timedelta(days=self.MAX_OLD_DAYS)
         self.obs_data = self.aggregate_obs()
 
     def base_key(self):
@@ -59,6 +62,10 @@ class StationState(object):
             self.station.lat is not None and
             self.station.lon is not None)
 
+    def is_old_position(self):
+        return bool(self.station and self.station.modified and
+                    self.station.modified.date() < self.one_year)
+
     def transition(self):
         station_state = 'none'
         if self.station:
@@ -70,7 +77,10 @@ class StationState(object):
                         station_source = 'gnss'
                     station_state = 'agree_%s_position' % station_source
                 else:
-                    station_state = 'disagree_position'
+                    if self.is_old_position():
+                        station_state = 'disagree_old_position'
+                    else:
+                        station_state = 'disagree_position'
             else:
                 station_state = 'no_position'
 
@@ -109,6 +119,10 @@ class StationState(object):
             ('disagree_position', 'query_consistent'): self.block,
             ('disagree_position', 'gnss_inconsistent'): self.block,
             ('disagree_position', 'query_inconsistent'): self.block,
+            ('disagree_old_position', 'gnss_consistent'): self.replace,
+            ('disagree_old_position', 'query_consistent'): self.replace,
+            ('disagree_old_position', 'gnss_inconsistent'): self.block,
+            ('disagree_old_position', 'query_inconsistent'): self.block,
         }
         return transitions.get((station_state, obs_state))
 

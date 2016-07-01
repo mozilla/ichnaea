@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Replace station data for old stations with new conflicting observations.
+
 - Make statsd and sentry optional service dependencies.
 
 - Disable the web site content by default.
