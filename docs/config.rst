@@ -15,24 +15,8 @@ for example ``/etc/location.ini``.
 The configuration file is an ini-style file and contains a number of
 different sections.
 
-
-Assets
-------
-
-The assets section contains settings for a static file repository
-(Amazon S3) and a public DNS to access those files via HTTPS
-(Amazon CloudFront).
-
-These are used to store and serve both the image tiles generated for
-the data map and the public export files available via the downloads
-section of the website.
-
-.. code-block:: ini
-
-    [assets]
-    bucket = amazon_s3_bucket_name
-    url = https://some_distribution_id.cloudfront.net
-
+Required Sections
+=================
 
 Cache
 -----
@@ -125,26 +109,25 @@ part of the standard metric name.
     tag_support = true
 
 
-Web
----
+Optional Sections
+=================
 
-The web section contains settings related to the non-API website content.
+Assets
+------
 
-are made available. The web functionality by default is limited to the
-public HTTP API. If the ``enabled`` setting is set to ``true`` the
-website content pages are also made available.
+The assets section contains settings for a static file repository
+(Amazon S3) and a public DNS to access those files via HTTPS
+(Amazon CloudFront).
 
-The ``map_id_base`` and ``map_id_labels`` settings specify Mapbox map
-ids for a base map and a map containing only labels. The ``map_token``
-specifies a Mapbox access token.
+These are used to store and serve both the image tiles generated for
+the data map and the public export files available via the downloads
+section of the website.
 
 .. code-block:: ini
 
-    [web]
-    enabled = true
-    map_id_base = example_base.map-123
-    map_id_labels = example_labels.map-234
-    map_token = pk.example_public_access_token
+    [assets]
+    bucket = amazon_s3_bucket_name
+    url = https://some_distribution_id.cloudfront.net
 
 
 Import
@@ -166,3 +149,25 @@ page listing the available download files using a specific file name pattern
 for daily full and hourly differential files.
 
 For the :term:`OpenCellID` service, the URL must end with a slash.
+
+
+Web
+---
+
+The web section contains settings related to the non-API website content.
+
+The web functionality by default is limited to the public HTTP API.
+If the ``enabled`` setting is set to ``true`` the website content pages
+are also made available.
+
+The ``map_id_base`` and ``map_id_labels`` settings specify Mapbox map
+ids for a base map and a map containing only labels. The ``map_token``
+specifies a Mapbox access token.
+
+.. code-block:: ini
+
+    [web]
+    enabled = true
+    map_id_base = example_base.map-123
+    map_id_labels = example_labels.map-234
+    map_token = pk.example_public_access_token
