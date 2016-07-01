@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Disable the web site content by default.
+
 - #490: Limit full cell export to cells which were modified in the last year.
 
 - Use the accuracy_radius field from the GeoIP database.

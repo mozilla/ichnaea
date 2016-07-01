@@ -26,18 +26,21 @@ class TestConfig(object):
             yield config
 
     def test_assets(self, config):
+        config.registry.settings['web'] = {'enabled': 'true'}
         config.registry.settings['assets'] = {
             'url': 'http://127.0.0.1:9/foo'}
         assert configure_content(config)
         assert (config.registry.map_config['map_tiles_url'] ==
                 'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
 
-    def test_enabled(self, config):
-        assert configure_content(config)
-
     def test_disabled(self, config):
+        assert not configure_content(config)
         config.registry.settings['web'] = {'enabled': 'false'}
         assert not configure_content(config)
+
+    def test_enabled(self, config):
+        config.registry.settings['web'] = {'enabled': 'true'}
+        assert configure_content(config)
 
 
 class TestContentViews(object):

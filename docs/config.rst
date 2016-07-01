@@ -130,9 +130,9 @@ Web
 
 The web section contains settings related to the non-API website content.
 
-If the ``enabled`` setting is set to ``false`` the website content pages
-aren't made available and the web functionality is limited to the
-public HTTP API.
+are made available. The web functionality by default is limited to the
+public HTTP API. If the ``enabled`` setting is set to ``true`` the
+website content pages are also made available.
 
 The ``map_id_base`` and ``map_id_labels`` settings specify Mapbox map
 ids for a base map and a map containing only labels. The ``map_token``

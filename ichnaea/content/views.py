@@ -49,7 +49,7 @@ HOMEPAGE_MAP_IMAGE = ('{scheme}://a.tiles.mapbox.com/v4/{map_id}'
 
 def configure_content(config):
     web_config = config.registry.settings.get('web', {})
-    enabled = web_config.get('enabled', True)
+    enabled = web_config.get('enabled', 'false')
     if enabled in ('false', '0'):
         return False
 
