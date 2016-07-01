@@ -4,6 +4,25 @@
 Installing / Deploying
 ======================
 
+Diagram
+=======
+
+A full deployment of the application in an AWS environment can include all
+of the parts shown in the diagram, but various of these parts are optional:
+
+.. image:: deployment.png
+   :height: 696px
+   :width: 924px
+   :scale: 50%
+   :alt: Deployment Diagram
+
+Specifically Amazon CloudFront and S3 are only used for backup and serving
+image tiles and public data downloads for the public website.
+Using Combain, Datadog, OpenCellID and Sentry is also optional.
+Finally there doesn't have to be a `admin` EC2 box, but it can be helpful
+for debug access and running database migrations.
+
+
 MySQL / Amazon RDS
 ==================
 
@@ -17,6 +36,14 @@ just three changes you need to do. For example via the my.cnf:
     innodb_file_format=Barracuda
     innodb_strict_mode=on
     sql-mode="NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES"
+
+The web app frontend role only needs access to a read-only read-replica
+of the database. The async worker backend role needs access to a read-write
+primary database. You can use load balancers like haproxy to distribute
+load from the web app frontends over multiple read-replicas. The diagram
+shows a final fallback connection, where the web app frontends fall back
+to talking to the primary database if all read-replicas are down.
+An example of such a haproxy configuration is included in the source code.
 
 
 Redis / Amazon ElastiCache
@@ -44,8 +71,8 @@ delete old export files after a couple of days and :term:`observation`
 data after one year.
 
 
-Statsd / Sentry
-===============
+Datadog / Statsd / Sentry
+=========================
 
 The application uses Statsd to aggregate stats and Sentry to log
 exception messages.
@@ -60,8 +87,8 @@ put your real DSN into the `dsn` setting.
 Installation of Statsd and Sentry are outside the scope of this documentation.
 
 
-Dependencies
-============
+Image Tiles
+===========
 
 The code includes functionality to render out image tiles for a data map
 of places where observations have been made. This part of the code relies
@@ -70,4 +97,6 @@ on two external projects. One is the
 the other is `pngquant <http://pngquant.org/>`_. Make sure to install both
 of them and make their binaries available on your system path. The datamaps
 package includes the `encode`, `enumerate` and `render` tools and the
-pngquant package includes a tool called `pngquant`.
+pngquant package includes a tool called `pngquant`. You can install these
+tools on the server running the celery scheduler (celerybeat) as it is
+otherwise underutilized.
