@@ -193,9 +193,12 @@ class ImportBase(object):
 
         data['created'] = datetime.utcfromtimestamp(data['created'])
         data['modified'] = datetime.utcfromtimestamp(data['modified'])
-        data['max_lat'], data['min_lat'], \
-            data['max_lon'], data['min_lon'] = geocalc.bbox(
-                data['lat'], data['lon'], data['radius'])
+        if (data['radius'] is not None and
+                data['lat'] is not None and
+                data['lon'] is not None):
+            data['max_lat'], data['min_lat'], \
+                data['max_lon'], data['min_lon'] = geocalc.bbox(
+                    data['lat'], data['lon'], data['radius'])
 
         validated = validate(data)
         if validated is None:
