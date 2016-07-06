@@ -43,6 +43,7 @@ class ApiKey(_Model):
     maxreq = Column(Integer)  #: Maximum number of requests per day.
     allow_fallback = Column(Boolean)  #: Use the fallback source?
     allow_locate = Column(Boolean)  #: Allow locate queries?
+    allow_transfer = Column(Boolean)  #: Allow transfer queries?
     shortname = Column(String(40))  #: Short descriptive name.
 
     fallback_name = Column(String(40))  #: Fallback metric name.
@@ -52,7 +53,8 @@ class ApiKey(_Model):
     fallback_cache_expire = Column(Integer)  #: Cache expiry in seconds.
 
     _get_fields = (
-        'valid_key', 'maxreq', 'allow_fallback', 'allow_locate',
+        'valid_key', 'maxreq',
+        'allow_fallback', 'allow_locate', 'allow_transfer',
         'fallback_name', 'fallback_url', 'fallback_ratelimit',
         'fallback_ratelimit_interval', 'fallback_cache_expire',
     )
@@ -72,6 +74,8 @@ class ApiKey(_Model):
         elif api_type in ('region', 'submit'):
             # Region and submit are always allowed, even without an API key.
             return True
+        elif api_type == 'transfer':
+            return bool(self.allow_transfer)
         return None
 
     def can_fallback(self):

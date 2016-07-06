@@ -10,7 +10,7 @@ class TestApiKey(object):
         key = uuid.uuid4().hex
         session.add(ApiKey(
             valid_key=key, maxreq=10,
-            allow_fallback=True, allow_locate=True,
+            allow_fallback=True, allow_locate=True, allow_transfer=True,
             fallback_name='test_fallback',
             fallback_url='https://localhost:9/api?key=k',
             fallback_ratelimit=100,
@@ -24,6 +24,7 @@ class TestApiKey(object):
         assert result.maxreq == 10
         assert result.allow_fallback is True
         assert result.allow_locate is True
+        assert result.allow_transfer is True
         assert result.fallback_name == 'test_fallback'
         assert result.fallback_url == 'https://localhost:9/api?key=k'
         assert result.fallback_ratelimit == 100
@@ -47,13 +48,15 @@ class TestApiKey(object):
         assert result is None
 
     def test_allowed(self):
-        api_key = ApiKeyFactory.build(allow_locate=True)
+        api_key = ApiKeyFactory.build(allow_locate=True, allow_transfer=True)
         assert api_key.allowed('locate')
         assert api_key.allowed('region')
         assert api_key.allowed('submit')
+        assert api_key.allowed('transfer')
         assert api_key.allowed('unknown') is None
         assert not ApiKeyFactory.build(allow_locate=None).allowed('locate')
         assert not ApiKeyFactory.build(allow_locate=False).allowed('locate')
+        assert not ApiKeyFactory.build(allow_transfer=None).allowed('transfer')
 
     def test_can_fallback(self):
         assert ApiKeyFactory.build(allow_fallback=True).can_fallback()

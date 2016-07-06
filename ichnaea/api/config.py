@@ -15,6 +15,9 @@ def configure_api(config):
         SubmitV1View,
         SubmitV2View,
     )
+    from ichnaea.api.transfer.views import (
+        TransferV1View,
+    )
 
     LocateV0View.configure(config)
     LocateV1View.configure(config)
@@ -22,3 +25,4 @@ def configure_api(config):
     SubmitV0View.configure(config)
     SubmitV1View.configure(config)
     SubmitV2View.configure(config)
+    TransferV1View.configure(config)

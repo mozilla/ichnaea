@@ -97,6 +97,7 @@ class ApiKeyFactory(BaseSQLFactory):
     maxreq = 0
     allow_fallback = False
     allow_locate = True
+    allow_transfer = False
 
     fallback_name = 'fall'
     fallback_url = 'http://127.0.0.1:9/?api'

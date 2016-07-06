@@ -37,7 +37,8 @@ class TestExceptions(object):
     def _check(self, error, status,
                json=True, content_type='application/json'):
         response = Request.blank('/').get_response(error())
-        assert response.content_type == content_type
+        if content_type:
+            assert response.content_type == content_type
         assert response.status_code == status
         if json:
             assert response.json == error.json_body()
@@ -71,6 +72,21 @@ class TestExceptions(object):
         error = api_exceptions.ParseError
         response = self._check(error, 400)
         assert b'parseError' in response.body
+
+    def test_upload_success(self):
+        error = api_exceptions.UploadSuccess
+        response = self._check(error, 200)
+        assert response.body == b'{}'
+
+    def test_upload_success_v0(self):
+        error = api_exceptions.UploadSuccessV0
+        response = self._check(error, 204, json=False, content_type=None)
+        assert response.body == b''
+
+    def test_transfer_success(self):
+        error = api_exceptions.TransferSuccess
+        response = self._check(error, 200)
+        assert response.body == b'{}'
 
 
 class TestLimiter(object):

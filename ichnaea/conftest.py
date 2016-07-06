@@ -144,7 +144,8 @@ def setup_tables(engine):
         conn.execute(ApiKey.__table__.delete())
 
         key1 = ApiKey.__table__.insert().values(
-            valid_key='test', allow_fallback=False, allow_locate=True,
+            valid_key='test',
+            allow_fallback=False, allow_locate=True, allow_transfer=True,
             fallback_name='fall',
             fallback_url='http://127.0.0.1:9/?api',
             fallback_ratelimit=10,
@@ -153,7 +154,8 @@ def setup_tables(engine):
         )
         conn.execute(key1)
         key2 = ApiKey.__table__.insert().values(
-            valid_key='export', allow_fallback=False, allow_locate=False)
+            valid_key='export',
+            allow_fallback=False, allow_locate=False, allow_transfer=False)
         conn.execute(key2)
 
         trans.commit()
@@ -324,6 +326,8 @@ def data_queues(redis_client):
     data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
+        'transfer_incoming': DataQueue('transfer_incoming', redis_client,
+                                       batch=100, compress=True),
     }
     yield data_queues
 

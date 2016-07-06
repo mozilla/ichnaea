@@ -41,11 +41,10 @@ class BaseSubmitView(BaseAPIView):
             request_data, errors = self.preprocess_request()
 
             if not request_data:
-                # don't allow completely empty submit request
+                # don't allow completely empty request
                 raise self.prepare_exception(ParseError())
 
         except ParseError:
-            # capture JSON exceptions for submit calls
             self.raven_client.captureException()
             raise
 

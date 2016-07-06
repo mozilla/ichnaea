@@ -84,9 +84,11 @@ def configure_data(redis_client):
     Configure fixed set of data queues.
     """
     data_queues = {
-        # update_incoming needs to be the exact same as in webapp.config
+        # *_incoming need to be the exact same as in webapp.config
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
+        'transfer_incoming': DataQueue('transfer_incoming', redis_client,
+                                       batch=100, compress=True),
     }
     for key in ('update_cellarea', 'update_cellarea_ocid'):
         data_queues[key] = DataQueue(key, redis_client, batch=100, json=False)

@@ -12,4 +12,5 @@
    rate_limit
    schema
    submit/index
+   transfer/index
    views

@@ -44,7 +44,23 @@ class JSONException(HTTPException):
         return {}
 
 
+class TransferSuccess(JSONException):
+    """
+    A successful transfer response.
+    """
+
+    code = 200  #:
+
+    @classmethod
+    def json_body(cls):
+        """A JSON representation of this response."""
+        return {}
+
+
 class UploadSuccess(JSONException):
+    """
+    A successful upload response.
+    """
 
     code = 200  #:
 
@@ -114,6 +130,9 @@ class BaseAPIServiceError(BaseAPIError, BaseServiceError):
 
 
 class DailyLimitExceeded(BaseAPIClientError):
+    """
+    Response given when daily quota was exceeded.
+    """
 
     code = 403  #:
     domain = 'usageLimits'  #:
@@ -122,6 +141,9 @@ class DailyLimitExceeded(BaseAPIClientError):
 
 
 class InvalidAPIKey(BaseAPIClientError):
+    """
+    Response for missing or invalid API keys.
+    """
 
     code = 400  #:
     domain = 'usageLimits'  #:
@@ -130,6 +152,9 @@ class InvalidAPIKey(BaseAPIClientError):
 
 
 class LocationNotFound(BaseAPIClientError):
+    """
+    Response given when mo location could be found.
+    """
 
     code = 404  #:
     domain = 'geolocation'  #:
@@ -152,6 +177,9 @@ class LocationNotFoundV0(LocationNotFound):
 
 
 class ParseError(BaseAPIClientError):
+    """
+    Response given when the request couldn't be parsed.
+    """
 
     code = 400  #:
     domain = 'global'  #:
@@ -160,6 +188,9 @@ class ParseError(BaseAPIClientError):
 
 
 class ServiceUnavailable(BaseAPIServiceError):
+    """
+    Response given when the service is (partially) unavailable.
+    """
 
     code = 503  #:
     domain = 'global'  #:

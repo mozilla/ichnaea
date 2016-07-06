@@ -18,8 +18,8 @@ You can anonymously submit data to the service without an API key via
 any of the submission APIs.
 
 You must identify your client to the service using an API key when
-using one of the :ref:`api_region_latest` or :ref:`api_geolocate_latest`
-APIs.
+using one of the :ref:`api_region_latest`, :ref:`api_geolocate_latest`
+or :ref:`api_transfer_latest` APIs.
 
 If you want or need to specify an API key, you need to be provide
 it as a query argument in the request URI in the form::
@@ -123,8 +123,9 @@ Historically the service first offered the custom :ref:`api_search` and
 :ref:`api_geolocate` API to lessen the burden on clients that want to
 support multiple location services. As an extension to this the
 :ref:`api_geosubmit` API was added to offer a consistent way to contribute
-back data to the service. Finally the :ref:`api_region` API was added and
-:ref:`api_geosubmit2` superseded its version 1 counterpart.
+back data to the service. Afterwards the :ref:`api_region` API was added
+and :ref:`api_geosubmit2` superseded its version 1 counterpart. Finally
+the :ref:`api_transfer` API was added.
 
 .. toctree::
    :maxdepth: 1
@@ -135,3 +136,4 @@ back data to the service. Finally the :ref:`api_region` API was added and
    geosubmit
    search
    submit
+   transfer
