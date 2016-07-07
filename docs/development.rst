@@ -4,14 +4,17 @@
 Development
 ===========
 
-Requirements
-------------
+Prerequisites
+-------------
 
 In order to install a development version of the service, you need to
 have a Linux or Mac OS X machine and
-`install docker <https://docs.docker.com/installation/>`_.
+`install docker <https://docs.docker.com/installation/>`_,
+docker-compose and docker-machine.
 
-On Mac OS X you can use Homebrew to install docker:
+On Linux you can use your OS level package manager to install them.
+
+On Mac OS X you can use Homebrew to install them:
 
 .. code-block:: bash
 
@@ -21,11 +24,18 @@ On Mac OS X you can use Homebrew to install docker:
     brew install docker-machine
     brew install docker-compose
 
-Then you need to create a docker machine:
+
+Docker Machine
+--------------
+
+We use docker machine to run additional development dependencies like
+Redis and MySQL with the exact versions we want to test against.
+
+You need to create a docker machine:
 
 .. code-block:: bash
 
-    docker-machine create --driver virtualbox --virtualbox-memory 2048 \
+    docker-machine create --driver virtualbox --virtualbox-memory 512 \
         --virtualbox-cpu-count -1 default
 
 You can check it is running via ``docker-machine ls`` and start it via
@@ -53,18 +63,11 @@ Put the value into the hosts file, for example:
     192.168.99.100 ichnaea.dev
 
 
-Code
-----
+Requirements
+------------
 
-Now run the following command to get the code:
-
-.. code-block:: bash
-
-    git clone https://github.com/mozilla/ichnaea
-    cd ichnaea
-
-In order to run the code you need to have Python 2.6, 2.7 or 3.4 installed
-on your system. The default Makefile also assumes a `virtualenv`
+In order to run the code you need to have Python 2.6, 2.7, 3.4 or 3.5
+installed on your system. The default Makefile also assumes a `virtualenv`
 command is globally available. If this isn't true for your system,
 please create a virtualenv manually inside the ichnaea folder before
 continuing (``/path/to/virtualenv --python=python2.6 .``).
@@ -87,6 +90,17 @@ Build requirements:
     openssl-devel, gcc, gcc-c++, gcc-gfortran, make, python, python-pip,
     python-virtualenv, git, libmaxminddb, libffi-devel, atlas-devel,
     geos-devel, spatialindex-devel
+
+
+Code
+----
+
+Now run the following command to get the code:
+
+.. code-block:: bash
+
+    git clone https://github.com/mozilla/ichnaea
+    cd ichnaea
 
 Then run make which is going to take quite a while the first time:
 
