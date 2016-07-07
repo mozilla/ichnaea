@@ -69,6 +69,25 @@ command is globally available. If this isn't true for your system,
 please create a virtualenv manually inside the ichnaea folder before
 continuing (``/path/to/virtualenv --python=python2.6 .``).
 
+In the next step you are going to install a good number of Python libraries,
+which depend on various OS level C libraries. These C libraries are best
+installed via the OS level package management system. We list the
+CentOS/Redhat names, but they should be similar on other OS.
+
+Runtime requirements:
+
+.. code-block:: bash
+
+    openssl, python, libmaxminddb, libffi, atlas-sse3, geos, spatialindex-devel
+
+Build requirements:
+
+.. code-block:: bash
+
+    openssl-devel, gcc, gcc-c++, gcc-gfortran, make, python, python-pip,
+    python-virtualenv, git, libmaxminddb, libffi-devel, atlas-devel,
+    geos-devel, spatialindex-devel
+
 Then run make which is going to take quite a while the first time:
 
 .. code-block:: bash
