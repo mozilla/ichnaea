@@ -34,10 +34,7 @@ Table of contents
    usage
    api/index
    import_export
-   deploy
-   config
-   development
-   testing
+   install/index
    calculation
    metrics
    internal_api/index

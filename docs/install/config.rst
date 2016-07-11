@@ -1,8 +1,8 @@
 .. _config:
 
-=========================
-Application Configuration
-=========================
+=============
+Configuration
+=============
 
 As part of deploying the application, you need to create an application
 configuration file, commonly called ``location.ini``.
@@ -149,6 +149,11 @@ part of the standard metric name.
     port = 8125
     metric_prefix = location
     tag_support = true
+
+For initial testing it can be useful to simply capture the statsd metrics
+without running an actual statsd daemon. To do so you can use the
+``nc -lku localhost 8125`` command to run a UDP service and print out
+all incoming data on the console.
 
 
 Web

@@ -1,4 +1,4 @@
-.. _development:
+.. _devel:
 
 ===========
 Development

@@ -1,8 +1,8 @@
 .. _deploy:
 
-======================
-Installing / Deploying
-======================
+==========
+Deployment
+==========
 
 Diagram
 =======
@@ -10,7 +10,7 @@ Diagram
 A full deployment of the application in an AWS environment can include all
 of the parts shown in the diagram, but various of these parts are optional:
 
-.. image:: deployment.png
+.. image:: deploy.png
    :height: 696px
    :width: 924px
    :scale: 50%
