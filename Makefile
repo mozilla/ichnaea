@@ -13,7 +13,9 @@ MAXMINDDB_VERSION = 1.2.1
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 
-DEV_HOST = ichnaea.dev
+DOCKER_BIN ?= docker
+DOCKER_COMPOSE_BIN ?= docker-compose
+DEV_HOST ?= ichnaea.dev
 
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
@@ -69,7 +71,7 @@ FONT_ROOT = $(STATIC_ROOT)/fonts
 IMG_ROOT = $(STATIC_ROOT)/images
 JS_ROOT = $(STATIC_ROOT)/js
 
-NODE_BIN = docker run --rm -a STDIN -a STDOUT -i mozilla-ichnaea/node:latest
+NODE_BIN = $(DOCKER_BIN) run --rm -a STDIN -a STDOUT -i mozilla-ichnaea/node:latest
 CLEANCSS = $(NODE_BIN) cleancss -d
 UGLIFYJS = $(NODE_BIN) uglifyjs -c --stats
 
@@ -85,28 +87,28 @@ all: build init_db
 
 docker: docker-mysql docker-redis
 ifneq ($(TRAVIS), true)
-	cd $(TOXINIDIR); docker-compose up -d
+	cd $(TOXINIDIR); $(DOCKER_COMPOSE_BIN) up -d
 endif
 
 docker-mysql:
 ifneq ($(TRAVIS), true)
-	cd docker/mysql; docker build -t mozilla-ichnaea/mysql:latest .
+	cd docker/mysql; $(DOCKER_BIN) build -t mozilla-ichnaea/mysql:latest .
 endif
 
 docker-redis:
 ifneq ($(TRAVIS), true)
-	cd docker/redis; docker build -t mozilla-ichnaea/redis:latest .
+	cd docker/redis; $(DOCKER_BIN) build -t mozilla-ichnaea/redis:latest .
 endif
 
 docker-node:
 ifneq ($(TRAVIS), true)
-	cd docker/node; docker build -t mozilla-ichnaea/node:latest .
+	cd docker/node; $(DOCKER_BIN) build -t mozilla-ichnaea/node:latest .
 endif
 
 MYSQL_RET ?= 1
 mysql: docker
 	# Wait to confirm that MySQL has started.
-	MYSQL_RET=$(MYSQL_RET); \
+	@MYSQL_RET=$(MYSQL_RET); \
 	while [ $${MYSQL_RET} -ne 0 ] ; do \
 		echo "Trying MySQL..." ; \
 	    nc -dz $(MYSQL_HOST) $(MYSQL_PORT) ; \
@@ -154,7 +156,7 @@ $(TOXINIDIR)/lib/libmaxminddb.0.dylib: \
 
 build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
-		$(INSTALL) --no-use-wheel maxminddb==$(MAXMINDDB_VERSION)
+		$(INSTALL) --no-binary :all: maxminddb==$(MAXMINDDB_VERSION)
 
 pngquant/pngquant:
 	git clone --recursive git://github.com/pornel/pngquant
