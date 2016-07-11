@@ -35,8 +35,7 @@ Table of contents
    api/index
    import_export
    install/index
-   calculation
-   metrics
+   algo/index
    internal_api/index
    glossary
    changes/index
