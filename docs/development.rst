@@ -8,13 +8,13 @@ Prerequisites
 -------------
 
 In order to install a development version of the service, you need to
-have a Linux or Mac OS X machine and
+have a Linux or Mac OS machine and
 `install docker <https://docs.docker.com/installation/>`_,
 docker-compose and docker-machine.
 
 On Linux you can use your OS level package manager to install them.
 
-On Mac OS X you can use Homebrew to install them:
+On Mac OS you can use Homebrew to install them:
 
 .. code-block:: bash
 
@@ -48,9 +48,8 @@ to the docker daemon:
 
     eval "$(docker-machine env default)"
 
-You also need to add an entry into your ``/etc/hosts`` file. On Mac OS X
-you need to specify the IP of the running docker machine, on Linux use
-`127.0.0.1`:
+You also need to add an entry into your ``/etc/hosts`` file.
+Specify the IP of the running docker machine:
 
 .. code-block:: bash
 
@@ -102,13 +101,13 @@ Now run the following command to get the code:
     git clone https://github.com/mozilla/ichnaea
     cd ichnaea
 
-Then run make which is going to take quite a while the first time:
+Then run make, which is going to take quite a while the first time:
 
 .. code-block:: bash
 
     make
 
-Now you can run the web app on for example port 7001:
+Now you can run the web app for example on port 7001:
 
 .. code-block:: bash
 

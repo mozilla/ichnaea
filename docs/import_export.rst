@@ -32,7 +32,8 @@ Cell Fields
 
 ``radio``
 
-    Network type. One of the strings `GSM`, `UMTS` or `LTE`.
+    Network type. One of the strings `GSM`,
+    `UMTS` (for WCMDA networks) or `LTE`.
 
 ``mcc``
 
@@ -108,8 +109,9 @@ Cell Fields
     Average signal strength from all observations for the cell network.
     An integer value, in dBm. For example, `-72`.
 
-    This field is only used by the :term:`OpenCellID` project and historically
-    has been used as a hint towards the quality of the position estimate.
+    This field is only used by the :term:`OpenCellID` project and has
+    been used historically as a hint towards the quality of the
+    position estimate.
 
 
 Import

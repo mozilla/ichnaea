@@ -17,17 +17,17 @@ including coverage tests via:
 
     make test
 
-Or run individual test modules or functions via for example:
+Or run individual test modules via for example:
 
 .. code-block:: bash
 
-    make test TESTS=ichnaea.tests.test_geoip:TestDatabase.test_open
+    make test TESTS=ichnaea.tests.test_geoip
 
 
 Testing Tasks
 -------------
 
-The project includes a good number of asynchronous tasks, executed by celery
+The project includes a good number of asynchronous tasks, executed by Celery
 in the code. The easiest way to test them is by writing unit tests and calling
 the task functions directly.
 
@@ -83,11 +83,16 @@ Of course these options can be combined, for example:
     bin/tox -e=py{34} TESTS=ichnaea.tests.test_util
 
 Since the project relies on a number of non-Python dependencies, each
-tox environment is created from a full copy of the git repo. The ease
+tox environment is created from a full copy of the git repo. To ease
 testing the `ichnaea` code package is then removed from inside each
 tox environment and finally `bin/install -e ichnaea /path/to/parent/repo`
-called. This means the code inside the top-level `ichnaea` code package
+is called. This means the code inside the top-level `ichnaea` code package
 is actually used from inside each tox environment.
 
 If you set a pdb breakpoint in the normal main code, you'll thus get
 an easy way to have a pdb inside each tox environment.
+
+One caveat is that this leads to the Cython based geocalc.so file to be
+recompiled with the last Python version you used for tox. You may need
+to run `make` again to recreate based on the Python version of the
+non-tox environment.

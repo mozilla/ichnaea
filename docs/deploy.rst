@@ -77,8 +77,8 @@ Datadog / Statsd / Sentry
 The application uses Statsd to aggregate stats and Sentry to log
 exception messages.
 
-The default configuration in location.ini assumes that you are running
-a Statsd instance listening for UDP messages on port 8125.
+To use Statsd, you need to configure it in the config file, specifying
+a host and port, for example localhost port 8125.
 
 To get the app to log exceptions to Sentry, you will need to obtain the
 DSN for your Sentry instance. Edit location.ini and in the `sentry` section
@@ -98,5 +98,5 @@ the other is `pngquant <http://pngquant.org/>`_. Make sure to install both
 of them and make their binaries available on your system path. The datamaps
 package includes the `encode`, `enumerate` and `render` tools and the
 pngquant package includes a tool called `pngquant`. You can install these
-tools on the server running the celery scheduler (celerybeat) as it is
-otherwise underutilized.
+tools on the server running the celery scheduler (celerybeat) and trigger
+the `location_map` script via a cron job.
