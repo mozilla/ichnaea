@@ -9,64 +9,46 @@ Prerequisites
 
 In order to install a development version of the service, you need to
 have a Linux or Mac OS machine and
-`install docker <https://docs.docker.com/installation/>`_,
-docker-compose and docker-machine.
+`install docker <https://docs.docker.com/installation/>`_ and
+docker-compose.
 
 On Linux you can use your OS level package manager to install them.
 
-On Mac OS you can use Homebrew to install them:
-
-.. code-block:: bash
-
-    brew install caskroom/cask/brew-cask
-    brew cask install virtualbox
-    brew install docker
-    brew install docker-machine
-    brew install docker-compose
+On Mac OS you need to install
+`Docker for Mac <https://docs.docker.com/docker-for-mac/>`_.
+Docker Toolbox or docker-machine based setups aren't supported
+by the documentation and Makefile.
 
 
-Docker Machine
---------------
+Docker
+------
 
-We use docker machine to run additional development dependencies like
+We use docker to run additional development dependencies like
 Redis and MySQL with the exact versions we want to test against.
 
-You need to create a docker machine:
+We assume that you can run ``docker`` and ``docker-compose`` on
+your command line. Test this via:
 
 .. code-block:: bash
 
-    docker-machine create --driver virtualbox --virtualbox-memory 512 \
-        --virtualbox-cpu-count -1 default
+    docker --version
+    docker-compose --version
 
-You can check it is running via ``docker-machine ls`` and start it via
-``docker-machine start default``.
-
-Next configure your shell, so the docker command knows how to connect
-to the docker daemon:
+We also require a DNS alias in ``/etc/hosts`` called ``ichnaea.dev``:
 
 .. code-block:: bash
 
-    eval "$(docker-machine env default)"
+    127.0.0.1 ichnaea.dev
 
-You also need to add an entry into your ``/etc/hosts`` file.
-Specify the IP of the running docker machine:
-
-.. code-block:: bash
-
-    docker-machine ip default
-
-Put the value into the hosts file, for example:
-
-.. code-block:: bash
-
-    192.168.99.100 ichnaea.dev
+You can skip this, but will need to change various of the example
+configuration files.
 
 
 Requirements
 ------------
 
-In order to run the code you need to have Python 2.6, 2.7, 3.4 or 3.5
-installed on your system. The default Makefile also assumes a `virtualenv`
+In order to run the code you need to have Python 2.6, 2.7 or 3.5 installed
+on your system. The default Makefile also assumes a `virtualenv`
 command is globally available. If this isn't true for your system,
 please create a virtualenv manually inside the ichnaea folder before
 continuing (``/path/to/virtualenv --python=python2.6 .``).

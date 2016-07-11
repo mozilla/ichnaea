@@ -75,7 +75,7 @@ UGLIFYJS = $(NODE_BIN) uglifyjs -c --stats
 
 
 .PHONY: all js mysql pip init_db css js test clean shell docs \
-	docker docker-images \
+	docker docker-mysql docker-node docker-redis \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
@@ -83,16 +83,24 @@ UGLIFYJS = $(NODE_BIN) uglifyjs -c --stats
 
 all: build init_db
 
-docker: docker-images
+docker: docker-mysql docker-redis
 ifneq ($(TRAVIS), true)
 	cd $(TOXINIDIR); docker-compose up -d
 endif
 
-docker-images:
+docker-mysql:
 ifneq ($(TRAVIS), true)
 	cd docker/mysql; docker build -t mozilla-ichnaea/mysql:latest .
-	cd docker/node; docker build -t mozilla-ichnaea/node:latest .
+endif
+
+docker-redis:
+ifneq ($(TRAVIS), true)
 	cd docker/redis; docker build -t mozilla-ichnaea/redis:latest .
+endif
+
+docker-node:
+ifneq ($(TRAVIS), true)
+	cd docker/node; docker build -t mozilla-ichnaea/node:latest .
 endif
 
 MYSQL_RET ?= 1
@@ -186,7 +194,7 @@ release: release_install release_compile
 init_db: mysql
 	$(BIN)/location_initdb --initdb
 
-css: docker-images
+css: docker-node
 	$(NODE_BIN) cat \
 		bower_components/mozilla-tabzilla/css/tabzilla.css > \
 		$(CSS_ROOT)/tabzilla.css
@@ -230,7 +238,7 @@ css: docker-images
 		tar x -
 
 
-js: docker-images
+js: docker-node
 	cd $(JS_ROOT) && cat \
 		privacy.js | \
 		$(UGLIFYJS) > bundle-privacy.js
