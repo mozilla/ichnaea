@@ -34,15 +34,6 @@ your command line. Test this via:
     docker --version
     docker-compose --version
 
-We also require a DNS alias in ``/etc/hosts`` called ``ichnaea.dev``:
-
-.. code-block:: bash
-
-    127.0.0.1 ichnaea.dev
-
-You can skip this, but will need to change various of the example
-configuration files.
-
 
 Requirements
 ------------

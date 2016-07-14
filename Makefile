@@ -15,7 +15,6 @@ MYSQL_TEST_DB = test_location
 
 DOCKER_BIN ?= docker
 DOCKER_COMPOSE_BIN ?= docker-compose
-DEV_HOST ?= ichnaea.dev
 
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
@@ -36,11 +35,11 @@ ifeq ($(TRAVIS), true)
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
-	MYSQL_HOST ?= $(DEV_HOST)
+	MYSQL_HOST ?= localhost
 	MYSQL_PORT ?= 33306
 	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
 
-	REDIS_HOST ?= $(DEV_HOST)
+	REDIS_HOST ?= localhost
 	REDIS_PORT ?= 36379
 	REDIS_URI ?= redis://$(REDIS_HOST):$(REDIS_PORT)/1
 
