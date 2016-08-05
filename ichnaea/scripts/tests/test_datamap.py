@@ -82,8 +82,8 @@ class TestMap(object):
             assert (sorted(os.listdir(os.path.join(tiles, '0', '0'))) ==
                     ['0.png', '0@2x.png'])
 
-        assert rows == 36
-        assert len(lines) == 36
+        assert rows == 18
+        assert len(lines) == 18
         assert (set([round(float(l[0]), 2) for l in lines]) ==
                 set([-10.0, 0.0, 12.35]))
         assert (set([round(float(l[1]), 2) for l in lines]) ==

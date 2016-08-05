@@ -251,7 +251,10 @@ def upload_folder(bucketname, bucket_prefix,
     # Delete orphaned keys.
     if keys:
         result['tile_deleted'] += len(keys)
-        bucket.delete_keys(keys.values())
+        key_values = list(keys.values())
+        for i in range(0, len(key_values), 100):
+            batch_keys = key_values[i:i + 100]
+            bucket.delete_keys(batch_keys)
 
     return result
 
@@ -310,7 +313,7 @@ def upload_files(pool, bucketname, tiles, max_zoom,
 
 
 def generate(db_url, bucketname, raven_client, stats_client,
-             upload=True, concurrency=2, max_zoom=13,
+             upload=True, concurrency=2, max_zoom=12,
              datamaps='', output=None):  # pragma: no cover
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)

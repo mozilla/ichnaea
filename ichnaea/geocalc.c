@@ -819,6 +819,9 @@ static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, in
 /* None.proto */
 static CYTHON_INLINE long __Pyx_mod_long(long, long);
 
+/* None.proto */
+static CYTHON_INLINE long __Pyx_div_long(long, long);
+
 /* ListAppend.proto */
 #if CYTHON_COMPILING_IN_CPYTHON
 static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
@@ -3206,9 +3209,9 @@ static PyObject *__pyx_f_7ichnaea_7geocalc_random_points(long __pyx_v_lat, long 
 
   __pyx_v_lon_random = ((int)__Pyx_mod_long(__Pyx_mod_long((__pyx_v_lat * (__pyx_v_lon * 11)), 0x779), 0xB5));
 
-  __pyx_t_2 = 6;
-  __pyx_t_3 = 1;
-  __pyx_t_4 = (6 - __pyx_v_num);
+  __pyx_t_2 = 13;
+  __pyx_t_3 = 0;
+  __pyx_t_4 = (13 - __pyx_v_num);
   if (((__pyx_t_3 > __pyx_t_4) != 0)) {
     __pyx_t_5 = __pyx_t_3;
   } else {
@@ -3220,7 +3223,7 @@ static PyObject *__pyx_f_7ichnaea_7geocalc_random_points(long __pyx_v_lat, long 
   } else {
     __pyx_t_5 = __pyx_t_3;
   }
-  __pyx_v_multiplier = (__pyx_t_5 * 2);
+  __pyx_v_multiplier = __Pyx_div_long(__pyx_t_5, 2);
 
   __pyx_t_6 = __pyx_v_multiplier;
   for (__pyx_t_7 = 0; __pyx_t_7 < __pyx_t_6; __pyx_t_7+=1) {
@@ -6257,6 +6260,14 @@ static CYTHON_INLINE int __Pyx_ArgTypeTest(PyObject *obj, PyTypeObject *type, in
     long r = a % b;
     r += ((r != 0) & ((r ^ b) < 0)) * b;
     return r;
+}
+
+/* None */
+        static CYTHON_INLINE long __Pyx_div_long(long a, long b) {
+    long q = a / b;
+    long r = a - q*b;
+    q -= ((r != 0) & ((r ^ b) < 0));
+    return q;
 }
 
 /* Import */

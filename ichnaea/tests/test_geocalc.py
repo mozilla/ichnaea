@@ -169,9 +169,9 @@ class TestLongitudeAdd(object):
 class TestRandomPoints(object):
 
     def test_null(self):
-        points = random_points(0, 0, 20)
+        points = random_points(0, 0, 11)
         assert type(points) is list
-        assert len(points) == 2
+        assert len(points) == 1
 
     def test_stable(self):
         points1 = random_points(10123, -170234, 1)
@@ -182,14 +182,16 @@ class TestRandomPoints(object):
         assert points2 != points3
 
     def test_num(self):
-        assert len(random_points(1, -2, 20)) == 2
-        assert len(random_points(1, -2, 6)) == 2
-        assert len(random_points(1, -2, 5)) == 2
-        assert len(random_points(1, -2, 4)) == 4
-        assert len(random_points(1, -2, 1)) == 10
-        assert len(random_points(1, -2, 0)) == 12
-        assert len(random_points(1, -2, -1)) == 12
-        assert len(random_points(1, -2, -10)) == 12
+        assert len(random_points(1, -2, 20)) == 0
+        assert len(random_points(1, -2, 12)) == 0
+        assert len(random_points(1, -2, 11)) == 1
+        assert len(random_points(1, -2, 10)) == 1
+        assert len(random_points(1, -2, 9)) == 2
+        assert len(random_points(1, -2, 2)) == 5
+        assert len(random_points(1, -2, 1)) == 6
+        assert len(random_points(1, -2, 0)) == 6
+        assert len(random_points(1, -2, -1)) == 6
+        assert len(random_points(1, -2, -10)) == 6
 
     def test_large(self):
         random_points(90000, 180000, 1)

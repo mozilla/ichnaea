@@ -10,9 +10,9 @@ $(document).ready(function() {
     var mapTilesUrl = mapDOMElement.data('map_tiles_url');
     var mapToken = mapDOMElement.data('map_token');
 
-    var maxZoom = 16;
+    var maxZoom = 15;
     if (L.Browser.retina) {
-        maxZoom = 15;
+        maxZoom = 14;
     }
 
     // Restrict to typical Web Mercator bounds
@@ -57,7 +57,7 @@ $(document).ready(function() {
 
     // add geocoding control
     L.mapbox.geocoderControl('mapbox.places', {
-        'pointZoom': 12,
+        'pointZoom': 10,
         'queryOptions': {'types': 'country,region,postcode,place,locality'}
     }).addTo(map);
 
@@ -65,7 +65,7 @@ $(document).ready(function() {
     if (mapTilesUrl) {
         L.tileLayer(mapTilesUrl, {
             detectRetina: true,
-            maxNativeZoom: 13
+            maxNativeZoom: 12
         }).addTo(map);
     }
 

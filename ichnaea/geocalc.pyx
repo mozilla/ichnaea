@@ -474,7 +474,7 @@ cpdef list random_points(long lat, long lon, int num):
     lat_random = int((lon * (lat * 17) % 1021) % 179)
     lon_random = int((lat * (lon * 11) % 1913) % 181)
 
-    multiplier = min(max(6 - num, 1), 6) * 2
+    multiplier = min(max(13 - num, 0), 13) // 2
 
     for i in range(multiplier):
         result.append(pattern % (

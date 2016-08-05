@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Reduce datamap detail.
+
 - No longer log sentry messages for client errors.
 
 - Replace station data for old stations with new conflicting observations.
