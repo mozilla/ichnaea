@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- No longer log sentry messages for client errors.
+
 - Replace station data for old stations with new conflicting observations.
 
 - Make statsd and sentry optional service dependencies.

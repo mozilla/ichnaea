@@ -121,7 +121,10 @@ class BaseAPIView(BaseView):
         return self.view(api_key)
 
     def parse_apikey(self):
-        api_key_text = self.request.GET.get('key', None)
+        try:
+            api_key_text = self.request.GET.get('key', None)
+        except Exception:
+            api_key_text = None
         # check length against DB column length and restrict
         # to a known set of characters
         if (api_key_text and (3 < len(api_key_text) < 41) and

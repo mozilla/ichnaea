@@ -236,7 +236,6 @@ class TestView(BaseSubmitTest):
             [{'lat': wifi.lat, 'lon': wifi.lon, 'cell': []}],
             status=400)
         assert res.json == ParseError.json_body()
-        raven.check(['ParseError'])
 
     def test_error_missing_latlon(self, app, celery):
         wifi = WifiShardFactory.build()

@@ -223,7 +223,6 @@ class TestView(BaseSubmitTest):
             }],
         }], status=400)
         assert self.queue(celery).size() == 0
-        raven.check([('ParseError', 1)])
 
     def test_error_missing_latlon(self, app, celery):
         wifi = WifiShardFactory.build()

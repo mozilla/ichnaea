@@ -312,7 +312,11 @@ class ImportExternal(ImportBase):
 
                 with self.task.redis_pipeline() as pipe:
                     with self.task.db_session() as session:
-                        self.import_stations(pipe, session, path)
+                        try:
+                            self.import_stations(pipe, session, path)
+                        except (IOError, OSError):  # pragma: no cover
+                            # Ignore exceptions during GZIP decoding.
+                            pass
 
 
 class ImportLocal(ImportBase):

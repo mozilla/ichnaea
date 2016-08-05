@@ -36,23 +36,12 @@ class BaseSubmitView(BaseAPIView):
             tags = ['key:%s' % api_key.valid_key]
         self.stats_client.incr('data.batch.upload', tags=tags)
 
-    def preprocess(self):
-        try:
-            request_data, errors = self.preprocess_request()
-
-            if not request_data:
-                # don't allow completely empty request
-                raise self.prepare_exception(ParseError())
-
-        except ParseError:
-            self.raven_client.captureException()
-            raise
-
-        return request_data
-
     def submit(self, api_key):
-        # may raise HTTP error
-        request_data = self.preprocess()
+        request_data, errors = self.preprocess_request()
+
+        if not request_data:
+            # don't allow completely empty request
+            raise self.prepare_exception(ParseError())
 
         valid_key = api_key.valid_key
         data = []

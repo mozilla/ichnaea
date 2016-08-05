@@ -56,32 +56,26 @@ class BaseSubmitTest(object):
             self.url, 'invalid', headers=headers,
             content_type='application/json', status=400)
         assert self.queue(celery).size() == 0
-        raven.check([('ParseError', 1)])
 
     def test_error_get(self, app, raven):
         res = app.get(self.url, status=400)
         assert res.json == ParseError.json_body()
-        raven.check([('ParseError', 1)])
 
     def test_error_empty_body(self, app, raven):
         res = app.post(self.url, '', status=400)
         assert res.json == ParseError.json_body()
-        raven.check([('ParseError', 1)])
 
     def test_error_empty_json(self, app, raven):
         res = app.post_json(self.url, {}, status=400)
         assert res.json == ParseError.json_body()
-        raven.check([('ParseError', 1)])
 
     def test_error_no_json(self, app, raven):
         res = app.post(self.url, '\xae', status=400)
         assert res.json == ParseError.json_body()
-        raven.check([('ParseError', 1)])
 
     def test_error_no_mapping(self, app, raven):
         res = app.post_json(self.url, [1], status=400)
         assert res.json == ParseError.json_body()
-        raven.check([('ParseError', 1)])
 
     def test_error_redis_failure(self, app, raven, stats):
         mock_queue = mock.Mock()
