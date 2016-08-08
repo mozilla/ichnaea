@@ -8,6 +8,7 @@ import pytest
 
 from ichnaea.content.views import (
     configure_content,
+    empty_homepage_view,
     ContentViews,
 )
 from ichnaea.models.content import (
@@ -41,6 +42,15 @@ class TestConfig(object):
     def test_enabled(self, config):
         config.registry.settings['web'] = {'enabled': 'true'}
         assert configure_content(config)
+
+    def test_alternate_homepage(self, config):
+        request = DummyRequest()
+        with testing.testConfig(request=request) as config:
+            config.registry.settings['web'] = {'enabled': 'false'}
+            configure_content(config)
+            res = empty_homepage_view(request)
+            assert res.content_type == 'text/html'
+            assert 'It works' in res.body
 
 
 class TestContentViews(object):

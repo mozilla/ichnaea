@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #491: Add an alternate homepage if the web content is disabled.
+
 - Reduce datamap detail.
 
 - No longer log sentry messages for client errors.

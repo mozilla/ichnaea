@@ -51,6 +51,8 @@ def configure_content(config):
     web_config = config.registry.settings.get('web', {})
     enabled = web_config.get('enabled', 'false')
     if enabled in ('false', '0'):
+        config.add_view(empty_homepage_view,
+                        http_cache=(86400, {'public': True}))
         return False
 
     config.add_view(favicon_view, name='favicon.ico',
@@ -310,6 +312,24 @@ class ContentViews(object):
             data = regions(self.session)
             self._set_cache('stats_regions', data)
         return {'page_title': 'Region Statistics', 'metrics': data}
+
+
+_empty_homepage_response = Response(content_type='text/html', body='''\
+<!DOCTYPE html><html><head>
+<meta charset="UTF-8" />
+<title>ichnaea</title>
+</head><body>
+<h1>It works!</h1>
+<p>This is an installation of the open-source software
+<a href="https://github.com/mozilla/ichnaea">Mozilla Ichnaea</a>.</p>
+<p>Mozilla is not responsible for the operation or problems with
+this specific instance, please contact the site operator first.</p>
+</body></html>
+''')
+
+
+def empty_homepage_view(request):
+    return _empty_homepage_response
 
 
 def favicon_view(request):
