@@ -50,7 +50,7 @@ class TestConfig(object):
             configure_content(config)
             res = empty_homepage_view(request)
             assert res.content_type == 'text/html'
-            assert 'It works' in res.body
+            assert b'It works' in res.body
 
 
 class TestContentViews(object):

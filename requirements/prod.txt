@@ -2,7 +2,7 @@ alembic==0.8.7
 amqp==1.4.9  # rq.filter: <2.0
 anyjson==0.3.3
 argparse==1.4.0 ; python_version < '2.7'
-billiard==3.3.0.23
+billiard==3.3.0.23  # rq.filter: <3.5.0
 boto==2.42.0
 celery==3.1.23
 certifi==2016.8.2
@@ -38,20 +38,20 @@ ordereddict==1.1 ; python_version < '3.0'
 PasteDeploy==1.5.2
 pyasn1==0.1.9
 pycparser==2.14
-PyMySQL==0.7.5
+PyMySQL==0.7.6
 pyopenssl==16.0.0
 pyramid==1.6.1  # rq.filter: <1.7.0
 pyramid-chameleon==0.3
 python-editor==1.0.1
 pytz==2016.6.1
-raven==5.23.0
+raven==5.24.2
 redis==2.10.5
 repoze.lru==0.6
 requests==2.10.0
 Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0
 Rtree==0.8.2 ; python_version >= '2.7'
 scandir==1.2 ; python_version < '3.5'
-scipy==0.17.1
+scipy==0.17.1  # rq.filter: <0.18
 setproctitle==1.1.10
 Shapely==1.5.16
 simplejson==3.8.2
