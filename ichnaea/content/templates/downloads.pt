@@ -60,7 +60,7 @@
         as well as hourly differential updates. File names contain either the
         word <i>diff</i> or <i>full</i> to specify their type. The full cell
         export is limited to those cell networks whose position has been
-        confirmed in the 12 months.
+        confirmed in the last 12 months.
     </p>
 
     <h4>Full Cell Exports</h4>

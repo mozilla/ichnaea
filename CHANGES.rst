@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- 385f842b2526: Add allow_transfer column to api_key table.
+
 Changes
 ~~~~~~~
 
