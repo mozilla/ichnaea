@@ -14,6 +14,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add a new `location_dump` command line script to dump/export networks.
+
 - #491: Add an alternate homepage if the web content is disabled.
 
 - Reduce datamap detail.

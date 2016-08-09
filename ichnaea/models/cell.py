@@ -458,6 +458,56 @@ class CellShard(StationMixin):
         """Return a dict of shard id to model classes."""
         return cls._shards
 
+    @classmethod
+    def export_header(cls):
+        return (
+            'radio,mcc,mnc,lac,cid,psc,'
+            'lat,lon,max_lat,min_lat,max_lon,min_lon,'
+            'radius,region,samples,source,weight,'
+            'created,modified,last_seen,'
+            'block_first,block_last,block_count'
+        )
+
+    @classmethod
+    def export_stmt(cls):
+        stmt = '''SELECT
+CONCAT_WS(",",
+    CASE radio
+        WHEN 0 THEN "GSM"
+        WHEN 2 THEN "WCDMA"
+        WHEN 3 THEN "LTE"
+        ELSE ""
+    END,
+    `mcc`,
+    `mnc`,
+    `lac`,
+    `cid`,
+    COALESCE(`psc`, ""),
+    COALESCE(ROUND(`lat`, 7), ""),
+    COALESCE(ROUND(`lon`, 7), ""),
+    COALESCE(ROUND(`max_lat`, 7), ""),
+    COALESCE(ROUND(`min_lat`, 7), ""),
+    COALESCE(ROUND(`max_lon`, 7), ""),
+    COALESCE(ROUND(`min_lon`, 7), ""),
+    COALESCE(`radius`, "0"),
+    COALESCE(`region`, ""),
+    COALESCE(`samples`, "0"),
+    COALESCE(`source`, ""),
+    COALESCE(`weight`, "0"),
+    COALESCE(UNIX_TIMESTAMP(`created`), ""),
+    COALESCE(UNIX_TIMESTAMP(`modified`), ""),
+    COALESCE(UNIX_TIMESTAMP(`last_seen`), ""),
+    COALESCE(UNIX_TIMESTAMP(`block_first`), ""),
+    COALESCE(UNIX_TIMESTAMP(`block_last`), ""),
+    COALESCE(`block_count`, "0")
+) AS `export_value`
+FROM %s
+ORDER BY `cellid`
+LIMIT :l
+OFFSET :o
+''' % cls.__tablename__
+        return stmt.replace('\n', ' ')
+
 
 class CellShardOCID(CellShard):
     """Cell OCID shard."""

@@ -52,7 +52,7 @@ def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
         parser.print_help()
         sys.exit(1)
 
-    filename = os.path.abspath(args.filename)
+    filename = os.path.abspath(os.path.expanduser(args.filename))
     if not os.path.isfile(filename):
         print('File not found.')
         sys.exit(1)

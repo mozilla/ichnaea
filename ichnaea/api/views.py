@@ -123,7 +123,7 @@ class BaseAPIView(BaseView):
     def parse_apikey(self):
         try:
             api_key_text = self.request.GET.get('key', None)
-        except Exception:
+        except Exception:  # pragma: no cover
             api_key_text = None
         # check length against DB column length and restrict
         # to a known set of characters

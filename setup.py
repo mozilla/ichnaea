@@ -56,6 +56,7 @@ setup(
     entry_points={
         'console_scripts': [
             'location_initdb=ichnaea.scripts.initdb:console_entry',
+            'location_dump=ichnaea.scripts.dump:console_entry',
             'location_load=ichnaea.scripts.load:console_entry',
             'location_map=ichnaea.scripts.datamap:console_entry',
             'location_region_json=ichnaea.scripts.region_json:console_entry',

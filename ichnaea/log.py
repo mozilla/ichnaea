@@ -22,6 +22,7 @@ from datadog.dogstatsd.base import (
 from ichnaea.config import RELEASE
 from ichnaea.exceptions import BaseClientError
 
+LOGGER = logging.getLogger('ichnaea')
 RAVEN_CLIENT = None  #: The globally configured raven client.
 STATS_CLIENT = None  #: The globally configured statsd client.
 
