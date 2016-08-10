@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use a docker volume for the css/js build pipeline.
+
 
 20160809152200
 **************

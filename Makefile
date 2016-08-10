@@ -64,18 +64,11 @@ endif
 
 INSTALL = $(PIP) install --no-deps --disable-pip-version-check
 
-STATIC_ROOT = $(HERE)/ichnaea/content/static
-CSS_ROOT = $(STATIC_ROOT)/css
-FONT_ROOT = $(STATIC_ROOT)/fonts
-IMG_ROOT = $(STATIC_ROOT)/images
-JS_ROOT = $(STATIC_ROOT)/js
-
-NODE_BIN = $(DOCKER_BIN) run --rm -a STDIN -a STDOUT -i mozilla-ichnaea/node:latest
-CLEANCSS = $(NODE_BIN) cleancss -d
-UGLIFYJS = $(NODE_BIN) uglifyjs -c --stats
+NODE_BIN = $(DOCKER_BIN) run --rm -it \
+	--volume $(HERE):/app mozilla-ichnaea/node:latest
 
 
-.PHONY: all js mysql pip init_db css js test clean shell docs \
+.PHONY: all mysql pip init_db test clean shell docs \
 	docker docker-mysql docker-node docker-redis \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
@@ -91,18 +84,16 @@ endif
 
 docker-mysql:
 ifneq ($(TRAVIS), true)
-	cd docker/mysql; $(DOCKER_BIN) build -t mozilla-ichnaea/mysql:latest .
+	cd docker/mysql; $(DOCKER_BIN) build -q -t mozilla-ichnaea/mysql:latest .
 endif
 
 docker-redis:
 ifneq ($(TRAVIS), true)
-	cd docker/redis; $(DOCKER_BIN) build -t mozilla-ichnaea/redis:latest .
+	cd docker/redis; $(DOCKER_BIN) build -q -t mozilla-ichnaea/redis:latest .
 endif
 
 docker-node:
-ifneq ($(TRAVIS), true)
-	cd docker/node; $(DOCKER_BIN) build -t mozilla-ichnaea/node:latest .
-endif
+	cd docker/node; $(DOCKER_BIN) build -q -t mozilla-ichnaea/node:latest .
 
 MYSQL_RET ?= 1
 mysql: docker
@@ -196,97 +187,10 @@ init_db: mysql
 	$(BIN)/location_initdb --initdb
 
 css: docker-node
-	$(NODE_BIN) cat \
-		bower_components/mozilla-tabzilla/css/tabzilla.css > \
-		$(CSS_ROOT)/tabzilla.css
-
-	mkdir -p $(CSS_ROOT)/../media/img/
-	$(NODE_BIN) cat \
-		bower_components/mozilla-tabzilla/media/img/tabzilla-static.png > \
-		$(CSS_ROOT)/../media/img/tabzilla-static.png
-	$(NODE_BIN) cat \
-		bower_components/mozilla-tabzilla/media/img/tabzilla-static-high-res.png > \
-		$(CSS_ROOT)/../media/img/tabzilla-static-high-res.png
-
-	cd $(CSS_ROOT) && \
-		cat tabzilla.css base.css | \
-		$(CLEANCSS) > bundle-base.css
-
-	$(NODE_BIN) cat \
-		bower_components/datatables/media/css/jquery.dataTables.css > \
-		$(CSS_ROOT)/jquery.dataTables.css
-	cd $(CSS_ROOT) && \
-		cat jquery.dataTables.css | \
-		$(CLEANCSS) > bundle-stat-regions.css
-
-	$(NODE_BIN) cat \
-		bower_components/font-awesome/css/font-awesome.css > \
-		$(CSS_ROOT)/font-awesome.css
-	$(NODE_BIN) cat \
-		bower_components/mapbox.js/mapbox.uncompressed.css > \
-		$(CSS_ROOT)/mapbox.uncompressed.css
-	cd $(CSS_ROOT) && \
-		cat font-awesome.css mapbox.uncompressed.css | \
-		$(CLEANCSS) > bundle-map.css
-
-	mkdir -p $(CSS_ROOT)/images/
-	cd $(CSS_ROOT)/images/ && \
-		$(NODE_BIN) tar c -C bower_components/mapbox.js/images/ . | \
-		tar x -
-	rm -f $(CSS_ROOT)/images/render.sh
-	cd $(FONT_ROOT) && \
-		$(NODE_BIN) tar c -C bower_components/font-awesome/fonts/ . | \
-		tar x -
-
+	$(NODE_BIN) make -f node.make css
 
 js: docker-node
-	cd $(JS_ROOT) && cat \
-		privacy.js | \
-		$(UGLIFYJS) > bundle-privacy.js
-
-	$(NODE_BIN) cat \
-		bower_components/jquery/dist/jquery.js > \
-		$(JS_ROOT)/jquery.js
-	cd $(JS_ROOT) && cat \
-		ga.js \
-		jquery.js | \
-		$(UGLIFYJS) > bundle-base.js
-
-	$(NODE_BIN) cat \
-		bower_components/datatables/media/js/jquery.dataTables.js > \
-		$(JS_ROOT)/jquery.dataTables.js
-	cd $(JS_ROOT) && cat \
-		jquery.dataTables.js \
-		stat-regions.js | \
-		$(UGLIFYJS) > bundle-stat-regions.js
-
-	$(NODE_BIN) cat \
-		bower_components/flot/jquery.flot.js > \
-		$(JS_ROOT)/jquery.flot.js
-	$(NODE_BIN) cat \
-		bower_components/flot/jquery.flot.time.js > \
-		$(JS_ROOT)/jquery.flot.time.js
-	cd $(JS_ROOT) && cat \
-		jquery.flot.js \
-		jquery.flot.time.js \
-		stat.js | \
-		$(UGLIFYJS) > bundle-stat.js
-
-	$(NODE_BIN) cat \
-		bower_components/mapbox.js/mapbox.uncompressed.js > \
-		$(JS_ROOT)/mapbox.uncompressed.js
-	$(NODE_BIN) cat \
-		bower_components/leaflet-hash/leaflet-hash.js > \
-		$(JS_ROOT)/leaflet-hash.js
-	$(NODE_BIN) cat \
-		bower_components/leaflet.locatecontrol/src/L.Control.Locate.js > \
-		$(JS_ROOT)/L.Control.Locate.js
-	cd $(JS_ROOT) && cat \
-		mapbox.uncompressed.js \
-		leaflet-hash.js \
-		L.Control.Locate.js \
-		map.js | \
-		$(UGLIFYJS) > bundle-map.js
+	$(NODE_BIN) make -f node.make js
 
 clean:
 	rm -rf $(BUILD_DIRS)
