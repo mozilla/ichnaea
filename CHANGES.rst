@@ -5,8 +5,8 @@ Changelog
 1.5 (unreleased)
 ================
 
-Untagged
-********
+20160810110400
+**************
 
 Migrations
 ~~~~~~~~~~
@@ -17,7 +17,6 @@ Changes
 ~~~~~~~
 
 - Use a docker volume for the css/js build pipeline.
-
 
 20160809152200
 **************
