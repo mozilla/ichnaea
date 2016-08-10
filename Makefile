@@ -1,14 +1,12 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
-BUILD_DIRS = .tox bin build datamaps dist include \
+BUILD_DIRS = bin build datamaps dist include \
 	lib lib64 libmaxminddb man pngquant share
 TESTS ?= ichnaea
 TRAVIS ?= false
 
-TOXENVDIR ?= $(HERE)/.tox/tmp
-TOXINIDIR ?= $(HERE)
-ICHNAEA_CFG ?= $(TOXINIDIR)/ichnaea/tests/data/test.ini
-GEOIP_PATH ?= $(TOXINIDIR)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
+ICHNAEA_CFG ?= $(HERE)/ichnaea/tests/data/test.ini
+GEOIP_PATH ?= $(HERE)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
 
 MAXMINDDB_VERSION = 1.2.1
 MYSQL_DB = location
@@ -17,10 +15,11 @@ MYSQL_TEST_DB = test_location
 DOCKER_BIN ?= docker
 DOCKER_COMPOSE_BIN ?= docker-compose
 
+MYSQL_HOST ?= localhost
+
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
-	MYSQL_HOST ?= localhost
 	MYSQL_PORT ?= 3306
 	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
 	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
@@ -35,7 +34,6 @@ ifeq ($(TRAVIS), true)
 else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
-	MYSQL_HOST ?= localhost
 	MYSQL_PORT ?= 33306
 	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
 	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
@@ -72,13 +70,12 @@ NODE_BIN = $(DOCKER_BIN) run --rm -it \
 	build build_dev build_req build_cython \
 	build_datamaps build_maxmind build_pngquant \
 	release release_install release_compile \
-	tox_install tox_test pypi_release pypi_upload
 
 all: build init_db
 
 docker: docker-mysql docker-redis
 ifneq ($(TRAVIS), true)
-	cd $(TOXINIDIR); $(DOCKER_COMPOSE_BIN) up -d
+	$(DOCKER_COMPOSE_BIN) up -d
 endif
 
 docker-mysql:
@@ -129,22 +126,21 @@ datamaps/merge:
 
 build_datamaps: datamaps/merge
 
-$(TOXINIDIR)/libmaxminddb/bootstrap:
+libmaxminddb/bootstrap:
 	git clone --recursive git://github.com/maxmind/libmaxminddb
 	cd libmaxminddb; git checkout 1.1.1
 	cd libmaxminddb; git submodule update --init --recursive
 
-$(TOXINIDIR)/libmaxminddb/Makefile:
+libmaxminddb/Makefile:
 	cd libmaxminddb; ./bootstrap
 	cd libmaxminddb; ./configure --prefix=$(HERE)
 
-$(TOXINIDIR)/lib/libmaxminddb.0.dylib: \
-		$(TOXINIDIR)/libmaxminddb/bootstrap $(TOXINIDIR)/libmaxminddb/Makefile
+lib/libmaxminddb.0.dylib: libmaxminddb/bootstrap libmaxminddb/Makefile
 	cd libmaxminddb; make
 	cd libmaxminddb; make install
 
-build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
-	CFLAGS=-I$(TOXINIDIR)/include LDFLAGS=-L$(TOXINIDIR)/lib \
+build_maxmind: $(PYTHON) pip lib/libmaxminddb.0.dylib
+	CFLAGS=-I$(HERE)/include LDFLAGS=-L$(HERE)/lib \
 		$(INSTALL) --no-binary :all: maxminddb==$(MAXMINDDB_VERSION)
 
 pngquant/pngquant:
@@ -186,7 +182,6 @@ init_db: mysql
 	DB_RW_URI=$(DB_RW_URI) DB_RO_URI=$(DB_RO_URI) $(BIN)/location_initdb \
 		--alembic_ini=alembic.ini --location_ini=location.ini --initdb
 
-
 css: docker-node
 	$(NODE_BIN) make -f node.make css
 
@@ -208,34 +203,8 @@ test: mysql
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(PYTEST) $(TEST_ARG)
 
-tox_install:
-ifeq ($(wildcard $(TOXENVDIR)/.git/),)
-	git init $(TOXENVDIR)
-	cd $(TOXENVDIR); git remote add upstream $(TOXINIDIR) --no-tags
-endif
-	cd $(TOXENVDIR); git fetch upstream --force
-	cd $(TOXENVDIR); git checkout upstream/master --force
-	cd $(TOXENVDIR); git reset --hard
-	rm -rf $(TOXENVDIR)/ichnaea
-	cp -f $(TOXINIDIR)/lib/libmaxminddb* $(TOXENVDIR)/lib/
-	cd $(TOXENVDIR); make build_req
-	cd $(TOXENVDIR); make mysql
-
-tox_test:
-	make tox_install
-	cd $(TOXENVDIR); bin/pip install -e /opt/mozilla/ichnaea/ --no-compile
-	cd $(TOXENVDIR); PYTHONDONTWRITEBYTECODE=True make test
-
 $(BIN)/sphinx-build:
 	$(INSTALL) -r requirements/dev.txt
 
 docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
-
-pypi_release:
-	rm -rf $(HERE)/dist
-	$(PYTHON) setup.py egg_info -RDb '' sdist --formats=zip
-	gpg --detach-sign -a $(HERE)/dist/ichnaea*.zip
-
-pypi_upload:
-	twine upload $(HERE)/dist/*
