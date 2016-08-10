@@ -9,20 +9,19 @@ ICHNAEA_CFG ?= $(HERE)/ichnaea/tests/data/test.ini
 GEOIP_PATH ?= $(HERE)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
 
 MAXMINDDB_VERSION = 1.2.1
-MYSQL_DB = location
-MYSQL_TEST_DB = test_location
 
 DOCKER_BIN ?= docker
 DOCKER_COMPOSE_BIN ?= docker-compose
 
+MYSQL_DB = location
 MYSQL_HOST ?= localhost
 
 ifeq ($(TRAVIS), true)
 	MYSQL_USER ?= travis
 	MYSQL_PWD ?=
 	MYSQL_PORT ?= 3306
-	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
-	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
+	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_DB)
+	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_DB)
 
 	REDIS_PORT ?= 6379
 
@@ -35,8 +34,8 @@ else
 	MYSQL_USER ?= root
 	MYSQL_PWD ?= mysql
 	MYSQL_PORT ?= 33306
-	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
-	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
+	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_DB)
+	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_DB)
 
 	REDIS_PORT ?= 36379
 
@@ -105,7 +104,7 @@ mysql: docker
 
 ifeq ($(TRAVIS), true)
 	mysql -u$(MYSQL_USER) -h localhost -e \
-		"CREATE DATABASE IF NOT EXISTS $(MYSQL_TEST_DB)" || echo
+		"CREATE DATABASE IF NOT EXISTS $(MYSQL_DB)" || echo
 endif
 
 

@@ -6,8 +6,8 @@ else
 fi
 
 ICHNAEA_CFG=location.ini PYRAMID_RELOAD_TEMPLATES=1 \
-    DB_RW_URI=mysql+pymysql://root:mysql@localhost:33306/test_location \
-    DB_RO_URI=mysql+pymysql://root:mysql@localhost:33306/test_location \
+    DB_RW_URI=mysql+pymysql://root:mysql@localhost:33306/location \
+    DB_RO_URI=mysql+pymysql://root:mysql@localhost:33306/location \
     GEOIP_PATH=ichnaea/tests/data/GeoIP2-City-Test.mmdb \
     REDIS_PORT=36379 \
     ${GUNICORN_BIN} \

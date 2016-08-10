@@ -16,8 +16,6 @@ echo "=> Mysql started"
 echo "=> Create location database"
 mysql -uroot -pmysql --protocol=socket \
     -e "CREATE DATABASE IF NOT EXISTS location"
-mysql -uroot -pmysql --protocol=socket \
-    -e "CREATE DATABASE IF NOT EXISTS test_location"
 
 # Stop the server.
 echo "=> Stopping mysql"
