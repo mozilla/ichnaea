@@ -30,7 +30,15 @@ VERSION_INFO = {
 
 DB_RW_URI = os.environ.get('DB_RW_URI')
 DB_RO_URI = os.environ.get('DB_RO_URI')
+GEOIP_PATH = os.environ.get('GEOIP_PATH')
+
+REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
+REDIS_DB = '1' if TESTING else '0'
 REDIS_URI = os.environ.get('REDIS_URI')
+if 'REDIS_HOST' in os.environ or 'REDIS_PORT' in os.environ:
+    os.environ['REDIS_URI'] = REDIS_URI = \
+        'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB)
 
 if os.path.isfile(VERSION_FILE):
     with open(VERSION_FILE, 'r') as fd:
@@ -105,7 +113,7 @@ class DummyConfig(object):
     def __init__(self, settings):
         self.settings = settings
 
-    def get(self, section, option, default=None):
+    def get(self, section, option, default=None):  # pragma: no cover
         section_values = self.get_map(section, {})
         return section_values.get(option, default)
 

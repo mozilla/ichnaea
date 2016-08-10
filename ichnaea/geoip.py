@@ -16,6 +16,7 @@ from maxminddb import InvalidDatabaseError
 from maxminddb.const import MODE_AUTO
 from six import PY2
 
+from ichnaea.config import GEOIP_PATH
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocode import GEOCODER
 
@@ -164,7 +165,7 @@ GEOIP_GENC_MAP = {
 }  #:
 
 
-def configure_geoip(filename, mode=MODE_AUTO,
+def configure_geoip(filename=GEOIP_PATH, mode=MODE_AUTO,
                     raven_client=None, _client=None):
     """
     Configure and return a :class:`~ichnaea.geoip.GeoIPWrapper` instance.

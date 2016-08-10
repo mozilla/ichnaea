@@ -18,6 +18,7 @@ from ichnaea.scripts.datamap import (
 from ichnaea import util
 
 GIT_ROOT = os.path.abspath(os.path.join(HERE, os.pardir))
+TEST_INI = os.path.join(HERE, 'tests', 'data', 'test.ini')
 DATAMAPS_DIR = os.path.join(GIT_ROOT, 'datamaps')
 PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 
@@ -103,7 +104,8 @@ class TestMap(object):
                 ]
                 main(argv,
                      _raven_client=raven,
-                     _stats_client=stats)
+                     _stats_client=stats,
+                     _bucketname='localhost.bucket')
 
                 assert len(mock_generate.mock_calls) == 1
                 args, kw = mock_generate.call_args

@@ -23,8 +23,14 @@ from ichnaea.async.config import (
     shutdown_worker as shutdown_celery,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.config import read_config
-from ichnaea.db import configure_db
+from ichnaea.config import (
+    DB_RW_URI,
+    read_config,
+)
+from ichnaea.db import (
+    configure_rw_db,
+    configure_ro_db,
+)
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import (
     CITY_RADII,
@@ -48,8 +54,6 @@ from ichnaea.webapp.config import (
     shutdown_worker as shutdown_app,
 )
 
-SQLURI = os.environ.get('SQLURI')
-
 # Module global to hold active session, used by factory-boy
 SESSION = {}
 
@@ -59,8 +63,6 @@ GB_LAT = 51.5
 GB_LON = -0.1
 GB_MCC = 234
 GB_MNC = 30
-
-GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
 
 GEOIP_DATA = {
     'London': {
@@ -102,7 +104,7 @@ ALEMBIC_CFG = AlembicConfig()
 ALEMBIC_CFG.set_section_option(
     'alembic', 'script_location', 'alembic')
 ALEMBIC_CFG.set_section_option(
-    'alembic', 'sqlalchemy.url', SQLURI)
+    'alembic', 'sqlalchemy.url', DB_RW_URI)
 ALEMBIC_CFG.set_section_option(
     'alembic', 'sourceless', 'true')
 
@@ -174,7 +176,7 @@ def cleanup_tables(engine):
 
 
 def setup_database():
-    db = configure_db(SQLURI)
+    db = configure_rw_db()
     engine = db.engine
     cleanup_tables(engine)
     setup_tables(engine)
@@ -192,14 +194,14 @@ def database():
 
 @pytest.yield_fixture(scope='session')
 def db_rw(database):
-    db = configure_db(SQLURI)
+    db = configure_rw_db()
     yield db
     db.close()
 
 
 @pytest.yield_fixture(scope='session')
 def db_ro(database):
-    db = configure_db(SQLURI)
+    db = configure_ro_db()
     yield db
     db.close()
 
@@ -338,8 +340,7 @@ def geoip_data():
 
 @pytest.yield_fixture(scope='session')
 def geoip_db(raven_client):
-    geoip_db = configure_geoip(
-        GEOIP_TEST_FILE, mode=MODE_AUTO, raven_client=raven_client)
+    geoip_db = configure_geoip(mode=MODE_AUTO, raven_client=raven_client)
     yield geoip_db
     geoip_db.close()
 

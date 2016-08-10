@@ -8,6 +8,7 @@ TRAVIS ?= false
 TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
 ICHNAEA_CFG ?= $(TOXINIDIR)/ichnaea/tests/data/test.ini
+GEOIP_PATH ?= $(TOXINIDIR)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
 
 MAXMINDDB_VERSION = 1.2.1
 MYSQL_DB = location
@@ -21,11 +22,10 @@ ifeq ($(TRAVIS), true)
 	MYSQL_PWD ?=
 	MYSQL_HOST ?= localhost
 	MYSQL_PORT ?= 3306
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
+	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
+	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_TEST_DB)
 
-	REDIS_HOST ?= localhost
 	REDIS_PORT ?= 6379
-	REDIS_URI ?= redis://$(REDIS_HOST):$(REDIS_PORT)/1
 
 	PYTHON = python
 	PIP = pip
@@ -37,11 +37,10 @@ else
 	MYSQL_PWD ?= mysql
 	MYSQL_HOST ?= localhost
 	MYSQL_PORT ?= 33306
-	SQLURI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
+	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
+	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_TEST_DB)
 
-	REDIS_HOST ?= localhost
 	REDIS_PORT ?= 36379
-	REDIS_URI ?= redis://$(REDIS_HOST):$(REDIS_PORT)/1
 
 	PYTHON = $(BIN)/python
 	PIP = $(BIN)/pip
@@ -184,7 +183,9 @@ endif
 release: release_install release_compile
 
 init_db: mysql
-	$(BIN)/location_initdb --initdb
+	DB_RW_URI=$(DB_RW_URI) DB_RO_URI=$(DB_RO_URI) $(BIN)/location_initdb \
+		--alembic_ini=alembic.ini --location_ini=location.ini --initdb
+
 
 css: docker-node
 	$(NODE_BIN) make -f node.make css
@@ -199,8 +200,12 @@ clean:
 	rm -rf $(HERE)/ichnaea.egg-info
 
 test: mysql
-	TESTING=true SQLURI=$(SQLURI) REDIS_URI=$(REDIS_URI) \
-	ICHNAEA_CFG=$(ICHNAEA_CFG) LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
+	TESTING=true ICHNAEA_CFG=$(ICHNAEA_CFG) \
+	DB_RW_URI=$(DB_RW_URI) \
+	DB_RO_URI=$(DB_RO_URI) \
+	GEOIP_PATH=$(GEOIP_PATH) \
+	REDIS_PORT=$(REDIS_PORT) \
+	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(PYTEST) $(TEST_ARG)
 
 tox_install:

@@ -16,13 +16,16 @@ import boto
 from simplejson import dumps
 from sqlalchemy import text
 
-from ichnaea.config import read_config
+from ichnaea.config import (
+    DB_RW_URI,
+    read_config,
+)
 from ichnaea.models.content import (
     DataMap,
     decode_datamap_grid,
 )
 from ichnaea.db import (
-    configure_db,
+    configure_ro_db,
     db_worker_session,
 )
 from ichnaea.geocalc import random_points
@@ -68,7 +71,7 @@ SELECT
 FROM {tablename}
 LIMIT :limit OFFSET :offset
 '''.format(tablename=tablename).replace('\n', ' '))
-    db = configure_db(db_url, _db=_db_rw)
+    db = configure_ro_db(db_url, _db=_db_rw)
 
     offset = 0
     limit = 200000
@@ -383,7 +386,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
                                     tags=['count:%s' % metric])
 
 
-def main(argv, _raven_client=None, _stats_client=None):
+def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
     # run for example via:
     # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
     #   --output=ichnaea/content/static/tiles/
@@ -405,14 +408,19 @@ def main(argv, _raven_client=None, _stats_client=None):
     args = parser.parse_args(argv[1:])
     if args.create:
         conf = read_config()
-        db_url = conf.get('database', 'rw_url')
+        if DB_RW_URI:
+            db_url = DB_RW_URI
+        else:  # pragma: no cover
+            db_url = conf.get('database', 'rw_url')
 
         raven_client = configure_raven(
             conf, transport='sync', _client=_raven_client)
 
         stats_client = configure_stats(conf, _client=_stats_client)
 
-        bucketname = conf.get('assets', 'bucket').strip('/')
+        bucketname = _bucketname
+        if not _bucketname:  # pragma: no cover
+            bucketname = conf.get('assets', 'bucket').strip('/')
 
         upload = False
         if args.upload:

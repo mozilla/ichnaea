@@ -11,9 +11,12 @@ import sys
 
 from sqlalchemy import text
 
-from ichnaea.config import read_config
+from ichnaea.config import (
+    DB_RW_URI,
+    read_config,
+)
 from ichnaea.db import (
-    configure_db,
+    configure_rw_db,
     db_worker_session,
 )
 from ichnaea.geocalc import bbox
@@ -117,12 +120,16 @@ def main(argv, _db_rw=None, _dump_file=dump_file):
 
     configure_logging()
 
-    if 'ICHNAEA_CFG' not in os.environ:  # pragma: no cover
-        print('Missing ICHNAEA_CFG environment variable.')
+    if ('ICHNAEA_CFG' not in os.environ and
+            'DB_RW_URI' not in os.environ):  # pragma: no cover
+        print('You need to specify either ICHNAEA_CFG or DB_RW_URI.')
         return 1
 
     app_config = read_config()
-    db = configure_db(app_config.get('database', 'rw_url'), _db=_db_rw)
+    if DB_RW_URI:
+        db = configure_rw_db(_db=_db_rw)
+    else:  # pragma: no cover
+        db = configure_rw_db(app_config.get('database', 'rw_url'), _db=_db_rw)
 
     with db_worker_session(db, commit=False) as session:
         exit_code = _dump_file(

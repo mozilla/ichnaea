@@ -14,8 +14,12 @@ from alembic import command
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
-from ichnaea.config import read_config
-from ichnaea.db import configure_db
+from ichnaea.config import (
+    DB_RO_URI,
+    DB_RW_URI,
+    read_config,
+)
+from ichnaea.db import configure_rw_db
 from ichnaea.log import configure_raven
 
 # make sure all models are imported
@@ -55,8 +59,14 @@ def add_users(conn, location_cfg):  # pragma: no cover
     database_section = location_cfg.get_map('database')
 
     creds = {}
-    creds['rw'] = _db_creds(database_section.get('rw_url'))
-    creds['ro'] = _db_creds(database_section.get('ro_url'))
+    if DB_RW_URI:
+        creds['rw'] = _db_creds(DB_RW_URI)
+    else:
+        creds['rw'] = _db_creds(database_section.get('rw_url'))
+    if DB_RO_URI:
+        creds['ro'] = _db_creds(DB_RO_URI)
+    else:
+        creds['ro'] = _db_creds(database_section.get('ro_url'))
 
     stmt = text('SELECT user FROM mysql.user')
     result = conn.execute(stmt)
@@ -117,7 +127,7 @@ def main(argv, _db_rw=None, _raven_client=None):  # pragma: no cover
         # Either use explicit config file location or fallback
         # on environment variable or finally file in current directory
         if not args.location_ini:
-            location_ini = os.environ.get('ICHNAEA_CFG', 'location.ini')
+            location_ini = os.environ.get('ICHNAEA_CFG')
         else:
             location_ini = args.location_ini
         location_ini = os.path.abspath(location_ini)
@@ -134,8 +144,11 @@ def main(argv, _db_rw=None, _raven_client=None):  # pragma: no cover
         alembic_cfg = Config(alembic_ini)
         alembic_section = alembic_cfg.get_section('alembic')
 
-        db_rw = configure_db(
-            alembic_section['sqlalchemy.url'], _db=_db_rw)
+        if DB_RW_URI:
+            db_rw = configure_rw_db(_db=_db_rw)
+        else:
+            db_rw = configure_rw_db(
+                alembic_section['sqlalchemy.url'], _db=_db_rw)
         configure_raven(
             location_cfg, transport='sync', _client=_raven_client)
 

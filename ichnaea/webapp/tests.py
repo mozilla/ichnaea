@@ -4,13 +4,12 @@ import webtest
 from ichnaea.cache import configure_redis
 from ichnaea.config import (
     DummyConfig,
+    DB_RW_URI,
+    DB_RO_URI,
     REDIS_URI,
 )
-from ichnaea.conftest import (
-    SQLURI,
-    TEST_CONFIG,
-)
-from ichnaea.db import configure_db
+from ichnaea.conftest import TEST_CONFIG
+from ichnaea.db import configure_rw_db
 from ichnaea.geoip import GeoIPNull
 from ichnaea.webapp.config import main
 
@@ -42,8 +41,8 @@ class TestApp(object):
     def test_db_config(self, geoip_db, raven, redis, stats):
         app_config = DummyConfig({
             'database': {
-                'rw_url': SQLURI,
-                'ro_url': SQLURI,
+                'rw_url': DB_RW_URI,
+                'ro_url': DB_RO_URI,
             },
         })
         try:
@@ -105,7 +104,7 @@ class TestHeartbeatErrors(object):
     @pytest.yield_fixture(scope='function')
     def broken_app(self, http_session, raven, stats):
         # Create database connections to the discard port.
-        db = configure_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
+        db = configure_rw_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
 
         # Create a broken GeoIP database.
         geoip_db = GeoIPNull()

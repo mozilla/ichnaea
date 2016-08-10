@@ -11,10 +11,14 @@ from ichnaea.api.locate.searcher import (
     configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.config import REDIS_URI
+from ichnaea.config import (
+    DB_RO_URI,
+    GEOIP_PATH,
+    REDIS_URI,
+)
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
-    configure_db,
+    configure_ro_db,
     db_ro_session,
 )
 from ichnaea import floatjson
@@ -74,8 +78,11 @@ def main(app_config, ping_connections=False,
     # configure outside connections
     registry = config.registry
 
-    registry.db_ro = configure_db(
-        app_config.get('database', 'ro_url'), _db=_db_ro)
+    if DB_RO_URI:
+        registry.db_ro = configure_ro_db(_db=_db_ro)
+    else:  # pragma: no cover
+        registry.db_ro = configure_ro_db(
+            app_config.get('database', 'ro_url'), _db=_db_ro)
 
     registry.raven_client = raven_client = configure_raven(
         app_config, transport='gevent', _client=_raven_client)
@@ -92,9 +99,13 @@ def main(app_config, ping_connections=False,
 
     registry.http_session = configure_http_session(_session=_http_session)
 
-    registry.geoip_db = geoip_db = configure_geoip(
-        app_config.get('geoip', 'db_path'), raven_client=raven_client,
-        _client=_geoip_db)
+    if GEOIP_PATH:
+        registry.geoip_db = geoip_db = configure_geoip(
+            raven_client=raven_client, _client=_geoip_db)
+    else:  # pragma: no cover
+        registry.geoip_db = geoip_db = configure_geoip(
+            app_config.get('geoip', 'db_path'), raven_client=raven_client,
+            _client=_geoip_db)
 
     # Needs to be the exact same as the *_incoming entries in async.config.
     registry.data_queues = data_queues = {

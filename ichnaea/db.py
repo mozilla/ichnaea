@@ -15,6 +15,11 @@ from sqlalchemy.pool import Pool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
+from ichnaea.config import (
+    DB_RW_URI,
+    DB_RO_URI,
+)
+
 
 @compiles(Insert, 'mysql')
 def on_duplicate(insert, compiler, **kw):
@@ -37,6 +42,14 @@ def configure_db(uri, _db=None):
     if _db is not None:
         return _db
     return Database(uri)
+
+
+def configure_rw_db(uri=DB_RW_URI, _db=None):
+    return configure_db(uri=uri, _db=_db)
+
+
+def configure_ro_db(uri=DB_RO_URI, _db=None):
+    return configure_db(uri=uri, _db=_db)
 
 
 # the request db_ro_session and db_tween_factory are inspired by
