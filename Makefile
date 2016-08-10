@@ -161,16 +161,6 @@ build_dev: $(PYTHON) build_cython
 
 build: build_req build_dev mysql
 
-release_install:
-	$(PIP) install --no-deps -r requirements/build.txt
-	$(INSTALL) -r requirements/prod.txt
-	$(PYTHON) setup.py install
-
-release_compile:
-	$(PYTHON) compile.py
-
-release: release_install release_compile
-
 init_db: mysql
 	DB_RW_URI=$(DB_RW_URI) DB_RO_URI=$(DB_RO_URI) $(BIN)/location_initdb \
 		--alembic_ini=alembic.ini --location_ini=location.ini --initdb
@@ -201,3 +191,15 @@ $(BIN)/sphinx-build:
 
 docs: $(BIN)/sphinx-build
 	cd docs; SPHINXBUILD=$(SPHINXBUILD) make html
+
+
+# These parts are called by the rpm spec file we use in deploying ichnaea.
+release_install:
+	$(PIP) install --no-deps -r requirements/build.txt
+	$(INSTALL) -r requirements/prod.txt
+	$(PYTHON) setup.py install
+
+release_compile:
+	$(PYTHON) compile.py
+
+release: release_install release_compile
