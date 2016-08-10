@@ -206,8 +206,8 @@ class ContentViews(object):
         if data is None:
             settings = self.request.registry.settings
             data = s3_list_downloads(
-                settings['assets']['bucket'],
-                settings['assets']['url'],
+                settings.get('assets', {}).get('bucket'),
+                settings.get('assets', {}).get('url'),
                 self.request.registry.raven_client)
             self._set_cache('downloads', data, ex=1800)
         return {'page_title': 'Downloads', 'files': data}
