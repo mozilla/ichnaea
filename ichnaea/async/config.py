@@ -2,14 +2,15 @@
 Contains celery specific one time configuration code.
 """
 
-import os
-
 from kombu import Queue
 from kombu.serialization import register
 import simplejson
 
 from ichnaea.cache import configure_redis
-from ichnaea.config import read_config
+from ichnaea.config import (
+    read_config,
+    REDIS_URI,
+)
 from ichnaea.db import configure_db
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
@@ -64,19 +65,15 @@ def configure_celery(celery_app):
     # Make config file settings available.
     celery_app.app_config = app_config
     celery_app.settings = app_config.asdict()
+    celery_app.config_from_object('ichnaea.async.settings')
 
     # testing settings
-    redis_uri = os.environ.get('REDIS_URI')
-
-    if not redis_uri:  # pragma: no cover
+    if not REDIS_URI:  # pragma: no cover
         redis_uri = app_config.get_map('cache')['cache_url']
-
-    celery_app.config_from_object('ichnaea.async.settings')
-    celery_app.conf.update(
-        BROKER_URL=redis_uri,
-        CELERY_RESULT_BACKEND=redis_uri,
-        CELERY_QUEUES=CELERY_QUEUES,
-    )
+        celery_app.conf.update(
+            BROKER_URL=redis_uri,
+            CELERY_RESULT_BACKEND=redis_uri,
+        )
 
 
 def configure_data(redis_client):
@@ -141,8 +138,12 @@ def init_worker(celery_app,
     celery_app.raven_client = raven_client = configure_raven(
         app_config, transport='threaded', _client=_raven_client)
 
-    celery_app.redis_client = redis_client = configure_redis(
-        app_config.get('cache', 'cache_url'), _client=_redis_client)
+    if REDIS_URI:
+        celery_app.redis_client = redis_client = configure_redis(
+            _client=_redis_client)
+    else:  # pragma: no cover
+        celery_app.redis_client = redis_client = configure_redis(
+            app_config.get('cache', 'cache_url'), _client=_redis_client)
 
     celery_app.stats_client = configure_stats(
         app_config, _client=_stats_client)

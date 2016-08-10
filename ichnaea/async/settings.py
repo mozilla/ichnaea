@@ -2,14 +2,17 @@
 Contains :ref:`celery settings <celery:configuration>`.
 """
 
-import os
+from ichnaea.async.config import CELERY_QUEUES
+from ichnaea.config import (
+    REDIS_URI,
+    TESTING,
+)
 
-always_eager = bool(os.environ.get('CELERY_ALWAYS_EAGER', False))
-
-#: Set based on the environment variable of the same name.
-CELERY_ALWAYS_EAGER = always_eager
-#: Set to the same value as CELERY_ALWAYS_EAGER.
-CELERY_EAGER_PROPAGATES_EXCEPTIONS = always_eager
+if TESTING:
+    CELERY_ALWAYS_EAGER = True
+    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+    BROKER_URL = REDIS_URI
+    CELERY_RESULT_BACKEND = REDIS_URI
 
 #: Based on `Celery / Redis caveats
 #: <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
@@ -21,6 +24,9 @@ BROKER_TRANSPORT_OPTIONS = {
 
 #: Name of the default queue.
 CELERY_DEFAULT_QUEUE = 'celery_default'
+
+#: Definition of all queues.
+CELERY_QUEUES = CELERY_QUEUES
 
 #: All modules being searched for @task decorators.
 CELERY_IMPORTS = [
@@ -40,5 +46,5 @@ CELERY_TASK_SERIALIZER = 'internal_json'  #: Internal data format
 CELERYBEAT_LOG_LEVEL = 'WARNING'  #: Silence celery beat.
 
 # cleanup
-del always_eager
-del os
+del REDIS_URI
+del TESTING

@@ -10,6 +10,7 @@ from kombu.serialization import (
 from six import get_unbound_function
 
 from ichnaea.cache import redis_pipeline
+from ichnaea.config import TESTING
 from ichnaea.db import db_worker_session
 
 
@@ -84,7 +85,7 @@ class BaseTask(Task):
                 result = super(BaseTask, self).__call__(*args, **kw)
             except Exception as exc:  # pragma: no cover
                 self.raven_client.captureException()
-                if self._auto_retry and not self.app.conf.CELERY_ALWAYS_EAGER:
+                if self._auto_retry and not TESTING:
                     raise self.retry(exc=exc)
                 raise
         return result
@@ -99,7 +100,7 @@ class BaseTask(Task):
         be serialized into JSON.
         """
 
-        if self.app.conf.CELERY_ALWAYS_EAGER:
+        if TESTING:
             # We do the extra check to make sure this was really used from
             # inside tests
             serializer = self.app.conf.CELERY_TASK_SERIALIZER

@@ -11,6 +11,7 @@ from ichnaea.api.locate.searcher import (
     configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
+from ichnaea.config import REDIS_URI
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
     configure_db,
@@ -79,8 +80,12 @@ def main(app_config, ping_connections=False,
     registry.raven_client = raven_client = configure_raven(
         app_config, transport='gevent', _client=_raven_client)
 
-    registry.redis_client = redis_client = configure_redis(
-        app_config.get('cache', 'cache_url'), _client=_redis_client)
+    if REDIS_URI:
+        registry.redis_client = redis_client = configure_redis(
+            _client=_redis_client)
+    else:  # pragma: no cover
+        registry.redis_client = redis_client = configure_redis(
+            app_config.get('cache', 'cache_url'), _client=_redis_client)
 
     registry.stats_client = stats_client = configure_stats(
         app_config, _client=_stats_client)

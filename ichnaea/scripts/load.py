@@ -15,7 +15,10 @@ from ichnaea.cache import (
     configure_redis,
     redis_pipeline,
 )
-from ichnaea.config import read_config
+from ichnaea.config import (
+    read_config,
+    REDIS_URI,
+)
 from ichnaea.data import ocid
 from ichnaea.db import (
     configure_db,
@@ -65,8 +68,11 @@ def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
     configure_logging()
     app_config = read_config()
     db = configure_db(app_config.get('database', 'rw_url'), _db=_db_rw)
-    redis_client = configure_redis(
-        app_config.get('cache', 'cache_url'), _client=_redis_client)
+    if REDIS_URI:
+        redis_client = configure_redis(_client=_redis_client)
+    else:  # pragma: no cover
+        redis_client = configure_redis(
+            app_config.get('cache', 'cache_url'), _client=_redis_client)
 
     load_file(db, redis_client, datatype, filename)
 

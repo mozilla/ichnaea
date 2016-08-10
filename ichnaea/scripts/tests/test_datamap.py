@@ -3,7 +3,7 @@ import os.path
 
 from mock import MagicMock, patch
 
-from ichnaea import ROOT
+from ichnaea.config import HERE
 from ichnaea.models.content import (
     DataMap,
 )
@@ -17,7 +17,7 @@ from ichnaea.scripts.datamap import (
 )
 from ichnaea import util
 
-GIT_ROOT = os.path.abspath(os.path.join(ROOT, os.pardir))
+GIT_ROOT = os.path.abspath(os.path.join(HERE, os.pardir))
 DATAMAPS_DIR = os.path.join(GIT_ROOT, 'datamaps')
 PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 

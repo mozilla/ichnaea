@@ -48,7 +48,6 @@ from ichnaea.webapp.config import (
     shutdown_worker as shutdown_app,
 )
 
-REDIS_URI = os.environ.get('REDIS_URI')
 SQLURI = os.environ.get('SQLURI')
 
 # Module global to hold active session, used by factory-boy
@@ -369,7 +368,7 @@ def raven(raven_client):
 
 @pytest.yield_fixture(scope='session')
 def redis_client():
-    redis_client = configure_redis(REDIS_URI)
+    redis_client = configure_redis()
     yield redis_client
     redis_client.close()
 

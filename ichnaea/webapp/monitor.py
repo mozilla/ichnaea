@@ -5,10 +5,7 @@ import time
 
 from pyramid.httpexceptions import HTTPServiceUnavailable
 
-from ichnaea.config import (
-    LOCAL_FQDN,
-    VERSION_INFO,
-)
+from ichnaea.config import VERSION_INFO
 from ichnaea.webapp.view import BaseView
 
 
@@ -116,7 +113,7 @@ class LBHeartbeatView(BaseView):
     def __call__(self):
         """Return a response with a 200 or 503 status."""
         try:
-            return {'status': 'OK', 'hostname': LOCAL_FQDN}
+            return {'status': 'OK'}
         except Exception:  # pragma: no cover
             raise self.prepare_exception(HTTPServiceUnavailable())
 

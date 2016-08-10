@@ -2,9 +2,11 @@ import pytest
 import webtest
 
 from ichnaea.cache import configure_redis
-from ichnaea.config import DummyConfig
-from ichnaea.conftest import (
+from ichnaea.config import (
+    DummyConfig,
     REDIS_URI,
+)
+from ichnaea.conftest import (
     SQLURI,
     TEST_CONFIG,
 )
