@@ -10,19 +10,18 @@ GEOIP_PATH ?= $(HERE)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
 
 MAXMINDDB_VERSION = 1.2.1
 
-DOCKER_BIN ?= docker
-DOCKER_COMPOSE_BIN ?= docker-compose
-
 DB_NAME = location
-DB_HOST ?= localhost
 
 ifeq ($(TRAVIS), true)
+	DB_HOST ?= localhost
+	DB_PORT ?= 3306
+
 	DB_USER ?= travis
 	DB_PWD ?=
-	DB_PORT ?= 3306
 	DB_RW_URI ?= mysql+pymysql://$(DB_USER)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 	DB_RO_URI ?= mysql+pymysql://$(DB_USER)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 
+	REDIS_HOST ?= localhost
 	REDIS_PORT ?= 6379
 
 	PYTHON = python
@@ -31,12 +30,15 @@ ifeq ($(TRAVIS), true)
 	CYTHON = cython
 	SPHINXBUILD = sphinx-build
 else
+	DB_HOST ?= localhost
+	DB_PORT ?= 33306
+
 	DB_USER ?= root
 	DB_PWD ?= mysql
-	DB_PORT ?= 33306
 	DB_RW_URI ?= mysql+pymysql://$(DB_USER):$(DB_PWD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 	DB_RO_URI ?= mysql+pymysql://$(DB_USER):$(DB_PWD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 
+	REDIS_HOST ?= localhost
 	REDIS_PORT ?= 36379
 
 	PYTHON = $(BIN)/python
@@ -44,12 +46,6 @@ else
 	PYTEST = $(BIN)/py.test
 	CYTHON = $(BIN)/cython
 	SPHINXBUILD = $(BIN)/sphinx-build
-endif
-
-TRAVIS_PYTHON_VERSION ?= $(shell $(PYTHON) -c "import sys; print('.'.join([str(s) for s in sys.version_info][:2]))")
-PYTHON_2 = yes
-ifeq ($(findstring 3.,$(TRAVIS_PYTHON_VERSION)), 3.)
-	PYTHON_2 = no
 endif
 
 ifeq ($(TESTS), ichnaea)
@@ -60,7 +56,7 @@ endif
 
 INSTALL = $(PIP) install --no-deps --disable-pip-version-check
 
-NODE_BIN = $(DOCKER_BIN) run --rm -it \
+NODE_BIN = docker run --rm -it \
 	--volume $(HERE):/app mozilla-ichnaea/node:latest
 
 
@@ -74,21 +70,21 @@ all: build init_db
 
 docker: docker-mysql docker-redis
 ifneq ($(TRAVIS), true)
-	$(DOCKER_COMPOSE_BIN) up -d
+	docker-compose up -d
 endif
 
 docker-mysql:
 ifneq ($(TRAVIS), true)
-	cd docker/mysql; $(DOCKER_BIN) build -q -t mozilla-ichnaea/mysql:latest .
+	cd docker/mysql; docker build -q -t mozilla-ichnaea/mysql:latest .
 endif
 
 docker-redis:
 ifneq ($(TRAVIS), true)
-	cd docker/redis; $(DOCKER_BIN) build -q -t mozilla-ichnaea/redis:latest .
+	cd docker/redis; docker build -q -t mozilla-ichnaea/redis:latest .
 endif
 
 docker-node:
-	cd docker/node; $(DOCKER_BIN) build -q -t mozilla-ichnaea/node:latest .
+	cd docker/node; docker build -q -t mozilla-ichnaea/node:latest .
 
 DB_RET ?= 1
 mysql: docker
@@ -171,9 +167,7 @@ release_install:
 	$(PYTHON) setup.py install
 
 release_compile:
-ifeq ($(PYTHON_2),yes)
 	$(PYTHON) compile.py
-endif
 
 release: release_install release_compile
 
@@ -198,7 +192,7 @@ test: mysql
 	DB_RW_URI=$(DB_RW_URI) \
 	DB_RO_URI=$(DB_RO_URI) \
 	GEOIP_PATH=$(GEOIP_PATH) \
-	REDIS_PORT=$(REDIS_PORT) \
+	REDIS_HOST=$(REDIS_HOST) REDIS_PORT=$(REDIS_PORT) \
 	LD_LIBRARY_PATH=$$LD_LIBRARY_PATH:$(HERE)/lib \
 	$(PYTEST) $(TEST_ARG)
 
