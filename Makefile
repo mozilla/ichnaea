@@ -13,15 +13,15 @@ MAXMINDDB_VERSION = 1.2.1
 DOCKER_BIN ?= docker
 DOCKER_COMPOSE_BIN ?= docker-compose
 
-MYSQL_DB = location
-MYSQL_HOST ?= localhost
+DB_NAME = location
+DB_HOST ?= localhost
 
 ifeq ($(TRAVIS), true)
-	MYSQL_USER ?= travis
-	MYSQL_PWD ?=
-	MYSQL_PORT ?= 3306
-	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_DB)
-	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER)@$(MYSQL_HOST)/$(MYSQL_DB)
+	DB_USER ?= travis
+	DB_PWD ?=
+	DB_PORT ?= 3306
+	DB_RW_URI ?= mysql+pymysql://$(DB_USER)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+	DB_RO_URI ?= mysql+pymysql://$(DB_USER)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 
 	REDIS_PORT ?= 6379
 
@@ -31,11 +31,11 @@ ifeq ($(TRAVIS), true)
 	CYTHON = cython
 	SPHINXBUILD = sphinx-build
 else
-	MYSQL_USER ?= root
-	MYSQL_PWD ?= mysql
-	MYSQL_PORT ?= 33306
-	DB_RW_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_DB)
-	DB_RO_URI ?= mysql+pymysql://$(MYSQL_USER):$(MYSQL_PWD)@$(MYSQL_HOST):$(MYSQL_PORT)/$(MYSQL_DB)
+	DB_USER ?= root
+	DB_PWD ?= mysql
+	DB_PORT ?= 33306
+	DB_RW_URI ?= mysql+pymysql://$(DB_USER):$(DB_PWD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+	DB_RO_URI ?= mysql+pymysql://$(DB_USER):$(DB_PWD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
 
 	REDIS_PORT ?= 36379
 
@@ -90,21 +90,21 @@ endif
 docker-node:
 	cd docker/node; $(DOCKER_BIN) build -q -t mozilla-ichnaea/node:latest .
 
-MYSQL_RET ?= 1
+DB_RET ?= 1
 mysql: docker
 	# Wait to confirm that MySQL has started.
-	@MYSQL_RET=$(MYSQL_RET); \
-	while [ $${MYSQL_RET} -ne 0 ] ; do \
+	@DB_RET=$(DB_RET); \
+	while [ $${DB_RET} -ne 0 ] ; do \
 		echo "Trying MySQL..." ; \
-	    nc -dz $(MYSQL_HOST) $(MYSQL_PORT) ; \
-		MYSQL_RET=$$? ; \
+	    nc -dz $(DB_HOST) $(DB_PORT) ; \
+		DB_RET=$$? ; \
 	    sleep 0.5 ; \
 	    done; \
 	true
 
 ifeq ($(TRAVIS), true)
-	mysql -u$(MYSQL_USER) -h localhost -e \
-		"CREATE DATABASE IF NOT EXISTS $(MYSQL_DB)" || echo
+	mysql -u$(DB_USER) -h $(DB_HOST) -e \
+		"CREATE DATABASE IF NOT EXISTS $(DB_NAME)" || echo
 endif
 
 
