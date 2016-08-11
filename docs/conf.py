@@ -29,15 +29,15 @@ extensions = [
 ]
 
 intersphinx_mapping = {
-    'celery': ('https://celery.readthedocs.org/en/latest/', None),
-    'geoip2': ('https://geoip2.readthedocs.org/en/latest/', None),
+    'celery': ('https://celery.readthedocs.io/en/latest', None),
+    'geoip2': ('https://geoip2.readthedocs.io/en/latest', None),
     'gunicorn': ('http://docs.gunicorn.org/en/latest/', None),
-    'kombu': ('https://kombu.readthedocs.org/en/latest/', None),
-    'maxminddb': ('https://maxminddb.readthedocs.org/en/latest/', None),
-    'pyramid': ('https://pyramid.readthedocs.org/en/latest/', None),
+    'kombu': ('https://kombu.readthedocs.io/en/latest', None),
+    'maxminddb': ('https://maxminddb.readthedocs.io/en/latest', None),
+    'pyramid': ('https://pyramid.readthedocs.io/en/latest', None),
     'python': ('https://docs.python.org/2.7', None),
-    'raven': ('https://raven.readthedocs.org/en/latest/', None),
-    'requests': ('https://requests.readthedocs.org/en/latest/', None),
+    'raven': ('https://raven.readthedocs.io/en/latest', None),
+    'requests': ('https://requests.readthedocs.io/en/latest', None),
 }
 
 
