@@ -1,5 +1,7 @@
 #!/bin/bash
 
+HERE="$(pwd)"
+
 # First, let's make sure that Docker Compose has been installed.
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo "Please install Docker Compose and try again."
@@ -53,7 +55,7 @@ case "$1" in
     case "$2" in
 
       # Builds and starts the scheduler container.
-      web)
+      scheduler)
         SCHEDULER_ID="$(docker ps -a -q --filter name=ichnaea_scheduler)"
         if [ ! -z "$SCHEDULER_ID" ]; then
           $0 stop scheduler
@@ -62,7 +64,7 @@ case "$1" in
         docker run -d \
           -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
           -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
-          -p 8000:8000/tcp --name="ichnaea_scheduler" mozilla/ichnaea scheduler
+          --name="ichnaea_scheduler" mozilla/ichnaea scheduler
         ;;
 
       # Builds and starts the web container.
@@ -88,11 +90,15 @@ case "$1" in
         docker run -d \
           -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
           -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
-          --name="miracle_ichnaea" mozilla/ichnaea worker
+          --name="ichnaea_worker" mozilla/ichnaea worker
         ;;
 
       # Builds and starts the services supporting the application container.
       services)
+        cd docker/mysql; docker build -t mozilla/ichnaea_mysql:latest .
+        cd $HERE
+        cd docker/redis; docker build -t mozilla/ichnaea_redis:latest .
+        cd $HERE
         docker-compose build
         docker-compose up -d
         ;;

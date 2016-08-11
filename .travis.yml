@@ -31,9 +31,8 @@ notifications:
 
 script:
     - pip install -U pip
-    - travis_wait make build
-    - make release_compile
-    - make test
+    - travis_wait make -f travis.make build
+    - $PATH=$PATH:/datamaps make -f travis.make test
 
 # mysql is started automatically
 services:

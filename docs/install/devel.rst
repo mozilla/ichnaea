@@ -141,21 +141,7 @@ To check if the external assets are outdated run:
 
 .. code-block:: bash
 
-    docker run --rm -it mozilla-ichnaea/node:latest bower list
-
-
-Cleanup
--------
-
-In case the local environment gets into a weird or broken state, it can
-be cleaned up by running:
-
-.. code-block:: bash
-
-    make clean
-
-Of course one can also delete the entire git repository and start from
-a fresh checkout.
+    docker run --rm -it mozilla/ichnaea_node:latest bower list
 
 
 Release Build
