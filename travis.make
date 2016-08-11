@@ -14,20 +14,9 @@ GEOIP_PATH ?= $(HERE)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
 
 INSTALL = pip install --no-deps --disable-pip-version-check
 
-.PHONY: all pip build test build_datamaps build_maxmind
+.PHONY: all pip build test build_maxmind
 
 all: build
-
-datamaps/merge:
-	git clone --recursive git://github.com/ericfischer/datamaps
-	cd datamaps; git checkout 76e620adabbedabd6866b23b30c145b53bae751e
-	cd datamaps; make all
-
-build_datamaps: datamaps/merge
-	cp datamaps/encode /home/travis/bin
-	cp datamaps/enumerate /home/travis/bin
-	cp datamaps/merge /home/travis/bin
-	cp datamaps/render /home/travis/bin
 
 libmaxminddb/bootstrap:
 	git clone --recursive git://github.com/maxmind/libmaxminddb
@@ -50,7 +39,7 @@ pip:
 	virtualenv .
 	bin/pip install --disable-pip-version-check -r requirements/build.txt
 
-build: pip build_datamaps build_maxmind
+build: pip build_maxmind
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
 	cython ichnaea/geocalc.pyx

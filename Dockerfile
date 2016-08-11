@@ -26,14 +26,14 @@ RUN apt-get update && apt-get -y install \
 
 RUN virtualenv --no-site-packages .
 
-COPY docker.make .
+COPY ["docker.make", "."]
 RUN make -f docker.make build_deps
 
-COPY ./requirements/*.txt ./requirements/
-COPY ./wheelhouse ./wheelhouse
+COPY ["./requirements/*.txt", "./requirements/"]
+COPY ["./wheelhouse", "./wheelhouse"]
 RUN make -f docker.make build_python_deps
 
-COPY . ./
+COPY [".", "./"]
 RUN make -f docker.make build_ichnaea
 
 RUN make -f docker.make build_check

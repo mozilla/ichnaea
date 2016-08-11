@@ -4,9 +4,7 @@ sudo: false
 cache:
   pip: true
   directories:
-    - datamaps/
     - libmaxminddb/
-    - pngquant/
 
 addons:
   apt:
