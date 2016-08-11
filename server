@@ -1,0 +1,200 @@
+#!/bin/bash
+
+# First, let's make sure that Docker Compose has been installed.
+if ! [ -x "$(command -v docker-compose)" ]; then
+  echo "Please install Docker Compose and try again."
+  exit 1
+fi
+
+# Let's do the important things.
+case "$1" in
+
+  # Restarts some/all of the containers.
+  restart)
+
+    case "$2" in
+
+      # Restarts the scheduler container.
+      scheduler)
+        $0 stop scheduler
+        $0 start scheduler
+        ;;
+
+      # Restarts the web container.
+      web)
+        $0 stop web
+        $0 start web
+        ;;
+
+      # Restarts the worker container.
+      worker)
+        $0 stop worker
+        $0 start worker
+        ;;
+
+      # Restarts the services.
+      services)
+        $0 stop services
+        $0 start services
+        ;;
+
+      # Restarts all containers.
+      *)
+        $0 stop
+        $0 start
+        ;;
+
+    esac
+    ;;
+
+  # Builds and starts some/all of our containers.
+  start)
+
+    case "$2" in
+
+      # Builds and starts the scheduler container.
+      web)
+        SCHEDULER_ID="$(docker ps -a -q --filter name=ichnaea_scheduler)"
+        if [ ! -z "$SCHEDULER_ID" ]; then
+          $0 stop scheduler
+        fi
+        docker build -t mozilla/ichnaea .
+        docker run -d \
+          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
+          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
+          -p 8000:8000/tcp --name="ichnaea_scheduler" mozilla/ichnaea scheduler
+        ;;
+
+      # Builds and starts the web container.
+      web)
+        WEB_ID="$(docker ps -a -q --filter name=ichnaea_web)"
+        if [ ! -z "$WEB_ID" ]; then
+          $0 stop web
+        fi
+        docker build -t mozilla/ichnaea .
+        docker run -d \
+          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
+          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
+          -p 8000:8000/tcp --name="ichnaea_web" mozilla/ichnaea web
+        ;;
+
+      # Builds and starts the worker container.
+      worker)
+        WORKER_ID="$(docker ps -a -q --filter name=ichnaea_worker)"
+        if [ ! -z "$WORKER_ID" ]; then
+          $0 stop worker
+        fi
+        docker build -t mozilla/ichnaea .
+        docker run -d \
+          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
+          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
+          --name="miracle_ichnaea" mozilla/ichnaea worker
+        ;;
+
+      # Builds and starts the services supporting the application container.
+      services)
+        docker-compose build
+        docker-compose up -d
+        ;;
+
+      # Builds and starts all containers.
+      *)
+        $0 $1 services
+        $0 $1 scheduler
+        $0 $1 worker
+        $0 $1 web
+        ;;
+
+    esac
+    ;;
+
+  # Stops some/all of our containers.
+  stop)
+
+    case "$2" in
+
+      # Kills and removes the scheduler container.
+      scheduler)
+        SCHEDULER_ID="$(docker ps -a -q --filter name=ichnaea_scheduler)"
+        if [ ! -z "$SCHEDULER_ID" ]; then
+          docker kill ichnaea_scheduler >/dev/null
+          docker rm ichnaea_scheduler >/dev/null
+        fi
+        ;;
+
+      # Kills and removes the web container.
+      web)
+        WEB_ID="$(docker ps -a -q --filter name=ichnaea_web)"
+        if [ ! -z "$WEB_ID" ]; then
+          docker kill ichnaea_web >/dev/null
+          docker rm ichnaea_web >/dev/null
+        fi
+        ;;
+
+      # Kills and removes the worker container.
+      worker)
+        WORKER_ID="$(docker ps -a -q --filter name=ichnaea_worker)"
+        if [ ! -z "$WORKER_ID" ]; then
+          docker kill ichnaea_worker >/dev/null
+          docker rm ichnaea_worker >/dev/null
+        fi
+        ;;
+
+      # Stops the service containers.
+      services)
+        docker-compose stop
+        ;;
+
+      # Kills and removes all containers.
+      *)
+        $0 $1 scheduler
+        $0 $1 web
+        $0 $1 worker
+        $0 $1 services
+        ;;
+
+    esac
+    ;;
+
+  # Runs command inside the container.
+  run)
+    $0 start services
+    docker build -t mozilla/ichnaea .
+    docker run -it --rm \
+        -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
+        -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
+        --volume `pwd`/docs/build/html:/app/docs/build/html \
+        mozilla/ichnaea $2 $3 $4 $5 $6 $7 $8 $9
+    ;;
+
+  # Runs alembic inside the container.
+  alembic)
+    $0 run alembic $2 $3 $4 $5 $6 $7 $8 $9
+    ;;
+
+  # Update the docs inside the container.
+  docs)
+    $0 run docs
+    ;;
+
+  # Open a shell inside the container.
+  shell)
+    $0 run shell
+    ;;
+
+  # Run the tests inside the container.
+  test)
+    $0 run test $2 $3 $4 $5 $6 $7 $8 $9
+    ;;
+
+  # Shows usage information.
+  help)
+    echo "Usage: $0 {start|stop|restart|run|alembic|docs|shell|test|help}"
+    ;;
+
+  # Shows help message.
+  *)
+    $0 help
+    ;;
+
+esac

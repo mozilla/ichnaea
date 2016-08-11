@@ -78,7 +78,7 @@ class SubmitV0View(BaseSubmitView):
 
     metric_path = 'v1.submit'  #:
     route = '/v1/submit'  #:
-    schema = SUBMIT_V0_SCHEMA  #:
+    schema = SUBMIT_V0_SCHEMA
 
     #: :exc:`ichnaea.api.exceptions.UploadSuccessV0`
     success = UploadSuccessV0
@@ -89,7 +89,7 @@ class SubmitV1View(BaseSubmitView):
 
     metric_path = 'v1.geosubmit'  #:
     route = '/v1/geosubmit'  #:
-    schema = SUBMIT_V1_SCHEMA  #:
+    schema = SUBMIT_V1_SCHEMA
 
 
 class SubmitV2View(BaseSubmitView):
@@ -97,4 +97,4 @@ class SubmitV2View(BaseSubmitView):
 
     metric_path = 'v2.geosubmit'  #:
     route = '/v2/geosubmit'  #:
-    schema = SUBMIT_V2_SCHEMA  #:
+    schema = SUBMIT_V2_SCHEMA

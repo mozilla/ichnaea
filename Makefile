@@ -86,11 +86,6 @@ endif
 docker-node:
 	cd docker/node; docker build -q -t mozilla-ichnaea/node:latest .
 
-docker-build:
-	docker build -t mozilla/ichnaea .
-	docker run -it --rm \
-		--volume $(HERE)/docs/build/html:/app/docs/build/html \
-		mozilla/ichnaea
 
 DB_RET ?= 1
 mysql: docker

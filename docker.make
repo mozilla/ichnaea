@@ -15,6 +15,27 @@ LIBMAXMIND_DOWNLOAD = https://github.com/maxmind/libmaxminddb/releases/download
 LIBMAXMIND_VERSION = 1.2.0
 LIBMAXMIND_NAME = libmaxminddb-$(LIBMAXMIND_VERSION)
 
+ICHNAEA_CFG = $(HERE)/ichnaea/tests/data/test.ini
+GEOIP_PATH = $(HERE)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
+DB_HOST ?= localhost
+DB_PORT ?= 3306
+
+DB_USER ?= root
+DB_PWD ?= mysql
+DB_NAME ?= location
+DB_RW_URI ?= mysql+pymysql://$(DB_USER):$(DB_PWD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+DB_RO_URI ?= mysql+pymysql://$(DB_USER):$(DB_PWD)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)
+
+REDIS_HOST ?= localhost
+REDIS_PORT ?= 6379
+
+TESTS ?= ichnaea
+ifeq ($(TESTS), ichnaea)
+	TEST_ARG = --durations=10 --cov-config=.coveragerc --cov=ichnaea ichnaea
+else
+	TEST_ARG = $(TESTS)
+endif
+
 .PHONY: all build_datamaps build_libmaxmind build_deps \
 	build_python_deps build_ichnaea build_check \
 	docs
@@ -63,3 +84,11 @@ build_check:
 
 docs:
 	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
+
+test:
+	TESTING=true ICHNAEA_CFG=$(ICHNAEA_CFG) \
+	DB_RW_URI=$(DB_RW_URI) \
+	DB_RO_URI=$(DB_RO_URI) \
+	GEOIP_PATH=$(GEOIP_PATH) \
+	REDIS_HOST=$(REDIS_HOST) REDIS_PORT=$(REDIS_PORT) \
+	$(BIN)/py.test $(TEST_ARG)

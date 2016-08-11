@@ -63,4 +63,4 @@ class TransferV1View(BaseTransferView):
 
     metric_path = 'v1.transfer'  #:
     route = '/v1/transfer'  #:
-    schema = TRANSFER_V1_SCHEMA  #:
+    schema = TRANSFER_V1_SCHEMA

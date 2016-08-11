@@ -123,24 +123,23 @@ def export_files(pool, db_url, csvdir):  # pragma: no cover
     return result_rows
 
 
-def encode_file(name, csvdir, quaddir, datamaps):
+def encode_file(name, csvdir, quaddir):
     # this is executed in a worker process
-    cmd = '{zcat} {input} | {encode} -z15 -o {output}'.format(
+    cmd = '{zcat} {input} | encode -z15 -o {output}'.format(
         zcat=ZCAT,
         input=os.path.join(csvdir, name),
-        encode=os.path.join(datamaps, 'encode'),
         output=os.path.join(quaddir, name.split('.')[0]))
 
     os.system(cmd)
 
 
-def encode_files(pool, csvdir, quaddir, datamaps):  # pragma: no cover
+def encode_files(pool, csvdir, quaddir):  # pragma: no cover
     jobs = []
     for name in os.listdir(csvdir):
         if name.startswith('map_') and name.endswith('.csv.gz'):
             jobs.append(pool.apply_async(
                 encode_file,
-                (name, csvdir, quaddir, datamaps)))
+                (name, csvdir, quaddir)))
 
     for job in jobs:
         job.get()
@@ -148,44 +147,34 @@ def encode_files(pool, csvdir, quaddir, datamaps):  # pragma: no cover
     return len(jobs)
 
 
-def merge_files(quaddir, shapes, datamaps):
-    cmd = '{merge} -u -o {output} {input}'.format(
-        merge=os.path.join(datamaps, 'merge'),
+def merge_files(quaddir, shapes):
+    cmd = 'merge -u -o {output} {input}'.format(
         input=os.path.join(quaddir, 'map*'),
         output=shapes)
 
     os.system(cmd)
 
 
-def render_tiles(shapes, tiles, concurrency, max_zoom, datamaps, pngquant):
-    cmd = ("{enumerate} -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
-           "sh -c 'mkdir -p {output}/$2/$3; {render} "
+def render_tiles(shapes, tiles, concurrency, max_zoom):
+    cmd = ("enumerate -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
+           "sh -c 'mkdir -p {output}/$2/$3; render "
            "-B 12:0.0379:0.874 -c0088FF -t0 "
            "-O 16:1600:1.5 -G 0.5{extra} $1 $2 $3 $4 | "
-           "{pngquant} --speed=3 --quality=65-95 32 > "
+           "pngquant --speed=3 --quality=65-95 32 > "
            "{output}/$2/$3/$4{suffix}.png' dummy")
 
-    datamaps_enumerate = os.path.join(datamaps, 'enumerate')
-    datamaps_render = os.path.join(datamaps, 'render')
-
     zoom_0_cmd = cmd.format(
-        enumerate=datamaps_enumerate,
         zoom=0,
         shapes=shapes,
         concurrency=concurrency,
-        render=datamaps_render,
-        pngquant=pngquant,
         output=tiles,
         extra=' -T 512',
         suffix='@2x')
 
     zoom_all_cmd = cmd.format(
-        enumerate=datamaps_enumerate,
         zoom=max_zoom,
         shapes=shapes,
         concurrency=concurrency,
-        render=datamaps_render,
-        pngquant=pngquant,
         output=tiles,
         extra='',
         suffix='')
@@ -317,7 +306,7 @@ def upload_files(pool, bucketname, tiles, max_zoom,
 
 def generate(db_url, bucketname, raven_client, stats_client,
              upload=True, concurrency=2, max_zoom=12,
-             datamaps='', output=None):  # pragma: no cover
+             output=None):  # pragma: no cover
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)
 
@@ -346,7 +335,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
         os.mkdir(quaddir)
 
         with stats_client.timed('datamaps', tags=['func:encode']):
-            quadtrees = encode_files(pool, csvdir, quaddir, datamaps)
+            quadtrees = encode_files(pool, csvdir, quaddir)
 
         stats_client.timing('datamaps', quadtrees, tags=['count:quadtrees'])
 
@@ -360,14 +349,13 @@ def generate(db_url, bucketname, raven_client, stats_client,
             shutil.rmtree(shapes)
 
         with stats_client.timed('datamaps', tags=['func:merge']):
-            merge_files(quaddir, shapes, datamaps)
+            merge_files(quaddir, shapes)
 
         # Render tiles, using xargs -P to get concurrency.
         tiles = os.path.abspath(os.path.join(basedir, 'tiles'))
 
         with stats_client.timed('datamaps', tags=['func:render']):
-            render_tiles(shapes, tiles, concurrency, max_zoom,
-                         datamaps, 'pngquant')
+            render_tiles(shapes, tiles, concurrency, max_zoom)
 
         if upload:
             # The upload process is largely network I/O bound, so we
@@ -388,7 +376,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
 
 def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
     # run for example via:
-    # bin/location_map --create --upload --datamaps=/path/to/datamaps/ \
+    # bin/location_map --create --upload \
     #   --output=ichnaea/content/static/tiles/
 
     parser = argparse.ArgumentParser(
@@ -400,8 +388,6 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
                         help='Upload tiles to S3?')
     parser.add_argument('--concurrency', default=2,
                         help='How many concurrent processes to use?')
-    parser.add_argument('--datamaps',
-                        help='Directory of the datamaps tools.')
     parser.add_argument('--output',
                         help='Optional directory for output files.')
 
@@ -430,10 +416,6 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
         if args.concurrency:
             concurrency = int(args.concurrency)
 
-        datamaps = ''
-        if args.datamaps:
-            datamaps = os.path.abspath(args.datamaps)
-
         output = None
         if args.output:
             output = os.path.abspath(args.output)
@@ -443,7 +425,6 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
                 generate(db_url, bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,
-                         datamaps=datamaps,
                          output=output)
         except Exception:  # pragma: no cover
             raven_client.captureException()

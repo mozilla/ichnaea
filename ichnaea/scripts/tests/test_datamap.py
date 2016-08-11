@@ -3,7 +3,6 @@ import os.path
 
 from mock import MagicMock, patch
 
-from ichnaea.config import HERE
 from ichnaea.models.content import (
     DataMap,
 )
@@ -16,11 +15,6 @@ from ichnaea.scripts.datamap import (
     render_tiles,
 )
 from ichnaea import util
-
-GIT_ROOT = os.path.abspath(os.path.join(HERE, os.pardir))
-TEST_INI = os.path.join(HERE, 'tests', 'data', 'test.ini')
-DATAMAPS_DIR = os.path.join(GIT_ROOT, 'datamaps')
-PNGQUANT = os.path.join(GIT_ROOT, 'pngquant', 'pngquant')
 
 
 class TestMap(object):
@@ -69,16 +63,16 @@ class TestMap(object):
                     written = fd.read()
                 lines.extend([line.split(',') for line in written.split()])
 
-                encode_file(filename, temp_dir, quaddir, DATAMAPS_DIR)
+                encode_file(filename, temp_dir, quaddir)
 
                 quadfolder = os.path.join(quaddir, 'map_' + shard_id)
                 assert os.path.isdir(quadfolder)
                 self._check_quadtree(quadfolder)
 
-            merge_files(quaddir, shapes, DATAMAPS_DIR)
+            merge_files(quaddir, shapes)
             self._check_quadtree(shapes)
 
-            render_tiles(shapes, tiles, 1, 2, DATAMAPS_DIR, PNGQUANT)
+            render_tiles(shapes, tiles, 1, 2)
             assert (sorted(os.listdir(tiles)) == ['0', '1', '2'])
             assert (sorted(os.listdir(os.path.join(tiles, '0', '0'))) ==
                     ['0.png', '0@2x.png'])
@@ -99,7 +93,6 @@ class TestMap(object):
                     '--create',
                     '--upload',
                     '--concurrency=1',
-                    '--datamaps=%s/datamaps' % temp_dir,
                     '--output=%s' % temp_dir,
                 ]
                 main(argv,
@@ -111,6 +104,5 @@ class TestMap(object):
                 args, kw = mock_generate.call_args
 
                 assert kw['concurrency'] == 1
-                assert kw['datamaps'] == temp_dir + '/datamaps'
                 assert kw['output'] == temp_dir
                 assert kw['upload'] is True

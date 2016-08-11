@@ -6,9 +6,16 @@ FROM python:2.7
 MAINTAINER dev-geolocation@lists.mozilla.org
 
 WORKDIR /app
+EXPOSE 8000
+
+# Open a shell by default.
+ENTRYPOINT ["/app/conf/run.sh"]
+CMD ["shell"]
 
 RUN groupadd -g 10001 app && \
     useradd -d /app -g 10001 -G app -M -s /bin/sh -u 10001 app
+
+RUN mkdir -p /var/run/location/ && chown -R app:app /var/run/location/
 
 RUN apt-get update && apt-get -y install \
     libgeos-dev \
@@ -31,7 +38,6 @@ RUN make -f docker.make build_ichnaea
 
 RUN make -f docker.make build_check
 
-ENTRYPOINT ["/bin/bash"]
-
+RUN chown app:app . && chown -R app:app /app/docs/
 VOLUME /app/docs/build/html
-# USER app
+USER app

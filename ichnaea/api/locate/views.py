@@ -68,7 +68,7 @@ class LocateV0View(BasePositionView):
     metric_path = 'v1.search'  #:
     not_found = LocationNotFoundV0  #:
     route = '/v1/search'  #:
-    schema = LOCATE_V0_SCHEMA  #:
+    schema = LOCATE_V0_SCHEMA
 
     def prepare_response(self, result):
         response = {
@@ -89,7 +89,7 @@ class LocateV1View(BasePositionView):
 
     metric_path = 'v1.geolocate'  #:
     route = '/v1/geolocate'  #:
-    schema = LOCATE_V1_SCHEMA  #:
+    schema = LOCATE_V1_SCHEMA
 
     def prepare_response(self, result):
         response = {

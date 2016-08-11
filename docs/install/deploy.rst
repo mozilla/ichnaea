@@ -39,11 +39,7 @@ just three changes you need to do. For example via the my.cnf:
 
 The web app frontend role only needs access to a read-only read-replica
 of the database. The async worker backend role needs access to a read-write
-primary database. You can use load balancers like haproxy to distribute
-load from the web app frontends over multiple read-replicas. The diagram
-shows a final fallback connection, where the web app frontends fall back
-to talking to the primary database if all read-replicas are down.
-An example of such a haproxy configuration is included in the source code.
+primary database.
 
 
 Redis / Amazon ElastiCache
