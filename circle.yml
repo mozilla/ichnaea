@@ -5,6 +5,12 @@
 # DOCKER_USER
 # DOCKER_PASS
 #
+general:
+  branches:
+    ignore:
+      - gh-pages
+      - readthedocs
+
 machine:
   services:
     - docker
