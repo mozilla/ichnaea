@@ -1,4 +1,4 @@
-# mozilla/ichnaea-build
+# mozilla/ichnaea
 #
 # VERSION 0.1
 

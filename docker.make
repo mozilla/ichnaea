@@ -59,6 +59,7 @@ build_check:
 	$(PYTHON) -c "import sys; from shapely import speedups; sys.exit(not speedups.available)"
 	$(PYTHON) -c "from ichnaea import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
+	$(PYTHON) -c "import sys; from ichnaea.geocode import GEOCODER; sys.exit(not GEOCODER.region(51.5, -0.1) == 'GB')"
 
 docs:
 	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
