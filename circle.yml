@@ -25,9 +25,9 @@ dependencies:
 
     # create a version.json
     - >
-        printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' 
-        "$CIRCLE_SHA1" 
-        "1.5.dev0" 
+        printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n'
+        "$CIRCLE_SHA1"
+        "dev"
         "$CIRCLE_PROJECT_USERNAME"
         "$CIRCLE_PROJECT_REPONAME"
         "$CIRCLE_BUILD_URL"
