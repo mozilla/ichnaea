@@ -131,6 +131,7 @@ datamaps/merge:
 build_datamaps: datamaps/merge
 
 $(TOXINIDIR)/libmaxminddb/bootstrap:
+	rm -rf libmaxminddb
 	git clone --recursive git://github.com/maxmind/libmaxminddb
 	cd libmaxminddb; git checkout 1.1.1
 	cd libmaxminddb; git submodule update --init --recursive

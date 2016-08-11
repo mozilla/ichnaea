@@ -15,6 +15,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add a workaround for a bug in the RTree library.
 
 20160810110400
 **************
