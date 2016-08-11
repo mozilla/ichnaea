@@ -22,6 +22,7 @@ TESTING = 'TESTING' in os.environ
 VERSION = pkg_resources.get_distribution('ichnaea').version
 VERSION_FILE = os.path.join(HERE, 'version.json')
 VERSION_INFO = {
+    'build': None,
     'commit': 'HEAD',
     'source': 'https://github.com/mozilla/ichnaea',
     'tag': 'master',
@@ -43,6 +44,7 @@ if 'REDIS_HOST' in os.environ or 'REDIS_PORT' in os.environ:
 if os.path.isfile(VERSION_FILE):
     with open(VERSION_FILE, 'r') as fd:
         data = simplejson.load(fd)
+    VERSION_INFO['build'] = data.get('build', None)
     VERSION_INFO['commit'] = data.get('commit', None)
     VERSION_INFO['tag'] = RELEASE = data.get('tag', None)
 
