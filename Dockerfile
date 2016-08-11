@@ -2,7 +2,7 @@
 #
 # VERSION 0.1
 
-FROM python:2.7
+FROM python:2.7-slim
 MAINTAINER dev-geolocation@lists.mozilla.org
 
 # add a non-privileged user for installing and running
@@ -19,18 +19,19 @@ CMD ["shell"]
 # Create an app user owned var/run section.
 RUN mkdir -p /var/run/location/ && chown -R app:app /var/run/location/
 
-# Install runtime dependencies
+# Install apt-installable dependencies.
 RUN apt-get update && apt-get -y install \
+    file \
+    gcc \
     libgeos-dev \
-    libpng12-dev \
+    libpng-dev \
     libspatialindex-dev \
+    make \
     pngquant \
+    wget \
     && rm -rf /var/lib/apt/lists/*
 
-# Create a virtualenv, ignoring system packages.
-RUN virtualenv --no-site-packages .
-
-# Install C library dependencies unknown to apt-get.
+# Install dependencies.
 COPY ./docker.make /app/
 RUN make -f docker.make build_deps
 

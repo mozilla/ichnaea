@@ -65,6 +65,8 @@ build_libmaxmind:
 build_deps: build_datamaps build_libmaxmind
 
 build_python_deps:
+	pip install --no-cache-dir --disable-pip-version-check virtualenv
+	virtualenv --no-site-packages .
 	$(INSTALL) -r requirements/build.txt
 	$(INSTALL) -r requirements/prod.txt
 	$(INSTALL) -r requirements/dev.txt
@@ -76,7 +78,7 @@ build_ichnaea:
 	$(PYTHON) -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
 
 build_check:
-	@which encode enumerate merge render
+	@which encode enumerate merge render pngquant
 	$(PYTHON) -c "import sys; from shapely import speedups; sys.exit(not speedups.available)"
 	$(PYTHON) -c "from ichnaea import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
