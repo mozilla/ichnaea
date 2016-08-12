@@ -11,10 +11,12 @@ MAXMINDDB_VERSION = 1.2.1
 all: build
 
 lib/libmaxminddb.0.dylib:
+	rm -rf $(HERE)/libmaxminddb
 	wget -q $(LIBMAXMIND_DOWNLOAD)/$(LIBMAXMIND_VERSION)/$(LIBMAXMIND_NAME).tar.gz
 	tar xzvf $(LIBMAXMIND_NAME).tar.gz
 	rm -f $(LIBMAXMIND_NAME).tar.gz
 	mv $(LIBMAXMIND_NAME) libmaxminddb
+	ls -la libmaxminddb
 	cd libmaxminddb; ./configure --prefix=$(HERE) && make && make install
 
 build_maxmind: lib/libmaxminddb.0.dylib
