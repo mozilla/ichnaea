@@ -29,17 +29,47 @@ VERSION_INFO = {
     'version': VERSION,
 }
 
+DB_HOST = os.environ.get('DB_HOST')
+DB_RO_HOST = os.environ.get('DB_RO_HOST', DB_HOST)
+DB_RW_HOST = os.environ.get('DB_RW_HOST', DB_HOST)
+
+DB_USER = os.environ.get('DB_USER', 'location')
+DB_RO_USER = os.environ.get('DB_RO_USER', DB_USER)
+DB_RW_USER = os.environ.get('DB_RW_USER', DB_USER)
+DB_DDL_USER = os.environ.get('DB_DDL_USER', DB_USER)
+
+DB_PWD = os.environ.get('DB_PWD', 'location')
+DB_RO_PWD = os.environ.get('DB_RO_PWD', DB_PWD)
+DB_RW_PWD = os.environ.get('DB_RW_PWD', DB_PWD)
+DB_DDL_PWD = os.environ.get('DB_DDL_PWD', DB_PWD)
+
+DB_PORT = os.environ.get('DB_PORT', '3306')
+DB_NAME = os.environ.get('DB_NAME', 'location')
+
 DB_RW_URI = os.environ.get('DB_RW_URI')
 DB_RO_URI = os.environ.get('DB_RO_URI')
+DB_DDL_URI = os.environ.get('DB_DDL_URI')
+
+if not DB_RO_URI:
+    DB_RO_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
+        DB_RO_USER, DB_RO_PWD, DB_RO_HOST, DB_PORT, DB_NAME))
+
+if not DB_RW_URI:
+    DB_RW_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
+        DB_RW_USER, DB_RW_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
+
+if not DB_DDL_URI:
+    DB_DDL_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
+        DB_DDL_USER, DB_DDL_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
+
 GEOIP_PATH = os.environ.get('GEOIP_PATH')
 
-REDIS_HOST = os.environ.get('REDIS_HOST', 'localhost')
+REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
 REDIS_DB = '1' if TESTING else '0'
 REDIS_URI = os.environ.get('REDIS_URI')
-if 'REDIS_HOST' in os.environ or 'REDIS_PORT' in os.environ:
-    os.environ['REDIS_URI'] = REDIS_URI = \
-        'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB)
+if REDIS_HOST and not REDIS_URI:
+    REDIS_URI = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB)
 
 if os.path.isfile(VERSION_FILE):
     with open(VERSION_FILE, 'r') as fd:

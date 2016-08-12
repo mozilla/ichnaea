@@ -2,8 +2,17 @@
 .git
 .gitignore
 .gitmodules
+.travis.yml
 *.sublime-project
 *.sublime-workspace
+circle.yml
+contribute.json
 data
+docker
+docker-compose.yml
 docs/build/html/.git
 ichnaea/geocalc.c
+Makefile
+node.make
+server
+travis.make
