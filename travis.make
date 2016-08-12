@@ -12,7 +12,7 @@ all: build
 
 lib/libmaxminddb.0.dylib:
 	wget -q $(LIBMAXMIND_DOWNLOAD)/$(LIBMAXMIND_VERSION)/$(LIBMAXMIND_NAME).tar.gz
-	tar xzf $(LIBMAXMIND_NAME).tar.gz
+	tar xzvf $(LIBMAXMIND_NAME).tar.gz
 	rm -f $(LIBMAXMIND_NAME).tar.gz
 	mv $(LIBMAXMIND_NAME) libmaxminddb
 	cd libmaxminddb; ./configure --prefix=$(HERE) && make && make install
