@@ -16,7 +16,6 @@ lib/libmaxminddb.0.dylib:
 	tar xzvf $(LIBMAXMIND_NAME).tar.gz
 	rm -f $(LIBMAXMIND_NAME).tar.gz
 	mv $(LIBMAXMIND_NAME) libmaxminddb
-	ls -la libmaxminddb
 	cd libmaxminddb; ./configure --prefix=$(HERE) && make && make install
 
 build_maxmind: lib/libmaxminddb.0.dylib
