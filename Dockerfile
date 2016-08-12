@@ -48,15 +48,22 @@ RUN make -f docker.make build_ichnaea
 RUN make -f docker.make build_check
 
 # The app user only needs write access to very few places.
-RUN chown app:app . && chown -R app:app /app/docs/
+RUN chown app:app . && \
+    chown -R app:app /app/alembic/ && \
+    chown -R app:app /app/docs/ && \
+    chown -R app:app /app/ichnaea/
 
 # Symlink version object to serve /__version__ endpoint
 RUN rm /app/ichnaea/version.json ; \
     ln -s /app/version.json /app/ichnaea/version.json
 
-# The volume is only used while building docs and making those
+# This volume is only used while building docs and making those
 # available in the git repo, so they can be committed.
 VOLUME /app/docs/build/html
+
+# This volume is only used in local testing of the datamaps rendering
+# functionality.
+VOLUME /app/ichnaea/content/static/tiles
 
 # Define the default web server port.
 EXPOSE 8000

@@ -1,5 +1,10 @@
-FROM node:6.2.0-slim
+FROM node:6-slim
 MAINTAINER Mozilla Geolocation <dev-geolocation@lists.mozilla.org>
+
+# add a non-privileged user for installing and running
+# the application
+RUN groupadd -g 10001 app && \
+    useradd -d /app -g 10001 -G app -M -s /bin/sh -u 10001 app
 
 RUN apt-get update && apt-get install -y \
     git \
@@ -7,6 +12,10 @@ RUN apt-get update && apt-get install -y \
     && apt-get -y clean \
     && rm -rf /var/lib/apt/lists/*
 
+RUN mkdir -p /app && mkdir -p /node
+RUN chown -R app:app /app && chown -R app:app /node
+
+USER app
 WORKDIR /node
 
 CMD ["bash"]

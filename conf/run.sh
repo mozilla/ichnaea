@@ -2,6 +2,11 @@
 
 cd $(dirname $0)
 case "$1" in
+    map)
+        echo "Creating datamaps image tiles."
+        cd ..
+        exec ./map.sh
+        ;;
     scheduler)
         echo "Starting Celery Scheduler"
         exec ./scheduler.sh
@@ -18,6 +23,12 @@ case "$1" in
         echo "Running Alembic"
         cd ..
         bin/alembic $2 $3 $4 $5 $6 $7 $8 $9
+        ;;
+    local_map)
+        echo "Creating datamaps image tiles."
+        cd ..
+        /app/bin/location_map --create \
+            --output /app/ichnaea/content/static/tiles/
         ;;
     shell)
         echo "Opening shell"

@@ -1,5 +1,4 @@
 {
-  "allow_root": true,
   "analytics": false,
   "interactive": false,
   "strict-ssl": true

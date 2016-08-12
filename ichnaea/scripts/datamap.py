@@ -406,7 +406,9 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
         bucketname = _bucketname
         if not _bucketname:  # pragma: no cover
-            bucketname = conf.get('assets', 'bucket').strip('/')
+            bucketname = conf.get('assets', 'bucket')
+            if bucketname:
+                bucketname = bucketname.strip('/')
 
         upload = False
         if args.upload:

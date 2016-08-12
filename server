@@ -170,6 +170,7 @@ case "$1" in
         -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
         -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
         --volume `pwd`/docs/build/html:/app/docs/build/html \
+        --volume `pwd`/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles \
         mozilla/ichnaea $2 $3 $4 $5 $6 $7 $8 $9
     ;;
 
@@ -178,9 +179,40 @@ case "$1" in
     $0 run alembic $2 $3 $4 $5 $6 $7 $8 $9
     ;;
 
+  # Runs bower using a special node container.
+  bower_list)
+    cd docker/node; docker build -t mozilla/ichnaea_node .
+    cd $HERE
+    docker run -it --rm \
+        --volume `pwd`:/app mozilla/ichnaea_node \
+        make -f node.make bower_list
+    ;;
+
+  # Updates CSS resources using a special node container.
+  css)
+    cd docker/node; docker build -t mozilla/ichnaea_node .
+    cd $HERE
+    docker run -it --rm \
+        --volume `pwd`:/app mozilla/ichnaea_node \
+        make -f node.make css
+    ;;
+
   # Update the docs inside the container.
   docs)
     $0 run docs
+    ;;
+
+  # Updates JS resources using a special node container.
+  js)
+    cd docker/node; docker build -t mozilla/ichnaea_node .
+    cd $HERE
+    docker run -it --rm \
+        --volume `pwd`:/app mozilla/ichnaea_node \
+        cd /node; make -f node.make js
+    ;;
+
+  local_map)
+    $0 run local_map
     ;;
 
   # Open a shell inside the container.
@@ -195,7 +227,7 @@ case "$1" in
 
   # Shows usage information.
   help)
-    echo "Usage: $0 {start|stop|restart|run|alembic|docs|shell|test|help}"
+    echo "Usage: $0 {start|stop|restart|run|alembic|bower_list|css|docs|js|map|shell|test|help}"
     ;;
 
   # Shows help message.

@@ -4,6 +4,11 @@
 Deployment
 ==========
 
+We deploy ichnaea in an Amazon AWS environment, and there are some
+optional dependencies on specific AWS services like Amazon S3. The
+documentation assumes you are also using a AWS environment, but ichnaea
+can be run in non-AWS environments as well.
+
 Diagram
 =======
 
@@ -37,9 +42,9 @@ just three changes you need to do. For example via the my.cnf:
     innodb_strict_mode=on
     sql-mode="NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES"
 
-The web app frontend role only needs access to a read-only read-replica
-of the database. The async worker backend role needs access to a read-write
-primary database.
+The web app frontend role only needs access to a read-only version of
+the database, for example a read-replica. The async worker backend role
+needs access to the read-write primary database.
 
 
 Redis / Amazon ElastiCache
@@ -48,8 +53,7 @@ Redis / Amazon ElastiCache
 The application uses Redis as a queue for the asynchronous task workers and
 also uses it directly as a cache and to track API key rate limitations.
 
-You can install a standard local Redis for development or production use.
-The application is also compatible with Amazon ElastiCache (Redis).
+You can install a standard Redis or use Amazon ElastiCache (Redis).
 
 
 Amazon S3
@@ -60,7 +64,7 @@ The application uses Amazon S3 for various tasks, including backup of
 the data map image tiles.
 
 All of these are triggered by asynchronous jobs and you can disable them
-if you are not hosted in an Amazon environment.
+if you are not hosted in an AWS environment.
 
 If you use Amazon S3 you might want to configure a lifecycle policy to
 delete old export files after a couple of days and :term:`observation`
@@ -87,12 +91,7 @@ Image Tiles
 ===========
 
 The code includes functionality to render out image tiles for a data map
-of places where observations have been made. This part of the code relies
-on two external projects. One is the
-`datamaps image tile generator <https://github.com/ericfischer/datamaps>`_
-the other is `pngquant <http://pngquant.org/>`_. Make sure to install both
-of them and make their binaries available on your system path. The datamaps
-package includes the `encode`, `enumerate` and `render` tools and the
-pngquant package includes a tool called `pngquant`. You can install these
-tools on the server running the celery scheduler (celerybeat) and trigger
-the `location_map` script via a cron job.
+of places where observations have been made.
+
+You can trigger this functionality periodically via a cron job, by
+calling the application container with the map argument.

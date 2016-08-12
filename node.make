@@ -9,9 +9,12 @@ BOWER_COMPONENTS = /node/bower_components
 CLEANCSS = cleancss -d
 UGLIFYJS = uglifyjs -c --stats
 
-.PHONY: all js css
+.PHONY: all bower_list js css
 
 all: css js
+
+bower_list:
+	cd /node; bower list
 
 css:
 	cp $(BOWER_COMPONENTS)/mozilla-tabzilla/css/tabzilla.css \

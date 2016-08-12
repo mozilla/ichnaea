@@ -16,15 +16,15 @@ On Linux you can use your OS level package manager to install them.
 
 On Mac OS you need to install
 `Docker for Mac <https://docs.docker.com/docker-for-mac/>`_.
-Docker Toolbox or docker-machine based setups aren't supported
-by the documentation and Makefile.
+Docker Toolbox or docker-machine based setups aren't supported.
 
 
 Docker
 ------
 
-We use docker to run additional development dependencies like
-Redis and MySQL with the exact versions we want to test against.
+We use docker to run the main application and additional development
+dependencies like Redis and MySQL with the exact versions we want to
+test against.
 
 We assume that you can run ``docker`` and ``docker-compose`` on
 your command line. Test this via:
@@ -33,35 +33,6 @@ your command line. Test this via:
 
     docker --version
     docker-compose --version
-
-
-Requirements
-------------
-
-In order to run the code you need to have Python 2.6, 2.7 or 3.5 installed
-on your system. The default Makefile also assumes a `virtualenv`
-command is globally available. If this isn't true for your system,
-please create a virtualenv manually inside the ichnaea folder before
-continuing (``/path/to/virtualenv --python=python2.6 .``).
-
-In the next step you are going to install a good number of Python libraries,
-which depend on various OS level C libraries. These C libraries are best
-installed via the OS level package management system. We list the
-CentOS/Redhat names, but they should be similar on other OS.
-
-Runtime requirements:
-
-.. code-block:: bash
-
-    openssl, python, libmaxminddb, libffi, atlas-sse3, geos, spatialindex-devel
-
-Build requirements:
-
-.. code-block:: bash
-
-    openssl-devel, gcc, gcc-c++, gcc-gfortran, make, python, python-pip,
-    python-virtualenv, git, libmaxminddb, libffi-devel, atlas-devel,
-    geos-devel, spatialindex-devel
 
 
 Code
@@ -73,28 +44,48 @@ Now run the following command to get the code:
 
     git clone https://github.com/mozilla/ichnaea
     cd ichnaea
+    git submodule update --init --recursive
 
-Then run make, which is going to take quite a while the first time:
-
-.. code-block:: bash
-
-    make
-
-Now you can run the web app for example on port 7001:
+Next you need to use the ``./server`` helper script to download and
+create all the required docker containers. As a first command you
+can use:
 
 .. code-block:: bash
 
-    ICHNAEA_CFG=location.ini bin/gunicorn -b 127.0.0.1:7001 \
-        -c python:ichnaea.webapp.settings ichnaea.webapp.app:wsgi_app
+    ./server test
 
-The celery processes are started via:
+The first time around it'll take a good while. This will also start
+a container running MySQL and one running Redis.
+
+Next up, you can run the entire application, with its three different
+application containers:
 
 .. code-block:: bash
 
-    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app beat
+    ./server start
 
-    ICHNAEA_CFG=location.ini bin/celery -A ichnaea.async.app:celery_app worker \
-        -Ofair --no-execv --without-mingle --without-gossip
+This will start a web, celery worker and celery scheduler container.
+It will also expose port 8000 of the web container on localhost, so
+you can interact with the web site directly, without having to use
+IP address of the web container.
+
+The server script provides a couple more commands, to control and
+interact with the containers.
+
+There are start/stop/restart commands to interact with all containers.
+Each of these commands also takes a second argument of either
+scheduler, services, web or worker. This allows you to start and stop
+only a specific type of container.
+
+To interact and inspect the application image, there is one more helper
+command:
+
+.. code-block:: bash
+
+    ./server shell
+
+This will drop you into a bash shell inside a container based on the
+application image.
 
 
 Documentation
@@ -104,20 +95,14 @@ In order to create and test the documentation locally run:
 
 .. code-block:: bash
 
-    make docs
+    ./server docs
 
-The documentation will be available in ``docs/build/html/index.html``.
+This will create an application container with a volume mount to the
+local ``docs/build/html`` directory and update the documentation so
+it is available in that local directory.
 
-
-Python Dependencies
--------------------
-
-The project uses `requires.io <https://requires.io/github/mozilla/ichnaea/requirements/?branch=master>`_ 
-to track whether or not the Python dependencies are outdated.
-
-If they are, update the version pins in the various `requirements/*.txt`
-files and rerun `make`, `make docs` or `make test`, depending on which
-requirements have changed.
+To view the documentation open ``file://docs/build/html/index.html``
+with a web brower.
 
 
 CSS / JS / Images
@@ -130,8 +115,8 @@ In order to install them, run:
 
 .. code-block:: bash
 
-    make css
-    make js
+    ./server css
+    ./server js
 
 This will install build tools and bower assets inside a docker container.
 It will also copy, compile and minify files in various folders under
@@ -141,28 +126,14 @@ To check if the external assets are outdated run:
 
 .. code-block:: bash
 
-    docker run --rm -it mozilla/ichnaea_node:latest bower list
+    ./server bower_list
 
 
-Release Build
--------------
+Python Dependencies
+-------------------
 
-The default `make` / `make build` target installs a local development
-version including database setup and testing tools. For a production
-environment or release pipeline one can instead use:
+The project uses `requires.io <https://requires.io/github/mozilla/ichnaea/requirements/?branch=master>`_
+to track whether or not the Python dependencies are outdated.
 
-.. code-block:: bash
-
-    make release
-
-This will not do any database setup and only install production
-dependencies. It will also create a virtualenv and install the ichnaea
-code itself via `bin/python setup.py install`, so that a copy will be
-installed into `lib/pythonX.Y/site-packages/`.
-
-The step will also compile all py files to pyc files and remove any files
-from the tree which aren't compatible with the active Python version
-(blocklist in the `compile.py` script). The removal step ensures that
-any build tools (for example rpmbuild / mock) that typically call
-`compileall.compile_dir` will work, without breaking on the incompatible
-files.
+If they are, update the version pins in the various `requirements/*.txt`
+files and rerun `./server test` and `./server docs`.
