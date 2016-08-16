@@ -2,7 +2,7 @@
 Changelog
 =========
 
-1.5 (unreleased)
+2.0 (unreleased)
 ================
 
 Untagged
@@ -16,6 +16,9 @@ Changes
 ~~~~~~~
 
 - Add a workaround for a bug in the RTree library.
+
+1.5 (unreleased)
+================
 
 20160810110400
 **************

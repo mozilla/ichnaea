@@ -3,12 +3,12 @@
 import sphinx_rtd_theme
 
 project = u'Ichnaea'
-copyright = u'2013-2015, Mozilla'
+copyright = u'2013-2016, Mozilla'
 
 # The short X.Y version.
-version = '1.5'
+version = '2.0'
 # The full version, including alpha/beta/rc tags.
-release = '1.5'
+release = '2.0'
 
 autoclass_content = 'class'
 exclude_patterns = ['build/html/README.rst', '.DS_Store', 'Thumbs.db']
