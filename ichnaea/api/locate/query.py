@@ -131,7 +131,7 @@ class Query(object):
         if not value:
             value = None
         elif isinstance(value, bytes):  # pragma: no cover
-            value = value.decode('ascii')
+            value = value.decode('ascii', 'ignore')
         try:
             valid = str(ip_address(value))
         except ValueError:
