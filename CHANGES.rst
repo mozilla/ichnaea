@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove `/leaders` HTTP redirects.
+
 - Replace the `/apps` page with a link to the Wiki.
 
 - Add a workaround for a bug in the RTree library.

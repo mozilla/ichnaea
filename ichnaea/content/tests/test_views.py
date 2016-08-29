@@ -140,8 +140,6 @@ class TestFunctionalContent(object):
         app.get('/api', status=200)
         app.get('/contact', status=200)
         app.get('/favicon.ico', status=200)
-        app.get('/leaders', status=301)
-        app.get('/leaders/weekly', status=301)
         app.get('/map', status=200)
         app.get('/nobody-is-home', status=404)
         app.get('/optout', status=200)

@@ -10,7 +10,6 @@ from boto.exception import S3ResponseError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
-from pyramid.httpexceptions import HTTPMovedPermanently
 from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
@@ -67,9 +66,6 @@ def configure_content(config):
     config.add_static_view(
         name='static', path='ichnaea.content:static', cache_max_age=86400)
 
-    # BBB: leaders/leaders_weekly redirect to new service
-    config.add_route('leaders_weekly', '/leaders/weekly')
-    config.add_route('leaders', '/leaders')
     config.add_route('stats_regions', '/stats/regions')
     config.add_route('stats', '/stats')
 
@@ -217,16 +213,6 @@ class ContentViews(object):
                  http_cache=3600)
     def privacy_view(self):
         return {'page_title': 'Privacy Notice'}
-
-    @view_config(route_name='leaders')
-    def leaders_view(self):
-        return HTTPMovedPermanently(
-            location='https://location-leaderboard.services.mozilla.com')
-
-    @view_config(route_name='leaders_weekly')
-    def leaders_weekly_view(self):
-        return HTTPMovedPermanently(
-            location='https://location-leaderboard.services.mozilla.com')
 
     @view_config(renderer='templates/map.pt', name='map', http_cache=3600)
     def map_view(self):
