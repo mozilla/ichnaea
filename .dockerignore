@@ -11,8 +11,6 @@ data
 docker
 docker-compose.yml
 docs/build/html/.git
-ichnaea/geocalc.c
-Makefile
 node.make
 server
 travis.make

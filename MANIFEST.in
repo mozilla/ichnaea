@@ -1,13 +1,10 @@
 include LICENSE
-include Makefile
 include MANIFEST.in
-include *.ini
-include *.json
 include *.rst
 
 recursive-include alembic *
-recursive-exclude alembic *.pyc *.pyo *.so *.dll .DS_Store __pycache__
+recursive-exclude alembic *.pyc *.pyo *.so *.dll .DS_Store
 recursive-include ichnaea *
-recursive-exclude ichnaea *.pyc *.pyo *.so *.dll .DS_Store __pycache__
+recursive-exclude ichnaea *.pyc *.pyo *.so *.dll .DS_Store
 recursive-exclude ichnaea/content/static/tiles *
 recursive-include requirements *

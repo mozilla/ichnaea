@@ -208,7 +208,7 @@ case "$1" in
     cd $HERE
     docker run -it --rm \
         --volume `pwd`:/app mozilla/ichnaea_node \
-        cd /node; make -f node.make js
+        make -f node.make js
     ;;
 
   local_map)

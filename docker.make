@@ -66,7 +66,6 @@ build_python_deps:
 build_ichnaea:
 	$(BIN)/cythonize -f ichnaea/geocalc.pyx
 	$(BIN)/pip install -e .
-	$(PYTHON) compile.py
 	$(PYTHON) -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
 
 build_check:

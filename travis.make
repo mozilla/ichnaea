@@ -2,7 +2,7 @@ HERE = $(shell pwd)
 INSTALL = pip install --no-deps --disable-pip-version-check
 
 LIBMAXMIND_DOWNLOAD = https://github.com/maxmind/libmaxminddb/releases/download
-LIBMAXMIND_VERSION = 1.1.1
+LIBMAXMIND_VERSION = 1.2.0
 LIBMAXMIND_NAME = libmaxminddb-$(LIBMAXMIND_VERSION)
 MAXMINDDB_VERSION = 1.2.1
 
@@ -29,10 +29,9 @@ pip:
 build: pip build_maxmind
 	$(INSTALL) -r requirements/binary.txt
 	$(INSTALL) -r requirements/python.txt
-	cython ichnaea/geocalc.pyx
-	python setup.py build_ext --inplace
+	cythonize -f ichnaea/geocalc.pyx
 	$(INSTALL) -e .
-	python compile.py
+	$(PYTHON) -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
 	mysql -utravis -h localhost -e \
 		"CREATE DATABASE IF NOT EXISTS location" || echo
 
