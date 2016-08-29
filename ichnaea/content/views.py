@@ -314,7 +314,7 @@ class ContentViews(object):
         return {'page_title': 'Region Statistics', 'metrics': data}
 
 
-_empty_homepage_response = Response(content_type='text/html', body='''\
+_EMPTY_HOMEPAGE_RESPONSE = '''\
 <!DOCTYPE html><html><head>
 <meta charset="UTF-8" />
 <title>ichnaea</title>
@@ -325,11 +325,11 @@ _empty_homepage_response = Response(content_type='text/html', body='''\
 <p>Mozilla is not responsible for the operation or problems with
 this specific instance, please contact the site operator first.</p>
 </body></html>
-''')
+'''
 
 
 def empty_homepage_view(request):
-    return _empty_homepage_response
+    return Response(content_type='text/html', body=_EMPTY_HOMEPAGE_RESPONSE)
 
 
 def favicon_view(request):
@@ -340,7 +340,7 @@ def touchicon_view(request):
     return FileResponse(TOUCHICON_PATH, request=request)
 
 
-_robots_response = Response(content_type='text/plain', body='''\
+_ROBOTS_RESPONSE = '''\
 User-agent: *
 Disallow: /downloads
 Disallow: /static/
@@ -349,8 +349,8 @@ Disallow: /v2/
 Disallow: /__heartbeat__
 Disallow: /__lbheartbeat__
 Disallow: /__version__
-''')
+'''
 
 
 def robotstxt_view(context, request):
-    return _robots_response
+    return Response(content_type='text/plain', body=_ROBOTS_RESPONSE)
