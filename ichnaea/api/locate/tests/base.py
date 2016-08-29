@@ -705,18 +705,6 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_floatjson(self, app, ro_session):
-        cell = CellShardFactory(
-            session=ro_session, lat=51.5, lon=(3.3 / 3 + 0.0001))
-        ro_session.flush()
-
-        query = self.model_query(cells=[cell])
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell)
-        middle = b'1.1001,' in res.body
-        end = b'1.1001}' in res.body
-        assert middle or end
-
 
 class CommonLocateErrorTest(BaseLocateTest):
 

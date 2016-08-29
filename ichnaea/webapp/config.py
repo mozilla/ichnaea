@@ -21,7 +21,6 @@ from ichnaea.db import (
     configure_ro_db,
     db_ro_session,
 )
-from ichnaea import floatjson
 from ichnaea.geoip import configure_geoip
 from ichnaea.http import configure_http_session
 from ichnaea.log import (
@@ -129,9 +128,6 @@ def main(app_config, ping_connections=False,
     config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
     config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)
     config.add_request_method(db_ro_session, property=True)
-
-    # Add special JSON renderer with nicer float representation
-    config.add_renderer('floatjson', floatjson.FloatJSONRenderer())
 
     # freeze skip logging set
     config.registry.skip_logging = frozenset(config.registry.skip_logging)

@@ -57,7 +57,7 @@ class BasePositionView(BaseLocateView):
     """Common base class for all position related views."""
 
     #: Use renderer with prettier float output.
-    renderer = 'floatjson'  #:
+    renderer = 'json'  #:
     searcher = 'position_searcher'  #:
     view_type = 'locate'  #:
 

@@ -4,6 +4,7 @@ import pytest
 import requests_mock
 from redis import RedisError
 from requests.exceptions import RequestException
+import simplejson
 
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.constants import DataSource
@@ -24,7 +25,6 @@ from ichnaea.api.locate.tests.base import (
     DummyModel,
 )
 from ichnaea.api.locate.tests.test_query import QueryTest
-from ichnaea import floatjson
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
     ApiKeyFactory,
@@ -373,7 +373,7 @@ class TestFallback(BaseSourceTest):
 
     @property
     def fallback_cached_result(self):
-        return floatjson.float_dumps({
+        return simplejson.dumps({
             'lat': self.fallback_model.lat,
             'lon': self.fallback_model.lon,
             'accuracy': float(self.fallback_model.radius),

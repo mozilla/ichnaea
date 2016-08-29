@@ -21,7 +21,6 @@ from ichnaea.api.schema import (
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
-from ichnaea import floatjson
 from ichnaea.geocalc import distance
 
 LOCATION_NOT_FOUND = '404'  #: Magic constant to cache not found.
@@ -288,7 +287,7 @@ class FallbackCache(object):
             cache_value = result._asdict()
 
         try:
-            cache_value = floatjson.float_dumps(cache_value)
+            cache_value = simplejson.dumps(cache_value)
             cache_values = dict([(key, cache_value) for key in cache_keys])
 
             with self.redis_client.pipeline() as pipe:

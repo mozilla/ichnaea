@@ -44,7 +44,6 @@ Indices and Tables
    data/index
    db
    exceptions
-   floatjson
    geocalc
    geocode
    geoip
