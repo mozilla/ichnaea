@@ -10,7 +10,7 @@ Underlying this is the assumption that we have enough data about the
 area at all. With no or too little data we'll have to fallback to less
 accurate data sources. Bluetooth is the most accurate, followed by
 WiFi and than cell based estimation using single cells, multiple cells
-or cell location areas. If all else fails GeoIP serves as a general fallback.
+or cell location areas. GeoIP serves as a general fallback.
 
 Bluetooth / WiFi
 ----------------
@@ -26,8 +26,8 @@ information heavily. So there can be a time delta of tens of seconds
 between when a network was actually seen and when it is reported to
 the application layer. With a fast moving device this can lead to
 inaccuracies of a couple kilometers. WiFi networks tend to show up
-in scan long after they are out of reach, if the the device was
-actually connected to these networks.
+in scans long after they are out of reach, especially if the the device
+was actually connected to these networks.
 
 This means position estimates based on WiFi networks are usually
 accurate to 100 meters. If a lot of networks are available in the area

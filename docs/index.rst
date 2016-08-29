@@ -47,7 +47,7 @@ Development
 All source code is available on `github under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
 
-The developers of ``ichnaea`` can frequently be found on the `Mozilla IRC
+The developers of ``ichnaea`` can be found on the `Mozilla IRC
 network <https://wiki.mozilla.org/IRC>`_ in the #geo channel.
 
 

@@ -66,7 +66,7 @@ application containers:
 
 This will start a web, celery worker and celery scheduler container.
 It will also expose port 8000 of the web container on localhost, so
-you can interact with the web site directly, without having to use
+you can interact with the web site directly, without having to use the
 IP address of the web container.
 
 The server script provides a couple more commands, to control and

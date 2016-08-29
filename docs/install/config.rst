@@ -12,8 +12,7 @@ of rows into various database tables.
 Configuration File
 ==================
 
-As explained in the :ref:`the deployment documentation <deploy>` the
-processes find this configuration file via the ``ICHNAEA_CFG``
+The processes find the configuration file via the ``ICHNAEA_CFG``
 environment variable. The variable should contain an absolute path,
 for example ``/etc/location.ini``.
 

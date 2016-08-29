@@ -4,12 +4,12 @@
 Using the Service
 =================
 
-You can either use the service directly via the HTTP service APIs
+You can either use the service directly via the HTTPS service APIs
 or you can use one of the existing applications or libraries.
 
 
-HTTP API
---------
+HTTPS API
+---------
 
 You can use the :ref:`service_api` directly via a command line client
 like curl or via any programming language allowing you to do HTTP calls.
