@@ -138,7 +138,6 @@ class TestFunctionalContent(object):
         app.get('/', status=200)
         app.get('/apple-touch-icon-precomposed.png', status=200)
         app.get('/api', status=200)
-        app.get('/apps', status=200)
         app.get('/contact', status=200)
         app.get('/favicon.ico', status=200)
         app.get('/leaders', status=301)

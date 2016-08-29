@@ -190,10 +190,6 @@ class ContentViews(object):
     def api_view(self):
         return {'page_title': 'API'}
 
-    @view_config(renderer='templates/apps.pt', name='apps', http_cache=3600)
-    def apps_view(self):
-        return {'page_title': 'Client Applications'}
-
     @view_config(renderer='templates/contact.pt', name='contact',
                  http_cache=3600)
     def contact_view(self):
