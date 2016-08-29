@@ -109,7 +109,7 @@ ALEMBIC_CFG.set_section_option(
     'alembic', 'sourceless', 'true')
 
 
-@pytest.yield_fixture(scope='session', autouse=True)
+@pytest.fixture(scope='session', autouse=True)
 def package():
     # We do this here as early as possible in tests.
     # We only do it in tests, as the real celery processes should
@@ -192,27 +192,27 @@ def database():
     setup_database()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def db_rw(database):
     db = configure_rw_db()
     yield db
     db.close()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def db_ro(database):
     db = configure_ro_db()
     yield db
     db.close()
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def db_rw_drop_table(db_rw):
     yield db_rw
     setup_tables(db_rw.engine)
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def rw_session(db_rw):
     rw_conn = db_rw.engine.connect()
     rw_trans = rw_conn.begin()
@@ -228,7 +228,7 @@ def rw_session(db_rw):
     rw_conn.close()
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def ro_session(db_ro):
     ro_conn = db_ro.engine.connect()
     ro_trans = ro_conn.begin()
@@ -244,7 +244,7 @@ def ro_session(db_ro):
     ro_conn.close()
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def rw_session_tracker(rw_session):
     """
     This install an event handler into the active session, which
@@ -279,7 +279,7 @@ def rw_session_tracker(rw_session):
     event.remove(rw_session.bind, 'before_cursor_execute', handler)
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def ro_session_tracker(ro_session):
     """
     This install an event handler into the active session, which
@@ -314,7 +314,7 @@ def ro_session_tracker(ro_session):
     event.remove(ro_session.bind, 'before_cursor_execute', handler)
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def session(rw_session):
     # Set the global session context for factory-boy.
     SESSION['default'] = rw_session
@@ -322,7 +322,7 @@ def session(rw_session):
     del SESSION['default']
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def data_queues(redis_client):
     data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
@@ -333,33 +333,33 @@ def data_queues(redis_client):
     yield data_queues
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def geoip_data():
     yield GEOIP_DATA
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def geoip_db(raven_client):
     geoip_db = configure_geoip(mode=MODE_AUTO, raven_client=raven_client)
     yield geoip_db
     geoip_db.close()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def http_session():
     http_session = configure_http_session(size=1)
     yield http_session
     http_session.close()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def raven_client():
     raven_client = configure_raven(
         None, transport='sync', _client=DebugRavenClient())
     yield raven_client
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def raven(raven_client):
     yield raven_client
     messages = [msg['message'] for msg in raven_client.msgs]
@@ -367,20 +367,20 @@ def raven(raven_client):
     assert not messages
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def redis_client():
     redis_client = configure_redis()
     yield redis_client
     redis_client.close()
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def redis(redis_client):
     yield redis_client
     redis_client.flushdb()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def stats_client():
     stats_client = configure_stats(
         None, _client=DebugStatsClient(tag_support=True))
@@ -388,13 +388,13 @@ def stats_client():
     stats_client.close()
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def stats(stats_client):
     yield stats_client
     stats_client._clear()
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def position_searcher(data_queues, geoip_db,
                       raven_client, redis_client, stats_client):
     searcher = configure_position_searcher(
@@ -404,7 +404,7 @@ def position_searcher(data_queues, geoip_db,
     yield searcher
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def region_searcher(data_queues, geoip_db,
                     raven_client, redis_client, stats_client):
     searcher = configure_region_searcher(
@@ -414,7 +414,7 @@ def region_searcher(data_queues, geoip_db,
     yield searcher
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def global_app(db_ro, geoip_db, http_session,
                raven_client, redis_client, stats_client,
                position_searcher, region_searcher):
@@ -434,12 +434,12 @@ def global_app(db_ro, geoip_db, http_session,
     shutdown_app(app.app)
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def app(global_app, raven, redis, ro_session, stats):
     yield global_app
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def global_celery(db_rw, geoip_db,
                   raven_client, redis_client, stats_client):
     celery_app.app_config = TEST_CONFIG
@@ -455,6 +455,6 @@ def global_celery(db_rw, geoip_db,
     shutdown_celery(celery_app)
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def celery(global_celery, raven, redis, rw_session, stats):
     yield global_celery

@@ -206,7 +206,7 @@ class TestOutboundSchema(object):
         })
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def cache(raven, redis, session, stats):
     yield FallbackCache(raven, redis, stats)
 

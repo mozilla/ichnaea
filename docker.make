@@ -39,7 +39,7 @@ build_datamaps:
 	wget -q $(DATAMAPS_DOWNLOAD)/$(DATAMAPS_COMMIT).tar.gz
 	tar zxf $(DATAMAPS_COMMIT).tar.gz
 	rm -f $(DATAMAPS_COMMIT).tar.gz
-	cd $(DATAMAPS_NAME); make all
+	cd $(DATAMAPS_NAME); make -s all
 	cp $(DATAMAPS_NAME)/encode /usr/local/bin/
 	cp $(DATAMAPS_NAME)/enumerate /usr/local/bin/
 	cp $(DATAMAPS_NAME)/merge /usr/local/bin/
@@ -50,7 +50,7 @@ build_libmaxmind:
 	wget -q $(LIBMAXMIND_DOWNLOAD)/$(LIBMAXMIND_VERSION)/$(LIBMAXMIND_NAME).tar.gz
 	tar xzf $(LIBMAXMIND_NAME).tar.gz
 	rm -f $(LIBMAXMIND_NAME).tar.gz
-	cd $(LIBMAXMIND_NAME); ./configure && make && make install
+	cd $(LIBMAXMIND_NAME); ./configure && make -s && make install
 	ldconfig
 	rm -rf $(HERE)/$(LIBMAXMIND_NAME)/
 
@@ -60,8 +60,8 @@ build_python_deps:
 	pip install --no-cache-dir --disable-pip-version-check virtualenv
 	virtualenv --no-site-packages .
 	$(INSTALL) -r requirements/build.txt
-	$(INSTALL) -r requirements/prod.txt
-	$(INSTALL) -r requirements/dev.txt
+	$(INSTALL) -r requirements/binary.txt
+	$(INSTALL) -r requirements/python.txt
 
 build_ichnaea:
 	$(BIN)/cythonize -f ichnaea/geocalc.pyx
@@ -80,8 +80,9 @@ docs:
 	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
 
 test:
+	$(BIN)/flake8 ichnaea
 	TESTING=true ICHNAEA_CFG=$(ICHNAEA_CFG) \
 	DB_HOST=$(DB_HOST) \
 	GEOIP_PATH=$(GEOIP_PATH) \
 	REDIS_HOST=$(REDIS_HOST) \
-	$(BIN)/py.test $(TEST_ARG)
+	$(BIN)/pytest $(TEST_ARG)

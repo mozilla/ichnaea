@@ -26,6 +26,7 @@ RUN apt-get update && apt-get -y install \
     libgeos-dev \
     libpng-dev \
     libspatialindex-dev \
+    libssl-dev \
     make \
     pngquant \
     wget \

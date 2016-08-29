@@ -3,7 +3,7 @@ import pytest
 from ichnaea.api.locate.tests.base import DummyModel
 
 
-@pytest.yield_fixture(scope='class')
+@pytest.fixture(scope='class')
 def cls_source(request, data_queues, geoip_db, http_session,
                raven_client, redis_client, stats_client):
     source = request.cls.Source(
@@ -16,12 +16,12 @@ def cls_source(request, data_queues, geoip_db, http_session,
     yield source
 
 
-@pytest.yield_fixture(scope='function')
+@pytest.fixture(scope='function')
 def source(cls_source, raven, redis, stats):
     yield cls_source
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def bhutan_model(geoip_data):
     bhutan = geoip_data['Bhutan']
     yield DummyModel(
@@ -33,7 +33,7 @@ def bhutan_model(geoip_data):
         ip=bhutan['ip'])
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def london_model(geoip_data):
     london = geoip_data['London']
     yield DummyModel(
@@ -45,7 +45,7 @@ def london_model(geoip_data):
         ip=london['ip'])
 
 
-@pytest.yield_fixture(scope='session')
+@pytest.fixture(scope='session')
 def london2_model(geoip_data):
     london = geoip_data['London2']
     yield DummyModel(

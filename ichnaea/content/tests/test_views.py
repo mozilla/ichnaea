@@ -20,7 +20,7 @@ from ichnaea import util
 
 class TestConfig(object):
 
-    @pytest.yield_fixture(scope='function')
+    @pytest.fixture(scope='function')
     def config(self):
         with testing.testConfig() as config:
             config.registry.skip_logging = set()
@@ -55,7 +55,7 @@ class TestConfig(object):
 
 class TestContentViews(object):
 
-    @pytest.yield_fixture(scope='function')
+    @pytest.fixture(scope='function')
     def views(self, redis, ro_session):
         request = DummyRequest()
         with testing.testConfig(request=request) as config:

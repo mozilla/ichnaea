@@ -57,7 +57,7 @@ def db_compare_type(context, inspected_column,
 
 class TestMigration(object):
 
-    @pytest.yield_fixture(scope='function')
+    @pytest.fixture(scope='function')
     def db(self, db_rw):
         yield db_rw
         # setup normal database schema again

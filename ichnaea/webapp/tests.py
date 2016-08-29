@@ -101,7 +101,7 @@ class TestHeartbeat(object):
 
 class TestHeartbeatErrors(object):
 
-    @pytest.yield_fixture(scope='function')
+    @pytest.fixture(scope='function')
     def broken_app(self, http_session, raven, stats):
         # Create database connections to the discard port.
         db = configure_rw_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
