@@ -202,13 +202,8 @@ class S3Exporter(ReportExporter):
 
         # strip away queue prefix again
         parts = self.queue_key.split(':')
-        if len(parts) == 3:
-            source = parts[1]
-            api_key = parts[2]
-        else:  # pragma: no cover
-            # BBB
-            source = 'gnss'
-            api_key = parts[-1]
+        source = parts[1]
+        api_key = parts[2]
 
         key_name = path.format(
             source=source, api_key=api_key, year=year, month=month, day=day)

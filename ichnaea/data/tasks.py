@@ -138,15 +138,14 @@ def update_datamap(self, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=18000, _schedule=timedelta(seconds=21600),
+                 expires=40000, _schedule=timedelta(seconds=43200),
                  _enabled=_web_content_enabled)
 def update_statregion(self):
     stats.StatRegion(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=2700, _schedule=crontab(minute=2),
+                 expires=570, _schedule=timedelta(seconds=600),
                  _enabled=_web_content_enabled)
-def update_statcounter(self, ago=None):
-    # BBB: ago argument
+def update_statcounter(self):
     stats.StatCounterUpdater(self)()
