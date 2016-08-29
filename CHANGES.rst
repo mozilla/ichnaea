@@ -8,6 +8,11 @@ Changelog
 Untagged
 ********
 
+Compatibility
+~~~~~~~~~~~~~
+
+- Drop support for Python 2.6.
+
 Migrations
 ~~~~~~~~~~
 

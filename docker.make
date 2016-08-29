@@ -23,7 +23,7 @@ REDIS_HOST ?= localhost
 
 TESTS ?= ichnaea
 ifeq ($(TESTS), ichnaea)
-	TEST_ARG = --durations=10 --cov-config=.coveragerc --cov=ichnaea ichnaea
+	TEST_ARG = --cov-config=.coveragerc --cov=ichnaea ichnaea
 else
 	TEST_ARG = $(TESTS)
 endif
