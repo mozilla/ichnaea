@@ -10,9 +10,9 @@ $(document).ready(function() {
     var mapTilesUrl = mapDOMElement.data('map_tiles_url');
     var mapToken = mapDOMElement.data('map_token');
 
-    var maxZoom = 15;
+    var maxZoom = 13;
     if (L.Browser.retina) {
-        maxZoom = 14;
+        maxZoom = 12;
     }
 
     // Restrict to typical Web Mercator bounds
@@ -50,7 +50,7 @@ $(document).ready(function() {
         locateOptions: {
             enableHighAccuracy: true,
             maximumAge: 3600000,
-            maxZoom: 12,
+            maxZoom: 10,
             watch: false
         }
     }).addTo(map);
@@ -65,7 +65,7 @@ $(document).ready(function() {
     if (mapTilesUrl) {
         L.tileLayer(mapTilesUrl, {
             detectRetina: true,
-            maxNativeZoom: 12
+            maxNativeZoom: 11
         }).addTo(map);
     }
 

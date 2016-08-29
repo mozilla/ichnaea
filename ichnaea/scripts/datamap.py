@@ -125,7 +125,7 @@ def export_files(pool, db_url, csvdir):  # pragma: no cover
 
 def encode_file(name, csvdir, quaddir):
     # this is executed in a worker process
-    cmd = '{zcat} {input} | encode -z15 -o {output}'.format(
+    cmd = '{zcat} {input} | encode -z13 -o {output}'.format(
         zcat=ZCAT,
         input=os.path.join(csvdir, name),
         output=os.path.join(quaddir, name.split('.')[0]))
@@ -261,7 +261,7 @@ def upload_files(pool, bucketname, tiles, max_zoom,
     }
 
     zoom_levels = frozenset([str(i) for i in range(max_zoom + 1)])
-    tiny_levels = frozenset([str(i) for i in range(max_zoom - 2)])
+    tiny_levels = frozenset([str(i) for i in range(min(10, max_zoom))])
 
     paths = []
     for entry in scandir(tiles):
@@ -305,7 +305,7 @@ def upload_files(pool, bucketname, tiles, max_zoom,
 
 
 def generate(db_url, bucketname, raven_client, stats_client,
-             upload=True, concurrency=2, max_zoom=12,
+             upload=True, concurrency=2, max_zoom=11,
              output=None):  # pragma: no cover
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)
