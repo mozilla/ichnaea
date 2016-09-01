@@ -11,7 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.pool import Pool
+from sqlalchemy.pool import NullPool, Pool, QueuePool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
@@ -34,7 +34,7 @@ def on_duplicate(insert, compiler, **kw):
 Insert.argument_for('mysql', 'on_duplicate', None)
 
 
-def configure_db(uri, _db=None):
+def configure_db(uri, pool=True, _db=None):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -42,11 +42,11 @@ def configure_db(uri, _db=None):
     """
     if _db is not None:
         return _db
-    return Database(uri)
+    return Database(uri, pool=pool)
 
 
 def configure_ddl_db(uri=DB_DDL_URI, _db=None):
-    return configure_db(uri=uri, _db=_db)
+    return configure_db(uri=uri, pool=False, _db=_db)
 
 
 def configure_rw_db(uri=DB_RW_URI, _db=None):
@@ -118,15 +118,23 @@ class Database(object):
     :param uri: A database connection string.
     """
 
-    def __init__(self, uri):
+    def __init__(self, uri, pool=True):
         options = {
-            'pool_recycle': 3600,
-            'pool_size': 10,
-            'pool_timeout': 10,
-            'max_overflow': 10,
             'echo': False,
             'isolation_level': 'REPEATABLE READ',
         }
+        if pool:
+            options.update({
+                'poolclass': QueuePool,
+                'pool_recycle': 3600,
+                'pool_size': 10,
+                'pool_timeout': 10,
+                'max_overflow': 10,
+            })
+        else:
+            options.update({
+                'poolclass': NullPool,
+            })
         options['connect_args'] = {'charset': 'utf8'}
         options['execution_options'] = {'autocommit': False}
         self.engine = create_engine(uri, **options)
