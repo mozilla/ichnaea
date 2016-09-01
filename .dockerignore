@@ -2,7 +2,6 @@
 .git
 .gitignore
 .gitmodules
-.travis.yml
 *.sublime-project
 *.sublime-workspace
 circle.yml
@@ -13,4 +12,3 @@ docker-compose.yml
 docs/build/html/.git
 node.make
 server
-travis.make

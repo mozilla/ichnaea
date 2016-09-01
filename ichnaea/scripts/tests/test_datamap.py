@@ -16,9 +16,6 @@ from ichnaea.scripts.datamap import (
 )
 from ichnaea import util
 
-# BBB, skip datamaps tests in travis
-TRAVIS = 'TRAVIS' in os.environ
-
 
 class TestMap(object):
 
@@ -28,9 +25,6 @@ class TestMap(object):
             assert os.path.isfile(os.path.join(path, name))
 
     def test_files(self, db_rw, session):  # pragma: no cover
-        if TRAVIS:
-            return
-
         today = util.utcnow().date()
         rows = [
             dict(time=today, lat=12.345, lon=12.345),

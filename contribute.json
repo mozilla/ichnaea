@@ -4,7 +4,7 @@
     "repository": {
         "url": "https://github.com/mozilla/ichnaea/",
         "license": "Apache 2.0",
-        "tests": "https://travis-ci.org/mozilla/ichnaea"
+        "tests": "https://circleci.com/gh/mozilla/ichnaea"
     },
     "participate": {
         "home": "https://location.services.mozilla.com/",
