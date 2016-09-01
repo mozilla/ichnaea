@@ -16,6 +16,7 @@ from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
 from ichnaea.config import (
+    DB_DDL_URI,
     DB_RW_URI,
     DB_RO_URI,
 )
@@ -42,6 +43,10 @@ def configure_db(uri, _db=None):
     if _db is not None:
         return _db
     return Database(uri)
+
+
+def configure_ddl_db(uri=DB_DDL_URI, _db=None):
+    return configure_db(uri=uri, _db=_db)
 
 
 def configure_rw_db(uri=DB_RW_URI, _db=None):

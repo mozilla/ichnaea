@@ -24,7 +24,7 @@ from ichnaea.async.config import (
 )
 from ichnaea.cache import configure_redis
 from ichnaea.config import (
-    DB_RW_URI,
+    DB_DDL_URI,
     read_config,
 )
 from ichnaea.db import (
@@ -104,9 +104,7 @@ ALEMBIC_CFG = AlembicConfig()
 ALEMBIC_CFG.set_section_option(
     'alembic', 'script_location', 'alembic')
 ALEMBIC_CFG.set_section_option(
-    'alembic', 'sqlalchemy.url', DB_RW_URI)
-ALEMBIC_CFG.set_section_option(
-    'alembic', 'sourceless', 'true')
+    'alembic', 'sqlalchemy.url', DB_DDL_URI)
 
 
 @pytest.fixture(scope='session', autouse=True)

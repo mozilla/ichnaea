@@ -88,9 +88,7 @@ class TestMigration(object):
 
         # run the migration
         with db.engine.connect() as conn:
-            trans = conn.begin()
             alembic_command.upgrade(ALEMBIC_CFG, 'head')
-            trans.commit()
 
         # afterwards the DB is stamped
         db_revision = self.current_db_revision(db)

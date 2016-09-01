@@ -79,9 +79,9 @@ docs:
 	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
 
 test:
-	$(BIN)/flake8 ichnaea
 	TESTING=true ICHNAEA_CFG=$(ICHNAEA_CFG) \
 	DB_HOST=$(DB_HOST) \
 	GEOIP_PATH=$(GEOIP_PATH) \
 	REDIS_HOST=$(REDIS_HOST) \
 	$(BIN)/pytest $(TEST_ARG)
+	$(BIN)/flake8 ichnaea

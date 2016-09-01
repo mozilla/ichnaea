@@ -1,6 +1,7 @@
 """Functionality related to statsd, sentry and freeform logging."""
 from collections import deque
 import logging
+from logging.config import dictConfig
 from random import random
 import time
 
@@ -19,10 +20,49 @@ from datadog.dogstatsd.base import (
     imap,
 )
 
-from ichnaea.config import RELEASE
+from ichnaea.config import RELEASE, TESTING
 from ichnaea.exceptions import BaseClientError
 
 LOGGER = logging.getLogger('ichnaea')
+
+LOGGING_FORMAT = '%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s'
+LOGGING_DATEFMT = '%Y-%m-%d %H:%M:%S'
+LOGGING_CONFIG = dict(
+    version=1,
+    formatters={
+        'generic': {
+            'format': LOGGING_FORMAT,
+            'datefmt': LOGGING_DATEFMT,
+        },
+    },
+    handlers={
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'generic',
+            'level': logging.DEBUG,
+            'stream': 'ext://sys.stderr',
+        },
+    },
+    root={
+        'handlers': ['console'],
+        'level': logging.WARN,
+    },
+    loggers=dict(
+        alembic={
+            'level': logging.INFO,
+            'qualname': 'alembic',
+        },
+        ichnaea={
+            'level': logging.INFO,
+            'qualname': 'ichnaea',
+        },
+        sqlalchemny={
+            'level': logging.WARN,
+            'qualname': 'sqlalchemy.engine',
+        },
+    ),
+)
+
 RAVEN_CLIENT = None  #: The globally configured raven client.
 STATS_CLIENT = None  #: The globally configured statsd client.
 
@@ -31,6 +71,17 @@ RAVEN_TRANSPORTS = {
     'sync': HTTPTransport,
     'threaded': ThreadedHTTPTransport,
 }  #: Mapping of raven transport names to classes.
+
+
+def configure_logging():
+    """Configure basic Python logging."""
+    if TESTING:
+        logging.basicConfig(
+            format=LOGGING_FORMAT,
+            datefmt=LOGGING_DATEFMT,
+        )
+    else:  # pragma: no cover
+        dictConfig(LOGGING_CONFIG)
 
 
 def configure_raven(app_config, transport=None,
@@ -102,14 +153,6 @@ def configure_stats(app_config, _client=None):  # pragma: no cover
         tag_support=tag_support)
     STATS_CLIENT = client
     return client
-
-
-def configure_logging():
-    """Configure basic Python logging."""
-    logging.basicConfig(
-        format='%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S',
-    )
 
 
 def log_tween_factory(handler, registry):
