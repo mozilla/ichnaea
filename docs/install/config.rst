@@ -49,7 +49,7 @@ Both of them can be restricted to only DML (data-manipulation) permissions,
 as neither needs DDL (data-definition) rights.
 
 DDL changes are only done via the alembic database migration system,
-which has a separate ``alembic.ini`` configuration file.
+which uses a separate configuration approach.
 
 .. code-block:: ini
 

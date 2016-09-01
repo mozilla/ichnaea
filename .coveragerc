@@ -2,7 +2,9 @@
 source = ichnaea
 concurrency = gevent
 plugins = Cython.Coverage
-omit = */tests/*
+omit =
+    */tests/*
+    */alembic/versions/*
 
 [report]
 show_missing = true

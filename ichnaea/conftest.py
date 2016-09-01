@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import gc
 import os
 import warnings
@@ -102,7 +104,7 @@ GEOIP_DATA = {
 
 ALEMBIC_CFG = AlembicConfig()
 ALEMBIC_CFG.set_section_option(
-    'alembic', 'script_location', 'alembic')
+    'alembic', 'script_location', 'ichnaea/alembic')
 ALEMBIC_CFG.set_section_option(
     'alembic', 'sqlalchemy.url', DB_DDL_URI)
 

@@ -2,8 +2,6 @@ include LICENSE
 include MANIFEST.in
 include *.rst
 
-recursive-include alembic *
-recursive-exclude alembic *.pyc *.pyo *.so *.dll .DS_Store
 recursive-include ichnaea *
 recursive-exclude ichnaea *.pyc *.pyo *.so *.dll .DS_Store
 recursive-exclude ichnaea/content/static/tiles *

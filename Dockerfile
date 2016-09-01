@@ -50,7 +50,6 @@ RUN make -f docker.make build_check
 
 # The app user only needs write access to very few places.
 RUN chown app:app . && \
-    chown -R app:app /app/alembic/ && \
     chown -R app:app /app/docs/ && \
     chown -R app:app /app/ichnaea/
 

@@ -17,7 +17,7 @@ from ichnaea.conftest import (
 # make sure all models are imported
 from ichnaea.models import _Model  # NOQA
 
-from ichnaea.tests import DATA_DIRECTORY
+HERE = os.path.dirname(__file__)
 
 _compare_attrs = {
     sqltypes._Binary: ('length', ),
@@ -27,7 +27,7 @@ _compare_attrs = {
     sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
 }
 
-SQL_BASE = os.path.join(DATA_DIRECTORY, 'base.sql')
+SQL_BASE = os.path.join(HERE, 'base.sql')
 
 
 def db_compare_type(context, inspected_column,
@@ -41,10 +41,11 @@ def db_compare_type(context, inspected_column,
     type_affinity = migrated._type_affinity
     compare_attrs = _compare_attrs.get(type_affinity, None)
     if compare_attrs is not None:
-        if type(expected) != type(migrated):
+        if type(expected) != type(migrated):  # pragma: no cover
             return True
         for attr in compare_attrs:
-            if getattr(expected, attr, None) != getattr(migrated, attr, None):
+            if (getattr(expected, attr, None) !=
+                    getattr(migrated, attr, None)):  # pragma: no cover
                 return True
         return False
 
@@ -52,7 +53,7 @@ def db_compare_type(context, inspected_column,
     comparator = _type_comparators.get(type_affinity, None)
     if comparator is not None:
         return comparator(expected, migrated)
-    raise AssertionError('Unsupported DB type comparison.')
+    raise AssertionError('Unsupported DB type comparison.')  # pragma: no cover
 
 
 class TestMigration(object):
