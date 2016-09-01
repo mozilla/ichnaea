@@ -24,14 +24,14 @@ build_maxmind: lib/libmaxminddb.0.dylib
 
 pip:
 	virtualenv .
-	bin/pip install --disable-pip-version-check -r requirements/build.txt
+	pip install --disable-pip-version-check -r requirements/build.txt
 
 build: pip build_maxmind
 	$(INSTALL) -r requirements/binary.txt
 	$(INSTALL) -r requirements/python.txt
 	cythonize -f ichnaea/geocalc.pyx
 	$(INSTALL) -e .
-	$(PYTHON) -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
+	python -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
 	mysql -utravis -h localhost -e \
 		"CREATE DATABASE IF NOT EXISTS location" || echo
 
