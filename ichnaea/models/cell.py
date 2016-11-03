@@ -270,11 +270,10 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin,
     _valid_schema = ValidCellAreaSchema()
 
     areaid = Column(CellAreaColumn(7))  #:
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)  #:
-    mcc = Column(SmallInteger, autoincrement=False, nullable=False)  #:
-    mnc = Column(SmallInteger, autoincrement=False, nullable=False)  #:
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, nullable=False)  #:
+    radio = Column(TinyIntEnum(Radio), nullable=False)  #:
+    mcc = Column(SmallInteger, nullable=False)  #:
+    mnc = Column(SmallInteger, nullable=False)  #:
+    lac = Column(SmallInteger(unsigned=True), nullable=False)  #:
 
     radius = Column(Integer)  #:
     region = Column(String(2))  #:
@@ -363,13 +362,12 @@ class CellShard(StationMixin):
     _valid_schema = ValidCellShardSchema()
 
     cellid = Column(CellIdColumn(11))
-    radio = Column(TinyIntEnum(Radio), autoincrement=False, nullable=False)
-    mcc = Column(SmallInteger, autoincrement=False, nullable=False)
-    mnc = Column(SmallInteger, autoincrement=False, nullable=False)
-    lac = Column(SmallInteger(unsigned=True),
-                 autoincrement=False, nullable=False)
-    cid = Column(Integer(unsigned=True), autoincrement=False, nullable=False)
-    psc = Column(SmallInteger, autoincrement=False)
+    radio = Column(TinyIntEnum(Radio), nullable=False)
+    mcc = Column(SmallInteger, nullable=False)
+    mnc = Column(SmallInteger, nullable=False)
+    lac = Column(SmallInteger(unsigned=True), nullable=False)
+    cid = Column(Integer(unsigned=True), nullable=False)
+    psc = Column(SmallInteger)
 
     @declared_attr
     def __table_args__(cls):  # NOQA

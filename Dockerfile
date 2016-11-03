@@ -19,10 +19,18 @@ CMD ["shell"]
 # Create an app user owned var/run section.
 RUN mkdir -p /var/run/location/ && chown -R app:app /var/run/location/
 
+# Disable installing doc/man/locale files
+RUN echo "\
+path-exclude=/usr/share/doc/*\n\
+path-exclude=/usr/share/man/*\n\
+path-exclude=/usr/share/locale/*\n\
+" > /etc/dpkg/dpkg.cfg.d/apt-no-docs
+
 # Install apt-installable dependencies.
 RUN apt-get update && apt-get -y install \
     file \
     gcc \
+    libffi-dev \
     libgeos-dev \
     libpng-dev \
     libspatialindex-dev \

@@ -242,6 +242,6 @@ class Stat(_Model):
         PrimaryKeyConstraint('key', 'time'),
     )
 
-    key = Column(TinyIntEnum(StatKey), autoincrement=False)  #:
+    key = Column(TinyIntEnum(StatKey))  #:
     time = Column(Date)  #:
     value = Column(BigInteger(unsigned=True))  #:
