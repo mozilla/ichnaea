@@ -9,7 +9,7 @@ TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
 ICHNAEA_CFG ?= $(TOXINIDIR)/ichnaea/tests/data/test.ini
 
-MAXMINDDB_VERSION = 1.2.1
+MAXMINDDB_VERSION = 1.2.2
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 
@@ -133,7 +133,8 @@ build_datamaps: datamaps/merge
 $(TOXINIDIR)/libmaxminddb/bootstrap:
 	rm -rf libmaxminddb
 	git clone --recursive git://github.com/maxmind/libmaxminddb
-	cd libmaxminddb; git checkout 1.1.1
+	cd libmaxminddb; git reset --hard; git clean -fd
+	cd libmaxminddb; git checkout -f 1.1.1
 	cd libmaxminddb; git submodule update --init --recursive
 
 $(TOXINIDIR)/libmaxminddb/Makefile:
@@ -150,8 +151,10 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 		$(INSTALL) --no-binary :all: maxminddb==$(MAXMINDDB_VERSION)
 
 pngquant/pngquant:
+	rm -rf pngquant
 	git clone --recursive git://github.com/pornel/pngquant
-	cd pngquant; git checkout 2.5.2
+	cd pngquant; git reset --hard; git clean -fd
+	cd pngquant; git checkout -f 2.5.2
 	cd pngquant; ./configure
 	cd pngquant; make all
 
