@@ -22,5 +22,5 @@ snowballstemmer==1.2.1
 Sphinx==1.4.8
 sphinx_rtd_theme==0.1.9
 tox==2.3.1
-virtualenv==15.1.0
+virtualenv==15.0.3
 WebTest==2.0.23
