@@ -8,13 +8,10 @@ Changelog
 Untagged
 ********
 
-Migrations
-~~~~~~~~~~
-
-
 Changes
 ~~~~~~~
 
+- Move numpy install into build step.
 
 20161123162300
 **************
