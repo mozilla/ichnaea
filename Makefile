@@ -9,7 +9,7 @@ TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
 ICHNAEA_CFG ?= $(TOXINIDIR)/ichnaea/tests/data/test.ini
 
-MAXMINDDB_VERSION = 1.2.1
+MAXMINDDB_VERSION = 1.2.2
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 
