@@ -150,6 +150,7 @@ build_maxmind: $(PYTHON) pip $(TOXINIDIR)/lib/libmaxminddb.0.dylib
 		$(INSTALL) --no-binary :all: maxminddb==$(MAXMINDDB_VERSION)
 
 pngquant/pngquant:
+	rm -rf pngquant
 	git clone --recursive git://github.com/pornel/pngquant
 	cd pngquant; git checkout 2.5.2
 	cd pngquant; ./configure
