@@ -31,6 +31,7 @@ def on_duplicate(insert, compiler, **kw):
         stmt += ' ON DUPLICATE KEY UPDATE %s' % my_var
     return stmt
 
+
 Insert.argument_for('mysql', 'on_duplicate', None)
 
 

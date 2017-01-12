@@ -66,6 +66,7 @@ class ResultSchema(RenamingMappingSchema):
             'lon': data['location']['lon'],
         }
 
+
 RESULT_SCHEMA = ResultSchema()
 
 
@@ -115,6 +116,7 @@ class OutboundSchema(OptionalMappingSchema):
             signalStrength = OptionalNode(colander.Integer())
             signalToNoiseRatio = OptionalNode(colander.Integer())
             ssid = OptionalNode(colander.String())
+
 
 OUTBOUND_SCHEMA = OutboundSchema()
 

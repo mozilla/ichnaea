@@ -70,7 +70,7 @@ def dump_model(shard_model, session, fd, where=None):
 
 def dump_file(datatype, session, filename,
               lat=None, lon=None, radius=None):
-    MODEL = {
+    model = {
         'blue': BlueShard,
         'cell': CellShard,
         'ocid': CellShardOCID,
@@ -78,7 +78,7 @@ def dump_file(datatype, session, filename,
     }
     where = where_area(lat, lon, radius)
     with util.gzip_open(filename, 'w') as fd:
-        dump_model(MODEL[datatype], session, fd, where=where)
+        dump_model(model[datatype], session, fd, where=where)
     return 0
 
 

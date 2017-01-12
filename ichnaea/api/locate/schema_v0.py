@@ -83,4 +83,5 @@ class LocateV0Schema(BaseLocateSchema):
     wifi = WifisSchema(missing=(), to_name='wifiAccessPoints')
     fallbacks = FallbackSchema(missing=None)
 
+
 LOCATE_V0_SCHEMA = LocateV0Schema()

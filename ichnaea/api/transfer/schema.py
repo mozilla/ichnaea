@@ -27,4 +27,5 @@ class TransferV1Schema(OptionalMappingSchema):
     class items(OptionalSequenceSchema):  # NOQA
         item = ItemV1Schema()
 
+
 TRANSFER_V1_SCHEMA = TransferV1Schema()

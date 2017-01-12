@@ -518,6 +518,7 @@ class CellShardGsm(CellShard, _Model):
 
     __tablename__ = 'cell_gsm'
 
+
 CELL_SHARDS[Radio.gsm.name] = CellShardGsm
 
 
@@ -525,6 +526,7 @@ class CellShardGsmOCID(CellShardOCID, _Model):
     """Shard for GSM OCID cells."""
 
     __tablename__ = 'cell_gsm_ocid'
+
 
 CELL_SHARDS_OCID[Radio.gsm.name] = CellShardGsmOCID
 
@@ -534,6 +536,7 @@ class CellShardWcdma(CellShard, _Model):
 
     __tablename__ = 'cell_wcdma'
 
+
 CELL_SHARDS[Radio.wcdma.name] = CellShardWcdma
 
 
@@ -541,6 +544,7 @@ class CellShardWcdmaOCID(CellShardOCID, _Model):
     """Shard for WCDMA OCID cells."""
 
     __tablename__ = 'cell_wcdma_ocid'
+
 
 CELL_SHARDS_OCID[Radio.wcdma.name] = CellShardWcdmaOCID
 
@@ -550,6 +554,7 @@ class CellShardLte(CellShard, _Model):
 
     __tablename__ = 'cell_lte'
 
+
 CELL_SHARDS[Radio.lte.name] = CellShardLte
 
 
@@ -557,5 +562,6 @@ class CellShardLteOCID(CellShardOCID, _Model):
     """Shard for LTE OCID cells."""
 
     __tablename__ = 'cell_lte_ocid'
+
 
 CELL_SHARDS_OCID[Radio.lte.name] = CellShardLteOCID

@@ -105,4 +105,5 @@ class LocateV1Schema(BaseLocateSchema):
             data['fallbacks']['ipf'] = data['considerIp']
         return data
 
+
 LOCATE_V1_SCHEMA = LocateV1Schema()

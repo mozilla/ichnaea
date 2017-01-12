@@ -24,6 +24,7 @@ class BaseModel(object):
     def __table_args__(cls):  # NOQA
         return cls._indices + (cls._settings, )
 
+
 _Model = declarative_base(cls=BaseModel)
 
 

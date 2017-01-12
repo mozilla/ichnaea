@@ -164,6 +164,7 @@ class DataMapNE(DataMap, _Model):
 
     __tablename__ = 'datamap_ne'
 
+
 DATAMAP_SHARDS['ne'] = DataMapNE
 
 
@@ -171,6 +172,7 @@ class DataMapNW(DataMap, _Model):
     """DataMap north-west shard."""
 
     __tablename__ = 'datamap_nw'
+
 
 DATAMAP_SHARDS['nw'] = DataMapNW
 
@@ -180,6 +182,7 @@ class DataMapSE(DataMap, _Model):
 
     __tablename__ = 'datamap_se'
 
+
 DATAMAP_SHARDS['se'] = DataMapSE
 
 
@@ -187,6 +190,7 @@ class DataMapSW(DataMap, _Model):
     """DataMap south-west shard."""
 
     __tablename__ = 'datamap_sw'
+
 
 DATAMAP_SHARDS['sw'] = DataMapSW
 
