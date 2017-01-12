@@ -70,7 +70,7 @@ class Geocoder(object):
         with util.gzip_open(buffer_file, 'r') as fd:
             buffer_data = simplejson.load(fd)
 
-        i = 1
+        i = 0
         envelopes = []
         for feature in buffer_data['features']:
             code = feature['properties']['alpha2']
@@ -93,17 +93,10 @@ class Geocoder(object):
                     self._tree_ids[i] = code
                     i += 1
 
-        # Work around a bug in RTree:
-        # https://github.com/Toblerity/rtree/issues/71
-        # Insert a fake 0 entry at creation time, as streaming entries
-        # is broken and results in envelope ids being set to 0.
-        self._tree_ids[0] = None
-        init_envelopes = [(0, (-180.0, -90.0, -180.0, -90.0), None)]
-
         props = index.Property()
         props.fill_factor = 0.9
         props.leaf_capacity = 20
-        self._tree = index.Index(init_envelopes,
+        self._tree = index.Index(envelopes,
                                  interleaved=True, properties=props)
         for envelope in envelopes:
             self._tree.insert(*envelope)
@@ -122,8 +115,7 @@ class Geocoder(object):
         # This is a coarse-grained but very fast match.
         point = geometry.Point(lon, lat)
         codes = [self._tree_ids[id_] for id_ in
-                 self._tree.intersection(point.bounds)
-                 if self._tree_ids[id_]]
+                 self._tree.intersection(point.bounds)]
 
         if not codes:
             return None
@@ -183,8 +175,7 @@ class Geocoder(object):
         """
         point = geometry.Point(lon, lat)
         codes = [self._tree_ids[id_] for id_ in
-                 self._tree.intersection(point.bounds)
-                 if self._tree_ids[id_]]
+                 self._tree.intersection(point.bounds)]
 
         for code in codes:
             if self._buffered_shapes[code].contains(point):

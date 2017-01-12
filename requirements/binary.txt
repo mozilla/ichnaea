@@ -7,7 +7,7 @@ hiredis==0.2.0
 MarkupSafe==0.23
 maxminddb==1.2.3
 pyOpenSSL==16.2.0
-Rtree==0.8.2
+Rtree==0.8.3
 scandir==1.4 ; python_version < '3.5'
 scipy==0.18.1
 setproctitle==1.1.10
