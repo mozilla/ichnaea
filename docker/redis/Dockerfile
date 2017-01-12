@@ -1,2 +1,2 @@
-FROM redis:2.8.23
+FROM redis:2.8
 EXPOSE "6379"

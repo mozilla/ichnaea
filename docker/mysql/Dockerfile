@@ -1,4 +1,4 @@
-FROM mysql:5.6.29
+FROM mysql:5.6
 ENV MYSQL_ROOT_PASSWORD=location
 ENV MYSQL_DATABASE=location
 ENV MYSQL_USER=location

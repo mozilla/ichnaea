@@ -3,8 +3,7 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 PYTHON = $(BIN)/python
-PIP = $(BIN)/pip
-INSTALL = $(PIP) install --no-deps --no-cache-dir \
+INSTALL = $(BIN)/pip install --no-deps --no-cache-dir \
 	--disable-pip-version-check -f $(HERE)/wheelhouse/
 
 DATAMAPS_DOWNLOAD = https://github.com/ericfischer/datamaps/archive
