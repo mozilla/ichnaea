@@ -1,7 +1,7 @@
 billiard==3.5.0.2
 coverage==4.3.1
 Cython==0.25.2
-gevent==1.2.0
+gevent==1.2.1
 greenlet==0.4.11
 hiredis==0.2.0
 MarkupSafe==0.23
