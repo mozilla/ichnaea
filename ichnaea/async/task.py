@@ -103,7 +103,7 @@ class BaseTask(Task):
         if TESTING:
             # We do the extra check to make sure this was really used from
             # inside tests
-            serializer = self.app.conf.CELERY_TASK_SERIALIZER
+            serializer = self.app.conf.task_serializer
             content_type, encoding, data = kombu_dumps(args, serializer)
             args = kombu_loads(data, content_type, encoding)
 

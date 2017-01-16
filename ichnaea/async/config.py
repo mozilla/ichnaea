@@ -27,7 +27,7 @@ from ichnaea.models import (
 )
 from ichnaea.queue import DataQueue
 
-CELERY_QUEUES = (
+TASK_QUEUES = (
     Queue('celery_blue', routing_key='celery_blue'),
     Queue('celery_cell', routing_key='celery_cell'),
     Queue('celery_content', routing_key='celery_content'),
@@ -70,8 +70,8 @@ def configure_celery(celery_app):
     if not REDIS_URI:  # pragma: no cover
         redis_uri = app_config.get_map('cache', {}).get('cache_url')
         celery_app.conf.update(
-            BROKER_URL=redis_uri,
-            CELERY_RESULT_BACKEND=redis_uri,
+            broker_url=redis_uri,
+            result_backend=redis_uri,
         )
 
 
@@ -159,7 +159,7 @@ def init_worker(celery_app,
             raven_client=raven_client, _client=_geoip_db)
 
     # configure data queues
-    celery_app.all_queues = all_queues = set([q.name for q in CELERY_QUEUES])
+    celery_app.all_queues = all_queues = set([q.name for q in TASK_QUEUES])
 
     celery_app.data_queues = data_queues = configure_data(redis_client)
     all_queues = all_queues.union(
