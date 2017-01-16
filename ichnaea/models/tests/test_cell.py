@@ -1,7 +1,11 @@
 from datetime import timedelta
+import warnings
 
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import (
+    SAWarning,
+    SQLAlchemyError,
+)
 
 from ichnaea.conftest import (
     GB_LAT,
@@ -176,9 +180,11 @@ class TestCellShard(object):
                 set([CellShardGsm, CellShardWcdma, CellShardLte]))
 
     def test_init_empty(self, session):
-        session.add(CellShardGsm())
-        with pytest.raises(SQLAlchemyError):
-            session.flush()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(CellShardGsm())
+            with pytest.raises(SQLAlchemyError):
+                session.flush()
 
     def test_init_fail(self, session):
         session.add(CellShardGsm(cellid='abc'))
@@ -239,11 +245,13 @@ class TestCellShardOCID(object):
                          .filter(CellShardGsmOCID.cellid.is_(None))).all()
         assert result == []
 
-        session.add(CellShardGsmOCID(
-            cellid=None,
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
-        with pytest.raises(Exception):
-            session.flush()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(CellShardGsmOCID(
+                cellid=None,
+                radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
+            with pytest.raises(Exception):
+                session.flush()
 
     def test_region(self, session):
         cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
@@ -340,11 +348,13 @@ class TestCellArea(object):
                          .filter(CellArea.areaid.is_(None))).all()
         assert result == []
 
-        session.add(CellArea(
-            areaid=None,
-            radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
-        with pytest.raises(Exception):
-            session.flush()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(CellArea(
+                areaid=None,
+                radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=1234))
+            with pytest.raises(Exception):
+                session.flush()
 
     def test_areaid_derived(self, session):
         session.add(CellArea.create(

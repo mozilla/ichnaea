@@ -1,4 +1,7 @@
+import warnings
+
 import pytest
+from sqlalchemy.exc import SAWarning
 
 from ichnaea.models.content import (
     decode_datamap_grid,
@@ -87,9 +90,11 @@ class TestDataMap(object):
         assert result.grid == (lat, lon)
 
     def test_grid_none(self, session):
-        session.add(DataMap.shard_model(0, 0)(grid=None))
-        with pytest.raises(Exception):
-            session.flush()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(DataMap.shard_model(0, 0)(grid=None))
+            with pytest.raises(Exception):
+                session.flush()
 
     def test_grid_length(self, session):
         session.add(DataMap.shard_model(0, 9)(grid=b'\x00' * 9))

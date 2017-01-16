@@ -1,5 +1,10 @@
+import warnings
+
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import (
+    SAWarning,
+    SQLAlchemyError,
+)
 
 from ichnaea.conftest import (
     GB_LAT,
@@ -47,14 +52,14 @@ class TestWifiShard(object):
         assert wifis[0].mac == '111101123456'
 
     def test_init_empty(self, session):
-        wifi = WifiShard0()
-        session.add(wifi)
-        with pytest.raises(SQLAlchemyError):
-            session.flush()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(WifiShard0())
+            with pytest.raises(SQLAlchemyError):
+                session.flush()
 
     def test_init_fail(self, session):
-        wifi = WifiShard0(mac='abc')
-        session.add(wifi)
+        session.add(WifiShard0(mac='abc'))
         with pytest.raises(SQLAlchemyError):
             session.flush()
 

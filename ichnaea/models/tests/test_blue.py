@@ -1,5 +1,10 @@
+import warnings
+
 import pytest
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import (
+    SAWarning,
+    SQLAlchemyError,
+)
 
 from ichnaea.conftest import (
     GB_LAT,
@@ -47,14 +52,14 @@ class TestBlueShard(object):
         assert blues[0].mac == '111101123456'
 
     def test_init_empty(self, session):
-        blue = BlueShard0()
-        session.add(blue)
-        with pytest.raises(SQLAlchemyError):
-            session.flush()
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(BlueShard0())
+            with pytest.raises(SQLAlchemyError):
+                session.flush()
 
     def test_init_fail(self, session):
-        blue = BlueShard0(mac='abc')
-        session.add(blue)
+        session.add(BlueShard0(mac='abc'))
         with pytest.raises(SQLAlchemyError):
             session.flush()
 
