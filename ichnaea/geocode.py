@@ -3,6 +3,7 @@ Contains a reverse geocoder to turn lat/lon and mcc data into region
 codes.
 """
 
+import atexit
 from collections import namedtuple
 import os
 
@@ -102,6 +103,13 @@ class Geocoder(object):
             self._tree.insert(*envelope)
         self._valid_regions = frozenset(self._shapes.keys())
 
+    def close(self):  # pragma: no cover
+        """
+        Close the Geocoder and its handles on ctypes pointers.
+        """
+        self._tree.properties.handle.destroy()
+        self._tree.close()
+
     @property
     def valid_regions(self):
         return self._valid_regions
@@ -114,24 +122,24 @@ class Geocoder(object):
         # Look up point in RTree of buffered region envelopes.
         # This is a coarse-grained but very fast match.
         point = geometry.Point(lon, lat)
-        codes = [self._tree_ids[id_] for id_ in
-                 self._tree.intersection(point.bounds)]
+        codes = set([self._tree_ids[id_] for id_ in
+                     self._tree.intersection(point.bounds)])
 
         if not codes:
             return None
 
         # match point against the buffered polygon shapes
-        buffered_codes = [code for code in codes
-                          if self._buffered_shapes[code].contains(point)]
+        buffered_codes = set([code for code in codes
+                              if self._buffered_shapes[code].contains(point)])
         if len(buffered_codes) < 2:
-            return buffered_codes[0] if buffered_codes else None
+            return tuple(buffered_codes)[0] if buffered_codes else None
 
         # match point against the precise polygon shapes
-        precise_codes = [code for code in buffered_codes
-                         if self._prepared_shapes[code].contains(point)]
+        precise_codes = set([code for code in buffered_codes
+                             if self._prepared_shapes[code].contains(point)])
 
         if len(precise_codes) == 1:
-            return precise_codes[0]
+            return tuple(precise_codes)[0]
 
         # Use distance from the border of each region as the tie-breaker.
         distances = {}
@@ -273,6 +281,11 @@ class Geocoder(object):
         region subunit in meters, rounded to 1 km increments.
         """
         return self._radii.get(code, None)
+
+
+@atexit.register
+def geocode_exit():  # pragma: no cover
+    GEOCODER.close()
 
 
 GEOCODER = Geocoder()
