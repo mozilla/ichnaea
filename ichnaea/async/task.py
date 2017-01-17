@@ -17,18 +17,16 @@ from ichnaea.db import db_worker_session
 class BaseTask(Task):
     """A base task giving access to various outside connections."""
 
-    abstract = True  #:
-    acks_late = False  #:
-    ignore_result = True  #:
-    max_retries = 3  #:
+    _countdown = None
+    _enabled = True
+    _schedule = None
+    _shard_model = None
 
-    _countdown = None  #:
-    _enabled = True  #:
-    _schedule = None  #:
-    _shard_model = None  #:
+    _auto_retry = True
+    _shortname = None
 
-    _auto_retry = True  #:
-    _shortname = None  #:
+    def __init__(self):
+        self._shortname = self.shortname()
 
     @classmethod
     def shortname(cls):
@@ -40,7 +38,7 @@ class BaseTask(Task):
             # strip off ichnaea prefix and tasks module
             segments = cls.name.split('.')
             segments = [s for s in segments if s not in ('ichnaea', 'tasks')]
-            short = cls._shortname = '.'.join(segments)
+            short = '.'.join(segments)
         return short
 
     @classmethod
@@ -72,7 +70,7 @@ class BaseTask(Task):
             enabled = get_unbound_function(enabled)(app.app_config)
 
         if enabled and cls._schedule:
-            app.conf.CELERYBEAT_SCHEDULE.update(cls.beat_config())
+            app.conf.beat_schedule.update(cls.beat_config())
 
     def __call__(self, *args, **kw):
         """
@@ -99,7 +97,6 @@ class BaseTask(Task):
         de/serialization process to make sure the arguments can indeed
         be serialized into JSON.
         """
-
         if TESTING:
             # We do the extra check to make sure this was really used from
             # inside tests

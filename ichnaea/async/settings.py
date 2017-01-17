@@ -17,6 +17,9 @@ if TESTING:
 #: Based on `Celery / Redis caveats
 #: <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
 broker_transport_options = {
+    'socket_connect_timeout': 60,
+    'socket_keepalive': True,
+    'socket_timeout': 30,
     'visibility_timeout': 43200,
 }
 
@@ -30,6 +33,9 @@ task_queues = TASK_QUEUES
 imports = [
     'ichnaea.data.tasks',
 ]
+
+#: Disable task results.
+task_ignore_result = True
 
 #: Optimization for a mix of fast and slow tasks.
 worker_prefetch_multiplier = 8

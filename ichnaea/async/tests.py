@@ -25,7 +25,7 @@ class TestBeat(object):
             shutil.rmtree(tmpdir)
 
         # Import tasks after beat startup, to ensure beat_init
-        # loads configured CELERY_IMPORTS correctly.
+        # correctly loads configured Celery imports.
         from ichnaea.data import tasks
         all_tasks = set([m[1].shortname() for m in getmembers(tasks)
                          if isinstance(m[1], BaseTask)])
