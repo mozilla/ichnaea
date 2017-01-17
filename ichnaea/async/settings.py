@@ -38,6 +38,7 @@ imports = [
 task_ignore_result = True
 
 #: Optimization for a mix of fast and slow tasks.
+worker_max_tasks_per_child = 100000
 worker_prefetch_multiplier = 8
 worker_disable_rate_limits = True  #: Optimization
 task_compression = 'gzip'  #: Optimization
