@@ -1,9 +1,4 @@
-# mozilla/ichnaea
-#
-# VERSION 0.1
-
 FROM python:2.7-slim
-MAINTAINER dev-geolocation@lists.mozilla.org
 
 # add a non-privileged user for installing and running
 # the application

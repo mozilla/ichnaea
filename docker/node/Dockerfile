@@ -1,5 +1,4 @@
 FROM node:6-slim
-MAINTAINER Mozilla Geolocation <dev-geolocation@lists.mozilla.org>
 
 # add a non-privileged user for installing and running
 # the application
