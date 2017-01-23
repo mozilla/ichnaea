@@ -1,4 +1,4 @@
-pip==9.0.1
-setuptools==33.1.0
-wheel==0.29.0
-numpy==1.12.0
+pip==9.0.1 --hash=sha256:690b762c0a8460c303c089d5d0be034fb15a5ea2b75bdf565f40421f542fefb0
+setuptools==33.1.1 --hash=sha256:4ed8f634b11fbba8c0ba9db01a8d24ad464f97a615889e9780fc74ddec956711
+wheel==0.29.0 --hash=sha256:ea8033fc9905804e652f75474d33410a07404c1a78dd3c949a66863bd1050ebd
+numpy==1.12.0 --hash=sha256:160a3168325fa4ef04cddff168ab9cffd0e579a911fdf8d888dbf06be49d2253

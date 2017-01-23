@@ -4,7 +4,7 @@ HERE = $(shell pwd)
 BIN = $(HERE)/bin
 PYTHON = $(BIN)/python
 INSTALL = $(BIN)/pip install --no-deps --no-cache-dir \
-	--disable-pip-version-check -f $(HERE)/wheelhouse/
+	--disable-pip-version-check --require-hashes
 
 DATAMAPS_DOWNLOAD = https://github.com/ericfischer/datamaps/archive
 DATAMAPS_COMMIT = 76e620adabbedabd6866b23b30c145b53bae751e

@@ -41,7 +41,6 @@ RUN make -f docker.make build_deps
 
 # Install Python libraries.
 COPY ./requirements/*.txt /app/requirements/
-COPY ./wheelhouse/* /app/wheelhouse/
 RUN make -f docker.make build_python_deps
 
 # Install the application code.
