@@ -5,7 +5,10 @@ import time
 
 from pyramid.httpexceptions import HTTPServiceUnavailable
 
-from ichnaea.config import VERSION_INFO
+from ichnaea.config import (
+    CONTRIBUTE_INFO,
+    VERSION_INFO,
+)
 from ichnaea.webapp.view import BaseView
 
 
@@ -34,6 +37,7 @@ def check_redis(request):
 
 def configure_monitor(config):
     """Configure monitor related views and set up routes."""
+    ContributeView.configure(config)
     HeartbeatView.configure(config)
     LBHeartbeatView.configure(config)
     VersionView.configure(config)
@@ -53,6 +57,21 @@ class Timer(object):
         if self.start is not None:
             dt = time.time() - self.start
             self.ms = int(round(1000 * dt))
+
+
+class ContributeView(BaseView):
+    """
+    A view returning information about how to contribute to the project.
+    """
+
+    route = '/contribute.json'  #:
+
+    def __call__(self):
+        """
+        Return a response with a 200 status, including a JSON body
+        describing how to contribute to the project.
+        """
+        return CONTRIBUTE_INFO
 
 
 class HeartbeatView(BaseView):

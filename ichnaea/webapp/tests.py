@@ -82,6 +82,17 @@ class TestApp(object):
             redis_client.close()
 
 
+class TestContribute(object):
+
+    def test_ok(self, app):
+        response = app.get('/contribute.json', status=200)
+        assert response.content_type == 'application/json'
+        data = response.json
+        assert 'repository' in data.keys()
+        assert 'license' in data['repository']
+        assert data['repository']['license'] == 'Apache 2.0'
+
+
 class TestHeartbeat(object):
 
     def test_ok(self, app):

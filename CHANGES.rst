@@ -20,6 +20,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add `/contribute.json` view.
+
 - Update to Celery 4.
 
 - Remove `/leaders` HTTP redirects.

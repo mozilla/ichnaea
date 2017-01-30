@@ -19,6 +19,12 @@ HERE = os.path.dirname(__file__)
 
 RELEASE = None
 TESTING = 'TESTING' in os.environ
+
+CONTRIBUTE_FILE = os.path.join(HERE, 'contribute.json')
+CONTRIBUTE_INFO = {}
+with open(CONTRIBUTE_FILE, 'r') as fd:
+    CONTRIBUTE_INFO = simplejson.load(fd)
+
 VERSION = pkg_resources.get_distribution('ichnaea').version
 VERSION_FILE = os.path.join(HERE, 'version.json')
 VERSION_INFO = {

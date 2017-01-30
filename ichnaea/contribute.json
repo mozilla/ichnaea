@@ -1,6 +1,6 @@
 {
     "name": "Ichnaea",
-    "description": "Mozilla Ichnaea is a geolocation service.",
+    "description": "Mozilla Ichnaea is a Geolocation service.",
     "repository": {
         "url": "https://github.com/mozilla/ichnaea/",
         "license": "Apache 2.0",
