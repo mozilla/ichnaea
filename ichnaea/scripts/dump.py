@@ -12,7 +12,7 @@ import sys
 from sqlalchemy import text
 
 from ichnaea.db import (
-    configure_rw_db,
+    configure_db,
     db_worker_session,
 )
 from ichnaea.geocalc import bbox
@@ -116,7 +116,7 @@ def main(argv, _db=None, _dump_file=dump_file):
 
     configure_logging()
 
-    db = configure_rw_db(_db=_db)
+    db = configure_db('ro', _db=_db)
     with db_worker_session(db, commit=False) as session:
         exit_code = _dump_file(
             datatype, session, filename, lat=lat, lon=lon, radius=radius)

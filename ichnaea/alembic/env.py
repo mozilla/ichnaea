@@ -1,13 +1,13 @@
 from alembic import context
 
-from ichnaea.db import configure_ddl_db
+from ichnaea.db import configure_db
 from ichnaea.log import (
     configure_logging,
 )
 
 
 def run_migrations_online():
-    db = configure_ddl_db()
+    db = configure_db('ddl')
     with db.engine.connect() as connection:
         context.configure(connection=connection)
         with connection.begin() as trans:

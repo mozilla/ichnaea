@@ -59,8 +59,8 @@ def db_compare_type(context, inspected_column,
 class TestMigration(object):
 
     @pytest.fixture(scope='function')
-    def db(self, db_rw):
-        yield db_rw
+    def clean_db(self, db):
+        yield db
         # setup normal database schema again
         setup_database()
 
@@ -70,7 +70,9 @@ class TestMigration(object):
             alembic_rev = result.first()
         return None if alembic_rev is None else alembic_rev[0]
 
-    def test_migration(self, db):
+    def test_migration(self, clean_db):
+        db = clean_db
+
         # capture state of fresh database
         metadata = MetaData()
         metadata.reflect(bind=db.engine)

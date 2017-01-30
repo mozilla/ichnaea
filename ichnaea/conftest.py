@@ -27,10 +27,7 @@ from ichnaea.config import (
     ALEMBIC_CFG,
     read_config,
 )
-from ichnaea.db import (
-    configure_rw_db,
-    configure_ro_db,
-)
+from ichnaea.db import configure_db
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import (
     CITY_RADII,
@@ -167,7 +164,7 @@ def cleanup_tables(engine):
 
 
 def setup_database():
-    db = configure_rw_db()
+    db = configure_db('ddl')
     engine = db.engine
     cleanup_tables(engine)
     setup_tables(engine)
@@ -184,59 +181,39 @@ def database():
 
 
 @pytest.fixture(scope='session')
-def db_rw(database):
-    db = configure_rw_db()
-    yield db
-    db.close()
-
-
-@pytest.fixture(scope='session')
-def db_ro(database):
-    db = configure_ro_db()
+def db(database):
+    db = configure_db('rw')
     yield db
     db.close()
 
 
 @pytest.fixture(scope='function')
-def db_rw_drop_table(db_rw):
-    yield db_rw
-    setup_tables(db_rw.engine)
+def db_drop_table(db):
+    yield db
+    setup_tables(db.engine)
 
 
 @pytest.fixture(scope='function')
-def rw_session(db_rw):
-    rw_conn = db_rw.engine.connect()
-    rw_trans = rw_conn.begin()
-    db_rw.session_factory.configure(bind=rw_conn)
-    rw_session = db_rw.session()
+def session(db):
+    conn = db.engine.connect()
+    trans = conn.begin()
+    db.session_factory.configure(bind=conn)
+    session = db.session()
 
-    yield rw_session
+    # Set the global session context for factory-boy.
+    SESSION['default'] = session
+    yield session
+    del SESSION['default']
 
-    rw_trans.rollback()
-    rw_session.close()
-    db_rw.session_factory.configure(bind=None)
-    rw_trans.close()
-    rw_conn.close()
-
-
-@pytest.fixture(scope='function')
-def ro_session(db_ro):
-    ro_conn = db_ro.engine.connect()
-    ro_trans = ro_conn.begin()
-    db_ro.session_factory.configure(bind=ro_conn)
-    ro_session = db_ro.session()
-
-    yield ro_session
-
-    ro_trans.rollback()
-    ro_session.close()
-    db_ro.session_factory.configure(bind=None)
-    ro_trans.close()
-    ro_conn.close()
+    trans.rollback()
+    session.close()
+    db.session_factory.configure(bind=None)
+    trans.close()
+    conn.close()
 
 
 @pytest.fixture(scope='function')
-def rw_session_tracker(rw_session):
+def session_tracker(session):
     """
     This install an event handler into the active session, which
     tracks all SQL statements that are send via the session.
@@ -244,7 +221,7 @@ def rw_session_tracker(rw_session):
     The yielded checker can be called with an integer argument,
     representing the number of expected SQL statements, for example::
 
-        rw_session_tracker(0)
+        session_tracker(0)
 
     would only succeed if no SQL statements where made.
     """
@@ -257,7 +234,7 @@ def rw_session_tracker(rw_session):
         return conn_event_handler
 
     handler = scoped_conn_event_handler(db_events)
-    event.listen(rw_session.bind,
+    event.listen(session.bind,
                  'before_cursor_execute',
                  handler, named=True)
 
@@ -267,50 +244,7 @@ def rw_session_tracker(rw_session):
 
     yield checker
 
-    event.remove(rw_session.bind, 'before_cursor_execute', handler)
-
-
-@pytest.fixture(scope='function')
-def ro_session_tracker(ro_session):
-    """
-    This install an event handler into the active session, which
-    tracks all SQL statements that are send via the session.
-
-    The yielded checker can be called with an integer argument,
-    representing the number of expected SQL statements, for example::
-
-        ro_session_tracker(0)
-
-    would only succeed if no SQL statements where made.
-    """
-
-    db_events = []
-
-    def scoped_conn_event_handler(calls):
-        def conn_event_handler(**kw):
-            calls.append((kw['statement'], kw['parameters']))
-        return conn_event_handler
-
-    handler = scoped_conn_event_handler(db_events)
-    event.listen(ro_session.bind,
-                 'before_cursor_execute',
-                 handler, named=True)
-
-    def checker(num=None):
-        if num is not None:
-            assert len(db_events) == num
-
-    yield checker
-
-    event.remove(ro_session.bind, 'before_cursor_execute', handler)
-
-
-@pytest.fixture(scope='function')
-def session(rw_session):
-    # Set the global session context for factory-boy.
-    SESSION['default'] = rw_session
-    yield rw_session
-    del SESSION['default']
+    event.remove(session.bind, 'before_cursor_execute', handler)
 
 
 @pytest.fixture(scope='session')
@@ -406,12 +340,12 @@ def region_searcher(data_queues, geoip_db,
 
 
 @pytest.fixture(scope='session')
-def global_app(db_ro, geoip_db, http_session,
+def global_app(db, geoip_db, http_session,
                raven_client, redis_client, stats_client,
                position_searcher, region_searcher):
     wsgiapp = main(
         TEST_CONFIG,
-        _db=db_ro,
+        _db=db,
         _geoip_db=geoip_db,
         _http_session=http_session,
         _raven_client=raven_client,
@@ -426,18 +360,18 @@ def global_app(db_ro, geoip_db, http_session,
 
 
 @pytest.fixture(scope='function')
-def app(global_app, raven, redis, ro_session, stats):
+def app(global_app, raven, redis, session, stats):
     yield global_app
 
 
 @pytest.fixture(scope='session')
-def global_celery(db_rw, geoip_db,
+def global_celery(db, geoip_db,
                   raven_client, redis_client, stats_client):
     celery_app.app_config = TEST_CONFIG
     celery_app.settings = TEST_CONFIG.asdict()
     init_worker(
         celery_app,
-        _db=db_rw,
+        _db=db,
         _geoip_db=geoip_db,
         _raven_client=raven_client,
         _redis_client=redis_client,
@@ -447,5 +381,5 @@ def global_celery(db_rw, geoip_db,
 
 
 @pytest.fixture(scope='function')
-def celery(global_celery, raven, redis, rw_session, stats):
+def celery(global_celery, raven, redis, session, stats):
     yield global_celery

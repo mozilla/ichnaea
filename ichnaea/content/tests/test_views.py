@@ -56,11 +56,11 @@ class TestConfig(object):
 class TestContentViews(object):
 
     @pytest.fixture(scope='function')
-    def views(self, redis, ro_session):
+    def views(self, redis, session):
         request = DummyRequest()
         with testing.testConfig(request=request) as config:
             config.include('pyramid_chameleon')
-            setattr(request, 'db_session', ro_session)
+            setattr(request, 'db_session', session)
             setattr(request.registry, 'map_config', {})
             setattr(request.registry, 'redis_client', redis)
             yield ContentViews(request)
@@ -95,7 +95,7 @@ class TestContentViews(object):
         assert result['map_tiles_url'] == tiles_url
         assert result['map_token'] == 'pk.123456'
 
-    def test_stats(self, ro_session, ro_session_tracker, views):
+    def test_stats(self, session, session_tracker, views):
         today = util.utcnow().date()
         stats = [
             Stat(key=StatKey.blue, time=today, value=2200000),
@@ -106,12 +106,12 @@ class TestContentViews(object):
             Stat(key=StatKey.unique_cell_ocid, time=today, value=1500000),
             Stat(key=StatKey.unique_wifi, time=today, value=2000000),
         ]
-        ro_session.add_all(stats)
-        ro_session.commit()
-        ro_session_tracker(1)
+        session.add_all(stats)
+        session.commit()
+        session_tracker(1)
 
         result = views.stats_view()
-        ro_session_tracker(2)
+        session_tracker(2)
 
         assert result['page_title'] == 'Statistics'
         assert (result['metrics1'] == [
@@ -129,12 +129,12 @@ class TestContentViews(object):
         second_result = views.stats_view()
         assert second_result == result
         # no additional DB query was done
-        ro_session_tracker(2)
+        session_tracker(2)
 
 
 class TestFunctionalContent(object):
 
-    def test_content(self, app, ro_session_tracker, stats):
+    def test_content(self, app, session_tracker, stats):
         app.get('/', status=200)
         app.get('/apple-touch-icon-precomposed.png', status=200)
         app.get('/api', status=200)
@@ -146,11 +146,11 @@ class TestFunctionalContent(object):
         app.get('/privacy', status=200)
         app.get('/robots.txt', status=200)
         app.get('/static/css/images/icons-000000@2x.png', status=200)
-        ro_session_tracker(0)
+        session_tracker(0)
         app.get('/stats/regions', status=200)
-        ro_session_tracker(1)
+        session_tracker(1)
         app.get('/stats', status=200)
-        ro_session_tracker(9)
+        session_tracker(9)
         stats.check(counter=[
             ('request', ['path:', 'method:get', 'status:200']),
             ('request', ['path:map', 'method:get', 'status:200']),
@@ -221,12 +221,12 @@ class TestFunctionalContent(object):
         assert (result.json['tiles_url'] ==
                 'http://127.0.0.1:7001/static/tiles/')
 
-    def test_stats_blue_json(self, app, ro_session):
+    def test_stats_blue_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        ro_session.add(
+        session.add(
             Stat(key=StatKey.unique_blue, time=today, value=2))
-        ro_session.commit()
+        session.commit()
         result = app.get('/stats_blue.json', status=200)
         assert (result.json == {
             'series': [
@@ -237,14 +237,14 @@ class TestFunctionalContent(object):
         second_result = app.get('/stats_blue.json', status=200)
         assert second_result.json == result.json
 
-    def test_stats_cell_json(self, app, ro_session):
+    def test_stats_cell_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        ro_session.add(
+        session.add(
             Stat(key=StatKey.unique_cell, time=today, value=2))
-        ro_session.add(
+        session.add(
             Stat(key=StatKey.unique_cell_ocid, time=today, value=5))
-        ro_session.commit()
+        session.commit()
         result = app.get('/stats_cell.json', status=200)
         assert (result.json == {
             'series': [
@@ -257,12 +257,12 @@ class TestFunctionalContent(object):
         second_result = app.get('/stats_cell.json', status=200)
         assert second_result.json == result.json
 
-    def test_stats_wifi_json(self, app, ro_session):
+    def test_stats_wifi_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        ro_session.add(
+        session.add(
             Stat(key=StatKey.unique_wifi, time=today, value=2))
-        ro_session.commit()
+        session.commit()
         result = app.get('/stats_wifi.json', status=200)
         assert (result.json == {
             'series': [

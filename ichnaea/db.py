@@ -21,6 +21,12 @@ from ichnaea.config import (
     DB_RO_URI,
 )
 
+DB_TYPE = {
+    'ddl': DB_DDL_URI,
+    'ro': DB_RO_URI,
+    'rw': DB_RW_URI,
+}
+
 
 @compiles(Insert, 'mysql')
 def on_duplicate(insert, compiler, **kw):
@@ -35,7 +41,7 @@ def on_duplicate(insert, compiler, **kw):
 Insert.argument_for('mysql', 'on_duplicate', None)
 
 
-def configure_db(uri, pool=True, _db=None):
+def configure_db(type_=None, uri=None, _db=None):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -43,19 +49,12 @@ def configure_db(uri, pool=True, _db=None):
     """
     if _db is not None:
         return _db
+    pool = True
+    if uri is None:
+        uri = DB_TYPE[type_]
+        if type_ == 'ddl':
+            pool = False
     return Database(uri, pool=pool)
-
-
-def configure_ddl_db(uri=DB_DDL_URI, _db=None):
-    return configure_db(uri=uri, pool=False, _db=_db)
-
-
-def configure_rw_db(uri=DB_RW_URI, _db=None):
-    return configure_db(uri=uri, _db=_db)
-
-
-def configure_ro_db(uri=DB_RO_URI, _db=None):
-    return configure_db(uri=uri, _db=_db)
 
 
 # the request db_session and db_tween_factory are inspired by

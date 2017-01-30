@@ -13,7 +13,7 @@ from ichnaea.api.locate.searcher import (
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
 from ichnaea.db import (
-    configure_ro_db,
+    configure_db,
     db_session,
 )
 from ichnaea.geoip import configure_geoip
@@ -72,7 +72,7 @@ def main(app_config, ping_connections=False,
     # configure outside connections
     registry = config.registry
 
-    registry.db = configure_ro_db(_db=_db)
+    registry.db = configure_db('ro', _db=_db)
 
     registry.raven_client = raven_client = configure_raven(
         transport='gevent', _client=_raven_client)

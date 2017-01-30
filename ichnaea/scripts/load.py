@@ -17,7 +17,7 @@ from ichnaea.cache import (
 )
 from ichnaea.data import ocid
 from ichnaea.db import (
-    configure_rw_db,
+    configure_db,
     db_worker_session,
 )
 from ichnaea.log import configure_logging
@@ -62,7 +62,7 @@ def main(argv, _db=None, _redis_client=None):  # pragma: no cover
         sys.exit(1)
 
     configure_logging()
-    db = configure_rw_db(_db=_db)
+    db = configure_db('rw', _db=_db)
     redis_client = configure_redis(_client=_redis_client)
 
     load_file(db, redis_client, datatype, filename)

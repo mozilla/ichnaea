@@ -16,16 +16,13 @@ import boto
 from simplejson import dumps
 from sqlalchemy import text
 
-from ichnaea.config import (
-    DB_RW_URI,
-    read_config,
-)
+from ichnaea.config import read_config
 from ichnaea.models.content import (
     DataMap,
     decode_datamap_grid,
 )
 from ichnaea.db import (
-    configure_ro_db,
+    configure_db,
     db_worker_session,
 )
 from ichnaea.geocalc import random_points
@@ -63,7 +60,7 @@ def recursive_scandir(top):  # pragma: no cover
                 yield subentry
 
 
-def export_file(db_url, filename, tablename, _db=None, _session=None):
+def export_file(filename, tablename, _db=None, _session=None):
     # this is executed in a worker process
     stmt = text('''\
 SELECT
@@ -71,7 +68,7 @@ SELECT
 FROM {tablename}
 LIMIT :limit OFFSET :offset
 '''.format(tablename=tablename).replace('\n', ' '))
-    db = configure_ro_db(db_url, _db=_db)
+    db = configure_db('ro', _db=_db)
 
     offset = 0
     limit = 200000
@@ -107,7 +104,7 @@ LIMIT :limit OFFSET :offset
     return result_rows
 
 
-def export_files(pool, db_url, csvdir):  # pragma: no cover
+def export_files(pool, csvdir):  # pragma: no cover
     jobs = []
     result_rows = 0
     for shard_id, shard in sorted(DataMap.shards().items()):
@@ -115,7 +112,7 @@ def export_files(pool, db_url, csvdir):  # pragma: no cover
         # data points than the south
         filename = os.path.join(csvdir, 'map_%s.csv.gz' % shard_id)
         jobs.append(pool.apply_async(export_file,
-                                     (db_url, filename, shard.__tablename__)))
+                                     (filename, shard.__tablename__)))
 
     for job in jobs:
         result_rows += job.get()
@@ -304,7 +301,7 @@ def upload_files(pool, bucketname, tiles, max_zoom,
     return result
 
 
-def generate(db_url, bucketname, raven_client, stats_client,
+def generate(bucketname, raven_client, stats_client,
              upload=True, concurrency=2, max_zoom=11,
              output=None):  # pragma: no cover
     with util.selfdestruct_tempdir() as workdir:
@@ -324,7 +321,7 @@ def generate(db_url, bucketname, raven_client, stats_client,
             os.mkdir(csvdir)
 
         with stats_client.timed('datamaps', tags=['func:export']):
-            result_rows = export_files(pool, db_url, csvdir)
+            result_rows = export_files(pool, csvdir)
 
         stats_client.timing('datamaps', result_rows, tags=['count:csv_rows'])
 
@@ -420,7 +417,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
         try:
             with stats_client.timed('datamaps', tags=['func:main']):
-                generate(DB_RW_URI, bucketname, raven_client, stats_client,
+                generate(bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,
                          output=output)

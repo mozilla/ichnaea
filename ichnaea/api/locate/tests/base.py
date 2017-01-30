@@ -415,9 +415,9 @@ class CommonLocateTest(BaseLocateTest):
 class CommonPositionTest(BaseLocateTest):
     # tests for only the locate_v1 and locate_v2 API's
 
-    def test_api_key_limit(self, app, data_queues, redis, ro_session):
-        api_key = ApiKeyFactory(session=ro_session, maxreq=5)
-        ro_session.flush()
+    def test_api_key_limit(self, app, data_queues, redis, session):
+        api_key = ApiKeyFactory(maxreq=5)
+        session.flush()
 
         # exhaust today's limit
         dstamp = util.utcnow().strftime('%Y%m%d')
@@ -429,8 +429,9 @@ class CommonPositionTest(BaseLocateTest):
             app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
         self.check_response(data_queues, res, 'limit_exceeded')
 
-    def test_api_key_blocked(self, app, data_queues, ro_session):
-        api_key = ApiKeyFactory(session=ro_session, allow_locate=False)
+    def test_api_key_blocked(self, app, data_queues, session):
+        api_key = ApiKeyFactory(allow_locate=False)
+        session.flush()
 
         res = self._call(
             app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
@@ -488,9 +489,9 @@ class CommonPositionTest(BaseLocateTest):
         res = self._call(app, body=query, status=self.not_found.code)
         self.check_response(data_queues, res, 'not_found')
 
-    def test_cell_lte_radio(self, app, ro_session, stats):
-        cell = CellShardFactory(session=ro_session, radio=Radio.lte)
-        ro_session.flush()
+    def test_cell_lte_radio(self, app, session, stats):
+        cell = CellShardFactory(radio=Radio.lte)
+        session.flush()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
@@ -500,9 +501,9 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post', 'status:200']),
         ])
 
-    def test_cellarea(self, app, ro_session, stats):
-        cell = CellAreaFactory(session=ro_session)
-        ro_session.flush()
+    def test_cellarea(self, app, session, stats):
+        cell = CellAreaFactory()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
@@ -521,9 +522,9 @@ class CommonPositionTest(BaseLocateTest):
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_cellarea_with_lacf(self, app, ro_session, stats):
-        cell = CellAreaFactory(session=ro_session)
-        ro_session.flush()
+    def test_cellarea_with_lacf(self, app, session, stats):
+        cell = CellAreaFactory()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['fallbacks'] = {'lacf': True}
@@ -544,9 +545,9 @@ class CommonPositionTest(BaseLocateTest):
                  'accuracy:low', 'status:hit']),
         ])
 
-    def test_cellarea_without_lacf(self, app, data_queues, ro_session, stats):
-        cell = CellAreaFactory(session=ro_session)
-        ro_session.flush()
+    def test_cellarea_without_lacf(self, app, data_queues, session, stats):
+        cell = CellAreaFactory()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['fallbacks'] = {'lacf': False}
@@ -559,9 +560,9 @@ class CommonPositionTest(BaseLocateTest):
             (self.metric_type + '.request', [self.metric_path, 'key:test']),
         ])
 
-    def test_cellarea_with_different_fallback(self, app, ro_session, stats):
-        cell = CellAreaFactory(session=ro_session)
-        ro_session.flush()
+    def test_cellarea_with_different_fallback(self, app, session, stats):
+        cell = CellAreaFactory()
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['fallbacks'] = {'ipf': True}
@@ -615,16 +616,15 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_fallback(self, app, ro_session, stats):
+    def test_fallback(self, app, session, stats):
         # this tests a cell + wifi based query which gets a cell based
         # internal result and continues on to the fallback to get a
         # better wifi based result
-        cells = CellShardFactory.create_batch(
-            2, session=ro_session, radio=Radio.wcdma)
+        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        api_key = ApiKey.get(ro_session, 'test')
+        api_key = ApiKey.get(session, 'test')
         api_key.allow_fallback = True
-        ro_session.flush()
+        session.flush()
 
         with requests_mock.Mocker() as mock:
             response_result = {
@@ -665,13 +665,12 @@ class CommonPositionTest(BaseLocateTest):
             ('request', [self.metric_path, 'method:post']),
         ])
 
-    def test_fallback_used_with_geoip(self, app, ro_session, stats):
-        cells = CellShardFactory.create_batch(
-            2, session=ro_session, radio=Radio.wcdma)
+    def test_fallback_used_with_geoip(self, app, session, stats):
+        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        api_key = ApiKey.get(ro_session, 'test')
+        api_key = ApiKey.get(session, 'test')
         api_key.allow_fallback = True
-        ro_session.flush()
+        session.flush()
 
         with requests_mock.Mocker() as mock:
             response_result = {
@@ -708,13 +707,13 @@ class CommonPositionTest(BaseLocateTest):
 
 class CommonLocateErrorTest(BaseLocateTest):
 
-    def test_apikey_error(self, app, data_queues, db_rw_drop_table,
-                          raven, ro_session, stats,
+    def test_apikey_error(self, app, data_queues, db_drop_table,
+                          raven, session, stats,
                           db_errors=1, fallback='ipf'):
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
-        ro_session.execute(text('drop table %s;' % ApiKey.__tablename__))
+        session.execute(text('drop table %s;' % ApiKey.__tablename__))
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(app, body=query, ip=self.test_ip)
@@ -722,8 +721,8 @@ class CommonLocateErrorTest(BaseLocateTest):
         raven.check([('ProgrammingError', db_errors)])
         self.check_queue(data_queues, 0)
 
-    def test_database_error(self, app, data_queues, db_rw_drop_table,
-                            raven, ro_session, stats,
+    def test_database_error(self, app, data_queues, db_drop_table,
+                            raven, session, stats,
                             db_errors=5, fallback='ipf'):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
@@ -736,11 +735,11 @@ class CommonLocateErrorTest(BaseLocateTest):
         wifis = WifiShardFactory.build_batch(2)
 
         for model in (CellArea, CellAreaOCID):
-            ro_session.execute(text('drop table %s;' % model.__tablename__))
+            session.execute(text('drop table %s;' % model.__tablename__))
         for name in set([cell.__tablename__ for cell in cells]):
-            ro_session.execute(text('drop table %s;' % name))
+            session.execute(text('drop table %s;' % name))
         for name in set([wifi.__tablename__ for wifi in wifis]):
-            ro_session.execute(text('drop table %s;' % name))
+            session.execute(text('drop table %s;' % name))
 
         query = self.model_query(cells=cells, wifis=wifis)
         res = self._call(app, body=query, ip=self.test_ip)

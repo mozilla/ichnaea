@@ -17,7 +17,7 @@ from ichnaea.config import (
     DB_RO_URI,
     DB_RW_URI,
 )
-from ichnaea.db import configure_ddl_db
+from ichnaea.db import configure_db
 from ichnaea.log import configure_raven
 
 # make sure all models are imported
@@ -107,7 +107,7 @@ def main(argv, _db=None, _raven_client=None):  # pragma: no cover
     args = parser.parse_args(argv[1:])
     if args.initdb:
         configure_raven(transport='sync', _client=_raven_client)
-        db = configure_ddl_db(_db=_db)
+        db = configure_db('ddl', _db=_db)
         create_schema(db.engine)
     else:
         parser.print_help()

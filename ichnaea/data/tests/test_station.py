@@ -2,8 +2,10 @@ from collections import defaultdict
 from datetime import timedelta
 
 import mock
+import pytest
 from sqlalchemy import text
 
+from ichnaea.db import configure_db
 from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import (
     update_blue,
@@ -67,30 +69,42 @@ class TestDatabaseErrors(BaseStationTest):
     shard_model = CellShard
     unique_key = 'cellid'
 
+    @pytest.fixture(scope='function')
+    def session2(self, database):
+        # Create a second independent database session.
+        db = configure_db('ro')
+        session = db.session()
+        try:
+            yield session
+            session.rollback()
+        finally:
+            session.close()
+            db.close()
+
     def queue_and_update(self, celery, obs):
         return self._queue_and_update(celery, obs, update_cell)
 
-    def test_lock_timeout(self, celery, db_rw_drop_table,
-                          redis, ro_session, session, stats):
+    def test_lock_timeout(self, celery, db_drop_table,
+                          redis, session, session2, stats):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
             radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
             lac=obs.lac, cid=obs.cid,
             samples=10,
         )
-        ro_session.add(cell)
-        ro_session.flush()
+        session2.add(cell)
+        session2.flush()
 
         orig_add_area = CellUpdater.add_area_update
         orig_wait = CellUpdater._retry_wait
         num = [0]
 
         def mock_area(self, updated_areas, key,
-                      num=num, ro_session=ro_session):
+                      num=num, session2=session2):
             orig_add_area(self, updated_areas, key)
             num[0] += 1
             if num[0] == 2:
-                ro_session.rollback()
+                session2.rollback()
 
         try:
             CellUpdater._retry_wait = 0.0001

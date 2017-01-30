@@ -8,9 +8,8 @@ from ichnaea.models.wifi import WifiShard0
 
 class TestDatabase(object):
 
-    def test_constructors(self, db_rw, db_ro):
-        assert db_rw.engine.name == 'mysql'
-        assert db_ro.engine.name == 'mysql'
+    def test_constructor(self, db):
+        assert db.engine.name == 'mysql'
 
     def test_table_creation(self, session):
         result = session.execute('select * from cell_gsm;')

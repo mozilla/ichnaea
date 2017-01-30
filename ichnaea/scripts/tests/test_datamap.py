@@ -24,7 +24,7 @@ class TestMap(object):
         for name in ('1,0', 'meta'):
             assert os.path.isfile(os.path.join(path, name))
 
-    def test_files(self, db_rw, session):  # pragma: no cover
+    def test_files(self, db, session):  # pragma: no cover
         today = util.utcnow().date()
         rows = [
             dict(time=today, lat=12.345, lon=12.345),
@@ -40,7 +40,6 @@ class TestMap(object):
 
         lines = []
         rows = 0
-        db_url = str(db_rw.engine.url)
         with util.selfdestruct_tempdir() as temp_dir:
             quaddir = os.path.join(temp_dir, 'quadtrees')
             os.mkdir(quaddir)
@@ -51,7 +50,7 @@ class TestMap(object):
                 filename = 'map_%s.csv.gz' % shard_id
                 filepath = os.path.join(temp_dir, filename)
                 result = export_file(
-                    db_url, filepath, shard.__tablename__,
+                    filepath, shard.__tablename__,
                     _session=session)
 
                 if not result:

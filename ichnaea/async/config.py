@@ -10,7 +10,7 @@ from ichnaea.cache import configure_redis
 from ichnaea.config import (
     read_config,
 )
-from ichnaea.db import configure_rw_db
+from ichnaea.db import configure_db
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
     configure_raven,
@@ -120,7 +120,7 @@ def init_worker(celery_app,
     app_config = celery_app.app_config
 
     # configure outside connections
-    celery_app.db = configure_rw_db(_db=_db)
+    celery_app.db = configure_db('rw', _db=_db)
 
     celery_app.raven_client = raven_client = configure_raven(
         transport='threaded', _client=_raven_client)

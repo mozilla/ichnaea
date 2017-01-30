@@ -110,16 +110,16 @@ class LocateV0Base(BaseLocateTest):
 
 class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
 
-    def test_blue(self, app, data_queues, ro_session, stats):
-        blue = BlueShardFactory(session=ro_session)
+    def test_blue(self, app, data_queues, session, stats):
+        blue = BlueShardFactory()
         offset = 0.00001
         blues = [
             blue,
-            BlueShardFactory(session=ro_session, lat=blue.lat + offset),
-            BlueShardFactory(session=ro_session, lat=blue.lat + offset * 2),
-            BlueShardFactory(session=ro_session, lat=None, lon=None),
+            BlueShardFactory(lat=blue.lat + offset),
+            BlueShardFactory(lat=blue.lat + offset * 2),
+            BlueShardFactory(lat=None, lon=None),
         ]
-        ro_session.flush()
+        session.flush()
 
         query = self.model_query(blues=blues)
         blue_query = query['blue']
@@ -165,9 +165,9 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_cell(self, app, data_queues, ro_session, stats):
-        cell = CellShardFactory(session=ro_session, radio=Radio.lte)
-        ro_session.flush()
+    def test_cell(self, app, data_queues, session, stats):
+        cell = CellShardFactory(radio=Radio.lte)
+        session.flush()
 
         query = self.model_query(cells=[cell])
         query['radio'] = cell.radio.name
@@ -215,16 +215,16 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
-    def test_wifi(self, app, data_queues, ro_session, stats):
-        wifi = WifiShardFactory(session=ro_session)
+    def test_wifi(self, app, data_queues, session, stats):
+        wifi = WifiShardFactory()
         offset = 0.00001
         wifis = [
             wifi,
-            WifiShardFactory(session=ro_session, lat=wifi.lat + offset),
-            WifiShardFactory(session=ro_session, lat=wifi.lat + offset * 2),
-            WifiShardFactory(session=ro_session, lat=None, lon=None),
+            WifiShardFactory(lat=wifi.lat + offset),
+            WifiShardFactory(lat=wifi.lat + offset * 2),
+            WifiShardFactory(lat=None, lon=None),
         ]
-        ro_session.flush()
+        session.flush()
 
         query = self.model_query(wifis=wifis)
         wifi_query = query['wifi']

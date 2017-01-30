@@ -9,7 +9,7 @@ from ichnaea.config import (
     REDIS_URI,
 )
 from ichnaea.conftest import TEST_CONFIG
-from ichnaea.db import configure_rw_db
+from ichnaea.db import configure_db
 from ichnaea.geoip import GeoIPNull
 from ichnaea.webapp.config import main
 
@@ -59,11 +59,11 @@ class TestApp(object):
             # Clean up the new db engine's _make_app created.
             db.close()
 
-    def test_db_hooks(self, app, db_ro):
+    def test_db_hooks(self, app, db):
         # Check that our _db hooks are passed through.
-        assert app.app.registry.db is db_ro
+        assert app.app.registry.db is db
 
-    def test_redis_config(self, db_ro, geoip_db, raven, stats):
+    def test_redis_config(self, db, geoip_db, raven, stats):
         app_config = DummyConfig({
             'cache': {
                 'cache_url': REDIS_URI,
@@ -71,7 +71,7 @@ class TestApp(object):
         })
         try:
             app = _make_app(app_config=app_config,
-                            _db=db_ro,
+                            _db=db,
                             _geoip_db=geoip_db,
                             _raven_client=raven,
                             _stats_client=stats)
@@ -115,7 +115,7 @@ class TestHeartbeatErrors(object):
     @pytest.fixture(scope='function')
     def broken_app(self, http_session, raven, stats):
         # Create database connections to the discard port.
-        db = configure_rw_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
+        db = configure_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
 
         # Create a broken GeoIP database.
         geoip_db = GeoIPNull()

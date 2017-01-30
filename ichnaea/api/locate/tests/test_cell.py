@@ -27,12 +27,12 @@ class TestCellPosition(BaseSourceTest):
         assert not source.should_search(query, results)
 
     def test_empty(self, geoip_db, http_session,
-                   rw_session_tracker, session, source, stats):
+                   session_tracker, session, source, stats):
         query = self.model_query(
             geoip_db, http_session, session, stats)
         results = source.search(query)
         self.check_model_results(results, None)
-        rw_session_tracker(0)
+        session_tracker(0)
 
     def test_cell(self, geoip_db, http_session, session, source, stats):
         now = util.utcnow()
@@ -79,7 +79,7 @@ class TestCellPosition(BaseSourceTest):
         assert results.best().score == cell.score(now) + cell2.score(now)
 
     def test_incomplete_keys(self, geoip_db, http_session,
-                             rw_session_tracker, session, source, stats):
+                             session_tracker, session, source, stats):
         cells = CellAreaFactory.build_batch(4)
         cells[0].radio = None
         cells[1].mcc = None
@@ -91,7 +91,7 @@ class TestCellPosition(BaseSourceTest):
             cells=cells)
         results = source.result_list()
         assert not source.should_search(query, results)
-        rw_session_tracker(0)
+        session_tracker(0)
 
     def test_smallest_area(self, geoip_db, http_session,
                            session, source, stats):
@@ -135,12 +135,12 @@ class TestOCIDPositionSource(BaseSourceTest):
         assert not source.should_search(query, results)
 
     def test_empty(self, geoip_db, http_session,
-                   rw_session_tracker, session, source, stats):
+                   session_tracker, session, source, stats):
         query = self.model_query(
             geoip_db, http_session, session, stats)
         results = source.search(query)
         self.check_model_results(results, None)
-        rw_session_tracker(0)
+        session_tracker(0)
 
     def test_cell(self, geoip_db, http_session, session, source, stats):
         now = util.utcnow()

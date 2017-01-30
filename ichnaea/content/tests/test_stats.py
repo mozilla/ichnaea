@@ -24,7 +24,7 @@ def unixtime(value):
 
 class TestStats(object):
 
-    def test_global_stats(self, ro_session):
+    def test_global_stats(self, session):
         day = util.utcnow().date() - timedelta(1)
         stats = [
             Stat(key=StatKey.blue, time=day, value=2200000),
@@ -35,10 +35,10 @@ class TestStats(object):
             Stat(key=StatKey.unique_cell_ocid, time=day, value=1523000),
             Stat(key=StatKey.unique_wifi, time=day, value=2009000),
         ]
-        ro_session.add_all(stats)
-        ro_session.commit()
+        session.add_all(stats)
+        session.commit()
 
-        result = global_stats(ro_session)
+        result = global_stats(session)
         assert (result == {
             'blue': '2.20', 'unique_blue': '1.10',
             'cell': '6.10', 'unique_cell': '3.28',
@@ -46,7 +46,7 @@ class TestStats(object):
             'unique_cell_ocid': '1.52',
         })
 
-    def test_global_stats_missing_today(self, ro_session):
+    def test_global_stats_missing_today(self, session):
         day = util.utcnow().date() - timedelta(1)
         yesterday = day - timedelta(days=1)
         stats = [
@@ -55,10 +55,10 @@ class TestStats(object):
             Stat(key=StatKey.wifi, time=day, value=3000000),
             Stat(key=StatKey.unique_cell, time=yesterday, value=4000000),
         ]
-        ro_session.add_all(stats)
-        ro_session.commit()
+        session.add_all(stats)
+        session.commit()
 
-        result = global_stats(ro_session)
+        result = global_stats(session)
         assert (result == {
             'blue': '0.00', 'unique_blue': '0.00',
             'cell': '6.00', 'unique_cell': '4.00',
@@ -66,7 +66,7 @@ class TestStats(object):
             'unique_cell_ocid': '0.00',
         })
 
-    def test_histogram(self, ro_session):
+    def test_histogram(self, session):
         today = util.utcnow().date()
         one_day = today - timedelta(days=1)
         two_days = today - timedelta(days=2)
@@ -81,32 +81,31 @@ class TestStats(object):
             Stat(key=StatKey.cell, time=one_day, value=80),
             Stat(key=StatKey.cell, time=today, value=90),
         ]
-        ro_session.add_all(stats)
-        ro_session.commit()
-        result = histogram(ro_session, StatKey.cell, days=90)
+        session.add_all(stats)
+        session.commit()
+        result = histogram(session, StatKey.cell, days=90)
         first_of_month = today.replace(day=1)
         assert [unixtime(first_of_month), 90] in result[0]
 
         expected = date(two_months.year, two_months.month, 1)
         assert [unixtime(expected), 50] in result[0]
 
-    def test_histogram_different_stat_name(self, ro_session):
+    def test_histogram_different_stat_name(self, session):
         today = util.utcnow().date()
-        ro_session.add(Stat(key=StatKey.unique_cell, time=today, value=9))
-        ro_session.commit()
-        result = histogram(ro_session, StatKey.unique_cell)
+        session.add(Stat(key=StatKey.unique_cell, time=today, value=9))
+        session.commit()
+        result = histogram(session, StatKey.unique_cell)
         first_of_month = today.replace(day=1)
         assert result == [[[unixtime(first_of_month), 9]]]
 
-    def test_regions(self, ro_session):
-        RegionStatFactory(
-            session=ro_session, region='DE', gsm=2, wcdma=1, wifi=4)
-        RegionStatFactory(session=ro_session, region='GB', wifi=1, blue=1)
-        RegionStatFactory(session=ro_session, region='TW', wcdma=1)
-        RegionStatFactory(session=ro_session, region='US', gsm=3, blue=2)
-        ro_session.flush()
+    def test_regions(self, session):
+        RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
+        RegionStatFactory(region='GB', wifi=1, blue=1)
+        RegionStatFactory(region='TW', wcdma=1)
+        RegionStatFactory(region='US', gsm=3, blue=2)
+        session.flush()
 
-        result = regions(ro_session)
+        result = regions(session)
         expected = set(['DE', 'GB', 'TW', 'US'])
         assert set([r['code'] for r in result]) == expected
 
