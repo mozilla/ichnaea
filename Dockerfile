@@ -55,10 +55,6 @@ RUN chown app:app . && \
     chown -R app:app /app/docs/ && \
     chown -R app:app /app/ichnaea/
 
-# Symlink version object to serve /__version__ endpoint
-RUN rm /app/ichnaea/version.json ; \
-    ln -s /app/version.json /app/ichnaea/version.json
-
 # This volume is only used while building docs and making those
 # available in the git repo, so they can be committed.
 VOLUME /app/docs/build/html

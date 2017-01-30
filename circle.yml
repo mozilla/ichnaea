@@ -38,8 +38,8 @@ dependencies:
         "$CIRCLE_PROJECT_USERNAME"
         "$CIRCLE_PROJECT_REPONAME"
         "$CIRCLE_BUILD_URL"
-        > version.json
-    - cp version.json $CIRCLE_ARTIFACTS
+        > ichnaea/version.json
+    - cp ichnaea/version.json $CIRCLE_ARTIFACTS
 
     # build the actual deployment container
     - docker build -t ${DOCKERHUB_REPO} .
