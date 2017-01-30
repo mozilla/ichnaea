@@ -57,7 +57,7 @@ build_deps: build_datamaps build_libmaxmind
 
 build_python_deps:
 	pip install --no-cache-dir --disable-pip-version-check virtualenv
-	virtualenv --no-site-packages .
+	python -m virtualenv --no-site-packages .
 	$(INSTALL) -r requirements/build.txt
 	$(INSTALL) -r requirements/binary.txt
 	$(INSTALL) -r requirements/python.txt

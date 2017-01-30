@@ -15,4 +15,4 @@ SQLAlchemy==1.1.5 --hash=sha256:68fb40049690e567ebda7b270176f5abf0d53d9fbd515fec
 zope.interface==4.3.3 --hash=sha256:8780ef68ca8c3fe1abb30c058a59015129d6e04a6b02c2e56b9c7de6078dfa88
 pycparser==2.17 --hash=sha256:0aac31e917c24cb3357f5a4d5566f2cc91a19ca41862f6c3c22dc60a629673b6
 cffi==1.9.1 --hash=sha256:9163f7743cf9991edaddf9cf886708e288fab38e1b9fec9c41c15c85c8f7f147
-cryptography==1.6.0 --hash=sha256:4d0d86d2c8d3fc89133c3fa0d164a688a458b6663ab6fa965c80d6c2cdaf9b3f
+cryptography==1.6 --hash=sha256:4d0d86d2c8d3fc89133c3fa0d164a688a458b6663ab6fa965c80d6c2cdaf9b3f
