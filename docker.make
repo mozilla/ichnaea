@@ -14,12 +14,6 @@ LIBMAXMIND_DOWNLOAD = https://github.com/maxmind/libmaxminddb/releases/download
 LIBMAXMIND_VERSION = 1.2.0
 LIBMAXMIND_NAME = libmaxminddb-$(LIBMAXMIND_VERSION)
 
-ICHNAEA_CFG = $(HERE)/ichnaea/tests/data/test.ini
-GEOIP_PATH = $(HERE)/ichnaea/tests/data/GeoIP2-City-Test.mmdb
-
-DB_HOST ?= localhost
-REDIS_HOST ?= localhost
-
 TESTS ?= ichnaea
 ifeq ($(TESTS), ichnaea)
 	TEST_ARG = --cov-config=.coveragerc --cov=ichnaea ichnaea
@@ -78,9 +72,5 @@ docs:
 	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
 
 test:
-	TESTING=true ICHNAEA_CFG=$(ICHNAEA_CFG) \
-	DB_HOST=$(DB_HOST) \
-	GEOIP_PATH=$(GEOIP_PATH) \
-	REDIS_HOST=$(REDIS_HOST) \
-	$(BIN)/pytest $(TEST_ARG)
+	TESTING=true $(BIN)/pytest $(TEST_ARG)
 	$(BIN)/flake8 ichnaea

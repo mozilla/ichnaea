@@ -9,8 +9,8 @@ import pytest
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
+from ichnaea.config import ALEMBIC_CFG
 from ichnaea.conftest import (
-    ALEMBIC_CFG,
     cleanup_tables,
     setup_database,
 )

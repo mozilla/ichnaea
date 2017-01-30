@@ -1,11 +1,9 @@
 from __future__ import absolute_import
 
 import gc
-import os
 import warnings
 
 from alembic import command
-from alembic.config import Config as AlembicConfig
 from maxminddb.const import MODE_AUTO
 import pytest
 from sqlalchemy import (
@@ -26,7 +24,7 @@ from ichnaea.async.config import (
 )
 from ichnaea.cache import configure_redis
 from ichnaea.config import (
-    DB_DDL_URI,
+    ALEMBIC_CFG,
     read_config,
 )
 from ichnaea.db import (
@@ -50,7 +48,6 @@ from ichnaea.models import (
     ApiKey,
 )
 from ichnaea.queue import DataQueue
-from ichnaea.tests import DATA_DIRECTORY
 from ichnaea.webapp.config import (
     main,
     shutdown_worker as shutdown_app,
@@ -59,7 +56,7 @@ from ichnaea.webapp.config import (
 # Module global to hold active session, used by factory-boy
 SESSION = {}
 
-TEST_CONFIG = read_config(filename=os.path.join(DATA_DIRECTORY, 'test.ini'))
+TEST_CONFIG = read_config()
 
 GB_LAT = 51.5
 GB_LON = -0.1
@@ -101,12 +98,6 @@ GEOIP_DATA = {
         'score': 0.9,
     },
 }
-
-ALEMBIC_CFG = AlembicConfig()
-ALEMBIC_CFG.set_section_option(
-    'alembic', 'script_location', 'ichnaea/alembic')
-ALEMBIC_CFG.set_section_option(
-    'alembic', 'sqlalchemy.url', DB_DDL_URI)
 
 
 @pytest.fixture(scope='session', autouse=True)

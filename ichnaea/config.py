@@ -2,10 +2,12 @@
 Contains helper functionality for reading and parsing configuration files
 and parsing of environment variables.
 """
+from __future__ import absolute_import
 
 import os
 import os.path
 
+from alembic.config import Config as AlembicConfig
 from backports.configparser import (
     ConfigParser,
     NoOptionError,
@@ -68,7 +70,20 @@ if not DB_DDL_URI:
     DB_DDL_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
         DB_DDL_USER, DB_DDL_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
 
+ALEMBIC_CFG = AlembicConfig()
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'script_location', os.path.join(HERE, 'alembic'))
+ALEMBIC_CFG.set_section_option(
+    'alembic', 'sqlalchemy.url', DB_DDL_URI)
+
+
 GEOIP_PATH = os.environ.get('GEOIP_PATH')
+if not GEOIP_PATH:
+    GEOIP_PATH = os.path.join(HERE, 'tests/data/GeoIP2-City-Test.mmdb')
+
+ICHNAEA_CFG = os.environ.get('ICHNAEA_CFG')
+if not ICHNAEA_CFG:
+    ICHNAEA_CFG = os.path.join(HERE, 'tests/data/test.ini')
 
 REDIS_HOST = os.environ.get('REDIS_HOST')
 REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
@@ -168,18 +183,13 @@ class DummyConfig(object):
         return result
 
 
-def read_config(filename=None, envvar='ICHNAEA_CFG'):
+def read_config(filename=ICHNAEA_CFG):
     """
-    Read a configuration file from one of two possible locations:
-
-    1. from the passed in filename,
-    2. from the environment variable passed as `envvar`.
+    Read a configuration file from a passed in filename.
 
     :rtype: :class:`ichnaea.config.Config`
     """
-    if filename is None:
-        filename = os.environ.get(envvar, '')
-        if PY2:  # pragma: no cover
-            filename = filename.decode('utf-8')
+    if PY2 and isinstance(filename, bytes):  # pragma: no cover
+        filename = filename.decode('utf-8')
 
     return Config(filename)

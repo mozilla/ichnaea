@@ -11,6 +11,8 @@ Untagged
 Compatibility
 ~~~~~~~~~~~~~
 
+- No longer create `lbcheck` database user in `location_initdb` script.
+
 - Drop support for Python 2.6.
 
 Migrations

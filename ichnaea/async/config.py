@@ -9,9 +9,6 @@ import simplejson
 from ichnaea.cache import configure_redis
 from ichnaea.config import (
     read_config,
-    DB_RW_URI,
-    GEOIP_PATH,
-    REDIS_URI,
 )
 from ichnaea.db import configure_rw_db
 from ichnaea.geoip import configure_geoip
@@ -65,14 +62,6 @@ def configure_celery(celery_app):
     celery_app.app_config = app_config
     celery_app.settings = app_config.asdict()
     celery_app.config_from_object('ichnaea.async.settings')
-
-    # testing settings
-    if not REDIS_URI:  # pragma: no cover
-        redis_uri = app_config.get_map('cache', {}).get('cache_url')
-        celery_app.conf.update(
-            broker_url=redis_uri,
-            result_backend=redis_uri,
-        )
 
 
 def configure_data(redis_client):
@@ -131,32 +120,19 @@ def init_worker(celery_app,
     app_config = celery_app.app_config
 
     # configure outside connections
-    if DB_RW_URI:
-        celery_app.db_rw = configure_rw_db(_db=_db_rw)
-    else:  # pragma: no cover
-        celery_app.db_rw = configure_rw_db(
-            app_config.get('database', 'rw_url'), _db=_db_rw)
+    celery_app.db_rw = configure_rw_db(_db=_db_rw)
 
     celery_app.raven_client = raven_client = configure_raven(
         app_config, transport='threaded', _client=_raven_client)
 
-    if REDIS_URI:
-        celery_app.redis_client = redis_client = configure_redis(
-            _client=_redis_client)
-    else:  # pragma: no cover
-        celery_app.redis_client = redis_client = configure_redis(
-            app_config.get('cache', 'cache_url'), _client=_redis_client)
+    celery_app.redis_client = redis_client = configure_redis(
+        _client=_redis_client)
 
     celery_app.stats_client = configure_stats(
         app_config, _client=_stats_client)
 
-    if GEOIP_PATH:
-        celery_app.geoip_db = configure_geoip(
-            raven_client=raven_client, _client=_geoip_db)
-    else:  # pragma: no cover
-        celery_app.geoip_db = configure_geoip(
-            app_config.get('geoip', 'db_path'),
-            raven_client=raven_client, _client=_geoip_db)
+    celery_app.geoip_db = configure_geoip(
+        raven_client=raven_client, _client=_geoip_db)
 
     # configure data queues
     celery_app.all_queues = all_queues = set([q.name for q in TASK_QUEUES])

@@ -6,20 +6,19 @@ Script is installed as `location_initdb`.
 
 import argparse
 from collections import namedtuple
-import os
 import sys
 
-from alembic.config import Config
 from alembic import command
 from sqlalchemy import text
 from sqlalchemy.exc import ProgrammingError
 
 from ichnaea.config import (
+    ALEMBIC_CFG,
     DB_RO_URI,
     DB_RW_URI,
     read_config,
 )
-from ichnaea.db import configure_rw_db
+from ichnaea.db import configure_ddl_db
 from ichnaea.log import configure_raven
 
 # make sure all models are imported
@@ -53,20 +52,12 @@ VALUES ("internal", 100, "internal", "test")
         conn.execute(stmt)
 
 
-def add_users(conn, location_cfg):  # pragma: no cover
+def add_users(conn):  # pragma: no cover
     # We don't take into account hostname or database restrictions
     # the users / grants, but use global privileges.
-    database_section = location_cfg.get_map('database')
-
     creds = {}
-    if DB_RW_URI:
-        creds['rw'] = _db_creds(DB_RW_URI)
-    else:
-        creds['rw'] = _db_creds(database_section.get('rw_url'))
-    if DB_RO_URI:
-        creds['ro'] = _db_creds(DB_RO_URI)
-    else:
-        creds['ro'] = _db_creds(database_section.get('ro_url'))
+    creds['rw'] = _db_creds(DB_RW_URI)
+    creds['ro'] = _db_creds(DB_RO_URI)
 
     stmt = text('SELECT user FROM mysql.user')
     result = conn.execute(stmt)
@@ -78,12 +69,9 @@ def add_users(conn, location_cfg):  # pragma: no cover
         if cred.user not in userids:
             conn.execute(create_stmt.bindparams(user=cred.user, pwd=cred.pwd))
             conn.execute(grant_stmt.bindparams(user=cred.user))
-    # create a monitoring user without a password nor grants
-    if 'lbcheck' not in userids:
-        conn.execute(text('CREATE USER lbcheck'))
 
 
-def create_schema(engine, alembic_cfg, location_cfg):  # pragma: no cover
+def create_schema(engine):  # pragma: no cover
     old_version = False
     with engine.connect() as conn:
         trans = conn.begin()
@@ -100,60 +88,31 @@ def create_schema(engine, alembic_cfg, location_cfg):  # pragma: no cover
 
         add_api_key(conn)
         add_export_config(conn)
-        add_users(conn, location_cfg)
+        add_users(conn)
 
         trans.commit()
 
     # Now stamp the latest alembic version
     if not old_version:
-        command.stamp(alembic_cfg, 'head')
-    command.current(alembic_cfg)
+        command.stamp(ALEMBIC_CFG, 'head')
+    command.current(ALEMBIC_CFG)
 
 
-def main(argv, _db_rw=None, _raven_client=None):  # pragma: no cover
+def main(argv, _db=None, _raven_client=None):  # pragma: no cover
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Initialize Ichnaea database.')
 
-    parser.add_argument('--alembic_ini',
-                        help='Path to the alembic migration config.')
-    parser.add_argument('--location_ini',
-                        help='Path to the ichnaea app config.')
     parser.add_argument('--initdb', action='store_true',
                         help='Initialize database.')
 
     args = parser.parse_args(argv[1:])
-
     if args.initdb:
-        # Either use explicit config file location or fallback
-        # on environment variable or finally file in current directory
-        if not args.location_ini:
-            location_ini = os.environ.get('ICHNAEA_CFG')
-        else:
-            location_ini = args.location_ini
-        location_ini = os.path.abspath(location_ini)
-        location_cfg = read_config(filename=location_ini)
-
-        # Either use explicit config file location or fallback
-        # to a file in the same directory as the location.ini
-        if not args.alembic_ini:
-            alembic_ini = os.path.join(
-                os.path.dirname(location_ini), 'alembic.ini')
-        else:
-            alembic_ini = args.alembic_ini
-        alembic_ini = os.path.abspath(alembic_ini)
-        alembic_cfg = Config(alembic_ini)
-        alembic_section = alembic_cfg.get_section('alembic')
-
-        if DB_RW_URI:
-            db_rw = configure_rw_db(_db=_db_rw)
-        else:
-            db_rw = configure_rw_db(
-                alembic_section['sqlalchemy.url'], _db=_db_rw)
+        location_cfg = read_config()
         configure_raven(
             location_cfg, transport='sync', _client=_raven_client)
 
-        engine = db_rw.engine
-        create_schema(engine, alembic_cfg, location_cfg)
+        db = configure_ddl_db(_db=_db)
+        create_schema(db.engine)
     else:
         parser.print_help()
 
