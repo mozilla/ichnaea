@@ -20,7 +20,11 @@ from datadog.dogstatsd.base import (
     imap,
 )
 
-from ichnaea.config import RELEASE, TESTING
+from ichnaea.config import (
+    RELEASE,
+    SENTRY_DSN,
+    TESTING,
+)
 from ichnaea.exceptions import BaseClientError
 
 LOGGER = logging.getLogger('ichnaea')
@@ -84,8 +88,7 @@ def configure_logging():
         dictConfig(LOGGING_CONFIG)
 
 
-def configure_raven(app_config, transport=None,
-                    _client=None):  # pragma: no cover
+def configure_raven(transport=None, _client=None):  # pragma: no cover
     """
     Configure, globally set and return a :class:`raven.Client` instance.
 
@@ -102,11 +105,7 @@ def configure_raven(app_config, transport=None,
     if not transport:
         raise ValueError('No valid raven transport was configured.')
 
-    dsn = None
-    if app_config and 'sentry' in app_config:
-        section = app_config.get_map('sentry', {})
-        dsn = section.get('dsn', None)
-
+    dsn = SENTRY_DSN
     klass = RavenClient if dsn is not None else DebugRavenClient
     client = klass(dsn=dsn, transport=transport, release=RELEASE)
     RAVEN_CLIENT = client

@@ -15,11 +15,6 @@ from ichnaea.cache import (
     configure_redis,
     redis_pipeline,
 )
-from ichnaea.config import (
-    DB_RW_URI,
-    read_config,
-    REDIS_URI,
-)
 from ichnaea.data import ocid
 from ichnaea.db import (
     configure_rw_db,
@@ -43,7 +38,7 @@ def load_file(db, redis_client, datatype, filename):  # pragma: no cover
                 task, cell_type=datatype)(pipe, session, filename=filename)
 
 
-def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
+def main(argv, _db=None, _redis_client=None):  # pragma: no cover
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Load/import cell data.')
     parser.add_argument('--datatype', default='ocid',
@@ -67,17 +62,8 @@ def main(argv, _db_rw=None, _redis_client=None):  # pragma: no cover
         sys.exit(1)
 
     configure_logging()
-    app_config = read_config()
-    if DB_RW_URI:
-        db = configure_rw_db(_db=_db_rw)
-    else:  # pragma: no cover
-        db = configure_rw_db(app_config.get('database', 'rw_url'), _db=_db_rw)
-
-    if REDIS_URI:
-        redis_client = configure_redis(_client=_redis_client)
-    else:  # pragma: no cover
-        redis_client = configure_redis(
-            app_config.get('cache', 'cache_url'), _client=_redis_client)
+    db = configure_rw_db(_db=_db)
+    redis_client = configure_redis(_client=_redis_client)
 
     load_file(db, redis_client, datatype, filename)
 

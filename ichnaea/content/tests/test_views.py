@@ -60,7 +60,7 @@ class TestContentViews(object):
         request = DummyRequest()
         with testing.testConfig(request=request) as config:
             config.include('pyramid_chameleon')
-            setattr(request, 'db_ro_session', ro_session)
+            setattr(request, 'db_session', ro_session)
             setattr(request.registry, 'map_config', {})
             setattr(request.registry, 'redis_client', redis)
             yield ContentViews(request)

@@ -16,7 +16,6 @@ from ichnaea.config import (
     ALEMBIC_CFG,
     DB_RO_URI,
     DB_RW_URI,
-    read_config,
 )
 from ichnaea.db import configure_ddl_db
 from ichnaea.log import configure_raven
@@ -107,10 +106,7 @@ def main(argv, _db=None, _raven_client=None):  # pragma: no cover
 
     args = parser.parse_args(argv[1:])
     if args.initdb:
-        location_cfg = read_config()
-        configure_raven(
-            location_cfg, transport='sync', _client=_raven_client)
-
+        configure_raven(transport='sync', _client=_raven_client)
         db = configure_ddl_db(_db=_db)
         create_schema(db.engine)
     else:

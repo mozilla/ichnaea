@@ -147,7 +147,7 @@ class ContentViews(object):
 
     def __init__(self, request):
         self.request = request
-        self.session = request.db_ro_session
+        self.session = request.db_session
         self.redis_client = request.registry.redis_client
 
     @reify

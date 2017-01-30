@@ -15,12 +15,12 @@ from ichnaea.webapp.config import main
 
 
 def _make_app(app_config=TEST_CONFIG,
-              _db_ro=None, _http_session=None, _geoip_db=None,
+              _db=None, _http_session=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None,
               _position_searcher=None, _region_searcher=None):
     wsgiapp = main(
         app_config,
-        _db_ro=_db_ro,
+        _db=_db,
         _geoip_db=_geoip_db,
         _http_session=_http_session,
         _raven_client=_raven_client,
@@ -52,16 +52,16 @@ class TestApp(object):
                             _redis_client=redis,
                             _stats_client=stats,
                             )
-            db_ro = app.app.registry.db_ro
+            db = app.app.registry.db
             # The configured database is working.
-            assert db_ro.ping()
+            assert db.ping()
         finally:
             # Clean up the new db engine's _make_app created.
-            db_ro.close()
+            db.close()
 
     def test_db_hooks(self, app, db_ro):
         # Check that our _db hooks are passed through.
-        assert app.app.registry.db_ro is db_ro
+        assert app.app.registry.db is db_ro
 
     def test_redis_config(self, db_ro, geoip_db, raven, stats):
         app_config = DummyConfig({
@@ -71,7 +71,7 @@ class TestApp(object):
         })
         try:
             app = _make_app(app_config=app_config,
-                            _db_ro=db_ro,
+                            _db=db_ro,
                             _geoip_db=geoip_db,
                             _raven_client=raven,
                             _stats_client=stats)
@@ -124,7 +124,7 @@ class TestHeartbeatErrors(object):
         redis_client = configure_redis('redis://127.0.0.1:9/15')
 
         app = _make_app(
-            _db_ro=db,
+            _db=db,
             _geoip_db=geoip_db,
             _http_session=http_session,
             _raven_client=raven,

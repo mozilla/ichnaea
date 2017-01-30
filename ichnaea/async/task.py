@@ -119,7 +119,7 @@ class BaseTask(Task):
         :param commit: Should the session be committed or aborted at the end?
         :type commit: bool
         """
-        return db_worker_session(self.app.db_rw, commit=commit)
+        return db_worker_session(self.app.db, commit=commit)
 
     def redis_pipeline(self, execute=True):
         """

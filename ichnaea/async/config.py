@@ -103,7 +103,7 @@ def init_beat(beat, celery_app):
 
 
 def init_worker(celery_app,
-                _db_rw=None, _geoip_db=None,
+                _db=None, _geoip_db=None,
                 _raven_client=None, _redis_client=None, _stats_client=None):
     """
     Configure the passed in celery app, usually stored in
@@ -120,10 +120,10 @@ def init_worker(celery_app,
     app_config = celery_app.app_config
 
     # configure outside connections
-    celery_app.db_rw = configure_rw_db(_db=_db_rw)
+    celery_app.db = configure_rw_db(_db=_db)
 
     celery_app.raven_client = raven_client = configure_raven(
-        app_config, transport='threaded', _client=_raven_client)
+        transport='threaded', _client=_raven_client)
 
     celery_app.redis_client = redis_client = configure_redis(
         _client=_redis_client)
@@ -148,8 +148,8 @@ def shutdown_worker(celery_app):
 
     This is executed inside each forked worker process.
     """
-    celery_app.db_rw.close()
-    del celery_app.db_rw
+    celery_app.db.close()
+    del celery_app.db
     del celery_app.raven_client
     celery_app.redis_client.close()
     del celery_app.redis_client

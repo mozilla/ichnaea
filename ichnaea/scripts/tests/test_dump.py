@@ -25,7 +25,7 @@ class TestDump(object):
         assert dump.main(
             ['script', '--datatype=blue', '--filename=/tmp/foo.tar.gz',
              '--lat=51.0', '--lon=0.1', '--radius=25000'],
-            _db_rw=db_rw, _dump_file=_dump_nothing) == 0
+            _db=db_rw, _dump_file=_dump_nothing) == 0
 
     def test_where(self):
         assert dump.where_area(None, None, None) is None

@@ -346,7 +346,7 @@ def http_session():
 @pytest.fixture(scope='session')
 def raven_client():
     raven_client = configure_raven(
-        None, transport='sync', _client=DebugRavenClient())
+        transport='sync', _client=DebugRavenClient())
     yield raven_client
 
 
@@ -411,7 +411,7 @@ def global_app(db_ro, geoip_db, http_session,
                position_searcher, region_searcher):
     wsgiapp = main(
         TEST_CONFIG,
-        _db_ro=db_ro,
+        _db=db_ro,
         _geoip_db=geoip_db,
         _http_session=http_session,
         _raven_client=raven_client,
@@ -437,7 +437,7 @@ def global_celery(db_rw, geoip_db,
     celery_app.settings = TEST_CONFIG.asdict()
     init_worker(
         celery_app,
-        _db_rw=db_rw,
+        _db=db_rw,
         _geoip_db=geoip_db,
         _raven_client=raven_client,
         _redis_client=redis_client,

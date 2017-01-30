@@ -63,7 +63,7 @@ def recursive_scandir(top):  # pragma: no cover
                 yield subentry
 
 
-def export_file(db_url, filename, tablename, _db_rw=None, _session=None):
+def export_file(db_url, filename, tablename, _db=None, _session=None):
     # this is executed in a worker process
     stmt = text('''\
 SELECT
@@ -71,7 +71,7 @@ SELECT
 FROM {tablename}
 LIMIT :limit OFFSET :offset
 '''.format(tablename=tablename).replace('\n', ' '))
-    db = configure_ro_db(db_url, _db=_db_rw)
+    db = configure_ro_db(db_url, _db=_db)
 
     offset = 0
     limit = 200000
@@ -394,13 +394,9 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
     args = parser.parse_args(argv[1:])
     if args.create:
         conf = read_config()
-        if DB_RW_URI:
-            db_url = DB_RW_URI
-        else:  # pragma: no cover
-            db_url = conf.get('database', 'rw_url')
 
         raven_client = configure_raven(
-            conf, transport='sync', _client=_raven_client)
+            transport='sync', _client=_raven_client)
 
         stats_client = configure_stats(conf, _client=_stats_client)
 
@@ -424,7 +420,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
         try:
             with stats_client.timed('datamaps', tags=['func:main']):
-                generate(db_url, bucketname, raven_client, stats_client,
+                generate(DB_RW_URI, bucketname, raven_client, stats_client,
                          upload=upload,
                          concurrency=concurrency,
                          output=output)

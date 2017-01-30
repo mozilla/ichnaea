@@ -58,16 +58,15 @@ def configure_ro_db(uri=DB_RO_URI, _db=None):
     return configure_db(uri=uri, _db=_db)
 
 
-# the request db_ro_session and db_tween_factory are inspired by
+# the request db_session and db_tween_factory are inspired by
 # pyramid_tm to provide lazy session creation, session closure and
 # automatic rollback in case of errors
 
-def db_ro_session(request):
-    """Attach a database read-only session to the request."""
-    session = getattr(request, '_db_ro_session', None)
+def db_session(request):
+    """Attach a database session to the request."""
+    session = getattr(request, '_db_session', None)
     if session is None:
-        db = request.registry.db_ro
-        request._db_ro_session = session = db.session()
+        request._db_session = session = request.registry.db.session()
     return session
 
 
@@ -99,15 +98,15 @@ def db_tween_factory(handler, registry):
         try:
             response = handler(request)
         finally:
-            ro_session = getattr(request, '_db_ro_session', None)
-            if ro_session is not None:
-                # always rollback/close the `read-only` ro sessions
+            session = getattr(request, '_db_session', None)
+            if session is not None:
+                # always rollback/close the read-only session
                 try:
-                    ro_session.rollback()
+                    session.rollback()
                 except DatabaseError:  # pragma: no cover
                     registry.raven_client.captureException()
                 finally:
-                    ro_session.close()
+                    session.close()
         return response
 
     return db_tween

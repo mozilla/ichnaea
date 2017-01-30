@@ -78,7 +78,7 @@ def dump_file(datatype, session, filename,
     return 0
 
 
-def main(argv, _db_rw=None, _dump_file=dump_file):
+def main(argv, _db=None, _dump_file=dump_file):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Dump/export data.')
     parser.add_argument('--datatype', required=True,
@@ -116,7 +116,7 @@ def main(argv, _db_rw=None, _dump_file=dump_file):
 
     configure_logging()
 
-    db = configure_rw_db(_db=_db_rw)
+    db = configure_rw_db(_db=_db)
     with db_worker_session(db, commit=False) as session:
         exit_code = _dump_file(
             datatype, session, filename, lat=lat, lon=lon, radius=radius)
