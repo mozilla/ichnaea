@@ -1,7 +1,7 @@
 """extend export config
 
 Revision ID: 1bdf1028a085
-Revises: 6ec824122610
+Revises: None
 Create Date: 2016-04-14 14:08:27.104535
 """
 
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 log = logging.getLogger('alembic.migration')
 revision = '1bdf1028a085'
-down_revision = '6ec824122610'
+down_revision = None
 
 
 def upgrade():

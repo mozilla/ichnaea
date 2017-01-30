@@ -71,6 +71,9 @@ class TestMigration(object):
         return None if alembic_rev is None else alembic_rev[0]
 
     def test_migration(self, clean_db):
+        # To create a new base.sql, run mysqldump.
+        # $ docker-compose exec mysql bash
+        # $$ mysqldump -ulocation -plocation -d --compact location
         db = clean_db
 
         # capture state of fresh database
