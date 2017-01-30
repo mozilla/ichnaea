@@ -195,6 +195,9 @@ class TestFunctionalContent(object):
     def test_headers(self, app):
         result = app.get('/', status=200)
         assert 'Strict-Transport-Security' in result.headers
+        hsts = result.headers['Strict-Transport-Security']
+        assert 'max-age' in hsts
+        assert 'includeSubDomains' in hsts
         assert 'X-Frame-Options' in result.headers
 
         assert 'Content-Security-Policy' in result.headers

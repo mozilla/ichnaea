@@ -94,7 +94,8 @@ def security_headers(event):
     response = event.response
     if response.content_type == 'text/html':
         csp = event.request.registry.csp
-        response.headers.add('Strict-Transport-Security', 'max-age=31536000')
+        response.headers.add('Strict-Transport-Security',
+                             'max-age=31536000; includeSubDomains')
         response.headers.add('Content-Security-Policy', csp)
         response.headers.add('X-Content-Type-Options', 'nosniff')
         response.headers.add('X-XSS-Protection', '1; mode=block')
