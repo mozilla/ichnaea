@@ -92,14 +92,16 @@ def configure_content(config):
 @subscriber(NewResponse)
 def security_headers(event):
     response = event.response
+    # Headers for all responses.
+    response.headers.add('Strict-Transport-Security',
+                         'max-age=31536000; includeSubDomains')
+    response.headers.add('X-Content-Type-Options', 'nosniff')
+    # Headers for HTML responses.
     if response.content_type == 'text/html':
         csp = event.request.registry.csp
-        response.headers.add('Strict-Transport-Security',
-                             'max-age=31536000; includeSubDomains')
         response.headers.add('Content-Security-Policy', csp)
-        response.headers.add('X-Content-Type-Options', 'nosniff')
-        response.headers.add('X-XSS-Protection', '1; mode=block')
         response.headers.add('X-Frame-Options', 'DENY')
+        response.headers.add('X-XSS-Protection', '1; mode=block')
 
 
 def s3_list_downloads(assets_bucket, assets_url, raven_client):

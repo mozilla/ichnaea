@@ -192,20 +192,29 @@ class TestFunctionalContent(object):
         # The mock / S3 API was only called once
         assert len(mock_bucket.list.mock_calls) == 1
 
-    def test_headers(self, app):
-        result = app.get('/', status=200)
-        assert 'Strict-Transport-Security' in result.headers
-        hsts = result.headers['Strict-Transport-Security']
+    def test_headers_html(self, app):
+        response = app.get('/', status=200)
+        assert 'X-Content-Type-Options' in response.headers
+        assert 'Strict-Transport-Security' in response.headers
+        hsts = response.headers['Strict-Transport-Security']
         assert 'max-age' in hsts
         assert 'includeSubDomains' in hsts
-        assert 'X-Frame-Options' in result.headers
+        assert 'X-Frame-Options' in response.headers
 
-        assert 'Content-Security-Policy' in result.headers
-        csp = result.headers['Content-Security-Policy']
+        assert 'Content-Security-Policy' in response.headers
+        csp = response.headers['Content-Security-Policy']
         # make sure CSP_BASE interpolation worked
         assert "'self'" in csp
         # make sure map assets url interpolation worked
         assert '127.0.0.1:7001' in csp
+
+    def test_headers_json(self, app):
+        response = app.get('/__version__', status=200)
+        assert 'X-Content-Type-Options' in response.headers
+        assert 'Strict-Transport-Security' in response.headers
+        hsts = response.headers['Strict-Transport-Security']
+        assert 'max-age' in hsts
+        assert 'includeSubDomains' in hsts
 
     def test_map_json(self, app):
         result = app.get('/map.json', status=200)
