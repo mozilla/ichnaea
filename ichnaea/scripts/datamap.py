@@ -390,15 +390,14 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
     args = parser.parse_args(argv[1:])
     if args.create:
-        conf = read_config()
-
         raven_client = configure_raven(
             transport='sync', _client=_raven_client)
 
-        stats_client = configure_stats(conf, _client=_stats_client)
+        stats_client = configure_stats(_client=_stats_client)
 
         bucketname = _bucketname
         if not _bucketname:  # pragma: no cover
+            conf = read_config()
             bucketname = conf.get('assets', 'bucket')
             if bucketname:
                 bucketname = bucketname.strip('/')

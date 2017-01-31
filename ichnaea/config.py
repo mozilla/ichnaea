@@ -93,6 +93,7 @@ if REDIS_HOST and not REDIS_URI:
     REDIS_URI = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB)
 
 SENTRY_DSN = os.environ.get('SENTRY_DSN')
+STATSD_HOST = os.environ.get('STATSD_HOST')
 
 if os.path.isfile(VERSION_FILE):
     with open(VERSION_FILE, 'r') as fd:

@@ -2,7 +2,6 @@
 from collections import deque
 import logging
 from logging.config import dictConfig
-from random import random
 import time
 
 from pyramid.httpexceptions import (
@@ -10,19 +9,16 @@ from pyramid.httpexceptions import (
     HTTPClientError,
     HTTPRedirection,
 )
-from pyramid.settings import asbool
 from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
 from raven.transport.http import HTTPTransport
 from raven.transport.threaded import ThreadedHTTPTransport
-from datadog.dogstatsd.base import (
-    DogStatsd,
-    imap,
-)
+from datadog.dogstatsd.base import DogStatsd
 
 from ichnaea.config import (
     RELEASE,
     SENTRY_DSN,
+    STATSD_HOST,
     TESTING,
 )
 from ichnaea.exceptions import BaseClientError
@@ -67,9 +63,6 @@ LOGGING_CONFIG = dict(
     ),
 )
 
-RAVEN_CLIENT = None  #: The globally configured raven client.
-STATS_CLIENT = None  #: The globally configured statsd client.
-
 RAVEN_TRANSPORTS = {
     'gevent': GeventedHTTPTransport,
     'sync': HTTPTransport,
@@ -90,15 +83,13 @@ def configure_logging():
 
 def configure_raven(transport=None, _client=None):  # pragma: no cover
     """
-    Configure, globally set and return a :class:`raven.Client` instance.
+    Configure and return a :class:`raven.Client` instance.
 
     :param transport: The transport to use, one of the
                       :data:`RAVEN_TRANSPORTS` keys.
     :param _client: Test-only hook to provide a pre-configured client.
     """
-    global RAVEN_CLIENT
     if _client is not None:
-        RAVEN_CLIENT = _client
         return _client
 
     transport = RAVEN_TRANSPORTS.get(transport)
@@ -106,51 +97,25 @@ def configure_raven(transport=None, _client=None):  # pragma: no cover
         raise ValueError('No valid raven transport was configured.')
 
     dsn = SENTRY_DSN
-    klass = RavenClient if dsn is not None else DebugRavenClient
+    klass = DebugRavenClient if not dsn else RavenClient
     client = klass(dsn=dsn, transport=transport, release=RELEASE)
-    RAVEN_CLIENT = client
     return client
 
 
-def configure_stats(app_config, _client=None):  # pragma: no cover
+def configure_stats(_client=None):  # pragma: no cover
     """
-    Configure, globally set and return a
-    :class:`~ichnaea.log.StatsClient` instance.
+    Configure and return a :class:`~ichnaea.log.StatsClient` instance.
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
-    global STATS_CLIENT
     if _client is not None:
-        STATS_CLIENT = _client
         return _client
 
-    klass = DebugStatsClient
-    host = 'localhost'
-    port = 9
-    namespace = 'location'
-    tag_support = True
-
-    if app_config and 'statsd' in app_config:
-        section = app_config.get_map('statsd', {})
-        host = section.get('host', None)
-        port = section.get('port', None)
-        if host is not None and port is not None:
-            klass = StatsClient
-        if host is not None:
-            host = host.strip()
-        else:
-            host = 'localhost'
-        if port is not None:
-            port = int(port)
-        else:
-            port = 9
-        namespace = section.get('metric_prefix', 'location').strip()
-        tag_support = asbool(section.get('tag_support', 'false').strip())
-
-    client = klass(
-        host=host, port=port, namespace=namespace,
-        tag_support=tag_support)
-    STATS_CLIENT = client
+    statsd_host = STATSD_HOST
+    klass = DebugStatsClient if not statsd_host else StatsClient
+    namespace = None if TESTING else 'location'
+    client = klass(host=statsd_host, port=8125,
+                   namespace=namespace, use_ms=True)
     return client
 
 
@@ -261,61 +226,10 @@ class DebugRavenClient(RavenClient):
 class StatsClient(DogStatsd):
     """A statsd client."""
 
-    def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 namespace=None, constant_tags=None, use_ms=False,
-                 tag_support=False):
-        super(StatsClient, self).__init__(
-            host=host, port=port,
-            max_buffer_size=max_buffer_size,
-            namespace=namespace,
-            constant_tags=constant_tags,
-            use_ms=True)  # always enable this to be standards compliant
-        self.tag_support = tag_support
-
     def close(self):
         if self.socket:  # pragma: no cover
             self.socket.close()
             self.socket = None
-
-    def _report(self, metric, metric_type, value, tags, sample_rate):
-        if value is None:  # pragma: no cover
-            return
-
-        if sample_rate != 1 and random() > sample_rate:  # pragma: no cover
-            return
-
-        payload = []
-
-        # Resolve the full tag list
-        if self.constant_tags:  # pragma: no cover
-            if tags:
-                tags = tags + self.constant_tags
-            else:
-                tags = self.constant_tags
-
-        # Create/format the metric packet
-        if self.namespace:
-            payload.append(self.namespace + '.')
-
-        if tags and not self.tag_support:
-            # append tags to the metric name
-            tags = '.'.join([tag.replace(':', '_') for tag in tags])
-            if tags:
-                metric += '.' + tags
-
-        payload.extend([metric, ':', value, '|', metric_type])
-
-        if sample_rate != 1:  # pragma: no cover
-            payload.extend(['|@', sample_rate])
-
-        if tags and self.tag_support:
-            # normal tag support
-            payload.extend(['|#', ','.join(tags)])
-
-        encoded = ''.join(imap(str, payload))
-
-        # Send it
-        self._send(encoded)
 
     def incr(self, *args, **kw):
         return self.increment(*args, **kw)
@@ -324,16 +238,8 @@ class StatsClient(DogStatsd):
 class DebugStatsClient(StatsClient):
     """An in-memory statsd client with an inspectable message queue."""
 
-    def __init__(self, host='localhost', port=8125, max_buffer_size=50,
-                 namespace=None, constant_tags=None, use_ms=False,
-                 tag_support=False):
-        super(DebugStatsClient, self).__init__(
-            host=host, port=port,
-            max_buffer_size=max_buffer_size,
-            namespace=namespace,
-            constant_tags=constant_tags,
-            use_ms=use_ms,
-            tag_support=tag_support)
+    def __init__(self, *args, **kw):
+        super(DebugStatsClient, self).__init__(*args, **kw)
         self.msgs = deque(maxlen=100)
 
     def _clear(self):

@@ -1,7 +1,5 @@
 import time
 
-from ichnaea.log import DebugStatsClient
-
 
 class TestStatsAPI(object):
 
@@ -39,48 +37,12 @@ class TestStatsAPI(object):
             set=['metric'],
             timer=['metric'])
 
-
-class TestStatsTags(object):
-
-    def _make_client(self, tag_support=True, **kw):
-        return DebugStatsClient(tag_support=tag_support, **kw)
-
-    def test_one_tag(self):
-        client = self._make_client()
-        client.incr('metric', 1, tags=['tag:value'])
-        client.check(
+    def test_one_tag(self, stats):
+        stats.incr('metric', 1, tags=['tag:value'])
+        stats.check(
             counter=[('metric', 1, 1, ['tag:value'])])
 
-    def test_multiple_tags(self):
-        client = self._make_client()
-        client.incr('metric', 1, tags=['t2:v2', 't1:v1'])
-        client.check(
+    def test_multiple_tags(self, stats):
+        stats.incr('metric', 1, tags=['t2:v2', 't1:v1'])
+        stats.check(
             counter=[('metric', 1, 1, ['t2:v2', 't1:v1'])])
-
-    def test_one_tag_fallback(self):
-        client = self._make_client(tag_support=False)
-        client.incr('metric', 1, tags=['t1:v1'])
-        client.check(
-            counter=[('metric.t1_v1', 1, 1)])
-
-    def test_mutiple_tags_fallback(self):
-        client = self._make_client(tag_support=False)
-        client.incr('metric', 1, tags=['t2:v2', 't1:v1'])
-        client.check(
-            counter=[('metric.t2_v2.t1_v1', 1, 1)])
-
-
-class TestStatsNamespace(object):
-
-    def _make_client(self, **kw):
-        return DebugStatsClient(**kw)
-
-    def test_namespace(self):
-        client = self._make_client(namespace='pre')
-        client.incr('metric.one', 1)
-        client.gauge('metric', 1)
-        client.timing('metric.two.two', 2)
-        client.check(
-            counter=['pre.metric.one'],
-            gauge=['pre.metric'],
-            timer=['pre.metric.two.two'])

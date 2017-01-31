@@ -13,10 +13,7 @@ This document describes the metrics collected.
 The code emits most metrics using the statsd tags extension. A metric
 name of ``task#name:function,version:old`` therefor means a statsd metric
 called ``task`` will be emitted with two tags ``name:function`` and
-``version:old``. If the statsd backend does not support tags, the
-statsd client can be configured with a ``tag_support = false`` option.
-In this case the above metric would be emitted as:
-``task.name_function.version_old``.
+``version:old``.
 
 
 API Request Metrics

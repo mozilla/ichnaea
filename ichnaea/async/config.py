@@ -117,7 +117,6 @@ def init_worker(celery_app,
     The parameters starting with an underscore are test-only hooks
     to provide pre-configured connection objects.
     """
-    app_config = celery_app.app_config
 
     # configure outside connections
     celery_app.db = configure_db('rw', _db=_db)
@@ -128,8 +127,7 @@ def init_worker(celery_app,
     celery_app.redis_client = redis_client = configure_redis(
         _client=_redis_client)
 
-    celery_app.stats_client = configure_stats(
-        app_config, _client=_stats_client)
+    celery_app.stats_client = configure_stats(_client=_stats_client)
 
     celery_app.geoip_db = configure_geoip(
         raven_client=raven_client, _client=_geoip_db)

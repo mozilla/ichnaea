@@ -81,7 +81,7 @@ def main(app_config, ping_connections=False,
         _client=_redis_client)
 
     registry.stats_client = stats_client = configure_stats(
-        app_config, _client=_stats_client)
+        _client=_stats_client)
 
     registry.http_session = configure_http_session(_session=_http_session)
 

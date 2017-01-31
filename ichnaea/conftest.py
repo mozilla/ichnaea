@@ -37,8 +37,6 @@ from ichnaea.http import configure_http_session
 from ichnaea.log import (
     configure_raven,
     configure_stats,
-    DebugRavenClient,
-    DebugStatsClient,
 )
 from ichnaea.models import (
     _Model,
@@ -279,8 +277,7 @@ def http_session():
 
 @pytest.fixture(scope='session')
 def raven_client():
-    raven_client = configure_raven(
-        transport='sync', _client=DebugRavenClient())
+    raven_client = configure_raven(transport='sync')
     yield raven_client
 
 
@@ -307,8 +304,7 @@ def redis(redis_client):
 
 @pytest.fixture(scope='session')
 def stats_client():
-    stats_client = configure_stats(
-        None, _client=DebugStatsClient(tag_support=True))
+    stats_client = configure_stats()
     yield stats_client
     stats_client.close()
 
