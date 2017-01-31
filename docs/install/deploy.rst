@@ -33,17 +33,20 @@ MySQL / Amazon RDS
 
 The application is written and tested against MySQL 5.6.x or Amazon RDS of the
 same version. The default configuration works for the most part. There are
-just three changes you need to do. For example via the my.cnf:
+just six changes you need to do. For example via the my.cnf:
 
 .. code-block:: ini
 
     [mysqld]
+    character-set-server = utf8
+    collation-server = utf8_unicode_ci
+    init-connect='SET NAMES utf8'
     innodb_file_format=Barracuda
     innodb_strict_mode=on
     sql-mode="NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES"
 
-The web app frontend role only needs access to a read-only version of
-the database, for example a read-replica. The async worker backend role
+The web frontend role only needs access to a read-only version of
+the database, for example a read-replica. The worker backend role
 needs access to the read-write primary database.
 
 
@@ -71,18 +74,14 @@ delete old export files after a couple of days and :term:`observation`
 data after one year.
 
 
-Datadog / Statsd / Sentry
-=========================
+Statsd / Sentry
+===============
 
-The application uses Statsd to aggregate stats and Sentry to log
+The application uses Statsd to aggregate metrics and Sentry to log
 exception messages.
 
-To use Statsd, you need to configure it in the config file, specifying
-a host and port, for example localhost port 8125.
-
-To get the app to log exceptions to Sentry, you will need to obtain the
-DSN for your Sentry instance. Edit location.ini and in the `sentry` section
-put your real DSN into the `dsn` setting.
+To use Statsd and Sentry, you need to configure them via environment
+variables as detailed in :ref:`the config section <config>`.
 
 Installation of Statsd and Sentry are outside the scope of this documentation.
 

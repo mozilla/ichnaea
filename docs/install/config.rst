@@ -4,76 +4,103 @@
 Configuration
 =============
 
-As part of deploying the application, you need to create an application
-configuration file, commonly called ``location.ini`` and insert a couple
-of rows into various database tables.
+The application takes a number of different settings and reads them
+from environment variables. There are also a small number of settings
+inside database tables.
 
 
-Configuration File
-==================
+Environment Variables
+=====================
 
-The processes find the configuration file via the ``ICHNAEA_CFG``
-environment variable. The variable should contain an absolute path,
-for example ``/etc/location.ini``.
-
-The configuration file is an ini-style file and contains a number of
-different sections.
-
-
-Required Sections
------------------
-
-Cache
-~~~~~
-
-The cache section contains a ``cache_url`` pointing to a Redis server.
-
-The cache is used as a classic cache by the webapp code, as a backend
-to store rate-limiting counters, as a custom and a celery queuing backend.
-
-.. code-block:: ini
-
-    [cache]
-    cache_url = redis://localhost:6379/0
-
+Required Variables
+------------------
 
 Database
 ~~~~~~~~
 
-The database section contains settings for accessing the MySQL database.
+The MySQL compatible database is used for storing configuration and
+application data.
 
-The web application only requires and uses the read-only connection,
-while the asynchronous celery workers only use the read-write connection.
+The web role only requires a read-only connection, while the
+worker role need a read-write connection.
 
 Both of them can be restricted to only DML (data-manipulation) permissions,
 as neither needs DDL (data-definition) rights.
 
-DDL changes are only done via the alembic database migration system,
-which uses a separate configuration approach.
+DDL changes are only done via the alembic database migration system.
 
 .. code-block:: ini
 
-    [database]
-    rw_url = mysql+pymysql://rw_user:password@localhost/location
-    ro_url = mysql+pymysql://ro_user:password@localhost/location
+    DB_HOST = localhost
+
+    DB_RO_USER = location_ro
+    DB_RO_PWD = password
+    DB_RW_USER = location_rw
+    DB_RW_PWD = password
+    DB_DDL_USER = location_admin
+    DB_DDL_PWD = password
+
+The database name is `location` and the port number is the default `3306`.
 
 
 GeoIP
 ~~~~~
 
-The geoip section contains settings related to the maxmind GeoIP database.
-
-The ``db_path`` setting needs to point to a maxmind GeoIP city database
+The web and worker roles need access to a maxmind GeoIP City database
 in version 2 format. Both GeoLite and commercial databases will work.
 
 .. code-block:: ini
 
-    [geoip]
-    db_path = /path/to/GeoIP2-City.mmdb
+    GEOIP_PATH = /path/to/GeoIP2-City.mmdb
 
 
-Optional Sections
------------------
+Redis
+~~~~~
+
+The Redis cache is used as a classic cache by the web role, as a backend
+to store rate-limiting counters, as a custom and a worker queuing backend.
+
+.. code-block:: ini
+
+    REDIS_HOST = localhost
+
+The port number is the default `6379`.
+
+
+Optional Variables
+------------------
+
+Sentry
+~~~~~~
+
+All roles and command line scripts use an optional Sentry server
+to log application exception data.
+
+.. code-block:: ini
+
+    SENTRY_DSN = https://public_key:secret_key@localhost/project_id
+
+
+StatsD
+~~~~~~
+
+All roles and command line scripts use an optional StatsD service
+to log application specific metrics. The StatsD service needs to
+support metric tags.
+
+The project uses a lot of metrics as further detailed in
+:ref:`the metrics documentation <metrics>`.
+
+.. code-block:: ini
+
+    STATSD_HOST = localhost
+
+The port number is the default `8125`. All metrics are prefixed with
+a `location` namespace.
+
+
+Feature Specfic Variables
+-------------------------
 
 Assets
 ~~~~~~
@@ -112,34 +139,6 @@ page listing the available download files using a specific file name pattern
 for daily full and hourly differential files.
 
 For the :term:`OpenCellID` service, the URL must end with a slash.
-
-
-Sentry
-~~~~~~
-
-The sentry section contains settings related to a Sentry server.
-
-The ``dsn`` setting needs to contain a valid DSN project entry.
-
-.. code-block:: ini
-
-    [sentry]
-    dsn = https://public_key:secret_key@localhost/project_id
-
-
-StatsD
-~~~~~~
-
-The statsd section contains settings related to a StatsD service. The
-project uses a lot of metrics as further detailed in
-:ref:`the metrics documentation <metrics>`.
-
-The ``host`` setting determines how to connect to the service via UDP.
-
-.. code-block:: ini
-
-    [statsd]
-    host = localhost
 
 
 Web
