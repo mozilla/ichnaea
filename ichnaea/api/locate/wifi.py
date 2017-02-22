@@ -46,12 +46,13 @@ class WifiPositionMixin(object):
                                         min_radius=WIFI_MIN_ACCURACY,
                                         min_signal=MIN_WIFI_SIGNAL,
                                         max_distance=MAX_WIFI_CLUSTER_METERS):
-            results.add(aggregate_cluster_position(
-                cluster, self.result_type,
+            result = aggregate_cluster_position(
+                cluster, self.result_type, 'wifi',
                 max_networks=MAX_WIFIS_IN_CLUSTER,
                 min_accuracy=WIFI_MIN_ACCURACY,
                 max_accuracy=WIFI_MAX_ACCURACY,
-            ))
+            )
+            results.add(result)
 
         return results
 

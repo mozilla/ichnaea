@@ -230,8 +230,14 @@ class CellPositionMixin(object):
                 for cluster in cluster_cells(cells, query.cell):
                     lat, lon, accuracy, score = aggregate_cell_position(
                         cluster, CELL_MIN_ACCURACY, CELL_MAX_ACCURACY)
+
+                    used_networks = [
+                        ('cell', bytes(id_), bool(seen_today)) for
+                        id_, seen_today in cluster[['id', 'seen_today']]]
+
                     results.add(self.result_type(
-                        lat=lat, lon=lon, accuracy=accuracy, score=score))
+                        lat=lat, lon=lon, accuracy=accuracy, score=score,
+                        used_networks=used_networks))
 
             if len(results):
                 return results
@@ -243,9 +249,14 @@ class CellPositionMixin(object):
                 for cluster in cluster_areas(areas, query.cell_area):
                     lat, lon, accuracy, score = aggregate_cell_position(
                         cluster, CELLAREA_MIN_ACCURACY, CELLAREA_MAX_ACCURACY)
+
+                    used_networks = [
+                        ('area', bytes(id_), bool(seen_today)) for
+                        id_, seen_today in cluster[['id', 'seen_today']]]
+
                     results.add(self.result_type(
                         lat=lat, lon=lon, accuracy=accuracy, score=score,
-                        fallback='lacf'))
+                        fallback='lacf', used_networks=used_networks))
 
         return results
 

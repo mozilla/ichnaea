@@ -145,8 +145,9 @@ def aggregate_mac_position(networks, minimum_accuracy):
     return (float(lat), float(lon), float(accuracy))
 
 
-def aggregate_cluster_position(cluster, result_type, max_networks=None,
-                               min_accuracy=None, max_accuracy=None):
+def aggregate_cluster_position(
+        cluster, result_type, data_type,
+        max_networks=None, min_accuracy=None, max_accuracy=None):
     """
     Given a single cluster, return the aggregate position of the user
     inside the cluster.
@@ -158,7 +159,13 @@ def aggregate_cluster_position(cluster, result_type, max_networks=None,
     lat, lon, accuracy = aggregate_mac_position(sample, min_accuracy)
     accuracy = min(accuracy, max_accuracy)
     score = float(cluster['score'].sum())
-    return result_type(lat=lat, lon=lon, accuracy=accuracy, score=score)
+
+    used_networks = [(data_type, bytes(mac), bool(seen_today)) for
+                     mac, seen_today in sample[['mac', 'seen_today']]]
+
+    return result_type(lat=lat, lon=lon,
+                       accuracy=accuracy, score=score,
+                       used_networks=used_networks)
 
 
 def query_macs(query, lookups, raven_client, db_model):

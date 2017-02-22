@@ -17,7 +17,8 @@ class Result(object):
     _repr_fields = ()  #: The list of important attributes.
 
     def __init__(self, accuracy=None, region_code=None, region_name=None,
-                 fallback=None, lat=None, lon=None, source=None, score=0.0):
+                 fallback=None, lat=None, lon=None, source=None, score=0.0,
+                 used_networks=None):
         self.accuracy = self._round(accuracy)
         self.fallback = fallback
         self.lat = self._round(lat)
@@ -26,6 +27,7 @@ class Result(object):
         self.region_name = region_name
         self.score = score
         self.source = source
+        self.used_networks = used_networks if used_networks else []
 
     def __repr__(self):
         values = []

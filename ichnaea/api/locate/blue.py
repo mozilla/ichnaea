@@ -46,12 +46,13 @@ class BluePositionMixin(object):
                                         min_radius=BLUE_MIN_ACCURACY,
                                         min_signal=MIN_BLUE_SIGNAL,
                                         max_distance=MAX_BLUE_CLUSTER_METERS):
-            results.add(aggregate_cluster_position(
-                cluster, self.result_type,
+            result = aggregate_cluster_position(
+                cluster, self.result_type, 'blue',
                 max_networks=MAX_BLUES_IN_CLUSTER,
                 min_accuracy=BLUE_MIN_ACCURACY,
                 max_accuracy=BLUE_MAX_ACCURACY,
-            ))
+            )
+            results.add(result)
 
         return results
 

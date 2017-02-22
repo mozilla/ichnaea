@@ -11,6 +11,7 @@ from ichnaea.api.locate.result import (
     Result,
     ResultList,
 )
+from ichnaea.models import encode_mac
 from ichnaea.tests.factories import WifiShardFactory
 
 
@@ -25,6 +26,12 @@ class TestResult(object):
 
     def test_data_accuracy(self):
         assert Result().data_accuracy is DataAccuracy.none
+
+    def test_used_networks(self):
+        wifi = WifiShardFactory.build()
+        network = ('wifi', encode_mac(wifi.mac), True)
+        assert Result().used_networks == []
+        assert Result(used_networks=[network]).used_networks == [network]
 
 
 class TestPosition(object):
