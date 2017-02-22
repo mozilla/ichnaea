@@ -138,6 +138,8 @@ def setup_tables(engine):
             fallback_ratelimit=10,
             fallback_ratelimit_interval=60,
             fallback_cache_expire=60,
+            store_sample_locate=100,
+            store_sample_submit=100,
         )
         conn.execute(key1)
         key2 = ApiKey.__table__.insert().values(

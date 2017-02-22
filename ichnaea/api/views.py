@@ -117,7 +117,9 @@ class BaseAPIView(BaseView):
         api_key = api_key or ApiKey(valid_key=None,
                                     allow_fallback=False,
                                     allow_locate=True,
-                                    allow_transfer=False)
+                                    allow_transfer=False,
+                                    store_sample_locate=100,
+                                    store_sample_submit=100)
         return self.view(api_key)
 
     def parse_apikey(self):
@@ -168,7 +170,8 @@ class BaseAPIView(BaseView):
         else:
             api_key = ApiKey(
                 valid_key=None, allow_fallback=False,
-                allow_locate=True, allow_transfer=False)
+                allow_locate=True, allow_transfer=False,
+                store_sample_locate=100, store_sample_submit=100)
             # Only use the unchecked API key in the request for simple
             # logging purposes.
             self.log_count(self.parse_apikey(), False)

@@ -105,6 +105,9 @@ class ApiKeyFactory(BaseSQLFactory):
     fallback_ratelimit_interval = 60
     fallback_cache_expire = 60
 
+    store_sample_locate = 100
+    store_sample_submit = 100
+
 
 class BboxFactory(Factory):
 

@@ -43,6 +43,10 @@ class BaseSubmitView(BaseAPIView):
             # don't allow completely empty request
             raise self.prepare_exception(ParseError())
 
+        if not api_key.store_sample('submit'):
+            # only store some percentage of the requests
+            return
+
         valid_key = api_key.valid_key
         data = []
         for report in request_data['items']:

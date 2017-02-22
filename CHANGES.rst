@@ -18,6 +18,8 @@ Compatibility
 Migrations
 ~~~~~~~~~~
 
+- cad2875fd8cb: Add `store_sample_*` columns to api_key table.
+
 - Removed old migrations. The database needs to be at least at version
   `1bdf1028a085` or `385f842b2526` before upgrading to this version.
 
