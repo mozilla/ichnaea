@@ -58,6 +58,26 @@ class TestApiKey(object):
         assert not ApiKeyFactory.build(allow_locate=False).allowed('locate')
         assert not ApiKeyFactory.build(allow_transfer=None).allowed('transfer')
 
+    def test_store_sample(self):
+        api_key = ApiKeyFactory.build(
+            store_sample_locate=None, store_sample_submit=None)
+        assert api_key.store_sample('locate') is False
+        assert api_key.store_sample('submit') is False
+        assert api_key.store_sample('region') is False
+        assert api_key.store_sample('transfer') is False
+
+        api_key = ApiKeyFactory.build(
+            store_sample_locate=0, store_sample_submit=100)
+        assert api_key.store_sample('locate') is False
+        assert api_key.store_sample('submit') is True
+
+        api_key = ApiKeyFactory.build(store_sample_locate=50)
+        results = []
+        for i in range(20):
+            results.append(api_key.store_sample('locate'))
+        assert True in results
+        assert False in results
+
     def test_can_fallback(self):
         assert ApiKeyFactory.build(allow_fallback=True).can_fallback()
         assert not ApiKeyFactory.build(allow_fallback=False).can_fallback()

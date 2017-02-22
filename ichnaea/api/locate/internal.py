@@ -59,6 +59,10 @@ class InternalPositionSource(BaseInternalSource,
     """A position source based on our own crowd-sourced internal data."""
 
     def _store_query(self, query, results):
+        if not query.api_key.store_sample('locate'):
+            # only store some percentage of the requests
+            return
+
         best_result = results.best()
         if best_result:
             report = query.json()

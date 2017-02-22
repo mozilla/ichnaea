@@ -8,6 +8,7 @@ from ichnaea.api.exceptions import (
 )
 from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
+from ichnaea.tests.factories import ApiKeyFactory
 from ichnaea import util
 
 
@@ -34,9 +35,9 @@ class BaseSubmitTest(object):
             status=status, extra_environ=extra, **kw)
         return result
 
-    def _post_one_cell(self, app, status=status):
+    def _post_one_cell(self, app, api_key=None, status=status):
         cell, query = self._one_cell_query()
-        return self._post(app, [query], status=status)
+        return self._post(app, [query], api_key=api_key, status=status)
 
     def test_gzip(self, app, celery):
         cell, query = self._one_cell_query()
@@ -55,6 +56,12 @@ class BaseSubmitTest(object):
         app.post(
             self.url, 'invalid', headers=headers,
             content_type='application/json', status=400)
+        assert self.queue(celery).size() == 0
+
+    def test_store_sample(self, app, celery, session):
+        api_key = ApiKeyFactory(store_sample_submit=0)
+        session.flush()
+        self._post_one_cell(app, api_key=api_key.valid_key)
         assert self.queue(celery).size() == 0
 
     def test_error_get(self, app, raven):

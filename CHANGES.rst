@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- cad2875fd8cb: Add `store_sample_*` columns to api_key table.
+
 Changes
 ~~~~~~~
 

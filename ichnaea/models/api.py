@@ -1,3 +1,5 @@
+from random import randint
+
 from sqlalchemy import (
     Boolean,
     Column,
@@ -5,6 +7,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.mysql import (
     INTEGER as Integer,
+    TINYINT as TinyInteger,
 )
 from sqlalchemy.orm import load_only
 
@@ -52,11 +55,15 @@ class ApiKey(_Model):
     fallback_ratelimit_interval = Column(Integer)  #: Interval in seconds.
     fallback_cache_expire = Column(Integer)  #: Cache expiry in seconds.
 
+    store_sample_locate = Column(TinyInteger)  #: Sample rate 0-100.
+    store_sample_submit = Column(TinyInteger)  #: Sample rate 0-100.
+
     _get_fields = (
         'valid_key', 'maxreq',
         'allow_fallback', 'allow_locate', 'allow_transfer',
         'fallback_name', 'fallback_url', 'fallback_ratelimit',
         'fallback_ratelimit_interval', 'fallback_cache_expire',
+        'store_sample_submit', 'store_sample_locate',
     )
 
     @classmethod
@@ -88,6 +95,28 @@ class ApiKey(_Model):
                     self.fallback_url and
                     self.fallback_ratelimit is not None and
                     self.fallback_ratelimit_interval)
+
+    def store_sample(self, api_type):
+        """
+        Determine if an API request should result in the data to be
+        stored for further processing.
+
+        This allows one to store only some percentage of the incoming
+        locate or submit requests for a given API key.
+        """
+        if api_type == 'locate':
+            sample_rate = self.store_sample_locate
+        elif api_type == 'submit':
+            sample_rate = self.store_sample_submit
+        else:
+            return False
+
+        if sample_rate is None or sample_rate <= 0:
+            return False
+
+        if sample_rate >= randint(1, 100):
+            return True
+        return False
 
     def __str__(self):
         return '<ApiKey>: %s' % self.valid_key
