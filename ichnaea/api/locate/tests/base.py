@@ -717,10 +717,10 @@ class CommonPositionTest(BaseLocateTest):
         end = b'1.1001}' in res.body
         assert middle or end
 
-    def test_store_sample(self, app, data_queues, session):
-        api_key = ApiKeyFactory(store_sample_locate=0)
-        cell = CellShardFactory()
-        session.flush()
+    def test_store_sample(self, app, data_queues, ro_session):
+        api_key = ApiKeyFactory(session=ro_session, store_sample_locate=0)
+        cell = CellShardFactory(session=ro_session)
+        ro_session.flush()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query,

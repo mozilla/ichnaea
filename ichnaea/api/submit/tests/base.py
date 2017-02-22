@@ -58,9 +58,9 @@ class BaseSubmitTest(object):
             content_type='application/json', status=400)
         assert self.queue(celery).size() == 0
 
-    def test_store_sample(self, app, celery, session):
-        api_key = ApiKeyFactory(store_sample_submit=0)
-        session.flush()
+    def test_store_sample(self, app, celery, ro_session):
+        api_key = ApiKeyFactory(session=ro_session, store_sample_submit=0)
+        ro_session.flush()
         self._post_one_cell(app, api_key=api_key.valid_key)
         assert self.queue(celery).size() == 0
 
