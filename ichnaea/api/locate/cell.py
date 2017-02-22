@@ -25,6 +25,8 @@ from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellarea,
     decode_cellid,
+    encode_cellarea,
+    encode_cellid,
     CellArea,
     CellAreaOCID,
     CellShard,
@@ -40,6 +42,8 @@ NETWORK_DTYPE = numpy.dtype([
     ('age', numpy.int32),
     ('signalStrength', numpy.int32),
     ('score', numpy.double),
+    ('id', 'S11'),
+    ('seen_today', numpy.bool),
 ])
 
 
@@ -48,6 +52,7 @@ def cluster_cells(cells, lookups, min_age=0):
     Cluster cells by area.
     """
     now = util.utcnow()
+    today = now.date()
 
     # Create a dict of cell ids mapped to their age and signal strength.
     obs_data = {}
@@ -66,7 +71,9 @@ def cluster_cells(cells, lookups, min_age=0):
             cell.lat, cell.lon, cell.radius,
             obs_data[cell.cellid][0],
             obs_data[cell.cellid][1],
-            cell.score(now))
+            cell.score(now),
+            encode_cellid(*cell.cellid),
+            bool(cell.last_seen >= today))
             for cell in area_cells],
             dtype=NETWORK_DTYPE))
 
@@ -78,6 +85,7 @@ def cluster_areas(areas, lookups, min_age=0):
     Cluster areas, treat each area as its own cluster.
     """
     now = util.utcnow()
+    today = now.date()
 
     # Create a dict of area ids mapped to their age and signal strength.
     obs_data = {}
@@ -92,7 +100,9 @@ def cluster_areas(areas, lookups, min_age=0):
             area.lat, area.lon, area.radius,
             obs_data[area.areaid][0],
             obs_data[area.areaid][1],
-            area.score(now))],
+            area.score(now),
+            encode_cellarea(*area.areaid),
+            bool(area.last_seen >= today))],
             dtype=NETWORK_DTYPE))
 
     return clusters

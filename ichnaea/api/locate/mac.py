@@ -10,7 +10,10 @@ from scipy.optimize import leastsq
 from sqlalchemy.orm import load_only
 
 from ichnaea.geocalc import distance
-from ichnaea.models.mac import decode_mac
+from ichnaea.models.mac import (
+    decode_mac,
+    encode_mac,
+)
 from ichnaea import util
 
 NETWORK_DTYPE = numpy.dtype([
@@ -20,6 +23,8 @@ NETWORK_DTYPE = numpy.dtype([
     ('age', numpy.int32),
     ('signalStrength', numpy.int32),
     ('score', numpy.double),
+    ('mac', 'S6'),
+    ('seen_today', numpy.bool)
 ])
 
 
@@ -31,6 +36,7 @@ def cluster_networks(models, lookups,
     a list of clusters of nearby networks.
     """
     now = util.utcnow()
+    today = now.date()
 
     # Create a dict of macs mapped to their age and signal strength.
     obs_data = {}
@@ -44,7 +50,10 @@ def cluster_networks(models, lookups,
         model.radius or min_radius,
         obs_data[model.mac][0],
         obs_data[model.mac][1],
-        model.score(now)) for model in models],
+        model.score(now),
+        encode_mac(model.mac),
+        bool(model.last_seen >= today))
+        for model in models],
         dtype=NETWORK_DTYPE)
 
     # Only consider clusters that have at least 2 found networks
