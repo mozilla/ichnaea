@@ -1,0 +1,6 @@
+general:
+  branches:
+    ignore:
+      - 1.5.x
+      - gh-pages
+      - readthedocs
