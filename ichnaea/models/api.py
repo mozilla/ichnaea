@@ -1,6 +1,8 @@
 from random import randint
 
+from repoze import lru
 from sqlalchemy import (
+    bindparam,
     Boolean,
     Column,
     String,
@@ -12,6 +14,24 @@ from sqlalchemy.dialects.mysql import (
 from sqlalchemy.orm import load_only
 
 from ichnaea.models.base import _Model
+from ichnaea.db import BAKERY
+
+# Five minutes +/- 10% cache timeout.
+API_CACHE_TIMEOUT = 300 + randint(-30, 30)
+API_CACHE = lru.ExpiringLRUCache(100, default_timeout=API_CACHE_TIMEOUT)
+
+_GET_FIELDS = (
+    'valid_key', 'maxreq',
+    'allow_fallback', 'allow_locate', 'allow_transfer',
+    'fallback_name', 'fallback_url', 'fallback_ratelimit',
+    'fallback_ratelimit_interval', 'fallback_cache_expire',
+    'store_sample_submit', 'store_sample_locate',
+)
+_GET_QUERY = BAKERY(lambda session: session.query(ApiKey))
+_GET_QUERY += lambda q: q.filter(ApiKey.valid_key == bindparam('valid_key'))
+_GET_QUERY += lambda q: q.options(load_only(*_GET_FIELDS))
+
+_MARKER = object()
 
 
 class ApiKey(_Model):
@@ -58,19 +78,15 @@ class ApiKey(_Model):
     store_sample_locate = Column(TinyInteger)  #: Sample rate 0-100.
     store_sample_submit = Column(TinyInteger)  #: Sample rate 0-100.
 
-    _get_fields = (
-        'valid_key', 'maxreq',
-        'allow_fallback', 'allow_locate', 'allow_transfer',
-        'fallback_name', 'fallback_url', 'fallback_ratelimit',
-        'fallback_ratelimit_interval', 'fallback_cache_expire',
-        'store_sample_submit', 'store_sample_locate',
-    )
-
     @classmethod
     def get(cls, session, valid_key):
-        return (session.query(cls)
-                       .filter(cls.valid_key == valid_key)
-                       .options(load_only(*cls._get_fields))).first()
+        value = API_CACHE.get(valid_key, _MARKER)
+        if value is _MARKER:
+            value = _GET_QUERY(session).params(valid_key=valid_key).first()
+            if value is not None:
+                session.expunge(value)
+            API_CACHE.put(valid_key, value)
+        return value
 
     def allowed(self, api_type):
         """

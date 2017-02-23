@@ -26,6 +26,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add in-memory API key cache.
+
 - Add `/contribute.json` view.
 
 - Update to Celery 4.

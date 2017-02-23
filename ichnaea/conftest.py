@@ -42,6 +42,7 @@ from ichnaea.models import (
     _Model,
     ApiKey,
 )
+from ichnaea.models.api import API_CACHE
 from ichnaea.queue import DataQueue
 from ichnaea.webapp.config import (
     main,
@@ -210,6 +211,8 @@ def session(db):
     db.session_factory.configure(bind=None)
     trans.close()
     conn.close()
+
+    API_CACHE.clear()
 
 
 @pytest.fixture(scope='function')
