@@ -16,6 +16,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add in-memory API key cache.
 
 20161123180300
 **************

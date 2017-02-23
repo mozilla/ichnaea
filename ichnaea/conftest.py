@@ -41,6 +41,7 @@ from ichnaea.models import (
     _Model,
     ApiKey,
 )
+from ichnaea.models.api import API_CACHE
 from ichnaea.queue import DataQueue
 from ichnaea.tests import DATA_DIRECTORY
 from ichnaea.webapp.config import (
@@ -228,6 +229,8 @@ def rw_session(db_rw):
     rw_trans.close()
     rw_conn.close()
 
+    API_CACHE.clear()
+
 
 @pytest.yield_fixture(scope='function')
 def ro_session(db_ro):
@@ -243,6 +246,8 @@ def ro_session(db_ro):
     db_ro.session_factory.configure(bind=None)
     ro_trans.close()
     ro_conn.close()
+
+    API_CACHE.clear()
 
 
 @pytest.yield_fixture(scope='function')

@@ -1,5 +1,8 @@
 import uuid
 
+import pytest
+from sqlalchemy.orm.exc import DetachedInstanceError
+
 from ichnaea.models.api import ApiKey
 from ichnaea.tests.factories import ApiKeyFactory
 
@@ -31,21 +34,37 @@ class TestApiKey(object):
         assert result.fallback_ratelimit_interval == 60
         assert result.fallback_cache_expire == 86400
 
-    def test_get(self, session):
+    def test_get(self, rw_session, rw_session_tracker):
         key = uuid.uuid4().hex
-        session.add(ApiKey(valid_key=key, shortname='foo'))
-        session.flush()
+        rw_session.add(ApiKey(valid_key=key, shortname='foo'))
+        rw_session.flush()
+        rw_session_tracker(1)
 
-        result = ApiKey.get(session, key)
+        result = ApiKey.get(rw_session, key)
         assert isinstance(result, ApiKey)
+        rw_session_tracker(2)
+
         # shortname wasn't loaded at first
         assert 'shortname' not in result.__dict__
-        # but is eagerly loaded
-        assert result.shortname == 'foo'
 
-    def test_get_miss(self, session):
-        result = ApiKey.get(session, 'unknown')
+        with pytest.raises(DetachedInstanceError):
+            # and cannot be eagerly loaded
+            assert result.shortname == 'foo'
+
+        rw_session_tracker(2)
+
+        result2 = ApiKey.get(rw_session, key)
+        assert isinstance(result2, ApiKey)
+        rw_session_tracker(2)
+
+    def test_get_miss(self, rw_session, rw_session_tracker):
+        result = ApiKey.get(rw_session, 'unknown')
         assert result is None
+        rw_session_tracker(1)
+
+        result2 = ApiKey.get(rw_session, 'unknown')
+        assert result2 is None
+        rw_session_tracker(1)
 
     def test_allowed(self):
         api_key = ApiKeyFactory.build(allow_locate=True, allow_transfer=True)

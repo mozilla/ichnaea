@@ -8,12 +8,15 @@ from sqlalchemy import (
     exc,
     event,
 )
+from sqlalchemy.ext import baked
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 from sqlalchemy.pool import Pool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
+
+BAKERY = baked.bakery(size=500)
 
 
 @compiles(Insert, 'mysql')
@@ -24,6 +27,7 @@ def on_duplicate(insert, compiler, **kw):
     if my_var:
         stmt += ' ON DUPLICATE KEY UPDATE %s' % my_var
     return stmt
+
 
 Insert.argument_for('mysql', 'on_duplicate', None)
 
