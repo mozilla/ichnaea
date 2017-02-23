@@ -384,7 +384,7 @@ class CellShard(StationMixin):
 
     @property
     def areaid(self):
-        return encode_cellarea(self.radio, self.mcc, self.mnc, self.lac)
+        return encode_cellarea(*self.cellid[:4])
 
     @property
     def unique_key(self):

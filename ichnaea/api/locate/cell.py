@@ -190,8 +190,8 @@ def query_areas(query, lookups, model, raven_client):
 
     # load all fields used in score calculation and those we
     # need for the position or region
-    load_fields = ('lat', 'lon', 'radius', 'region',
-                   'created', 'modified', 'num_cells')
+    load_fields = ('lat', 'lon', 'radius', 'region', 'num_cells',
+                   'created', 'modified', 'last_seen')
     try:
         areas = (query.session.query(model)
                               .filter(model.areaid.in_(areaids),
