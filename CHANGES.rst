@@ -26,6 +26,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update region specific statistics once per day.
+
 - Add in-memory API key cache.
 
 - Add `/contribute.json` view.
