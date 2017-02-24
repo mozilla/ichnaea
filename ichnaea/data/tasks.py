@@ -45,7 +45,7 @@ def cell_export_diff(self, _bucket=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=39600, _schedule=crontab(hour=0, minute=13),
+                 expires=39600, _schedule=crontab(hour=0, minute=37),
                  _enabled=_cell_export_enabled)
 def cell_export_full(self, _bucket=None):
     ocid.CellExport(self)(hourly=False, _bucket=_bucket)
@@ -138,7 +138,7 @@ def update_datamap(self, shard_id=None):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=18000, _schedule=timedelta(seconds=21600),
+                 expires=18000, _schedule=crontab(hour=0, minute=7),
                  _enabled=_web_content_enabled)
 def update_statregion(self):
     stats.StatRegion(self)()

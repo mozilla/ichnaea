@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update region specific statistics once per day.
 
 20170223205700
 **************
