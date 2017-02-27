@@ -11,6 +11,8 @@ Untagged
 Compatibility
 ~~~~~~~~~~~~~
 
+- Test against MySQL 5.7 instead of 5.6.
+
 - No longer create `lbcheck` database user in `location_initdb` script.
 
 - Drop support for Python 2.6.

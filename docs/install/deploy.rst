@@ -31,19 +31,18 @@ for debug access and running database migrations.
 MySQL / Amazon RDS
 ==================
 
-The application is written and tested against MySQL 5.6.x or Amazon RDS of the
-same version. The default configuration works for the most part. There are
-just six changes you need to do. For example via the my.cnf:
+The application is written and tested against MySQL 5.7.x or Amazon RDS
+of the same versions. The default configuration works for the most part.
+There are just a couple of changes you need to do.
+
+For example via the my.cnf:
 
 .. code-block:: ini
 
     [mysqld]
     character-set-server = utf8
-    collation-server = utf8_unicode_ci
+    collation-server = utf8_general_ci
     init-connect='SET NAMES utf8'
-    innodb_file_format=Barracuda
-    innodb_strict_mode=on
-    sql-mode="NO_ENGINE_SUBSTITUTION,STRICT_TRANS_TABLES"
 
 The web frontend role only needs access to a read-only version of
 the database, for example a read-replica. The worker backend role
