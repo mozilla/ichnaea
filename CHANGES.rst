@@ -11,6 +11,8 @@ Untagged
 Migrations
 ~~~~~~~~~~
 
+- d2d9ecb12edc: Add modified index on `datamap_*` tables.
+
 Changes
 ~~~~~~~
 
