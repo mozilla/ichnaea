@@ -56,6 +56,7 @@ The application uses Redis as a queue for the asynchronous task workers and
 also uses it directly as a cache and to track API key rate limitations.
 
 You can install a standard Redis or use Amazon ElastiCache (Redis).
+The application is tested against Redis 3.2.
 
 
 Amazon S3
