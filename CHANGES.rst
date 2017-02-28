@@ -22,6 +22,8 @@ Compatibility
 Migrations
 ~~~~~~~~~~
 
+- d2d9ecb12edc: Add modified index on `datamap_*` tables.
+
 - cad2875fd8cb: Add `store_sample_*` columns to api_key table.
 
 - Removed old migrations. The database needs to be at least at version

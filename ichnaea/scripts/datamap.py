@@ -5,6 +5,7 @@ Script is installed as `location_map`.
 """
 
 import argparse
+from datetime import timedelta
 import hashlib
 import os
 import os.path
@@ -61,13 +62,17 @@ def recursive_scandir(top):  # pragma: no cover
 
 
 def export_file(filename, tablename, _db=None, _session=None):
+    today = util.utcnow().date()
+    one_year_ago = today - timedelta(days=365)
+    one_year_ago = one_year_ago.strftime('%Y-%m-%d')
     # this is executed in a worker process
     stmt = text('''\
 SELECT
 `grid`, CAST(ROUND(DATEDIFF(CURDATE(), `modified`) / 30) AS UNSIGNED) as `num`
 FROM {tablename}
+WHERE modified >= '{modified}'
 LIMIT :limit OFFSET :offset
-'''.format(tablename=tablename).replace('\n', ' '))
+'''.format(tablename=tablename, modified=one_year_ago).replace('\n', ' '))
     db = configure_db('ro', _db=_db)
 
     offset = 0

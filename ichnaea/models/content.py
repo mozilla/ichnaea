@@ -111,6 +111,7 @@ class DataMap(object):
         _indices = (
             PrimaryKeyConstraint('grid'),
             Index('%s_created_idx' % cls.__tablename__, 'created'),
+            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
         )
         return _indices + (cls._settings, )
 
