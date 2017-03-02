@@ -9,9 +9,13 @@ This needs to be specified on the command line via the `-c` argument:
         ichnaea.webapp.app:wsgi_app
 
 """
+import multiprocessing
 
 # Use our own Gevent worker
 worker_class = 'ichnaea.webapp.worker.LocationGeventWorker'
+
+# Create one worker process per CPU.
+workers = multiprocessing.cpu_count()
 
 # Maximum number of simultaneous greenlets,
 # limited by number of DB and Redis connections
@@ -42,3 +46,6 @@ def post_worker_init(worker):  # pragma: no cover
 def worker_exit(server, worker):  # pragma: no cover
     from ichnaea.webapp.app import worker_exit
     worker_exit(server, worker)
+
+
+del multiprocessing
