@@ -11,6 +11,8 @@ Untagged
 Compatibility
 ~~~~~~~~~~~~~
 
+- Moved initial database schema creation into an alembic migration.
+
 - Test against Redis 3.2 instead of 2.8.
 
 - Test against MySQL 5.7 instead of 5.6.

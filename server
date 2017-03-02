@@ -3,6 +3,12 @@ set -e
 
 HERE="$(pwd)"
 
+if [ "$PULL" == "0" ]; then
+  PULL_ARG=''
+else
+  PULL_ARG='--pull'
+fi
+
 # First, let's make sure that Docker Compose has been installed.
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo "Please install Docker Compose and try again."
@@ -96,11 +102,11 @@ case "$1" in
 
       # Builds and starts the services supporting the application container.
       services)
-        cd docker/mysql; docker build --pull -t mozilla/ichnaea_mysql:latest .
+        cd docker/mysql; docker build $PULL_ARG -t mozilla/ichnaea_mysql:latest .
         cd $HERE
-        cd docker/redis; docker build --pull -t mozilla/ichnaea_redis:latest .
+        cd docker/redis; docker build $PULL_ARG -t mozilla/ichnaea_redis:latest .
         cd $HERE
-        docker-compose build --pull
+        docker-compose build $PULL_ARG
         docker-compose up -d
         ;;
 
@@ -166,7 +172,7 @@ case "$1" in
   # Runs command inside the container.
   run)
     $0 start services
-    docker build --pull -t mozilla/ichnaea .
+    docker build $PULL_ARG -t mozilla/ichnaea .
     docker run -it --rm \
         -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
         -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
@@ -182,7 +188,7 @@ case "$1" in
 
   # Runs bower using a special node container.
   bower_list)
-    cd docker/node; docker build --pull -t mozilla/ichnaea_node .
+    cd docker/node; docker build $PULL_ARG -t mozilla/ichnaea_node .
     cd $HERE
     docker run -it --rm \
         --volume `pwd`:/app mozilla/ichnaea_node \
@@ -191,7 +197,7 @@ case "$1" in
 
   # Updates CSS resources using a special node container.
   css)
-    cd docker/node; docker build --pull -t mozilla/ichnaea_node .
+    cd docker/node; docker build $PULL_ARG -t mozilla/ichnaea_node .
     cd $HERE
     docker run -it --rm \
         --volume `pwd`:/app mozilla/ichnaea_node \
@@ -205,7 +211,7 @@ case "$1" in
 
   # Updates JS resources using a special node container.
   js)
-    cd docker/node; docker build --pull -t mozilla/ichnaea_node .
+    cd docker/node; docker build $PULL_ARG -t mozilla/ichnaea_node .
     cd $HERE
     docker run -it --rm \
         --volume `pwd`:/app mozilla/ichnaea_node \

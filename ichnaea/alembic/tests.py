@@ -1,5 +1,3 @@
-import os.path
-
 from alembic import command as alembic_command
 from alembic.autogenerate import compare_metadata
 from alembic.ddl.impl import _type_comparators
@@ -17,8 +15,6 @@ from ichnaea.conftest import (
 # make sure all models are imported
 from ichnaea.models import _Model  # NOQA
 
-HERE = os.path.dirname(__file__)
-
 _compare_attrs = {
     sqltypes._Binary: ('length', ),
     sqltypes.Date: (),
@@ -26,8 +22,6 @@ _compare_attrs = {
     sqltypes.Integer: ('display_width', 'unsigned', 'zerofill'),
     sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
 }
-
-SQL_BASE = os.path.join(HERE, 'base.sql')
 
 
 def db_compare_type(context, inspected_column,
@@ -56,6 +50,19 @@ def db_compare_type(context, inspected_column,
     raise AssertionError('Unsupported DB type comparison.')  # pragma: no cover
 
 
+def compare_schema(engine, metadata):
+    # compare the db schema from a migrated database to
+    # one created fresh from the model definitions
+    opts = {
+        'compare_type': db_compare_type,
+        'compare_server_default': True,
+    }
+    with engine.connect() as conn:
+        context = MigrationContext.configure(connection=conn, opts=opts)
+        diff = compare_metadata(context, metadata)
+    return diff
+
+
 class TestMigration(object):
 
     @pytest.fixture(scope='function')
@@ -76,25 +83,23 @@ class TestMigration(object):
         # $$ mysqldump -ulocation -plocation -d --compact location
         db = clean_db
 
-        # capture state of fresh database
-        metadata = MetaData()
-        metadata.reflect(bind=db.engine)
+        # capture state of a fresh database
+        fresh_metadata = MetaData()
+        fresh_metadata.reflect(bind=db.engine)
 
         # drop all tables
         cleanup_tables(db.engine)
 
-        # setup old database schema
-        with open(SQL_BASE) as fd:
-            sql_text = fd.read()
-        with db.engine.connect() as conn:
-            conn.execute(sql_text)
-
-        # we have no alembic base revision
-        assert self.current_db_revision(db) is None
+        # capture state of an empty database
+        empty_metadata = MetaData()
+        empty_metadata.reflect(bind=db.engine)
 
         # run the migration
         with db.engine.connect() as conn:
+            trans = conn.begin()
+            alembic_command.stamp(ALEMBIC_CFG, 'base')
             alembic_command.upgrade(ALEMBIC_CFG, 'head')
+            trans.commit()
 
         # afterwards the DB is stamped
         db_revision = self.current_db_revision(db)
@@ -107,12 +112,14 @@ class TestMigration(object):
 
         # compare the db schema from a migrated database to
         # one created fresh from the model definitions
-        opts = {
-            'compare_type': db_compare_type,
-            'compare_server_default': True,
-        }
-        with db.engine.connect() as conn:
-            context = MigrationContext.configure(connection=conn, opts=opts)
-            metadata_diff = compare_metadata(context, metadata)
+        assert compare_schema(db.engine, fresh_metadata) == []
 
-        assert metadata_diff == []
+        # downgrade back to the beginning
+        with db.engine.connect() as conn:
+            trans = conn.begin()
+            alembic_command.downgrade(ALEMBIC_CFG, 'base')
+            trans.commit()
+
+        # compare the db schema from a downgraded database to
+        # an empty one
+        assert compare_schema(db.engine, empty_metadata) == []
