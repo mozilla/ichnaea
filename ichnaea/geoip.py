@@ -226,7 +226,8 @@ class GeoIPWrapper(Reader):
     def __init__(self, filename, mode=MODE_AUTO):
         super(GeoIPWrapper, self).__init__(filename, mode=mode)
 
-        if self.metadata().database_type != 'GeoIP2-City':
+        database_type = self.metadata().database_type
+        if database_type not in ('GeoIP2-City', 'GeoLite2-City'):
             message = 'Invalid database type, expected City'
             raise InvalidDatabaseError(message)
 

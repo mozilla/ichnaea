@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Relax GeoIP database check to allow `GeoLite2-City` databases.
+
 - Update region specific statistics once per day.
 
 20170223205700
