@@ -36,7 +36,8 @@ def add_api_key(conn):  # pragma: no cover
     stmt = text('select valid_key from api_key')
     result = conn.execute(stmt).fetchall()
     if not ('test', ) in result:
-        stmt = text('INSERT INTO api_key (valid_key) VALUES ("test")')
+        stmt = text('INSERT INTO api_key (valid_key, allow_locate) '
+                    'VALUES ("test", 1)')
         conn.execute(stmt)
 
 
