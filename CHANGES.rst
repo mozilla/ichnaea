@@ -32,6 +32,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Relax GeoIP database check to allow `GeoLite2-City` databases.
+
 - Update region specific statistics once per day.
 
 - Add in-memory API key cache.
