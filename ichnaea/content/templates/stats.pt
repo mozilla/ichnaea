@@ -63,8 +63,8 @@
     <h3>Cell networks</h3>
 
     <p>
-        Shows data for both Mozilla Location Service (MLS) and
-        OpenCellID (OCID) unique logical cell networks.
+        Shows data for both Mozilla Location Service (MLS)
+        unique logical cell networks.
     </p>
 
     <div id="cell_chart" class="chart_container">

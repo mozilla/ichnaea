@@ -34,6 +34,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove continous cell import functionality.
+
 - Relax GeoIP database check to allow `GeoLite2-City` databases.
 
 - Update region specific statistics once per day.

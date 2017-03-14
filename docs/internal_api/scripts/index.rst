@@ -8,5 +8,4 @@
 
    datamap
    initdb
-   load
    region_json

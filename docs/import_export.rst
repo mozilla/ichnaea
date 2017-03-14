@@ -1,12 +1,11 @@
 .. _import_export:
 
-====================
-Data Import / Export
-====================
+===========
+Data Export
+===========
 
 Ichnaea supports automatic, periodic CSV (comma separated values) export
-of aggregate cell data (position estimates) and periodic import of
-the same type of data from the :term:`OpenCellID` project.
+of aggregate cell data (position estimates).
 
 The data exchange format was created in collaboration with the
 :term:`OpenCellID` project.
@@ -112,23 +111,3 @@ Cell Fields
     This field is only used by the :term:`OpenCellID` project and has
     been used historically as a hint towards the quality of the
     position estimate.
-
-
-Import
-------
-
-If you run your own version of the ichnaea software, you can either
-regularly import the OCID data or manually import the cell data from
-another source into your own database.
-
-For the automatic import, see :ref:`the configuration document <config>`,
-specifically the `[import:ocid]` section.
-
-For manually importing a cell export into your own database, a
-`location_load` command line tool is provided. Run it via:
-
-.. code-block:: bash
-
-    location_load --help
-
-to see the available options.

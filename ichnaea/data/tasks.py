@@ -26,10 +26,6 @@ def _cell_export_enabled(app_config):
             bool(app_config.get('assets', 'bucket', False)))
 
 
-def _ocid_import_enabled(app_config):
-    return 'import:ocid' in app_config.sections()
-
-
 def _web_content_enabled(app_config):
     if ('web' in app_config.sections() and
             app_config.get('web', 'enabled', True) in ('false', '0')):
@@ -37,25 +33,18 @@ def _web_content_enabled(app_config):
     return True
 
 
-@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
+@celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  expires=2700, _schedule=crontab(minute=3),
                  _enabled=_cell_export_enabled)
 def cell_export_diff(self, _bucket=None):
     ocid.CellExport(self)(hourly=True, _bucket=_bucket)
 
 
-@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
+@celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  expires=39600, _schedule=crontab(hour=0, minute=37),
                  _enabled=_cell_export_enabled)
 def cell_export_full(self, _bucket=None):
     ocid.CellExport(self)(hourly=False, _bucket=_bucket)
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 expires=2700, _schedule=crontab(minute=52),
-                 _enabled=_ocid_import_enabled)
-def cell_import_external(self):
-    ocid.ImportExternal(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
@@ -68,13 +57,6 @@ def monitor_api_key_limits(self):
                  expires=570, _schedule=timedelta(seconds=600))
 def monitor_api_users(self):
     monitor.ApiUsers(self)()
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=570, _schedule=timedelta(seconds=600),
-                 _enabled=_ocid_import_enabled)
-def monitor_ocid_import(self):
-    monitor.OcidImport(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
@@ -120,13 +102,6 @@ def update_wifi(self, shard_id=None):
                  _countdown=5, expires=30, _schedule=timedelta(seconds=44))
 def update_cellarea(self):
     area.CellAreaUpdater(self)()
-
-
-@celery_app.task(base=BaseTask, bind=True, queue='celery_ocid',
-                 _countdown=5, expires=30, _schedule=timedelta(seconds=45),
-                 _enabled=_ocid_import_enabled)
-def update_cellarea_ocid(self):
-    area.CellAreaOCIDUpdater(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',

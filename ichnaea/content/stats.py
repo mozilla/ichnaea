@@ -41,7 +41,6 @@ def global_stats(session):
         StatKey.wifi,
         StatKey.unique_blue,
         StatKey.unique_cell,
-        StatKey.unique_cell_ocid,
         StatKey.unique_wifi,
     )
     rows = (session.query(Stat.key, Stat.value)

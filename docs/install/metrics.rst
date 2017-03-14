@@ -365,7 +365,6 @@ Internal Monitoring
 ``queue#queue:celery_export``,
 ``queue#queue:celery_incoming``,
 ``queue#queue:celery_monitor``,
-``queue#queue:celery_ocid``,
 ``queue#queue:celery_reports``,
 ``queue#queue:celery_wifi`` : gauges
 
@@ -386,13 +385,6 @@ Internal Monitoring
 ``queue#queue:update_wifi_f`` : gauges
 
     These gauges measure the number of items in the Redis update queues.
-
-``table#table:cell_ocid_age`` : gauge
-
-    This gauge measures when the last entry was added to the :term:`OCID`
-    table. It represents this as `now() - max(created)` and converts it
-    to a millisecond value. This metric is useful to see if the
-    ocid_import jobs are run on a regular basis.
 
 
 HTTP Counters

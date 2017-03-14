@@ -103,7 +103,6 @@ class TestContentViews(object):
             Stat(key=StatKey.wifi, time=today, value=2000000),
             Stat(key=StatKey.unique_blue, time=today, value=1500000),
             Stat(key=StatKey.unique_cell, time=today, value=1000000),
-            Stat(key=StatKey.unique_cell_ocid, time=today, value=1500000),
             Stat(key=StatKey.unique_wifi, time=today, value=2000000),
         ]
         session.add_all(stats)
@@ -123,7 +122,6 @@ class TestContentViews(object):
         assert (result['metrics2'] == [
             {'name': 'MLS Cells', 'value': '1.00'},
             {'name': 'MLS Cell Observations', 'value': '2.00'},
-            {'name': 'OpenCellID Cells', 'value': '1.50'},
         ])
 
         second_result = views.stats_view()
@@ -150,7 +148,7 @@ class TestFunctionalContent(object):
         app.get('/stats/regions', status=200)
         session_tracker(1)
         app.get('/stats', status=200)
-        session_tracker(9)
+        session_tracker(8)
         stats.check(counter=[
             ('request', ['path:', 'method:get', 'status:200']),
             ('request', ['path:map', 'method:get', 'status:200']),
@@ -240,18 +238,12 @@ class TestFunctionalContent(object):
     def test_stats_cell_json(self, app, session):
         today = util.utcnow().date()
         first_of_month = timegm(today.replace(day=1).timetuple()) * 1000
-        session.add(
-            Stat(key=StatKey.unique_cell, time=today, value=2))
-        session.add(
-            Stat(key=StatKey.unique_cell_ocid, time=today, value=5))
+        session.add(Stat(key=StatKey.unique_cell, time=today, value=2))
         session.commit()
         result = app.get('/stats_cell.json', status=200)
         assert (result.json == {
             'series': [
-                {'data': [[first_of_month, 2]],
-                 'title': 'MLS Cells'},
-                {'data': [[first_of_month, 5]],
-                 'title': 'OCID Cells'},
+                {'data': [[first_of_month, 2]], 'title': 'MLS Cells'},
             ]}
         )
         second_result = app.get('/stats_cell.json', status=200)
