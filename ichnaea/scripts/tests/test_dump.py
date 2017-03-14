@@ -5,7 +5,6 @@ from ichnaea.scripts import dump
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
-    CellShardOCIDFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -74,11 +73,6 @@ class TestDump(object):
         cells.append(CellShardFactory(lat=46.5743, lon=6.3532, region='FR'))
         session.flush()
         self._export(session, 'cell', self._cell_keys(cells))
-
-    def test_cell_ocid(self, session):
-        cells = CellShardOCIDFactory.create_batch(3)
-        session.flush()
-        self._export(session, 'ocid', self._cell_keys(cells))
 
     def test_wifi(self, session):
         wifis = WifiShardFactory.create_batch(5)

@@ -32,7 +32,6 @@ class TestStats(object):
             Stat(key=StatKey.wifi, time=day, value=3212000),
             Stat(key=StatKey.unique_blue, time=day, value=1100000),
             Stat(key=StatKey.unique_cell, time=day, value=3289900),
-            Stat(key=StatKey.unique_cell_ocid, time=day, value=1523000),
             Stat(key=StatKey.unique_wifi, time=day, value=2009000),
         ]
         ro_session.add_all(stats)
@@ -43,7 +42,6 @@ class TestStats(object):
             'blue': '2.20', 'unique_blue': '1.10',
             'cell': '6.10', 'unique_cell': '3.28',
             'wifi': '3.21', 'unique_wifi': '2.00',
-            'unique_cell_ocid': '1.52',
         })
 
     def test_global_stats_missing_today(self, ro_session):
@@ -63,7 +61,6 @@ class TestStats(object):
             'blue': '0.00', 'unique_blue': '0.00',
             'cell': '6.00', 'unique_cell': '4.00',
             'wifi': '3.00', 'unique_wifi': '0.00',
-            'unique_cell_ocid': '0.00',
         })
 
     def test_histogram(self, ro_session):

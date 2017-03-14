@@ -43,8 +43,6 @@ class TestBeat(object):
 
         for name in ('data.cell_export_full', 'data.cell_export_diff'):
             assert name in registered_tasks
-        for name in ('data.cell_import_external', 'data.monitor_ocid_import'):
-            assert name in registered_tasks
         for i in range(16):
             assert 'data.update_blue_%x' % i in registered_tasks
         for name in ('gsm', 'wcdma', 'lte'):

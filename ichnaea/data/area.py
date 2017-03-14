@@ -10,9 +10,7 @@ from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellarea,
     CellArea,
-    CellAreaOCID,
     CellShard,
-    CellShardOCID,
 )
 from ichnaea import util
 
@@ -155,10 +153,3 @@ class CellAreaUpdater(object):
                 area.avg_cell_radius = avg_cell_radius
                 area.num_cells = num_cells
                 area.last_seen = last_seen
-
-
-class CellAreaOCIDUpdater(CellAreaUpdater):
-
-    area_model = CellAreaOCID
-    cell_model = CellShardOCID
-    queue_name = 'update_cellarea_ocid'

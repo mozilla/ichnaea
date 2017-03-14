@@ -2,29 +2,28 @@ from datetime import timedelta
 
 from ichnaea.data.tasks import (
     update_cellarea,
-    update_cellarea_ocid,
 )
 from ichnaea.models import (
     encode_cellarea,
     CellArea,
-    CellAreaOCID,
     Radio,
 )
 from ichnaea.tests.factories import (
     CellAreaFactory,
-    CellAreaOCIDFactory,
     CellShardFactory,
-    CellShardOCIDFactory,
 )
 from ichnaea import util
 
 
-class BaseTest(object):
+class TestArea(object):
 
-    area_model = None
-    area_factory = None
-    cell_factory = None
-    task = None
+    area_model = CellArea
+    area_factory = CellAreaFactory
+    cell_factory = CellShardFactory
+    task = update_cellarea
+
+    def area_queue(self, celery):
+        return celery.data_queues['update_cellarea']
 
     def test_empty(self, celery, session):
         self.task.delay().get()
@@ -149,25 +148,3 @@ class BaseTest(object):
 
         area = session.query(self.area_model).one()
         assert area.region == 'PR'
-
-
-class TestArea(BaseTest):
-
-    area_model = CellArea
-    area_factory = CellAreaFactory
-    cell_factory = CellShardFactory
-    task = update_cellarea
-
-    def area_queue(self, celery):
-        return celery.data_queues['update_cellarea']
-
-
-class TestAreaOCID(BaseTest):
-
-    area_model = CellAreaOCID
-    area_factory = CellAreaOCIDFactory
-    cell_factory = CellShardOCIDFactory
-    task = update_cellarea_ocid
-
-    def area_queue(self, celery):
-        return celery.data_queues['update_cellarea_ocid']

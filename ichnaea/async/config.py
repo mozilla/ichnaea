@@ -32,7 +32,6 @@ CELERY_QUEUES = (
     Queue('celery_export', routing_key='celery_export'),
     Queue('celery_incoming', routing_key='celery_incoming'),
     Queue('celery_monitor', routing_key='celery_monitor'),
-    Queue('celery_ocid', routing_key='celery_ocid'),
     Queue('celery_reports', routing_key='celery_reports'),
     Queue('celery_wifi', routing_key='celery_wifi'),
 )  #: List of :class:`kombu.Queue` instances.
@@ -90,7 +89,7 @@ def configure_data(redis_client):
         'transfer_incoming': DataQueue('transfer_incoming', redis_client,
                                        batch=100, compress=True),
     }
-    for key in ('update_cellarea', 'update_cellarea_ocid'):
+    for key in ('update_cellarea', ):
         data_queues[key] = DataQueue(key, redis_client, batch=100, json=False)
     for shard_id in BlueShard.shards().keys():
         key = 'update_blue_' + shard_id

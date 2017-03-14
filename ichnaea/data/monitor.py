@@ -1,9 +1,6 @@
 from collections import defaultdict
 from datetime import timedelta
 
-from sqlalchemy import func
-
-from ichnaea.models import CellShardOCID
 from ichnaea import util
 
 
@@ -59,33 +56,6 @@ class ApiUsers(object):
             self.task.stats_client.gauge(
                 '%s.user' % api_type, value,
                 tags=['key:%s' % api_name, 'interval:%s' % interval])
-
-
-class OcidImport(object):
-
-    def __init__(self, task):
-        self.task = task
-
-    def __call__(self):
-        max_created = None
-        age = -1
-
-        with self.task.db_session(commit=False) as session:
-            for model in CellShardOCID.shards().values():
-                max_ = session.query(func.max(model.created)).first()[0]
-                if max_ is not None:
-                    if max_created is None:
-                        max_created = max_
-                    else:
-                        max_created = max(max_, max_created)
-
-        if max_created:
-            # diff between now and the value, in milliseconds
-            diff = util.utcnow() - max_created
-            age = (diff.days * 86400 + diff.seconds) * 1000
-
-        self.task.stats_client.gauge(
-            'table', age, tags=['table:cell_ocid_age'])
 
 
 class QueueSize(object):

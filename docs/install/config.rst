@@ -94,27 +94,6 @@ section of the website.
     url = https://some_distribution_id.cloudfront.net
 
 
-Import
-~~~~~~
-
-The project supports importing cell data on a regular basis from the
-:term:`OpenCellID` (OCID) project, using the
-:ref:`cell import/export <import_export>` data format.
-
-.. code-block:: ini
-
-    [import:ocid]
-    url = https://localhost:7001/downloads/
-    apikey = some_key
-
-The section name must be the exact string ``import:ocid``. Both a ``url``
-and an ``apikey`` need to be configured for accessing an HTML overview
-page listing the available download files using a specific file name pattern
-for daily full and hourly differential files.
-
-For the :term:`OpenCellID` service, the URL must end with a slash.
-
-
 Sentry
 ~~~~~~
 

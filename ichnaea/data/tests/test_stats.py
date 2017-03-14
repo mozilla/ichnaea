@@ -98,7 +98,6 @@ class TestStatCounter(object):
         self.add_counter(redis, StatKey.unique_blue, self.today, 4)
         self.add_counter(redis, StatKey.unique_cell, self.today, 5)
         self.add_counter(redis, StatKey.unique_wifi, self.today, 6)
-        self.add_counter(redis, StatKey.unique_cell_ocid, self.today, 7)
         session.add(Stat(key=StatKey.blue, time=self.yesterday, value=8))
         session.add(Stat(key=StatKey.cell, time=self.yesterday, value=9))
         session.add(Stat(key=StatKey.wifi, time=self.yesterday, value=10))
@@ -111,7 +110,6 @@ class TestStatCounter(object):
         self.check_stat(session, StatKey.unique_blue, self.today, 4)
         self.check_stat(session, StatKey.unique_cell, self.today, 5)
         self.check_stat(session, StatKey.unique_wifi, self.today, 6)
-        self.check_stat(session, StatKey.unique_cell_ocid, self.today, 7)
 
 
 class TestStatRegion(object):

@@ -244,14 +244,9 @@ class ContentViews(object):
     def stats_cell_json(self):
         data = self._get_cache('stats_cell_json')
         if data is None:
-            mls_data = histogram(self.session, StatKey.unique_cell)
-            ocid_data = histogram(self.session, StatKey.unique_cell_ocid)
-            data = [
-                {'title': 'MLS Cells', 'data': mls_data[0]},
-                {'title': 'OCID Cells', 'data': ocid_data[0]},
-            ]
+            data = histogram(self.session, StatKey.unique_cell)
             self._set_cache('stats_cell_json', data)
-        return {'series': data}
+        return {'series': [{'title': 'MLS Cells', 'data': data[0]}]}
 
     @view_config(renderer='json', name='stats_wifi.json', http_cache=3600)
     def stats_wifi_json(self):
@@ -274,7 +269,6 @@ class ContentViews(object):
                 ('1', StatKey.wifi.name, 'Wifi Observations'),
                 ('2', StatKey.unique_cell.name, 'MLS Cells'),
                 ('2', StatKey.cell.name, 'MLS Cell Observations'),
-                ('2', StatKey.unique_cell_ocid.name, 'OpenCellID Cells'),
             ]
             metrics = global_stats(self.session)
             for i, mid, name in metric_names:

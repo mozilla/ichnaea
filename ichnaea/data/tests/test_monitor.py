@@ -4,11 +4,8 @@ from random import randint
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
-    monitor_ocid_import,
     monitor_queue_size,
 )
-from ichnaea.models import Radio
-from ichnaea.tests.factories import CellShardOCIDFactory
 from ichnaea import util
 
 
@@ -55,18 +52,6 @@ class TestMonitor(object):
             ('api.limit', ['key:no_key_1', 'path:v1.search']),
             ('api.limit', ['key:no_key_2', 'path:v1.geolocate']),
         ])
-
-    def test_monitor_ocid_import(self, celery, session, stats):
-        now = util.utcnow()
-        for radio, i in [(Radio.gsm, 21),
-                         (Radio.wcdma, 16),
-                         (Radio.gsm, 20),
-                         (Radio.lte, 1)]:
-            CellShardOCIDFactory(radio=radio, created=now - timedelta(hours=i))
-            session.flush()
-            monitor_ocid_import.delay().get()
-
-        stats.check(gauge=[('table', 4, ['table:cell_ocid_age'])])
 
     def test_monitor_queue_size(self, celery, redis, stats):
         data = {

@@ -24,7 +24,6 @@ from ichnaea.log import (
 from ichnaea.models import (
     BlueShard,
     CellShard,
-    CellShardOCID,
     WifiShard,
 )
 from ichnaea import util
@@ -70,7 +69,6 @@ def dump_file(datatype, session, filename,
     MODEL = {
         'blue': BlueShard,
         'cell': CellShard,
-        'ocid': CellShardOCID,
         'wifi': WifiShard,
     }
     where = where_area(lat, lon, radius)
@@ -83,7 +81,7 @@ def main(argv, _db_rw=None, _dump_file=dump_file):
     parser = argparse.ArgumentParser(
         prog=argv[0], description='Dump/export data.')
     parser.add_argument('--datatype', required=True,
-                        help='Type of the data file, blue, cell, ocid or wifi')
+                        help='Type of the data file, blue, cell or wifi')
     parser.add_argument('--filename', required=True,
                         help='Path to the csv.gz export file.')
     parser.add_argument('--lat', default=None,
@@ -104,7 +102,7 @@ def main(argv, _db_rw=None, _dump_file=dump_file):
         return 1
 
     datatype = args.datatype
-    if datatype not in ('blue', 'cell', 'ocid', 'wifi'):  # pragma: no cover
+    if datatype not in ('blue', 'cell', 'wifi'):  # pragma: no cover
         print('Unknown data type.')
         return 1
 
