@@ -43,7 +43,7 @@ class StatKey(IntEnum):
     unique_wifi = 4
     # deleted_cell = 5
     # deleted_wifi = 6
-    unique_cell_ocid = 7
+    # unique_cell_ocid = 7
     blue = 8
     unique_blue = 9
 
@@ -165,6 +165,7 @@ class DataMapNE(DataMap, _Model):
 
     __tablename__ = 'datamap_ne'
 
+
 DATAMAP_SHARDS['ne'] = DataMapNE
 
 
@@ -172,6 +173,7 @@ class DataMapNW(DataMap, _Model):
     """DataMap north-west shard."""
 
     __tablename__ = 'datamap_nw'
+
 
 DATAMAP_SHARDS['nw'] = DataMapNW
 
@@ -181,6 +183,7 @@ class DataMapSE(DataMap, _Model):
 
     __tablename__ = 'datamap_se'
 
+
 DATAMAP_SHARDS['se'] = DataMapSE
 
 
@@ -188,6 +191,7 @@ class DataMapSW(DataMap, _Model):
     """DataMap south-west shard."""
 
     __tablename__ = 'datamap_sw'
+
 
 DATAMAP_SHARDS['sw'] = DataMapSW
 

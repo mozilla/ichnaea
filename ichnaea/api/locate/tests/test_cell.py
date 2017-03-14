@@ -1,6 +1,5 @@
 from ichnaea.api.locate.cell import (
     CellPositionSource,
-    OCIDPositionSource,
 )
 from ichnaea.api.locate.constants import (
     CELL_MAX_ACCURACY,
@@ -9,9 +8,7 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellAreaFactory,
-    CellAreaOCIDFactory,
     CellShardFactory,
-    CellShardOCIDFactory,
 )
 from ichnaea import util
 
@@ -121,45 +118,3 @@ class TestCellPosition(BaseSourceTest):
         results = source.search(query)
         self.check_model_results(
             results, [areas[0]], accuracy=CELLAREA_MIN_ACCURACY)
-
-
-class TestOCIDPositionSource(BaseSourceTest):
-
-    Source = OCIDPositionSource
-
-    def test_check_empty(self, geoip_db, http_session,
-                         session, source, stats):
-        query = self.model_query(
-            geoip_db, http_session, session, stats)
-        results = source.result_list()
-        assert not source.should_search(query, results)
-
-    def test_empty(self, geoip_db, http_session,
-                   rw_session_tracker, session, source, stats):
-        query = self.model_query(
-            geoip_db, http_session, session, stats)
-        results = source.search(query)
-        self.check_model_results(results, None)
-        rw_session_tracker(0)
-
-    def test_cell(self, geoip_db, http_session, session, source, stats):
-        now = util.utcnow()
-        cell = CellShardOCIDFactory(samples=10)
-        session.flush()
-        query = self.model_query(
-            geoip_db, http_session, session, stats,
-            cells=[cell])
-        results = source.search(query)
-        self.check_model_results(results, [cell])
-        assert results.best().score == cell.score(now)
-
-    def test_cell_area(self, geoip_db, http_session, session, source, stats):
-        now = util.utcnow()
-        area = CellAreaOCIDFactory(num_cells=8)
-        session.flush()
-        query = self.model_query(
-            geoip_db, http_session, session, stats,
-            cells=[area])
-        results = source.search(query)
-        self.check_model_results(results, [area])
-        assert results.best().score == area.score(now)

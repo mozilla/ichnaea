@@ -65,9 +65,8 @@ class DataSource(Enum):
     """
 
     internal = 1  #: Internal crowd-sourced data.
-    ocid = 2  #: Data from :term:`OCID` project.
-    fallback = 3  #: Data from external fallback web service.
-    geoip = 4  #: GeoIP database.
+    fallback = 2  #: Data from external fallback web service.
+    geoip = 3  #: GeoIP database.
 
 
 class DataAccuracy(Enum):

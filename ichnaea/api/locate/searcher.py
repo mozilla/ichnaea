@@ -3,7 +3,6 @@ Abstract searcher and concrete position and region searchers each using
 multiple sources to satisfy a given query.
 """
 
-from ichnaea.api.locate.cell import OCIDPositionSource
 from ichnaea.api.locate.fallback import FallbackPositionSource
 from ichnaea.api.locate.geoip import (
     GeoIPPositionSource,
@@ -131,7 +130,6 @@ class PositionSearcher(Searcher):
     result_type = Position  #:
     source_classes = (
         ('internal', InternalPositionSource),
-        ('ocid', OCIDPositionSource),
         ('geoip', GeoIPPositionSource),
         ('fallback', FallbackPositionSource),
     )  #:

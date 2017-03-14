@@ -612,10 +612,10 @@ class TestSourceStats(QueryTest):
         results = self._make_results(accuracy=10000.0)
         self._make_query(
             geoip_db, stats,
-            DataSource.ocid, results, wifi=wifis)
+            DataSource.geoip, results, wifi=wifis)
         stats.check(counter=[
             ('locate.source',
-                ['key:test', 'region:none', 'source:ocid',
+                ['key:test', 'region:none', 'source:geoip',
                  'accuracy:high', 'status:miss']),
         ])
 

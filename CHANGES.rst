@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- No longer use secondary cell tables during lookups.
+
 - Remove continous cell import functionality.
 
 - Relax GeoIP database check to allow `GeoLite2-City` databases.
