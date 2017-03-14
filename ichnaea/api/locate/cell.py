@@ -28,9 +28,7 @@ from ichnaea.models import (
     encode_cellarea,
     encode_cellid,
     CellArea,
-    CellAreaOCID,
     CellShard,
-    CellShardOCID,
 )
 from ichnaea.models.constants import MIN_CELL_SIGNAL
 from ichnaea import util
@@ -327,8 +325,7 @@ class CellPositionSource(CellPositionMixin, PositionSource):
     """
     Implements a search using our cell data.
 
-    This source is only used in tests and as a base for the
-    OCIDPositionSource.
+    This source is only used in tests.
     """
 
     fallback_field = None  #:
@@ -341,12 +338,3 @@ class CellPositionSource(CellPositionMixin, PositionSource):
         results = self.search_cell(query)
         query.emit_source_stats(self.source, results)
         return results
-
-
-class OCIDPositionSource(CellPositionSource):
-    """Implements a search using the :term:`OCID` cell data."""
-
-    cell_model = CellShardOCID
-    area_model = CellAreaOCID
-    fallback_field = None  #:
-    source = DataSource.ocid  #:

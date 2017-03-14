@@ -30,9 +30,7 @@ from ichnaea.models import (
     ApiKey,
     BlueShard,
     CellArea,
-    CellAreaOCID,
     CellShard,
-    CellShardOCID,
     WifiShard,
     Radio,
 )
@@ -41,7 +39,6 @@ from ichnaea.tests.factories import (
     BlueShardFactory,
     CellAreaFactory,
     CellShardFactory,
-    CellShardOCIDFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -65,10 +62,10 @@ def bound_model_accuracy(model, accuracy):
     if isinstance(model, BlueShard):
         accuracy = min(max(accuracy, BLUE_MIN_ACCURACY),
                        BLUE_MAX_ACCURACY)
-    elif isinstance(model, (CellShard, CellShardOCID)):
+    elif isinstance(model, CellShard):
         accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
                        CELL_MAX_ACCURACY)
-    elif isinstance(model, (CellArea, CellAreaOCID)):
+    elif isinstance(model, CellArea):
         accuracy = min(max(accuracy, CELLAREA_MIN_ACCURACY),
                        CELLAREA_MAX_ACCURACY)
     elif isinstance(model, WifiShard):
@@ -734,18 +731,15 @@ class CommonLocateErrorTest(BaseLocateTest):
 
     def test_database_error(self, app, data_queues, db_drop_table,
                             raven, session, stats,
-                            db_errors=5, fallback='ipf'):
+                            db_errors=3, fallback='ipf'):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
-            CellShardOCIDFactory.build(radio=Radio.gsm),
             CellShardFactory.build(radio=Radio.wcdma),
-            CellShardOCIDFactory.build(radio=Radio.wcdma),
             CellShardFactory.build(radio=Radio.lte),
-            CellShardOCIDFactory.build(radio=Radio.lte),
         ]
         wifis = WifiShardFactory.build_batch(2)
 
-        for model in (CellArea, CellAreaOCID):
+        for model in (CellArea, ):
             session.execute(text('drop table %s;' % model.__tablename__))
         for name in set([cell.__tablename__ for cell in cells]):
             session.execute(text('drop table %s;' % name))

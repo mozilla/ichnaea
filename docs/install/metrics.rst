@@ -170,9 +170,6 @@ Data sources can be one of:
 ``internal``
     Data from our own crowd-sourcing effort.
 
-``ocid``
-    Data from our :term:`OpenCellID` partner.
-
 ``fallback``
     Data from the optional external fallback provider.
 
@@ -199,7 +196,7 @@ We log the same metrics as mentioned above for the result.
 
 All of this combined might lead to a tagged metric like:
 
-``locate.source#key:test,region:de,source:ocid,accuracy:medium,status:hit``
+``locate.source#key:test,region:de,source:geoip,accuracy:low,status:hit``
 
 
 API Fallback Source Metrics

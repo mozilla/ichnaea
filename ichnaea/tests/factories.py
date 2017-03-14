@@ -24,10 +24,8 @@ from ichnaea.models import (
     BlueObservation,
     BlueShard,
     CellArea,
-    CellAreaOCID,
     CellObservation,
     CellShard,
-    CellShardOCID,
     ExportConfig,
     Radio,
     RegionStat,
@@ -202,12 +200,6 @@ class CellShardFactory(BaseCellShardFactory, BaseSQLFactory):
         model = CellShard.create
 
 
-class CellShardOCIDFactory(BaseCellShardFactory, BaseSQLFactory):
-
-    class Meta:
-        model = CellShardOCID.create
-
-
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
     radius = CELLAREA_MIN_ACCURACY / 2.0
@@ -220,21 +212,6 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
     class Meta:
         model = CellArea.create
-
-
-class CellAreaOCIDFactory(CellAreaPositionFactory,
-                          BboxFactory, BaseSQLFactory):
-
-    radius = CELLAREA_MIN_ACCURACY / 2.0
-    region = 'GB'
-    avg_cell_radius = CELL_MIN_ACCURACY / 2.0
-    num_cells = 1
-    created = util.utcnow()
-    modified = util.utcnow()
-    last_seen = util.utcnow().date()
-
-    class Meta:
-        model = CellAreaOCID.create
 
 
 class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
