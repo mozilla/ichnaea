@@ -5,7 +5,6 @@ cd $(dirname $0)
 case "$1" in
     map)
         echo "Creating datamaps image tiles."
-        cd ..
         exec ./map.sh
         ;;
     scheduler)
@@ -23,7 +22,7 @@ case "$1" in
     alembic)
         echo "Running Alembic"
         cd ..
-        bin/alembic $2 $3 $4 $5 $6 $7 $8 $9
+        /app/bin/alembic $2 $3 $4 $5 $6 $7 $8 $9
         ;;
     local_map)
         echo "Creating datamaps image tiles."
