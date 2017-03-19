@@ -2,7 +2,6 @@ from datetime import timedelta
 
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
-    CommonLocateErrorTest,
     CommonLocateTest,
 )
 from ichnaea.models import Radio
@@ -207,18 +206,3 @@ class TestView(RegionBase, CommonLocateTest):
     def test_get(self, app, data_queues, session_tracker, stats):
         super(TestView, self).test_get(app, data_queues, stats)
         session_tracker(0)
-
-
-class TestError(RegionBase, CommonLocateErrorTest):
-
-    def test_apikey_error(self, app, data_queues,
-                          clean_db, raven, session, stats):
-        super(TestError, self).test_apikey_error(
-            app, data_queues, clean_db,
-            raven, session, stats, db_errors=0, fallback=None)
-
-    def test_database_error(self, app, data_queues,
-                            clean_db, raven, session, stats):
-        super(TestError, self).test_database_error(
-            app, data_queues, clean_db,
-            raven, session, stats, db_errors=2, fallback=None)

@@ -38,6 +38,7 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
+from ichnaea.models import _Model
 from ichnaea.models.api import API_CACHE
 from ichnaea.queue import DataQueue
 from ichnaea.webapp.config import (
@@ -117,21 +118,25 @@ def package():
             print(obj)
 
 
-def setup_tables(engine):
+def _setup_table_contents(conn):
     # Avoid import cycle
     from ichnaea.tests.factories import ApiKeyFactory
 
+    conn.execute(text('DELETE FROM api_key'))
+    conn.execute(text('DELETE FROM export_config'))
+    key = ApiKeyFactory.build(valid_key='test')
+    state = dict(key.__dict__)
+    del state['_sa_instance_state']
+    conn.execute(key.__table__.insert().values(state))
+
+
+def setup_tables(engine):
     with engine.connect() as conn:
         trans = conn.begin()
         # Now stamp the latest alembic version
         command.stamp(ALEMBIC_CFG, 'base')
         command.upgrade(ALEMBIC_CFG, 'head')
-        conn.execute(text('DELETE FROM api_key'))
-        conn.execute(text('DELETE FROM export_config'))
-        key = ApiKeyFactory.build(valid_key='test')
-        state = dict(key.__dict__)
-        del state['_sa_instance_state']
-        conn.execute(key.__table__.insert().values(state))
+        _setup_table_contents(conn)
         trans.commit()
 
 
@@ -140,12 +145,12 @@ def cleanup_tables(engine):
     # our current code version / models
     inspector = inspect(engine)
     with engine.connect() as conn:
-        trans = conn.begin()
-        names = inspector.get_table_names()
-        if names:
-            tables = '`' + '`, `'.join(names) + '`'
-            conn.execute(text('DROP TABLE %s' % tables))
-        trans.commit()
+        with conn.begin() as trans:
+            names = inspector.get_table_names()
+            if names:
+                tables = '`' + '`, `'.join(names) + '`'
+                conn.execute(text('DROP TABLE %s' % tables))
+            trans.commit()
 
 
 def setup_database():
@@ -175,8 +180,19 @@ def db(database):
 @pytest.fixture(scope='function')
 def clean_db(db):
     yield db
-    # setup normal database schema again
+    # drop and recreate all tables
     setup_database()
+
+
+@pytest.fixture(scope='function')
+def restore_db(db):
+    yield db
+    # add back missing tables
+    with db.engine.connect() as conn:
+        with conn.begin() as trans:
+            _Model.metadata.create_all(db.engine)
+            _setup_table_contents(conn)
+            trans.commit()
 
 
 @pytest.fixture(scope='function')

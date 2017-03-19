@@ -1,5 +1,6 @@
 import colander
 import pytest
+from sqlalchemy import text
 
 from ichnaea.api.locate.constants import (
     BLUE_MIN_ACCURACY,
@@ -9,12 +10,15 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
-    CommonLocateErrorTest,
     CommonLocateTest,
     CommonPositionTest,
 )
 from ichnaea.conftest import GEOIP_DATA
-from ichnaea.models import Radio
+from ichnaea.models import (
+    ApiKey,
+    CellArea,
+    Radio,
+)
 from ichnaea.tests.factories import (
     BlueShardFactory,
     CellShardFactory,
@@ -393,5 +397,51 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
 
-class TestError(LocateV1Base, CommonLocateErrorTest):
-    pass
+class TestError(LocateV1Base, BaseLocateTest):
+
+    def test_apikey_error(self, app, data_queues,
+                          raven, session, stats, restore_db):
+        cells = CellShardFactory.build_batch(2)
+        wifis = WifiShardFactory.build_batch(2)
+
+        session.execute(text('drop table %s;' % ApiKey.__tablename__))
+
+        query = self.model_query(cells=cells, wifis=wifis)
+        res = self._call(app, body=query, ip=self.test_ip)
+        self.check_response(data_queues, res, 'ok', fallback='ipf')
+        raven.check([('ProgrammingError', 1)])
+        self.check_queue(data_queues, 0)
+
+    def test_database_error(self, app, data_queues,
+                            raven, session, stats, restore_db):
+        cells = [
+            CellShardFactory.build(radio=Radio.gsm),
+            CellShardFactory.build(radio=Radio.wcdma),
+            CellShardFactory.build(radio=Radio.lte),
+        ]
+        wifis = WifiShardFactory.build_batch(2)
+
+        for model in (CellArea, ):
+            session.execute(text('drop table %s;' % model.__tablename__))
+        for name in set([cell.__tablename__ for cell in cells]):
+            session.execute(text('drop table %s;' % name))
+        for name in set([wifi.__tablename__ for wifi in wifis]):
+            session.execute(text('drop table %s;' % name))
+
+        query = self.model_query(cells=cells, wifis=wifis)
+        res = self._call(app, body=query, ip=self.test_ip)
+        self.check_response(data_queues, res, 'ok', fallback='ipf')
+        self.check_queue(data_queues, 0)
+        stats.check(counter=[
+            ('request', [self.metric_path, 'method:post', 'status:200']),
+        ], timer=[
+            ('request', [self.metric_path, 'method:post']),
+        ])
+        if self.apikey_metrics:
+            stats.check(counter=[
+                (self.metric_type + '.result',
+                    ['key:test', 'region:GB', 'fallback_allowed:false',
+                     'accuracy:high', 'status:miss']),
+            ])
+
+        raven.check([('ProgrammingError', 3)])

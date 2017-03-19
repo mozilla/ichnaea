@@ -84,8 +84,8 @@ class TestDatabaseErrors(BaseStationTest):
     def queue_and_update(self, celery, obs):
         return self._queue_and_update(celery, obs, update_cell)
 
-    def test_lock_timeout(self, celery, clean_db,
-                          redis, session, session2, stats):
+    def test_lock_timeout(self, celery, redis,
+                          session, session2, stats, restore_db):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
             radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
@@ -128,9 +128,8 @@ class TestDatabaseErrors(BaseStationTest):
             )
         finally:
             CellUpdater._retry_wait = orig_wait
-            for model in CellShard.shards().values():
-                session.execute(text(
-                    'drop table %s;' % model.__tablename__))
+            session.execute(text(
+                'drop table %s;' % cell.__tablename__))
 
 
 class StationTest(BaseStationTest):

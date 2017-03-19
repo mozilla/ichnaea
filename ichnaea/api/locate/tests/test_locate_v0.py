@@ -10,7 +10,6 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.schema_v0 import LOCATE_V0_SCHEMA
 from ichnaea.api.locate.tests.base import (
     BaseLocateTest,
-    CommonLocateErrorTest,
     CommonLocateTest,
     CommonPositionTest,
 )
@@ -277,7 +276,3 @@ class TestView(LocateV0Base, CommonLocateTest, CommonPositionTest):
                 }
             },
         }])
-
-
-class TestError(LocateV0Base, CommonLocateErrorTest):
-    pass
