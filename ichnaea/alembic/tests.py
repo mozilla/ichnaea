@@ -110,7 +110,10 @@ class TestMigration(object):
         assert compare_schema(db.engine, empty_metadata) == []
 
         # Set up schema based on model definitions.
-        _Model.metadata.create_all(db.engine)
+        with db.engine.connect() as conn:
+            with conn.begin() as trans:
+                _Model.metadata.create_all(db.engine)
+                trans.commit()
 
         # capture state of a model database
         model_metadata = MetaData()
