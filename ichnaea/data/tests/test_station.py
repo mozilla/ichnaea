@@ -84,7 +84,7 @@ class TestDatabaseErrors(BaseStationTest):
     def queue_and_update(self, celery, obs):
         return self._queue_and_update(celery, obs, update_cell)
 
-    def test_lock_timeout(self, celery, db_drop_table,
+    def test_lock_timeout(self, celery, clean_db,
                           redis, session, session2, stats):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(

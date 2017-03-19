@@ -3,15 +3,12 @@ from alembic.autogenerate import compare_metadata
 from alembic.ddl.impl import _type_comparators
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
-import pytest
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
 from ichnaea.config import ALEMBIC_CFG
-from ichnaea.conftest import (
-    cleanup_tables,
-    setup_database,
-)
+from ichnaea.conftest import cleanup_tables
+
 # make sure all models are imported
 from ichnaea.models import _Model  # NOQA
 
@@ -63,19 +60,14 @@ def compare_schema(engine, metadata):
     return diff
 
 
+def current_db_revision(db):
+    with db.engine.connect() as conn:
+        result = conn.execute('select version_num from alembic_version')
+        alembic_rev = result.first()
+    return None if alembic_rev is None else alembic_rev[0]
+
+
 class TestMigration(object):
-
-    @pytest.fixture(scope='function')
-    def clean_db(self, db):
-        yield db
-        # setup normal database schema again
-        setup_database()
-
-    def current_db_revision(self, db):
-        with db.engine.connect() as conn:
-            result = conn.execute('select version_num from alembic_version')
-            alembic_rev = result.first()
-        return None if alembic_rev is None else alembic_rev[0]
 
     def test_migration(self, clean_db):
         # To create a new base.sql, run mysqldump.
@@ -83,9 +75,28 @@ class TestMigration(object):
         # $$ mysqldump -ulocation -plocation -d --compact location
         db = clean_db
 
+        # The DB is stamped
+        db_revision = current_db_revision(db)
+        assert db_revision is not None
+
+        # db revision matches latest alembic revision
+        alembic_script = ScriptDirectory.from_config(ALEMBIC_CFG)
+        alembic_head = alembic_script.get_current_head()
+        assert db_revision == alembic_head
+
         # capture state of a fresh database
         fresh_metadata = MetaData()
         fresh_metadata.reflect(bind=db.engine)
+
+        # downgrade back to the beginning
+        with db.engine.connect() as conn:
+            trans = conn.begin()
+            alembic_command.downgrade(ALEMBIC_CFG, 'base')
+            trans.commit()
+
+        # capture state of a downgraded database
+        downgraded_metadata = MetaData()
+        downgraded_metadata.reflect(bind=db.engine)
 
         # drop all tables
         cleanup_tables(db.engine)
@@ -94,32 +105,17 @@ class TestMigration(object):
         empty_metadata = MetaData()
         empty_metadata.reflect(bind=db.engine)
 
-        # run the migration
-        with db.engine.connect() as conn:
-            trans = conn.begin()
-            alembic_command.stamp(ALEMBIC_CFG, 'base')
-            alembic_command.upgrade(ALEMBIC_CFG, 'head')
-            trans.commit()
-
-        # afterwards the DB is stamped
-        db_revision = self.current_db_revision(db)
-        assert db_revision is not None
-
-        # db revision matches latest alembic revision
-        alembic_script = ScriptDirectory.from_config(ALEMBIC_CFG)
-        alembic_head = alembic_script.get_current_head()
-        assert db_revision == alembic_head
-
-        # compare the db schema from a migrated database to
-        # one created fresh from the model definitions
-        assert compare_schema(db.engine, fresh_metadata) == []
-
-        # downgrade back to the beginning
-        with db.engine.connect() as conn:
-            trans = conn.begin()
-            alembic_command.downgrade(ALEMBIC_CFG, 'base')
-            trans.commit()
-
         # compare the db schema from a downgraded database to
         # an empty one
         assert compare_schema(db.engine, empty_metadata) == []
+
+        # Set up schema based on model definitions.
+        _Model.metadata.create_all(db.engine)
+
+        # capture state of a model database
+        model_metadata = MetaData()
+        model_metadata.reflect(bind=db.engine)
+
+        # compare the db schema from a fresh database to
+        # one created from the model definitions
+        assert compare_schema(db.engine, fresh_metadata) == []

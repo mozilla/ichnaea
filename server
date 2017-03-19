@@ -176,6 +176,7 @@ case "$1" in
     docker run -it --rm \
         -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
         -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
+        -e "DB_USER=root" \
         --volume `pwd`/docs/build/html:/app/docs/build/html \
         --volume `pwd`/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles \
         mozilla/ichnaea $2 $3 $4 $5 $6 $7 $8 $9

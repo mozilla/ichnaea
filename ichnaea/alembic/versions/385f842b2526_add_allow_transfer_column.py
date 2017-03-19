@@ -22,6 +22,9 @@ def upgrade():
         'ALTER TABLE api_key '
         'ADD COLUMN `allow_transfer` TINYINT(1) AFTER `allow_locate`'
     ))
+    op.execute(sa.text(
+        'UPDATE api_key SET allow_transfer = 0'
+    ))
 
 
 def downgrade():

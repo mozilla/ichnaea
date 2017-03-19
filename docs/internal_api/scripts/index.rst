@@ -7,5 +7,4 @@
    :maxdepth: 1
 
    datamap
-   initdb
    region_json

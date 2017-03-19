@@ -359,7 +359,7 @@ class CommonLocateTest(BaseLocateTest):
         self.check_response(data_queues, res, 'parse_error')
 
     def test_error_invalid_key(self, app, data_queues):
-        res = self._call(app, {'foo': 0}, ip=self.test_ip, status=200)
+        res = self._call(app, {'invalid': 0}, ip=self.test_ip, status=200)
         self.check_response(data_queues, res, 'ok')
         self.check_queue(data_queues, 0)
 
@@ -619,8 +619,7 @@ class CommonPositionTest(BaseLocateTest):
         # better wifi based result
         cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        api_key = ApiKey.get(session, 'test')
-        api_key.allow_fallback = True
+        ApiKeyFactory(valid_key='fall', allow_fallback=True)
         session.flush()
 
         with requests_mock.Mocker() as mock:
@@ -635,7 +634,7 @@ class CommonPositionTest(BaseLocateTest):
                 'POST', requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, body=query)
+            res = self._call(app, api_key='fall', body=query)
 
             send_json = mock.request_history[0].json()
             assert len(send_json['cellTowers']) == 2
@@ -645,18 +644,18 @@ class CommonPositionTest(BaseLocateTest):
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         stats.check(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.request', [self.metric_path, 'key:fall']),
             (self.metric_type + '.query',
-                ['key:test', 'region:none',
+                ['key:fall', 'region:none',
                  'geoip:false', 'blue:none', 'cell:many', 'wifi:many']),
             (self.metric_type + '.result',
-                ['key:test', 'region:none', 'fallback_allowed:true',
+                ['key:fall', 'region:none', 'fallback_allowed:true',
                  'accuracy:high', 'status:hit', 'source:fallback']),
             (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:internal',
+                ['key:fall', 'region:none', 'source:internal',
                  'accuracy:high', 'status:miss']),
             (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:fallback',
+                ['key:fall', 'region:none', 'source:fallback',
                  'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -665,8 +664,7 @@ class CommonPositionTest(BaseLocateTest):
     def test_fallback_used_with_geoip(self, app, session, stats):
         cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        api_key = ApiKey.get(session, 'test')
-        api_key.allow_fallback = True
+        ApiKeyFactory(valid_key='fall', allow_fallback=True)
         session.flush()
 
         with requests_mock.Mocker() as mock:
@@ -681,7 +679,7 @@ class CommonPositionTest(BaseLocateTest):
                 'POST', requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, body=query, ip=self.test_ip)
+            res = self._call(app, api_key='fall', body=query, ip=self.test_ip)
 
             send_json = mock.request_history[0].json()
             assert len(send_json['cellTowers']) == 2
@@ -690,12 +688,12 @@ class CommonPositionTest(BaseLocateTest):
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
         stats.check(counter=[
             ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
+            (self.metric_type + '.request', [self.metric_path, 'key:fall']),
             (self.metric_type + '.result',
-                ['key:test', 'region:GB', 'fallback_allowed:true',
+                ['key:fall', 'region:GB', 'fallback_allowed:true',
                  'accuracy:high', 'status:hit', 'source:fallback']),
             (self.metric_type + '.source',
-                ['key:test', 'region:GB', 'source:fallback',
+                ['key:fall', 'region:GB', 'source:fallback',
                  'accuracy:high', 'status:hit']),
         ], timer=[
             ('request', [self.metric_path, 'method:post']),
@@ -715,7 +713,7 @@ class CommonPositionTest(BaseLocateTest):
 
 class CommonLocateErrorTest(BaseLocateTest):
 
-    def test_apikey_error(self, app, data_queues, db_drop_table,
+    def test_apikey_error(self, app, data_queues, clean_db,
                           raven, session, stats,
                           db_errors=1, fallback='ipf'):
         cells = CellShardFactory.build_batch(2)
@@ -729,7 +727,7 @@ class CommonLocateErrorTest(BaseLocateTest):
         raven.check([('ProgrammingError', db_errors)])
         self.check_queue(data_queues, 0)
 
-    def test_database_error(self, app, data_queues, db_drop_table,
+    def test_database_error(self, app, data_queues, clean_db,
                             raven, session, stats,
                             db_errors=3, fallback='ipf'):
         cells = [

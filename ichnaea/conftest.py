@@ -38,10 +38,6 @@ from ichnaea.log import (
     configure_raven,
     configure_stats,
 )
-from ichnaea.models import (
-    _Model,
-    ApiKey,
-)
 from ichnaea.models.api import API_CACHE
 from ichnaea.queue import DataQueue
 from ichnaea.webapp.config import (
@@ -122,32 +118,20 @@ def package():
 
 
 def setup_tables(engine):
+    # Avoid import cycle
+    from ichnaea.tests.factories import ApiKeyFactory
+
     with engine.connect() as conn:
         trans = conn.begin()
-        _Model.metadata.create_all(engine)
         # Now stamp the latest alembic version
-        command.stamp(ALEMBIC_CFG, 'head')
-
-        # always add a test API key
-        conn.execute(ApiKey.__table__.delete())
-
-        key1 = ApiKey.__table__.insert().values(
-            valid_key='test',
-            allow_fallback=False, allow_locate=True, allow_transfer=True,
-            fallback_name='fall',
-            fallback_url='http://127.0.0.1:9/?api',
-            fallback_ratelimit=10,
-            fallback_ratelimit_interval=60,
-            fallback_cache_expire=60,
-            store_sample_locate=100,
-            store_sample_submit=100,
-        )
-        conn.execute(key1)
-        key2 = ApiKey.__table__.insert().values(
-            valid_key='export',
-            allow_fallback=False, allow_locate=False, allow_transfer=False)
-        conn.execute(key2)
-
+        command.stamp(ALEMBIC_CFG, 'base')
+        command.upgrade(ALEMBIC_CFG, 'head')
+        conn.execute(text('DELETE FROM api_key'))
+        conn.execute(text('DELETE FROM export_config'))
+        key = ApiKeyFactory.build(valid_key='test')
+        state = dict(key.__dict__)
+        del state['_sa_instance_state']
+        conn.execute(key.__table__.insert().values(state))
         trans.commit()
 
 
@@ -189,9 +173,10 @@ def db(database):
 
 
 @pytest.fixture(scope='function')
-def db_drop_table(db):
+def clean_db(db):
     yield db
-    setup_tables(db.engine)
+    # setup normal database schema again
+    setup_database()
 
 
 @pytest.fixture(scope='function')

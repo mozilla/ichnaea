@@ -212,13 +212,13 @@ class TestView(RegionBase, CommonLocateTest):
 class TestError(RegionBase, CommonLocateErrorTest):
 
     def test_apikey_error(self, app, data_queues,
-                          db_drop_table, raven, session, stats):
+                          clean_db, raven, session, stats):
         super(TestError, self).test_apikey_error(
-            app, data_queues, db_drop_table,
+            app, data_queues, clean_db,
             raven, session, stats, db_errors=0, fallback=None)
 
     def test_database_error(self, app, data_queues,
-                            db_drop_table, raven, session, stats):
+                            clean_db, raven, session, stats):
         super(TestError, self).test_database_error(
-            app, data_queues, db_drop_table,
+            app, data_queues, clean_db,
             raven, session, stats, db_errors=2, fallback=None)

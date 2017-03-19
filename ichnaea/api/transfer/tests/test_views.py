@@ -1,10 +1,14 @@
 import mock
+import pytest
 from redis import RedisError
 from simplejson import dumps
 
 from ichnaea.api.exceptions import (
     ParseError,
     ServiceUnavailable,
+)
+from ichnaea.tests.factories import (
+    ApiKeyFactory,
 )
 from ichnaea import util
 
@@ -16,6 +20,12 @@ class TestView(object):
     url = '/v1/transfer'
     metric_path = 'path:v1.transfer'
 
+    @pytest.fixture(scope='function', autouse=True)
+    def transfer_api_key(self, session):
+        api_key = ApiKeyFactory(valid_key='transfer', allow_transfer=True)
+        session.flush()
+        yield api_key
+
     def queue(self, celery):
         return celery.data_queues['transfer_incoming']
 
@@ -24,7 +34,7 @@ class TestView(object):
         url = self.url
         if api_key:
             if api_key is _sentinel:
-                api_key = 'test'
+                api_key = 'transfer'
             url += '?key=%s' % api_key
         call = getattr(app, method)
         if method in ('get', 'delete', 'head', 'options'):

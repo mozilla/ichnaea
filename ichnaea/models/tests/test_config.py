@@ -6,17 +6,18 @@ from ichnaea.models.config import ExportConfig
 class TestExportConfig(object):
 
     def test_fields(self, session):
+        name = uuid.uuid4().hex
         skip_keys = [uuid.uuid4().hex for i in range(3)]
         skip_sources = ['query', 'fused']
         session.add(ExportConfig(
-            name='internal', batch=100,
+            name=name, batch=100,
             schema='internal', url='internal://',
             skip_keys=skip_keys, skip_sources=skip_sources,
         ))
         session.flush()
 
-        result = session.query(ExportConfig).get('internal')
-        assert result.name == 'internal'
+        result = session.query(ExportConfig).get(name)
+        assert result.name == name
         assert result.batch == 100
         assert result.schema == 'internal'
         assert result.url == 'internal://'
