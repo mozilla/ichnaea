@@ -132,12 +132,12 @@ def _setup_table_contents(conn):
 
 def setup_tables(engine):
     with engine.connect() as conn:
-        trans = conn.begin()
-        # Now stamp the latest alembic version
-        command.stamp(ALEMBIC_CFG, 'base')
-        command.upgrade(ALEMBIC_CFG, 'head')
-        _setup_table_contents(conn)
-        trans.commit()
+        with conn.begin() as trans:
+            # Now stamp the latest alembic version
+            command.stamp(ALEMBIC_CFG, 'base')
+            command.upgrade(ALEMBIC_CFG, 'head')
+            _setup_table_contents(conn)
+            trans.commit()
 
 
 def cleanup_tables(engine):
@@ -155,9 +155,8 @@ def cleanup_tables(engine):
 
 def setup_database():
     db = configure_db('ddl')
-    engine = db.engine
-    cleanup_tables(engine)
-    setup_tables(engine)
+    cleanup_tables(db.engine)
+    setup_tables(db.engine)
     db.close()
 
 
@@ -197,21 +196,19 @@ def restore_db(db):
 
 @pytest.fixture(scope='function')
 def session(db):
-    conn = db.engine.connect()
-    trans = conn.begin()
-    db.session_factory.configure(bind=conn)
-    session = db.session()
+    with db.engine.connect() as conn:
+        with conn.begin() as trans:
+            db.session_factory.configure(bind=conn)
+            session = db.session()
 
-    # Set the global session context for factory-boy.
-    SESSION['default'] = session
-    yield session
-    del SESSION['default']
+            # Set the global session context for factory-boy.
+            SESSION['default'] = session
+            yield session
+            del SESSION['default']
 
-    trans.rollback()
-    session.close()
-    db.session_factory.configure(bind=None)
-    trans.close()
-    conn.close()
+            trans.rollback()
+            session.close()
+            db.session_factory.configure(bind=None)
 
     API_CACHE.clear()
 

@@ -90,9 +90,9 @@ class TestMigration(object):
 
         # downgrade back to the beginning
         with db.engine.connect() as conn:
-            trans = conn.begin()
-            alembic_command.downgrade(ALEMBIC_CFG, 'base')
-            trans.commit()
+            with conn.begin() as trans:
+                alembic_command.downgrade(ALEMBIC_CFG, 'base')
+                trans.commit()
 
         # capture state of a downgraded database
         downgraded_metadata = MetaData()
