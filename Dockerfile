@@ -53,7 +53,8 @@ RUN make -f docker.make build_check
 # The app user only needs write access to very few places.
 RUN chown app:app . && \
     chown -R app:app /app/docs/ && \
-    chown -R app:app /app/ichnaea/
+    chown -R app:app /app/ichnaea/ && \
+    chown -R app:app /app/conf/
 
 # This volume is only used while building docs and making those
 # available in the git repo, so they can be committed.
