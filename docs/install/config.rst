@@ -105,19 +105,17 @@ Feature Specfic Variables
 Assets
 ~~~~~~
 
-The assets section contains settings for a static file repository
-(Amazon S3) and a public DNS to access those files via HTTPS
-(Amazon CloudFront).
+The application can optionally generate image tiles for a data map
+and public export files available via the downloads section of the
+website.
 
-These are used to store and serve both the image tiles generated for
-the data map and the public export files available via the downloads
-section of the website.
+These assets are stored in a static file repository (Amazon S3)
+and made available via a HTTPS frontend (Amazon CloudFront).
 
 .. code-block:: ini
 
-    [assets]
-    bucket = amazon_s3_bucket_name
-    url = https://some_distribution_id.cloudfront.net
+    ASSET_BUCKET = amazon_s3_bucket_name
+    ASSET_URL = https://some_distribution_id.cloudfront.net
 
 
 Web

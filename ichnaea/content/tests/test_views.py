@@ -8,6 +8,7 @@ import pytest
 
 from ichnaea.content.views import (
     configure_content,
+    configure_tiles_url,
     empty_homepage_view,
     ContentViews,
 )
@@ -25,14 +26,6 @@ class TestConfig(object):
         with testing.testConfig() as config:
             config.registry.skip_logging = set()
             yield config
-
-    def test_assets(self, config):
-        config.registry.settings['web'] = {'enabled': 'true'}
-        config.registry.settings['assets'] = {
-            'url': 'http://127.0.0.1:9/foo'}
-        assert configure_content(config)
-        assert (config.registry.map_config['map_tiles_url'] ==
-                'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
 
     def test_disabled(self, config):
         assert not configure_content(config)
@@ -52,6 +45,11 @@ class TestConfig(object):
             assert res.content_type == 'text/html'
             assert b'It works' in res.body
 
+    def test_tiles_url(self):
+        src, url = configure_tiles_url('http://127.0.0.1:9/foo')
+        assert src == 'http://127.0.0.1:9'
+        assert url == 'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png'
+
 
 class TestContentViews(object):
 
@@ -65,12 +63,13 @@ class TestContentViews(object):
             setattr(request.registry, 'redis_client', redis)
             yield ContentViews(request)
 
-    def test_homepage(self, views):
+    def test_homepage(self, views, monkeypatch):
         tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
+        monkeypatch.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
+
         map_config = views.request.registry.map_config
         map_config['map_id_base'] = 'base.map'
         map_config['map_token'] = 'pk.123456'
-        map_config['map_tiles_url'] = tiles_url
         result = views.homepage_view()
 
         assert result['page_title'] == 'Overview'
@@ -80,12 +79,13 @@ class TestContentViews(object):
                 ('http://a.tiles.mapbox.com/v4/base.map/'
                  '0/0/0@2x.png?access_token=pk.123456'))
 
-    def test_map(self, views):
-        tiles_url = 'http://127.0.0.1:7001/static/'
+    def test_map(self, views, monkeypatch):
+        tiles_url = 'http://127.0.0.1:7001/static/{z}/{x}/{y}.png'
+        monkeypatch.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
+
         map_config = views.request.registry.map_config
         map_config['map_id_base'] = 'base.map'
         map_config['map_id_labels'] = 'labels.map'
-        map_config['map_tiles_url'] = tiles_url
         map_config['map_token'] = 'pk.123456'
         result = views.map_view()
 
@@ -157,7 +157,11 @@ class TestFunctionalContent(object):
             ('request', ['path:map', 'method:get']),
         ])
 
-    def test_downloads(self, app):
+    def test_downloads(self, app, monkeypatch):
+        monkeypatch.setattr('ichnaea.content.views.ASSET_BUCKET', 'bucket')
+        monkeypatch.setattr(
+            'ichnaea.content.views.ASSET_URL', 'http://127.0.0.1:9/foo')
+
         mock_conn = MagicMock(name='conn')
         mock_bucket = MagicMock(name='bucket')
         mock_conn.return_value.lookup.return_value = mock_bucket
@@ -203,8 +207,6 @@ class TestFunctionalContent(object):
         csp = response.headers['Content-Security-Policy']
         # make sure CSP_BASE interpolation worked
         assert "'self'" in csp
-        # make sure map assets url interpolation worked
-        assert '127.0.0.1:7001' in csp
 
     def test_headers_json(self, app):
         response = app.get('/__version__', status=200)
@@ -214,10 +216,13 @@ class TestFunctionalContent(object):
         assert 'max-age' in hsts
         assert 'includeSubDomains' in hsts
 
-    def test_map_json(self, app):
+    def test_map_json(self, app, monkeypatch):
+        monkeypatch.setattr(
+            'ichnaea.content.views.MAP_TILES_URL',
+            'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
         result = app.get('/map.json', status=200)
         assert (result.json['tiles_url'] ==
-                'http://127.0.0.1:7001/static/tiles/')
+                'http://127.0.0.1:9/foo/tiles/')
 
     def test_stats_blue_json(self, app, session):
         today = util.utcnow().date()

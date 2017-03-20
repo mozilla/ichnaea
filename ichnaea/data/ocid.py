@@ -5,6 +5,9 @@ import os
 import boto
 from sqlalchemy.sql import text
 
+from ichnaea.config import (
+    ASSET_BUCKET,
+)
 from ichnaea.models import (
     CellShard,
 )
@@ -84,11 +87,10 @@ class CellExport(object):
 
     def __init__(self, task):
         self.task = task
-        self.settings = task.app.settings['assets']
 
     def __call__(self, hourly=True, _bucket=None):
         if _bucket is None:  # pragma: no cover
-            bucket = self.settings['bucket']
+            bucket = ASSET_BUCKET
         else:
             bucket = _bucket
 

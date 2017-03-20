@@ -11,6 +11,9 @@ from celery.schedules import crontab
 
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
+from ichnaea.config import (
+    ASSET_BUCKET,
+)
 from ichnaea.data import area
 from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
@@ -22,8 +25,7 @@ from ichnaea import models
 
 
 def _cell_export_enabled(app_config):
-    return ('assets' in app_config.sections() and
-            bool(app_config.get('assets', 'bucket', False)))
+    return bool(ASSET_BUCKET)
 
 
 def _web_content_enabled(app_config):

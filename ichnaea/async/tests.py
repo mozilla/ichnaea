@@ -33,6 +33,7 @@ class TestBeat(object):
         assert (all_tasks - registered_tasks ==
                 set(['data.update_blue', 'data.update_cell',
                      'data.update_datamap', 'data.update_wifi',
+                     'data.cell_export_diff', 'data.cell_export_full',
                      'data.export_reports',
                      ]))
 
@@ -41,8 +42,6 @@ class TestBeat(object):
                 set(['data.update_blue', 'data.update_cell',
                      'data.update_datamap', 'data.update_wifi']))
 
-        for name in ('data.cell_export_full', 'data.cell_export_diff'):
-            assert name in registered_tasks
         for i in range(16):
             assert 'data.update_blue_%x' % i in registered_tasks
         for name in ('gsm', 'wcdma', 'lte'):

@@ -11,6 +11,8 @@ Untagged
 Compatibility
 ~~~~~~~~~~~~~
 
+- Application configuration moved to environment variables.
+
 - Moved initial database schema creation into an alembic migration.
 
 - Test against Redis 3.2 instead of 2.8.

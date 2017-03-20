@@ -37,6 +37,9 @@ VERSION_INFO = {
     'version': VERSION,
 }
 
+ASSET_BUCKET = os.environ.get('ASSET_BUCKET')
+ASSET_URL = os.environ.get('ASSET_URL')
+
 DB_HOST = os.environ.get('DB_HOST')
 DB_RO_HOST = os.environ.get('DB_RO_HOST', DB_HOST)
 DB_RW_HOST = os.environ.get('DB_RW_HOST', DB_HOST)

@@ -97,7 +97,7 @@ class TestMap(object):
                 main(argv,
                      _raven_client=raven,
                      _stats_client=stats,
-                     _bucketname='localhost.bucket')
+                     _bucketname='bucket')
 
                 assert len(mock_generate.mock_calls) == 1
                 args, kw = mock_generate.call_args

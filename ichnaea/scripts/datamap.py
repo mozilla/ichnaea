@@ -17,7 +17,9 @@ import boto
 from simplejson import dumps
 from sqlalchemy import text
 
-from ichnaea.config import read_config
+from ichnaea.config import (
+    ASSET_BUCKET,
+)
 from ichnaea.models.content import (
     DataMap,
     decode_datamap_grid,
@@ -402,8 +404,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
         bucketname = _bucketname
         if not _bucketname:  # pragma: no cover
-            conf = read_config()
-            bucketname = conf.get('assets', 'bucket')
+            bucketname = ASSET_BUCKET
             if bucketname:
                 bucketname = bucketname.strip('/')
 

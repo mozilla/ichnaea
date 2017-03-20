@@ -17,6 +17,10 @@ from pyramid.view import view_config
 import simplejson
 from six.moves.urllib import parse as urlparse
 
+from ichnaea.config import (
+    ASSET_BUCKET,
+    ASSET_URL,
+)
 from ichnaea.content.stats import (
     global_stats,
     histogram,
@@ -46,6 +50,22 @@ HOMEPAGE_MAP_IMAGE = ('{scheme}://a.tiles.mapbox.com/v4/{map_id}'
                       '/0/0/0@2x.png?access_token={token}')
 
 
+def configure_tiles_url(asset_url):
+    asset_url = asset_url if asset_url else ''
+    if not asset_url.endswith('/'):
+        asset_url = asset_url + '/'
+    tiles_url = urlparse.urljoin(asset_url, 'tiles/' + TILES_PATTERN)
+
+    result = urlparse.urlsplit(tiles_url)
+    tiles_src = urlparse.urlunparse(
+        (result.scheme, result.netloc, '', '', '', ''))
+    return (tiles_src, tiles_url)
+
+
+MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(ASSET_URL)
+CSP_POLICY = CSP_POLICY.format(base=CSP_BASE, tiles=MAP_TILES_SRC)
+
+
 def configure_content(config):
     web_config = config.registry.settings.get('web', {})
     enabled = web_config.get('enabled', 'false')
@@ -71,20 +91,10 @@ def configure_content(config):
 
     config.scan('ichnaea.content.views')
 
-    assets_url = config.registry.settings.get('assets', {}).get('url', '')
-    if not assets_url.endswith('/'):
-        assets_url = assets_url + '/'
-    tiles_url = urlparse.urljoin(assets_url, 'tiles/' + TILES_PATTERN)
-
-    result = urlparse.urlsplit(tiles_url)
-    tiles = urlparse.urlunparse((result.scheme, result.netloc, '', '', '', ''))
-    config.registry.csp = CSP_POLICY.format(base=CSP_BASE, tiles=tiles)
-
     config.registry.map_config = {
         'map_id_base': web_config.get('map_id_base', 'mapbox.streets'),
         'map_id_labels': web_config.get('map_id_labels', ''),
         'map_token': web_config.get('map_token', ''),
-        'map_tiles_url': tiles_url,
     }
     return True
 
@@ -98,23 +108,23 @@ def security_headers(event):
     response.headers.add('X-Content-Type-Options', 'nosniff')
     # Headers for HTML responses.
     if response.content_type == 'text/html':
-        csp = event.request.registry.csp
-        response.headers.add('Content-Security-Policy', csp)
+        response.headers.add('Content-Security-Policy', CSP_POLICY)
         response.headers.add('X-Frame-Options', 'DENY')
         response.headers.add('X-XSS-Protection', '1; mode=block')
 
 
-def s3_list_downloads(assets_bucket, assets_url, raven_client):
+def s3_list_downloads(raven_client):
     files = {'full': [], 'diff1': [], 'diff2': []}
 
-    if not assets_bucket:  # pragma: no cover
+    if not ASSET_BUCKET:  # pragma: no cover
         return files
 
-    if not assets_url.endswith('/'):  # pragma: no cover
-        assets_url = assets_url + '/'
+    asset_url = ASSET_URL
+    if not asset_url.endswith('/'):  # pragma: no cover
+        asset_url = asset_url + '/'
 
     conn = boto.connect_s3()
-    bucket = conn.lookup(assets_bucket, validate=False)
+    bucket = conn.lookup(ASSET_BUCKET, validate=False)
     if bucket is None:  # pragma: no cover
         return files
 
@@ -123,7 +133,7 @@ def s3_list_downloads(assets_bucket, assets_url, raven_client):
     try:
         for key in bucket.list(prefix='export/'):
             name = key.name.split('/')[-1]
-            path = urlparse.urljoin(assets_url, key.name)
+            path = urlparse.urljoin(asset_url, key.name)
             # round to kilobyte
             size = int(round(key.size / 1024.0, 0))
             file = dict(name=name, path=path, size=size)
@@ -178,7 +188,7 @@ class ContentViews(object):
             scheme=scheme,
             map_id=map_config['map_id_base'],
             token=map_config['map_token'])
-        image_url = map_config['map_tiles_url'].format(z=0, x=0, y='0@2x')
+        image_url = MAP_TILES_URL.format(z=0, x=0, y='0@2x')
         return {
             'page_title': 'Overview',
             'map_image_base_url': image_base_url,
@@ -199,11 +209,7 @@ class ContentViews(object):
     def downloads_view(self):
         data = self._get_cache('downloads')
         if data is None:
-            settings = self.request.registry.settings
-            data = s3_list_downloads(
-                settings.get('assets', {}).get('bucket'),
-                settings.get('assets', {}).get('url'),
-                self.request.registry.raven_client)
+            data = s3_list_downloads(self.request.registry.raven_client)
             self._set_cache('downloads', data, ex=1800)
         return {'page_title': 'Downloads', 'files': data}
 
@@ -224,15 +230,14 @@ class ContentViews(object):
             'page_title': 'Map',
             'map_id_base': map_config['map_id_base'],
             'map_id_labels': map_config['map_id_labels'],
-            'map_tiles_url': map_config['map_tiles_url'],
+            'map_tiles_url': MAP_TILES_URL,
             'map_token': map_config['map_token'],
         }
 
     @view_config(renderer='json', name='map.json', http_cache=3600)
     def map_json(self):
-        tiles_url = self.request.registry.map_config.get('map_tiles_url', '')
-        offset = tiles_url.find(TILES_PATTERN)
-        base_url = tiles_url[:offset]
+        offset = MAP_TILES_URL.find(TILES_PATTERN)
+        base_url = MAP_TILES_URL[:offset]
         return {'tiles_url': base_url}
 
     @view_config(renderer='json', name='stats_blue.json', http_cache=3600)

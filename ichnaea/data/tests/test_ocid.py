@@ -104,7 +104,7 @@ class TestExport(object):
             r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz')
 
         with mock_s3() as mock_key:
-            cell_export_diff(_bucket='localhost.bucket')
+            cell_export_diff(_bucket='bucket')
             assert pattern.search(mock_key.key)
             method = mock_key.set_contents_from_filename
             assert pattern.search(method.call_args[0][0])
@@ -121,7 +121,7 @@ class TestExport(object):
             r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz')
 
         with mock_s3() as mock_key:
-            cell_export_full(_bucket='localhost.bucket')
+            cell_export_full(_bucket='bucket')
             assert pattern.search(mock_key.key)
             method = mock_key.set_contents_from_filename
             assert pattern.search(method.call_args[0][0])
