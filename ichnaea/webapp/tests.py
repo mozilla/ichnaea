@@ -2,24 +2,15 @@ import pytest
 import webtest
 
 from ichnaea.cache import configure_redis
-from ichnaea.config import (
-    DummyConfig,
-    DB_RW_URI,
-    DB_RO_URI,
-    REDIS_URI,
-)
-from ichnaea.conftest import TEST_CONFIG
 from ichnaea.db import configure_db
 from ichnaea.geoip import GeoIPNull
 from ichnaea.webapp.config import main
 
 
-def _make_app(app_config=TEST_CONFIG,
-              _db=None, _http_session=None, _geoip_db=None,
+def _make_app(_db=None, _http_session=None, _geoip_db=None,
               _raven_client=None, _redis_client=None, _stats_client=None,
               _position_searcher=None, _region_searcher=None):
     wsgiapp = main(
-        app_config,
         _db=_db,
         _geoip_db=_geoip_db,
         _http_session=_http_session,
@@ -38,48 +29,9 @@ class TestApp(object):
         from ichnaea.webapp import app
         assert hasattr(app, 'wsgi_app')
 
-    def test_db_config(self, geoip_db, raven, redis, stats):
-        app_config = DummyConfig({
-            'database': {
-                'rw_url': DB_RW_URI,
-                'ro_url': DB_RO_URI,
-            },
-        })
-        try:
-            app = _make_app(app_config=app_config,
-                            _geoip_db=geoip_db,
-                            _raven_client=raven,
-                            _redis_client=redis,
-                            _stats_client=stats,
-                            )
-            db = app.app.registry.db
-            # The configured database is working.
-            assert db.ping()
-        finally:
-            # Clean up the new db engine's _make_app created.
-            db.close()
-
     def test_db_hooks(self, app, db):
         # Check that our _db hooks are passed through.
         assert app.app.registry.db is db
-
-    def test_redis_config(self, db, geoip_db, raven, stats):
-        app_config = DummyConfig({
-            'cache': {
-                'cache_url': REDIS_URI,
-            },
-        })
-        try:
-            app = _make_app(app_config=app_config,
-                            _db=db,
-                            _geoip_db=geoip_db,
-                            _raven_client=raven,
-                            _stats_client=stats)
-            redis_client = app.app.registry.redis_client
-            assert redis_client is not None
-            assert redis_client.connection_pool.connection_kwargs['db'] == 1
-        finally:
-            redis_client.close()
 
 
 class TestContribute(object):

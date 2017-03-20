@@ -26,7 +26,6 @@ from ichnaea.async.config import (
 from ichnaea.cache import configure_redis
 from ichnaea.config import (
     ALEMBIC_CFG,
-    read_config,
 )
 from ichnaea.db import configure_db
 from ichnaea.geocode import GEOCODER
@@ -49,8 +48,6 @@ from ichnaea.webapp.config import (
 
 # Module global to hold active session, used by factory-boy
 SESSION = {}
-
-TEST_CONFIG = read_config()
 
 GB_LAT = 51.5
 GB_LON = -0.1
@@ -216,7 +213,7 @@ def session(db):
 
             trans.rollback()
             session.close()
-            db.session_factory.configure(bind=None)
+            db.session_factory.configure(bind=db.engine)
 
     API_CACHE.clear()
 
@@ -360,7 +357,6 @@ def global_app(db, geoip_db, http_session, map_config,
                raven_client, redis_client, stats_client,
                position_searcher, region_searcher):
     wsgiapp = main(
-        TEST_CONFIG,
         _db=db,
         _geoip_db=geoip_db,
         _http_session=http_session,
@@ -383,8 +379,6 @@ def app(global_app, raven, redis, session, stats):
 @pytest.fixture(scope='session')
 def global_celery(db, geoip_db,
                   raven_client, redis_client, stats_client):
-    celery_app.app_config = TEST_CONFIG
-    celery_app.settings = TEST_CONFIG.asdict()
     init_worker(
         celery_app,
         _db=db,

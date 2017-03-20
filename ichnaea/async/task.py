@@ -67,7 +67,7 @@ class BaseTask(Task):
         # Set up celery beat entry after celery app initialization is done.
         enabled = cls._enabled
         if callable(enabled):
-            enabled = get_unbound_function(enabled)(app.app_config)
+            enabled = get_unbound_function(enabled)()
 
         if enabled and cls._schedule:
             app.conf.beat_schedule.update(cls.beat_config())

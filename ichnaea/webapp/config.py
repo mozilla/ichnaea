@@ -27,7 +27,7 @@ from ichnaea.queue import DataQueue
 from ichnaea.webapp.monitor import configure_monitor
 
 
-def main(app_config, ping_connections=False,
+def main(ping_connections=False,
          _db=None, _geoip_db=None, _http_session=None,
          _raven_client=None, _redis_client=None, _stats_client=None,
          _position_searcher=None, _region_searcher=None):
@@ -44,9 +44,6 @@ def main(app_config, ping_connections=False,
     The parameters starting with an underscore are test-only hooks
     to provide pre-configured connection objects.
 
-    :param app_config: The parsed application ini.
-    :type app_config: :class:`ichnaea.config.Config`
-
     :param ping_connections: If True, ping and test outside connections.
     :type ping_connections: bool
 
@@ -56,8 +53,7 @@ def main(app_config, ping_connections=False,
 
     configure_logging()
 
-    # make config file settings available
-    config = Configurator(settings=app_config.asdict())
+    config = Configurator()
 
     # add support for pt templates
     config.include('pyramid_chameleon')

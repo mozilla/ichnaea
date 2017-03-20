@@ -7,9 +7,6 @@ from kombu.serialization import register
 import simplejson
 
 from ichnaea.cache import configure_redis
-from ichnaea.config import (
-    read_config,
-)
 from ichnaea.db import configure_db
 from ichnaea.geoip import configure_geoip
 from ichnaea.log import (
@@ -52,14 +49,6 @@ def configure_celery(celery_app):
     This parses the application ini and reads in the
     :mod:`ichnaea.async.settings`.
     """
-
-    # This happens at module import time and depends on a properly
-    # set ICHNAEA_CFG.
-    app_config = read_config()
-
-    # Make config file settings available.
-    celery_app.app_config = app_config
-    celery_app.settings = app_config.asdict()
     celery_app.config_from_object('ichnaea.async.settings')
 
 
@@ -157,5 +146,3 @@ def shutdown_worker(celery_app):
 
     del celery_app.all_queues
     del celery_app.data_queues
-    del celery_app.settings
-    del celery_app.app_config

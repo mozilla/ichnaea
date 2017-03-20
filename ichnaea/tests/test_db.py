@@ -11,6 +11,9 @@ class TestDatabase(object):
     def test_constructor(self, db):
         assert db.engine.name == 'mysql'
 
+    def test_ping(self, db):
+        assert db.ping()
+
     def test_table_creation(self, session):
         result = session.execute('select * from cell_gsm;')
         assert result.first() is None

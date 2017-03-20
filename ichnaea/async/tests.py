@@ -34,20 +34,19 @@ class TestBeat(object):
                 set(['data.update_blue', 'data.update_cell',
                      'data.update_datamap', 'data.update_wifi',
                      'data.cell_export_diff', 'data.cell_export_full',
-                     'data.export_reports',
+                     'data.export_reports', 'data.update_statregion',
+                     'data.update_statcounter',
                      ]))
 
         assert (set(['_'.join(name.split('_')[:-1]) for name in
                      registered_tasks - all_tasks]) ==
                 set(['data.update_blue', 'data.update_cell',
-                     'data.update_datamap', 'data.update_wifi']))
+                     'data.update_wifi']))
 
         for i in range(16):
             assert 'data.update_blue_%x' % i in registered_tasks
         for name in ('gsm', 'wcdma', 'lte'):
             assert 'data.update_cell_' + name in registered_tasks
-        for name in ('ne', 'nw', 'se', 'sw'):
-            assert 'data.update_datamap_' + name in registered_tasks
         for i in range(16):
             assert 'data.update_wifi_%x' % i in registered_tasks
 

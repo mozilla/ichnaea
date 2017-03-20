@@ -1,6 +1,5 @@
 """
-Contains helper functionality for reading and parsing configuration files
-and parsing of environment variables.
+Contains helper functionality for parsing environment variables.
 """
 from __future__ import absolute_import
 
@@ -8,14 +7,8 @@ import os
 import os.path
 
 from alembic.config import Config as AlembicConfig
-from backports.configparser import (
-    ConfigParser,
-    NoOptionError,
-    NoSectionError,
-)
 import pkg_resources
 import simplejson
-from six import PY2, string_types
 
 HERE = os.path.dirname(__file__)
 
@@ -83,10 +76,6 @@ GEOIP_PATH = os.environ.get('GEOIP_PATH')
 if not GEOIP_PATH:
     GEOIP_PATH = os.path.join(HERE, 'tests/data/GeoIP2-City-Test.mmdb')
 
-ICHNAEA_CFG = os.environ.get('ICHNAEA_CFG')
-if not ICHNAEA_CFG:
-    ICHNAEA_CFG = os.path.join(HERE, 'tests/data/test.ini')
-
 MAP_ID_BASE = os.environ.get('MAP_ID_BASE')
 MAP_ID_LABELS = os.environ.get('MAP_ID_LABELS')
 MAP_TOKEN = os.environ.get('MAP_TOKEN')
@@ -107,98 +96,3 @@ if os.path.isfile(VERSION_FILE):
     VERSION_INFO['build'] = data.get('build', None)
     VERSION_INFO['commit'] = data.get('commit', None)
     VERSION_INFO['tag'] = RELEASE = data.get('tag', None)
-
-
-class Config(ConfigParser):
-    """
-    A :class:`configparser.ConfigParser` subclass with added
-    functionality.
-
-    :param filename: The path to a configuration file.
-    """
-
-    def __init__(self, filename, **kw):
-        super(Config, self).__init__(**kw)
-        # let's read the file
-        if isinstance(filename, string_types):
-            self.filename = filename
-            self.read(filename)
-        else:  # pragma: no cover
-            self.filename = None
-            self.read_file(filename)
-
-    def get(self, section, option, default=None, **kw):
-        """
-        A get method which returns the default argument when the option
-        cannot be found instead of raising an exception.
-        """
-        try:
-            value = super(Config, self).get(section, option, **kw)
-        except (NoOptionError, NoSectionError):  # pragma: no cover
-            value = default
-        return value
-
-    def get_map(self, section, default=None):
-        """
-        Return a config section as a dictionary.
-        """
-        try:
-            value = dict(self.items(section))
-        except (NoOptionError, NoSectionError):  # pragma: no cover
-            value = default
-        return value
-
-    def optionxform(self, option):
-        """
-        Disable automatic lowercasing of option names.
-        """
-        return option
-
-    def asdict(self):  # pragma: no cover
-        """
-        Return the entire config as a dict of dicts.
-        """
-        result = {}
-        for section in self.sections():
-            result[section] = self.get_map(section)
-        return result
-
-
-class DummyConfig(object):
-    """
-    A stub implementation of :class:`ichnaea.config.Config` used in tests.
-
-    :param settings: A dict of dicts representing the parsed config
-                     settings.
-    """
-
-    def __init__(self, settings):
-        self.settings = settings
-
-    def get(self, section, option, default=None):  # pragma: no cover
-        section_values = self.get_map(section, {})
-        return section_values.get(option, default)
-
-    def get_map(self, section, default=None):
-        return self.settings.get(section, default)
-
-    def sections(self):
-        return list(self.settings.keys())
-
-    def asdict(self):
-        result = {}
-        for section in self.sections():
-            result[section] = self.get_map(section)
-        return result
-
-
-def read_config(filename=ICHNAEA_CFG):
-    """
-    Read a configuration file from a passed in filename.
-
-    :rtype: :class:`ichnaea.config.Config`
-    """
-    if PY2 and isinstance(filename, bytes):  # pragma: no cover
-        filename = filename.decode('utf-8')
-
-    return Config(filename)

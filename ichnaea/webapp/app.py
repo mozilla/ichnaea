@@ -2,7 +2,6 @@
 Holds global web application state and the WSGI handler.
 """
 
-from ichnaea.config import read_config
 from ichnaea.webapp.config import (
     main,
     shutdown_worker,
@@ -27,8 +26,7 @@ def wsgi_app(environ, start_response):  # pragma: no cover
     global _APP
 
     if _APP is None:
-        conf = read_config()
-        _APP = main(conf, ping_connections=True)
+        _APP = main(ping_connections=True)
         if environ is None and start_response is None:
             # Called as part of gunicorn's post_worker_init
             return _APP

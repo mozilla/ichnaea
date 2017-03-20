@@ -11,9 +11,7 @@ from celery.schedules import crontab
 
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
-from ichnaea.config import (
-    ASSET_BUCKET,
-)
+from ichnaea import config
 from ichnaea.data import area
 from ichnaea.data.datamap import DataMapUpdater
 from ichnaea.data import export
@@ -24,15 +22,14 @@ from ichnaea.data import stats
 from ichnaea import models
 
 
-def _cell_export_enabled(app_config):
-    return bool(ASSET_BUCKET)
+def _cell_export_enabled():
+    return bool(config.ASSET_BUCKET)
 
 
-def _web_content_enabled(app_config):
-    if ('web' in app_config.sections() and
-            app_config.get('web', 'enabled', True) in ('false', '0')):
-        return False  # pragma: no cover
-    return True
+def _web_content_enabled():
+    return bool(config.MAP_ID_BASE and
+                config.MAP_ID_LABELS and
+                config.MAP_TOKEN)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
