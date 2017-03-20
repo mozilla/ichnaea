@@ -6,6 +6,7 @@ import warnings
 from alembic import command
 from maxminddb.const import MODE_AUTO
 import pytest
+from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy import (
     event,
     inspect,
@@ -91,6 +92,13 @@ GEOIP_DATA = {
         'score': 0.9,
     },
 }
+
+
+@pytest.fixture(scope='session')
+def monkeysession(request):
+    mp = MonkeyPatch()
+    request.addfinalizer(mp.undo)
+    return mp
 
 
 @pytest.fixture(scope='session', autouse=True)
@@ -339,7 +347,16 @@ def region_searcher(data_queues, geoip_db,
 
 
 @pytest.fixture(scope='session')
-def global_app(db, geoip_db, http_session,
+def map_config(monkeysession):
+    tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
+    monkeysession.setattr('ichnaea.content.views.MAP_ID_BASE', 'base')
+    monkeysession.setattr('ichnaea.content.views.MAP_ID_LABELS', 'labels')
+    monkeysession.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
+    monkeysession.setattr('ichnaea.content.views.MAP_TOKEN', 'pk.123456')
+
+
+@pytest.fixture(scope='session')
+def global_app(db, geoip_db, http_session, map_config,
                raven_client, redis_client, stats_client,
                position_searcher, region_searcher):
     wsgiapp = main(

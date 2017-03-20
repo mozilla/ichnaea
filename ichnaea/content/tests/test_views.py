@@ -27,71 +27,49 @@ class TestConfig(object):
             config.registry.skip_logging = set()
             yield config
 
-    def test_disabled(self, config):
-        assert not configure_content(config)
-        config.registry.settings['web'] = {'enabled': 'false'}
-        assert not configure_content(config)
-
-    def test_enabled(self, config):
-        config.registry.settings['web'] = {'enabled': 'true'}
-        assert configure_content(config)
-
     def test_alternate_homepage(self, config):
         request = DummyRequest()
         with testing.testConfig(request=request) as config:
-            config.registry.settings['web'] = {'enabled': 'false'}
-            configure_content(config)
+            assert not configure_content(config, enable=False)
             res = empty_homepage_view(request)
             assert res.content_type == 'text/html'
             assert b'It works' in res.body
 
+    def test_configure_content(self, config, map_config):
+        assert configure_content(config)
+
     def test_tiles_url(self):
-        src, url = configure_tiles_url('http://127.0.0.1:9/foo')
+        src, url = configure_tiles_url('http://127.0.0.1:9/static')
         assert src == 'http://127.0.0.1:9'
-        assert url == 'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png'
+        assert url == 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
 
 
 class TestContentViews(object):
 
     @pytest.fixture(scope='function')
-    def views(self, redis, session):
+    def views(self, map_config, redis, session):
         request = DummyRequest()
         with testing.testConfig(request=request) as config:
             config.include('pyramid_chameleon')
             setattr(request, 'db_session', session)
-            setattr(request.registry, 'map_config', {})
             setattr(request.registry, 'redis_client', redis)
             yield ContentViews(request)
 
-    def test_homepage(self, views, monkeypatch):
-        tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
-        monkeypatch.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
-
-        map_config = views.request.registry.map_config
-        map_config['map_id_base'] = 'base.map'
-        map_config['map_token'] = 'pk.123456'
+    def test_homepage(self, views):
         result = views.homepage_view()
-
         assert result['page_title'] == 'Overview'
         assert (result['map_image_url'] ==
-                tiles_url.format(z=0, x=0, y='0@2x'))
+                'http://127.0.0.1:9/static/tiles/0/0/0@2x.png')
         assert (result['map_image_base_url'] ==
-                ('http://a.tiles.mapbox.com/v4/base.map/'
+                ('http://a.tiles.mapbox.com/v4/base/'
                  '0/0/0@2x.png?access_token=pk.123456'))
 
-    def test_map(self, views, monkeypatch):
-        tiles_url = 'http://127.0.0.1:7001/static/{z}/{x}/{y}.png'
-        monkeypatch.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
-
-        map_config = views.request.registry.map_config
-        map_config['map_id_base'] = 'base.map'
-        map_config['map_id_labels'] = 'labels.map'
-        map_config['map_token'] = 'pk.123456'
+    def test_map(self, views):
         result = views.map_view()
-
         assert result['page_title'] == 'Map'
-        assert result['map_id_base'] == 'base.map'
-        assert result['map_id_labels'] == 'labels.map'
+        assert result['map_id_base'] == 'base'
+        assert result['map_id_labels'] == 'labels'
+        tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
         assert result['map_tiles_url'] == tiles_url
         assert result['map_token'] == 'pk.123456'
 
@@ -216,13 +194,10 @@ class TestFunctionalContent(object):
         assert 'max-age' in hsts
         assert 'includeSubDomains' in hsts
 
-    def test_map_json(self, app, monkeypatch):
-        monkeypatch.setattr(
-            'ichnaea.content.views.MAP_TILES_URL',
-            'http://127.0.0.1:9/foo/tiles/{z}/{x}/{y}.png')
+    def test_map_json(self, app):
         result = app.get('/map.json', status=200)
         assert (result.json['tiles_url'] ==
-                'http://127.0.0.1:9/foo/tiles/')
+                'http://127.0.0.1:9/static/tiles/')
 
     def test_stats_blue_json(self, app, session):
         today = util.utcnow().date()

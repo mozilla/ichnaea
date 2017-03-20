@@ -121,23 +121,21 @@ and made available via a HTTPS frontend (Amazon CloudFront).
 Web
 ~~~
 
-The web section contains settings related to the non-API website content.
+The application contains both the HTTP API and some website content.
 
 The web functionality by default is limited to the public HTTP API.
-If the ``enabled`` setting is set to ``true`` the website content pages
-are also made available.
+If the map related settings are configured, the website content is
+also being made available.
 
-The ``map_id_base`` and ``map_id_labels`` settings specify Mapbox map
-ids for a base map and a map containing only labels. The ``map_token``
+The ``MAP_ID_BASE`` and ``MAP_ID_LABELS`` settings specify Mapbox map
+ids for a base map and a map containing only labels. The ``MAP_TOKEN``
 specifies a Mapbox access token.
 
 .. code-block:: ini
 
-    [web]
-    enabled = true
-    map_id_base = example_base.map-123
-    map_id_labels = example_labels.map-234
-    map_token = pk.example_public_access_token
+    MAP_ID_BASE = example_base.map-123
+    MAP_ID_LABELS = example_labels.map-234
+    MAP_TOKEN = pk.example_public_access_token
 
 
 Database Configuration

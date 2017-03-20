@@ -20,6 +20,9 @@ from six.moves.urllib import parse as urlparse
 from ichnaea.config import (
     ASSET_BUCKET,
     ASSET_URL,
+    MAP_ID_BASE,
+    MAP_ID_LABELS,
+    MAP_TOKEN,
 )
 from ichnaea.content.stats import (
     global_stats,
@@ -66,10 +69,11 @@ MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(ASSET_URL)
 CSP_POLICY = CSP_POLICY.format(base=CSP_BASE, tiles=MAP_TILES_SRC)
 
 
-def configure_content(config):
-    web_config = config.registry.settings.get('web', {})
-    enabled = web_config.get('enabled', 'false')
-    if enabled in ('false', '0'):
+def configure_content(config, enable=None):
+    if enable is None:
+        enable = MAP_ID_BASE and MAP_ID_LABELS and MAP_TILES_URL and MAP_TOKEN
+
+    if not enable:
         config.add_view(empty_homepage_view,
                         http_cache=(86400, {'public': True}))
         return False
@@ -90,12 +94,6 @@ def configure_content(config):
     config.add_route('stats', '/stats')
 
     config.scan('ichnaea.content.views')
-
-    config.registry.map_config = {
-        'map_id_base': web_config.get('map_id_base', 'mapbox.streets'),
-        'map_id_labels': web_config.get('map_id_labels', ''),
-        'map_token': web_config.get('map_token', ''),
-    }
     return True
 
 
@@ -183,11 +181,10 @@ class ContentViews(object):
     @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
         scheme = urlparse.urlparse(self.request.url).scheme
-        map_config = self.request.registry.map_config
         image_base_url = HOMEPAGE_MAP_IMAGE.format(
             scheme=scheme,
-            map_id=map_config['map_id_base'],
-            token=map_config['map_token'])
+            map_id=MAP_ID_BASE,
+            token=MAP_TOKEN)
         image_url = MAP_TILES_URL.format(z=0, x=0, y='0@2x')
         return {
             'page_title': 'Overview',
@@ -225,13 +222,12 @@ class ContentViews(object):
 
     @view_config(renderer='templates/map.pt', name='map', http_cache=3600)
     def map_view(self):
-        map_config = self.request.registry.map_config
         return {
             'page_title': 'Map',
-            'map_id_base': map_config['map_id_base'],
-            'map_id_labels': map_config['map_id_labels'],
+            'map_id_base': MAP_ID_BASE,
+            'map_id_labels': MAP_ID_LABELS,
             'map_tiles_url': MAP_TILES_URL,
-            'map_token': map_config['map_token'],
+            'map_token': MAP_TOKEN,
         }
 
     @view_config(renderer='json', name='map.json', http_cache=3600)
