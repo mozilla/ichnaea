@@ -13,7 +13,7 @@ import shutil
 import sys
 
 import billiard
-import boto
+import boto3
 from simplejson import dumps
 from sqlalchemy import text
 
@@ -39,15 +39,6 @@ try:
     from os import scandir
 except ImportError:  # pragma: no cover
     from scandir import scandir
-
-IMAGE_HEADERS = {
-    'Content-Type': 'image/png',
-    'Cache-Control': 'max-age=3600, public',
-}
-JSON_HEADERS = {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'max-age=3600, public',
-}
 
 if sys.platform == 'darwin':  # pragma: no cover
     ZCAT = 'gzcat'
@@ -198,30 +189,30 @@ def upload_folder(bucketname, bucket_prefix,
         'tile_unchanged': 0,
     }
 
-    # Get all the S3 keys.
-    conn = boto.connect_s3()
-    bucket = conn.get_bucket(bucketname, validate=False)
+    # Get all the S3 objects.
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(bucketname)
 
     key_root = bucket_prefix + folder[len(tiles):].lstrip('/') + '/'
-    keys = {}
-    for key in bucket.list(prefix=key_root):
-        keys[key.name[len(bucket_prefix):]] = key
+    objs = {}
+    for obj in bucket.objects.filter(Prefix=key_root):
+        objs[obj.key[len(bucket_prefix):]] = obj
 
     # Traverse local file system
     for entry in recursive_scandir(folder):
         if not entry.is_file() or not entry.name.endswith('.png'):
             continue
 
-        key_name = entry.path[len(tiles):].lstrip('/')
-        key = keys.pop(key_name, None)
+        obj_name = entry.path[len(tiles):].lstrip('/')
+        obj = objs.pop(obj_name, None)
         changed = True
 
-        if key is not None:
-            if entry.stat().st_size != key.size:
+        if obj is not None:
+            if entry.stat().st_size != obj.size:
                 # Mismatched file sizes?
                 changed = True
             else:
-                remote_md5 = key.etag.strip('"')
+                remote_md5 = obj.etag.strip('"')
                 with open(entry.path, 'rb') as fd:
                     local_md5 = hashlib.md5(fd.read()).hexdigest()
                 if local_md5 == remote_md5:
@@ -229,25 +220,24 @@ def upload_folder(bucketname, bucket_prefix,
                     changed = False
 
         if changed:
-            if key is None:
-                key = boto.s3.key.Key(bucket)
-                key.key = bucket_prefix + key_name
+            if obj is None:
+                obj = bucket.Object(bucket_prefix + obj_name)
                 result['tile_new'] += 1
             else:
                 result['tile_changed'] += 1
 
-            # Create or update the key.
-            key.set_contents_from_filename(
-                entry.path,
-                headers=IMAGE_HEADERS,
-                reduced_redundancy=True)
+            # Create or update the object.
+            obj.upload_file(entry.path, ExtraArgs={
+                'CacheControl': 'max-age=3600, public',
+                'ContentType': 'image/png',
+            })
         else:
             result['tile_unchanged'] += 1
 
-    # Delete orphaned keys.
-    if keys:
-        result['tile_deleted'] += len(keys)
-        key_values = list(keys.values())
+    # Delete orphaned objects.
+    if objs:
+        result['tile_deleted'] += len(objs)
+        key_values = list(objs.values())
         for i in range(0, len(key_values), 100):
             batch_keys = key_values[i:i + 100]
             bucket.delete_keys(batch_keys)
@@ -295,15 +285,15 @@ def upload_files(pool, bucketname, tiles, max_zoom,
             raven_client.captureException()
 
     # Update status file
-    conn = boto.connect_s3()
-    bucket = conn.get_bucket(bucketname, validate=False)
+    s3 = boto3.resource('s3')
+    bucket = s3.Bucket(bucketname)
 
-    key = boto.s3.key.Key(bucket)
-    key.key = bucket_prefix + 'data.json'
-    key.set_contents_from_string(
-        dumps({'updated': util.utcnow().isoformat()}),
-        headers=JSON_HEADERS,
-        reduced_redundancy=True)
+    obj = bucket.Object(bucket_prefix + 'data.json')
+    obj.put_object(
+        Body=dumps({'updated': util.utcnow().isoformat()}),
+        CacheControl='max-age=3600, public',
+        ContentType='application/json',
+    )
 
     return result
 

@@ -1,7 +1,6 @@
-from contextlib import contextmanager
 import time
 
-import boto
+import boto3
 import mock
 import requests_mock
 import simplejson
@@ -29,21 +28,6 @@ from ichnaea.tests.factories import (
     WifiShardFactory,
 )
 from ichnaea import util
-
-
-@contextmanager
-def mock_s3(mock_keys):
-    mock_conn = mock.MagicMock()
-
-    def new_mock(*args, **kw):
-        mock_key = mock.MagicMock()
-        mock_key(*args, **kw)
-        mock_keys.append(mock_key)
-        return mock_key
-
-    with mock.patch.object(boto, 'connect_s3', mock_conn):
-        with mock.patch('boto.s3.key.Key', new_mock) as mock_key:
-            yield mock_key
 
 
 class BaseExportTest(object):
@@ -231,24 +215,32 @@ class TestS3(BaseExportTest):
         self.add_reports(celery, 3, api_key='e5444-794', source='fused')
         self.add_reports(celery, 3, api_key=None)
 
-        mock_keys = []
-        with mock_s3(mock_keys):
+        mock_conn = mock.MagicMock()
+        mock_bucket = mock.MagicMock()
+        mock_obj = mock.MagicMock()
+        mock_conn.return_value.Bucket.return_value = mock_bucket
+        mock_bucket.Object.return_value = mock_obj
+
+        with mock.patch.object(boto3, 'resource', mock_conn):
             update_incoming.delay().get()
 
-        assert len(mock_keys) == 4
+        obj_calls = mock_bucket.Object.call_args_list
+        put_calls = mock_obj.put_object.call_args_list
+        assert len(obj_calls) == 4
+        assert len(put_calls) == 4
 
         keys = []
         test_export = None
-        for mock_key in mock_keys:
-            assert mock_key.set_contents_from_string.called
-            assert mock_key.content_encoding == 'gzip'
-            assert mock_key.content_type == 'application/json'
-            assert mock_key.key.startswith('backups/')
-            assert mock_key.key.endswith('.json.gz')
-            assert mock_key.close.called
-            keys.append(mock_key.key)
-            if 'test' in mock_key.key:
-                test_export = mock_key
+        for obj_call, put_call in zip(obj_calls, put_calls):
+            s3_key = obj_call[0][0]
+            assert s3_key.startswith('backups/')
+            assert s3_key.endswith('.json.gz')
+            assert put_call[1]['Body']
+            assert put_call[1]['ContentType'] == 'application/json'
+            assert put_call[1]['ContentEncoding'] == 'gzip'
+            keys.append(s3_key)
+            if 'test' in s3_key:
+                test_export = put_call[1]['Body']
 
         # extract second and third path segment from key names
         groups = [tuple(key.split('/')[1:3]) for key in keys]
@@ -257,9 +249,7 @@ class TestS3(BaseExportTest):
                      ('gnss', 'e5444-794'), ('fused', 'e5444-794')]))
 
         # check uploaded content
-        args, kw = test_export.set_contents_from_string.call_args
-        uploaded_data = args[0]
-        uploaded_text = util.decode_gzip(uploaded_data)
+        uploaded_text = util.decode_gzip(test_export)
 
         send_reports = simplejson.loads(uploaded_text)['items']
         assert len(send_reports) == 3

@@ -36,6 +36,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Update to botocore/boto3.
+
 - No longer use secondary cell tables during lookups.
 
 - Remove continous cell import functionality.

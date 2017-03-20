@@ -5,8 +5,9 @@ Contains website related routes and views.
 from operator import itemgetter
 import os
 
-import boto
-from boto.exception import S3ResponseError
+import boto3
+from boto3.exceptions import Boto3Error
+from botocore.exceptions import BotoCoreError
 from pyramid.decorator import reify
 from pyramid.events import NewResponse
 from pyramid.events import subscriber
@@ -121,25 +122,22 @@ def s3_list_downloads(raven_client):
     if not asset_url.endswith('/'):  # pragma: no cover
         asset_url = asset_url + '/'
 
-    conn = boto.connect_s3()
-    bucket = conn.lookup(ASSET_BUCKET, validate=False)
-    if bucket is None:  # pragma: no cover
-        return files
-
     diff = []
     full = []
     try:
-        for key in bucket.list(prefix='export/'):
-            name = key.name.split('/')[-1]
-            path = urlparse.urljoin(asset_url, key.name)
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(ASSET_BUCKET)
+        for obj in bucket.objects.filter(Prefix='export/'):
+            name = obj.key.split('/')[-1]
+            path = urlparse.urljoin(asset_url, obj.key)
             # round to kilobyte
-            size = int(round(key.size / 1024.0, 0))
+            size = int(round(obj.size / 1024.0, 0))
             file = dict(name=name, path=path, size=size)
             if 'diff-' in name:
                 diff.append(file)
             elif 'full-' in name:
                 full.append(file)
-    except S3ResponseError:  # pragma: no cover
+    except (Boto3Error, BotoCoreError):  # pragma: no cover
         raven_client.captureException()
         return files
 

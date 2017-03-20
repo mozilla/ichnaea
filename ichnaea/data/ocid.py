@@ -1,8 +1,7 @@
-from contextlib import closing
 from datetime import timedelta
 import os
 
-import boto
+import boto3
 from sqlalchemy.sql import text
 
 from ichnaea.config import (
@@ -123,8 +122,7 @@ class CellExport(object):
             self.write_stations_to_s3(path, bucket)
 
     def write_stations_to_s3(self, path, bucketname):
-        conn = boto.connect_s3()
-        bucket = conn.get_bucket(bucketname, validate=False)
-        with closing(boto.s3.key.Key(bucket)) as key:
-            key.key = 'export/' + os.path.split(path)[-1]
-            key.set_contents_from_filename(path, reduced_redundancy=True)
+        s3 = boto3.resource('s3')
+        bucket = s3.Bucket(bucketname)
+        obj = bucket.Object('export/' + os.path.split(path)[-1])
+        obj.upload_file(path)

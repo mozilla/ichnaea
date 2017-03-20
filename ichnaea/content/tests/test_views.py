@@ -1,7 +1,7 @@
 from calendar import timegm
 
-import boto
-from mock import MagicMock, patch
+import boto3
+import mock
 from pyramid.testing import DummyRequest
 from pyramid import testing
 import pytest
@@ -140,37 +140,37 @@ class TestFunctionalContent(object):
         monkeypatch.setattr(
             'ichnaea.content.views.ASSET_URL', 'http://127.0.0.1:9/foo')
 
-        mock_conn = MagicMock(name='conn')
-        mock_bucket = MagicMock(name='bucket')
-        mock_conn.return_value.lookup.return_value = mock_bucket
+        mock_conn = mock.MagicMock(name='conn')
+        mock_bucket = mock.MagicMock(name='bucket')
+        mock_conn.return_value.Bucket.return_value = mock_bucket
         key_prefix = 'export/MLS-'
 
         class MockKey(object):
 
-            def __init__(self, name, size):
-                self.name = key_prefix + name
+            def __init__(self, key, size):
+                self.key = key_prefix + key
                 self.size = size
 
-        mock_bucket.list.return_value = [
+        mock_bucket.objects.filter.return_value = [
             MockKey('full-cell-export-2016-02-24T000000.csv.gz', 1024),
             MockKey('diff-cell-export-2016-02-26T110000.csv.gz', 1000),
             MockKey('diff-cell-export-2016-02-26T100000.csv.gz', 1000),
             MockKey('full-cell-export-2016-02-26T000000.csv.gz', 8192),
             MockKey('diff-cell-export-2016-02-26T120000.csv.gz', 1000),
         ]
-        with patch.object(boto, 'connect_s3', mock_conn):
+        with mock.patch.object(boto3, 'resource', mock_conn):
             result = app.get('/downloads', status=200)
             assert '0kB' not in result.text
             assert '1kB' in result.text
             assert '8kB' in result.text
 
         # calling the page again should use the cache
-        with patch.object(boto, 'connect_s3', mock_conn):
+        with mock.patch.object(boto3, 'resource', mock_conn):
             result = app.get('/downloads', status=200)
             assert '1kB' in result.text
 
         # The mock / S3 API was only called once
-        assert len(mock_bucket.list.mock_calls) == 1
+        assert len(mock_bucket.objects.filter.mock_calls) == 1
 
     def test_headers_html(self, app):
         response = app.get('/', status=200)

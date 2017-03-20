@@ -1,11 +1,11 @@
 from collections import defaultdict
-from contextlib import closing
 import re
 import time
 import uuid
 
-import boto
-import boto.exception
+import boto3
+import boto3.exceptions
+import botocore.exceptions
 import redis.exceptions
 import requests
 import requests.exceptions
@@ -184,15 +184,15 @@ class S3Exporter(ReportExporter):
 
     _retriable = (
         IOError,
-        boto.exception.BotoClientError,
-        boto.exception.BotoServerError,
+        boto3.exceptions.Boto3Error,
+        botocore.exceptions.BotoCoreError,
     )
 
     def send(self, queue_items):
         # ignore metadata
         reports = [item['report'] for item in queue_items]
 
-        _, bucket, path = urlparse(self.config.url)[:3]
+        _, bucketname, path = urlparse(self.config.url)[:3]
         # s3 key names start without a leading slash
         path = path.lstrip('/')
         if not path.endswith('/'):
@@ -205,20 +205,23 @@ class S3Exporter(ReportExporter):
         source = parts[1]
         api_key = parts[2]
 
-        key_name = path.format(
+        obj_name = path.format(
             source=source, api_key=api_key, year=year, month=month, day=day)
-        key_name += uuid.uuid1().hex + '.json.gz'
+        obj_name += uuid.uuid1().hex + '.json.gz'
 
         try:
-            conn = boto.connect_s3()
-            bucket = conn.get_bucket(bucket, validate=False)
-            with closing(boto.s3.key.Key(bucket)) as key:
-                key.key = key_name
-                key.content_encoding = 'gzip'
-                key.content_type = 'application/json'
-                key.set_contents_from_string(
-                    util.encode_gzip(simplejson.dumps({'items': reports}),
-                                     compresslevel=7))
+            data = util.encode_gzip(simplejson.dumps({'items': reports}),
+                                    compresslevel=7)
+
+            s3 = boto3.resource('s3')
+            bucket = s3.Bucket(bucketname)
+
+            obj = bucket.Object(obj_name)
+            obj.put_object(
+                Body=data,
+                ContentEncoding='gzip',
+                ContentType='application/json',
+            )
 
             self.task.stats_client.incr(
                 'data.export.upload',

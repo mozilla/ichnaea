@@ -1,11 +1,10 @@
 import csv
 import os
 import re
-from contextlib import contextmanager
 from datetime import timedelta
 
-import boto
-from mock import MagicMock, patch
+import boto3
+import mock
 import six
 
 from ichnaea.data.ocid import (
@@ -25,15 +24,6 @@ CELL_FIELDS = [
     'radio', 'mcc', 'mnc', 'lac', 'cid', 'psc',
     'lon', 'lat', 'range', 'samples', 'changeable',
     'created', 'updated', 'averageSignal']
-
-
-@contextmanager
-def mock_s3():
-    mock_conn = MagicMock()
-    mock_key = MagicMock()
-    with patch.object(boto, 'connect_s3', mock_conn):
-        with patch('boto.s3.key.Key', lambda _: mock_key):
-            yield mock_key
 
 
 class FakeTask(object):
@@ -103,11 +93,20 @@ class TestExport(object):
         pattern = re.compile(
             r'MLS-diff-cell-export-\d+-\d+-\d+T\d+0000\.csv\.gz')
 
-        with mock_s3() as mock_key:
+        mock_conn = mock.MagicMock()
+        mock_bucket = mock.MagicMock(name='bucket')
+        mock_obj = mock.MagicMock()
+        mock_conn.return_value.Bucket.return_value = mock_bucket
+        mock_bucket.Object.return_value = mock_obj
+
+        with mock.patch.object(boto3, 'resource', mock_conn):
             cell_export_diff(_bucket='bucket')
-            assert pattern.search(mock_key.key)
-            method = mock_key.set_contents_from_filename
-            assert pattern.search(method.call_args[0][0])
+
+        s3_key = mock_bucket.Object.call_args[0][0]
+        assert pattern.search(s3_key)
+
+        tmp_file = mock_obj.upload_file.call_args[0][0]
+        assert pattern.search(tmp_file)
 
     def test_export_full(self, celery, session):
         now = util.utcnow()
@@ -120,8 +119,17 @@ class TestExport(object):
         pattern = re.compile(
             r'MLS-full-cell-export-\d+-\d+-\d+T000000\.csv\.gz')
 
-        with mock_s3() as mock_key:
+        mock_conn = mock.MagicMock()
+        mock_bucket = mock.MagicMock(name='bucket')
+        mock_obj = mock.MagicMock()
+        mock_conn.return_value.Bucket.return_value = mock_bucket
+        mock_bucket.Object.return_value = mock_obj
+
+        with mock.patch.object(boto3, 'resource', mock_conn):
             cell_export_full(_bucket='bucket')
-            assert pattern.search(mock_key.key)
-            method = mock_key.set_contents_from_filename
-            assert pattern.search(method.call_args[0][0])
+
+        s3_key = mock_bucket.Object.call_args[0][0]
+        assert pattern.search(s3_key)
+
+        tmp_file = mock_obj.upload_file.call_args[0][0]
+        assert pattern.search(tmp_file)

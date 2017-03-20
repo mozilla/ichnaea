@@ -6,7 +6,6 @@
 *.sublime-workspace
 circle.yml
 contribute.json
-data
 docker
 docker-compose.yml
 docs/build/html/.git
