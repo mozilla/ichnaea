@@ -16,7 +16,7 @@ from ichnaea.data import area
 from ichnaea.data import datamap
 from ichnaea.data import export
 from ichnaea.data import monitor
-from ichnaea.data import ocid
+from ichnaea.data import public
 from ichnaea.data import station
 from ichnaea.data import stats
 from ichnaea import models
@@ -36,14 +36,14 @@ def _web_content_enabled():
                  expires=2700, _schedule=crontab(minute=3),
                  _enabled=_cell_export_enabled)
 def cell_export_diff(self, _bucket=None):
-    ocid.CellExport(self)(hourly=True, _bucket=_bucket)
+    public.CellExport(self)(hourly=True, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
                  expires=39600, _schedule=crontab(hour=0, minute=37),
                  _enabled=_cell_export_enabled)
 def cell_export_full(self, _bucket=None):
-    ocid.CellExport(self)(hourly=False, _bucket=_bucket)
+    public.CellExport(self)(hourly=False, _bucket=_bucket)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',

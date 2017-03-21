@@ -7,7 +7,7 @@ import boto3
 import mock
 import six
 
-from ichnaea.data.ocid import (
+from ichnaea.data.public import (
     write_stations_to_csv,
 )
 from ichnaea.data.tasks import (
