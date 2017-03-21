@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from sqlalchemy.orm import load_only
 
 from ichnaea.models.content import (
@@ -5,6 +7,28 @@ from ichnaea.models.content import (
     encode_datamap_grid,
 )
 from ichnaea import util
+
+
+class DataMapCleaner(object):
+
+    def __init__(self, task, shard_id=None):
+        self.task = task
+        self.shard_id = shard_id
+        self.shard = DataMap.shards().get(shard_id)
+
+    def _cleanup_shards(self, session):
+        today = util.utcnow().date()
+        one_year = today - timedelta(days=365)
+
+        result = (session.query(self.shard)
+                         .filter(self.shard.modified < one_year)).delete()
+        return result
+
+    def __call__(self):
+        deleted_rows = 0
+        with self.task.db_session() as session:
+            deleted_rows = self._cleanup_shards(session)
+        return deleted_rows
 
 
 class DataMapUpdater(object):

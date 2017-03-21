@@ -1,7 +1,10 @@
 from collections import defaultdict
 from datetime import timedelta
 
-from ichnaea.data.tasks import update_datamap
+from ichnaea.data.tasks import (
+    cleanup_datamap,
+    update_datamap,
+)
 from ichnaea.models.content import (
     DataMap,
     encode_datamap_grid,
@@ -9,7 +12,41 @@ from ichnaea.models.content import (
 from ichnaea import util
 
 
-class TestDataMap(object):
+class TestDataMapCleaner(object):
+
+    @property
+    def today(self):
+        return util.utcnow().date()
+
+    def _one(self, lat, lon, time):
+        lat, lon = DataMap.scale(lat, lon)
+        return DataMap.shard_model(lat, lon)(
+            grid=(lat, lon), created=time, modified=time)
+
+    def test_empty(self, celery, session):
+        for shard_id, shard in DataMap.shards().items():
+            cleanup_datamap.delay(shard_id=shard_id).get()
+            assert session.query(shard).count() == 0
+
+    def test_cleanup(self, celery, session):
+        session.add_all([
+            self._one(37.0, 6.0, self.today),
+            self._one(37.0, 6.1, self.today - timedelta(days=366)),
+            self._one(37.0, 4.0, self.today),
+            self._one(37.0, 4.1, self.today - timedelta(days=366)),
+            self._one(10.0, 6.0, self.today),
+            self._one(10.0, 6.1, self.today - timedelta(days=366)),
+            self._one(10.0, 4.0, self.today),
+            self._one(10.0, 4.1, self.today - timedelta(days=366)),
+        ])
+        session.flush()
+
+        for shard_id, shard in DataMap.shards().items():
+            cleanup_datamap.delay(shard_id=shard_id).get()
+            assert session.query(shard).count() == 1
+
+
+class TestDataMapUpdater(object):
 
     @property
     def today(self):

@@ -32,10 +32,10 @@ class TestBeat(object):
 
         assert (all_tasks - registered_tasks ==
                 set(['data.update_blue', 'data.update_cell',
-                     'data.update_datamap', 'data.update_wifi',
+                     'data.update_wifi', 'data.update_statcounter',
+                     'data.update_datamap', 'data.cleanup_datamap',
                      'data.cell_export_diff', 'data.cell_export_full',
                      'data.export_reports', 'data.update_statregion',
-                     'data.update_statcounter',
                      ]))
 
         assert (set(['_'.join(name.split('_')[:-1]) for name in

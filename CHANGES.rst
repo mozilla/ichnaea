@@ -36,6 +36,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #492: Add new datamap cleanup task to delete old datamap rows.
+
 - Update to botocore/boto3.
 
 - No longer use secondary cell tables during lookups.

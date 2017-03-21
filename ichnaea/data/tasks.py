@@ -13,7 +13,7 @@ from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
 from ichnaea import config
 from ichnaea.data import area
-from ichnaea.data.datamap import DataMapUpdater
+from ichnaea.data import datamap
 from ichnaea.data import export
 from ichnaea.data import monitor
 from ichnaea.data import ocid
@@ -104,11 +104,19 @@ def update_cellarea(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
+                 expires=18000, _schedule=crontab(hour=0, minute=17),
+                 _shard_model=models.DataMap,
+                 _enabled=_web_content_enabled)
+def cleanup_datamap(self, shard_id=None):
+    datamap.DataMapCleaner(self, shard_id=shard_id)()
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  _countdown=2, expires=30, _schedule=timedelta(seconds=47),
                  _shard_model=models.DataMap,
                  _enabled=_web_content_enabled)
 def update_datamap(self, shard_id=None):
-    DataMapUpdater(self, shard_id=shard_id)()
+    datamap.DataMapUpdater(self, shard_id=shard_id)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
