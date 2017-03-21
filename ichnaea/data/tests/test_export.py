@@ -225,7 +225,7 @@ class TestS3(BaseExportTest):
             update_incoming.delay().get()
 
         obj_calls = mock_bucket.Object.call_args_list
-        put_calls = mock_obj.put_object.call_args_list
+        put_calls = mock_obj.put.call_args_list
         assert len(obj_calls) == 4
         assert len(put_calls) == 4
 

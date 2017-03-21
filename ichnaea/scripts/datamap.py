@@ -289,7 +289,7 @@ def upload_files(pool, bucketname, tiles, max_zoom,
     bucket = s3.Bucket(bucketname)
 
     obj = bucket.Object(bucket_prefix + 'data.json')
-    obj.put_object(
+    obj.put(
         Body=dumps({'updated': util.utcnow().isoformat()}),
         CacheControl='max-age=3600, public',
         ContentType='application/json',

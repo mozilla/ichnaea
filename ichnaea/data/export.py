@@ -217,7 +217,7 @@ class S3Exporter(ReportExporter):
             bucket = s3.Bucket(bucketname)
 
             obj = bucket.Object(obj_name)
-            obj.put_object(
+            obj.put(
                 Body=data,
                 ContentEncoding='gzip',
                 ContentType='application/json',
