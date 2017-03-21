@@ -9,10 +9,11 @@ from ichnaea.config import (
 )
 
 if TESTING:
-    broker_url = REDIS_URI
-    result_backend = REDIS_URI
     task_always_eager = True
     task_eager_propagates = True
+
+broker_url = REDIS_URI
+result_backend = REDIS_URI
 
 #: Based on `Celery / Redis caveats
 #: <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
