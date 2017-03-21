@@ -40,8 +40,9 @@ Glossary
 
     OpenCellID
     OCID
-        `OpenCellID <http://opencellid.org/>`_ is a collaborative
-        project to create a free worldwide database of :term:`Cell IDs`.
+        `OpenCellID <https://en.wikipedia.org/wiki/OpenCellID>`_ is a
+        collaborative project to create a free worldwide database of
+        :term:`Cell IDs`.
 
     report
     reports
