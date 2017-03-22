@@ -18,6 +18,7 @@ from ichnaea.models import (
     station_blocked,
 )
 from ichnaea.models.cell import (
+    area_id,
     CellArea,
     CellAreaOCID,
     CellShard,
@@ -129,7 +130,7 @@ class TestCellShard(object):
 
         result = (session.query(model)
                          .filter(model.cellid == cellid)).first()
-        assert result.areaid == cellid[:7]
+        assert area_id(result) == cellid[:7]
         assert encode_cellid(*result.cellid) == cellid
         assert result.radio == Radio.gsm
         assert result.mcc == GB_MCC
@@ -228,7 +229,7 @@ class TestCellShardOCID(object):
         session.flush()
 
         result = session.query(CellShardGsmOCID).first()
-        assert result.areaid == cellid[:7]
+        assert area_id(result) == cellid[:7]
 
     def test_cellid(self, session):
         query = (session.query(CellShardGsmOCID)
@@ -275,7 +276,7 @@ class TestCellShardOCID(object):
         query = (session.query(CellShardGsmOCID)
                         .filter(CellShardGsmOCID.cellid == cellid))
         result = query.first()
-        assert result.areaid == cellid[:7]
+        assert area_id(result) == cellid[:7]
         assert encode_cellid(*result.cellid) == cellid
         assert result.radio is Radio.gsm
         assert result.mcc == GB_MCC

@@ -12,6 +12,7 @@ from ichnaea.models.blue import (  # NOQA
     BlueShard,
 )
 from ichnaea.models.cell import (  # NOQA
+    area_id,
     CellArea,
     CellShard,
     decode_cellarea,

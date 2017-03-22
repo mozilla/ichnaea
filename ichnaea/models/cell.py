@@ -119,6 +119,10 @@ def encode_cellid(radio, mcc, mnc, lac, cid, codec=None):
     return value
 
 
+def area_id(obj):
+    return encode_cellarea(*obj.cellid[:4])
+
+
 class CellAreaColumn(TypeDecorator):
     """A binary type storing Cell Area IDs."""
 
@@ -359,10 +363,6 @@ class CellShard(StationMixin):
             Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
         )
         return _indices + (cls._settings, )
-
-    @property
-    def areaid(self):
-        return encode_cellarea(*self.cellid[:4])
 
     @property
     def unique_key(self):

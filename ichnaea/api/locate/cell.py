@@ -27,6 +27,7 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.geocalc import distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
+    area_id,
     decode_cellarea,
     decode_cellid,
     encode_cellarea,
@@ -66,7 +67,7 @@ def cluster_cells(cells, lookups, min_age=0):
 
     areas = defaultdict(list)
     for cell in cells:
-        areas[cell.areaid].append(cell)
+        areas[area_id(cell)].append(cell)
 
     clusters = []
     for area_cells in areas.values():

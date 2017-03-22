@@ -4,6 +4,7 @@ from ichnaea.data.tasks import (
     update_cellarea,
 )
 from ichnaea.models import (
+    area_id,
     encode_cellarea,
     CellArea,
     Radio,
@@ -110,7 +111,7 @@ class TestArea(object):
             lat=32.2, lon=34.9, radius=10000, region='IL')
         session.flush()
 
-        self.area_queue(celery).enqueue([cell.areaid])
+        self.area_queue(celery).enqueue([area_id(cell)])
         self.task.delay().get()
 
         area = session.query(self.area_model).one()
@@ -128,7 +129,7 @@ class TestArea(object):
             lat=35.8, lon=-83.1, radius=10000, region='US')
         session.flush()
 
-        self.area_queue(celery).enqueue([cell.areaid])
+        self.area_queue(celery).enqueue([area_id(cell)])
         self.task.delay().get()
 
         area = session.query(self.area_model).one()
@@ -143,7 +144,7 @@ class TestArea(object):
             lat=18.34, lon=-64.9, radius=10000, region='PR')
         session.flush()
 
-        self.area_queue(celery).enqueue([cell.areaid])
+        self.area_queue(celery).enqueue([area_id(cell)])
         self.task.delay().get()
 
         area = session.query(self.area_model).one()
