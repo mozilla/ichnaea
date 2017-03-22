@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from sqlalchemy.orm import load_only
+from sqlalchemy import delete, select
 
 from ichnaea.models.content import (
     DataMap,
@@ -20,8 +20,11 @@ class DataMapCleaner(object):
         today = util.utcnow().date()
         one_year = today - timedelta(days=365)
 
-        result = (session.query(self.shard)
-                         .filter(self.shard.modified < one_year)).delete()
+        table = self.shard.__table__
+        result = session.execute(
+            delete(table)
+            .where(table.c.modified < one_year)
+        )
         return result
 
     def __call__(self):
@@ -41,10 +44,11 @@ class DataMapUpdater(object):
     def _update_shards(self, session, grids):
         today = util.utcnow().date()
 
-        load_fields = ('grid', 'modified')
-        rows = (session.query(self.shard)
-                       .filter(self.shard.grid.in_(grids))
-                       .options(load_only(*load_fields))).all()
+        columns = self.shard.__table__.c
+        rows = session.execute(
+            select([columns.grid, columns.modified])
+            .where(columns.grid.in_(grids))
+        ).fetchall()
 
         outdated = set()
         skip = set()

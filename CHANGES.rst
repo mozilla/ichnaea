@@ -11,6 +11,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Use SQLAlchemy core instead of ORM in various places.
+
 
 2.0 (2017-03-22)
 ================

@@ -11,6 +11,7 @@ import requests
 import requests.exceptions
 import simplejson
 from six.moves.urllib.parse import urlparse
+from sqlalchemy import select
 import sqlalchemy.exc
 
 from ichnaea.models import (
@@ -383,10 +384,13 @@ class InternalExporter(ReportExporter):
             # limit database session to get API keys
             keys = [key for key in api_keys if key]
             if keys:
-                query = (session.query(ApiKey.valid_key)
-                                .filter(ApiKey.valid_key.in_(keys)))
+                columns = ApiKey.__table__.c
+                rows = session.execute(
+                    select([columns.valid_key])
+                    .where(columns.valid_key.in_(keys))
+                ).fetchall()
 
-                for row in query.all():
+                for row in rows:
                     api_keys_known.add(row.valid_key)
 
         positions = []

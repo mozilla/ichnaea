@@ -1,7 +1,7 @@
 from collections import defaultdict
 
 import numpy
-from sqlalchemy.orm import load_only
+from sqlalchemy import delete, select
 
 from ichnaea.geocalc import (
     circle_radius,
@@ -66,90 +66,97 @@ class CellAreaUpdater(object):
     def update_area(self, session, areaid):
         # Select all cells in this area and derive a bounding box for them
         radio, mcc, mnc, lac = decode_cellarea(areaid)
-        load_fields = ('lat', 'lon', 'radius', 'region', 'last_seen',
+        load_fields = ('cellid', 'lat', 'lon', 'radius', 'region', 'last_seen',
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
         shard = self.cell_model.shard_model(radio)
-        cells = (session.query(shard)
-                        .filter((shard.radio == radio),
-                                (shard.mcc == mcc),
-                                (shard.mnc == mnc),
-                                (shard.lac == lac),
-                                shard.lat.isnot(None),
-                                shard.lon.isnot(None))
-                        .options(load_only(*load_fields))).all()
+        columns = shard.__table__.c
+        fields = [getattr(columns, f) for f in load_fields]
 
-        area_query = (session.query(self.area_model)
-                             .filter(self.area_model.areaid == areaid))
+        cells = session.execute(
+            select(fields)
+            .where(columns.radio == radio)
+            .where(columns.mcc == mcc)
+            .where(columns.mnc == mnc)
+            .where(columns.lac == lac)
+            .where(columns.lat.isnot(None))
+            .where(columns.lon.isnot(None))
+        ).fetchall()
 
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
-            area_query.delete()
+            area_table = self.area_model.__table__
+            session.execute(
+                delete(area_table)
+                .where(area_table.c.areaid == areaid)
+            )
+            return
+
+        # Otherwise update the area entry based on all the cells
+        area = (session.query(self.area_model)
+                       .filter(self.area_model.areaid == areaid)).first()
+
+        cell_extremes = numpy.array([
+            (numpy.nan if cell.max_lat is None else cell.max_lat,
+             numpy.nan if cell.max_lon is None else cell.max_lon)
+            for cell in cells] + [
+            (numpy.nan if cell.min_lat is None else cell.min_lat,
+             numpy.nan if cell.min_lon is None else cell.min_lon)
+            for cell in cells
+        ], dtype=numpy.double)
+
+        max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
+        min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
+
+        ctr_lat, ctr_lon = numpy.array(
+            [(c.lat, c.lon) for c in cells],
+            dtype=numpy.double).mean(axis=0)
+        ctr_lat = float(ctr_lat)
+        ctr_lon = float(ctr_lon)
+
+        radius = circle_radius(
+            ctr_lat, ctr_lon, max_lat, max_lon, min_lat, min_lon)
+
+        cell_radii = numpy.array([
+            (numpy.nan if cell.radius is None else cell.radius)
+            for cell in cells
+        ], dtype=numpy.int32)
+        avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
+        num_cells = len(cells)
+        region = self.region(ctr_lat, ctr_lon, mcc, cells)
+
+        last_seen = None
+        cell_last_seen = set([cell.last_seen for cell in cells
+                              if cell.last_seen is not None])
+        if cell_last_seen:
+            last_seen = max(cell_last_seen)
+
+        if area is None:
+            stmt = self.area_model.__table__.insert(
+                mysql_on_duplicate='num_cells = num_cells'  # no-op
+            ).values(
+                areaid=areaid,
+                radio=radio,
+                mcc=mcc,
+                mnc=mnc,
+                lac=lac,
+                created=self.utcnow,
+                modified=self.utcnow,
+                lat=ctr_lat,
+                lon=ctr_lon,
+                radius=radius,
+                region=region,
+                avg_cell_radius=avg_cell_radius,
+                num_cells=num_cells,
+                last_seen=last_seen,
+            )
+            session.execute(stmt)
         else:
-            # Otherwise update the area entry based on all the cells
-            area = area_query.first()
-
-            cell_extremes = numpy.array([
-                (numpy.nan if cell.max_lat is None else cell.max_lat,
-                 numpy.nan if cell.max_lon is None else cell.max_lon)
-                for cell in cells] + [
-                (numpy.nan if cell.min_lat is None else cell.min_lat,
-                 numpy.nan if cell.min_lon is None else cell.min_lon)
-                for cell in cells
-            ], dtype=numpy.double)
-
-            max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
-            min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
-
-            ctr_lat, ctr_lon = numpy.array(
-                [(c.lat, c.lon) for c in cells],
-                dtype=numpy.double).mean(axis=0)
-            ctr_lat = float(ctr_lat)
-            ctr_lon = float(ctr_lon)
-
-            radius = circle_radius(
-                ctr_lat, ctr_lon, max_lat, max_lon, min_lat, min_lon)
-
-            cell_radii = numpy.array([
-                (numpy.nan if cell.radius is None else cell.radius)
-                for cell in cells
-            ], dtype=numpy.int32)
-            avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
-            num_cells = len(cells)
-            region = self.region(ctr_lat, ctr_lon, mcc, cells)
-
-            last_seen = None
-            cell_last_seen = set([cell.last_seen for cell in cells
-                                  if cell.last_seen is not None])
-            if cell_last_seen:
-                last_seen = max(cell_last_seen)
-
-            if area is None:
-                stmt = self.area_model.__table__.insert(
-                    mysql_on_duplicate='num_cells = num_cells'  # no-op
-                ).values(
-                    areaid=areaid,
-                    radio=radio,
-                    mcc=mcc,
-                    mnc=mnc,
-                    lac=lac,
-                    created=self.utcnow,
-                    modified=self.utcnow,
-                    lat=ctr_lat,
-                    lon=ctr_lon,
-                    radius=radius,
-                    region=region,
-                    avg_cell_radius=avg_cell_radius,
-                    num_cells=num_cells,
-                    last_seen=last_seen,
-                )
-                session.execute(stmt)
-            else:
-                area.modified = self.utcnow
-                area.lat = ctr_lat
-                area.lon = ctr_lon
-                area.radius = radius
-                area.region = region
-                area.avg_cell_radius = avg_cell_radius
-                area.num_cells = num_cells
-                area.last_seen = last_seen
+            area.modified = self.utcnow
+            area.lat = ctr_lat
+            area.lon = ctr_lon
+            area.radius = radius
+            area.region = region
+            area.avg_cell_radius = avg_cell_radius
+            area.num_cells = num_cells
+            area.last_seen = last_seen

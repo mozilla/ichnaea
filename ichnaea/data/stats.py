@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from sqlalchemy import func
+from sqlalchemy import delete, func, select
 
 from ichnaea.models import (
     BlueShard,
@@ -26,6 +26,7 @@ class StatCounterUpdater(object):
             with self.task.db_session() as session:
                 for stat_key in StatKey:
                     self.update_key(session, pipe, stat_key, self.yesterday)
+                    session.flush()
                     self.update_key(session, pipe, stat_key, self.today)
 
     def update_key(self, session, pipe, stat_key, day):
@@ -44,11 +45,15 @@ class StatCounterUpdater(object):
                 stat_counter.decr(pipe, value)
         else:
             # Get the most recent value for the stat from the database.
-            before = (session.query(Stat)
-                             .filter((Stat.key == stat_key),
-                                     (Stat.time < day))
-                             .order_by(Stat.time.desc())
-                             .limit(1)).first()
+            columns = Stat.__table__.c
+            before = session.execute(
+                select([columns.value])
+                .where(columns.key == stat_key)
+                .where(columns.time < day)
+                .order_by(columns.time.desc())
+                .limit(1)
+            ).fetchone()
+
             old_value = 0
             if before:
                 old_value = before.value
@@ -71,11 +76,14 @@ class StatRegion(object):
             self._update_stats(session)
 
     def _update_stats(self, session):
-        cells = (session.query(CellArea.region,
-                               CellArea.radio,
-                               func.sum(CellArea.num_cells))
-                        .filter(CellArea.region.isnot(None))
-                        .group_by(CellArea.region, CellArea.radio)).all()
+        columns = CellArea.__table__.c
+        cells = session.execute(
+            select([columns.region,
+                    columns.radio,
+                    func.sum(columns.num_cells)])
+            .where(columns.region.isnot(None))
+            .group_by(columns.region, columns.radio)
+        ).fetchall()
 
         default = {'gsm': 0, 'wcdma': 0, 'lte': 0, 'blue': 0, 'wifi': 0}
         stats = {}
@@ -86,9 +94,12 @@ class StatRegion(object):
 
         for name, shard_model in (('blue', BlueShard), ('wifi', WifiShard)):
             for shard in shard_model.shards().values():
-                stations = (session.query(shard.region, func.count())
-                                   .filter(shard.region.isnot(None))
-                                   .group_by(shard.region)).all()
+                columns = shard.__table__.c
+                stations = session.execute(
+                    select([columns.region, func.count()])
+                    .where(columns.region.isnot(None))
+                    .group_by(columns.region)
+                ).fetchall()
 
                 for region, num in stations:
                     if region not in stats:
@@ -119,6 +130,8 @@ class StatRegion(object):
 
         obsolete_regions = list(set(region_stats.keys()) - set(stats.keys()))
         if obsolete_regions:
-            (session.query(RegionStat)
-                    .filter(RegionStat.region.in_(obsolete_regions))
-             ).delete(synchronize_session=False)
+            table = RegionStat.__table__
+            session.execute(
+                delete(table)
+                .where(table.c.region.in_(obsolete_regions))
+            )

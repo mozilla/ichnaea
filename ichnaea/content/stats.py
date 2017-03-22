@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from operator import itemgetter
 
 import genc
-from sqlalchemy import func
+from sqlalchemy import func, select
 
 from ichnaea.models.content import (
     RegionStat,
@@ -43,14 +43,18 @@ def global_stats(session):
         StatKey.unique_cell,
         StatKey.unique_wifi,
     )
-    rows = (session.query(Stat.key, Stat.value)
-                   .filter(Stat.key.in_(stat_keys),
-                           (Stat.time == today)))
+
+    columns = Stat.__table__.c
+    rows = session.execute(
+        select([columns.key, columns.value])
+        .where(columns.key.in_(stat_keys))
+        .where(columns.time == today)
+    ).fetchall()
 
     stats = {}
-    for row in rows.all():
-        if row[1]:
-            stats[row[0]] = int(row[1])
+    for row in rows:
+        if row.value:
+            stats[row.key] = int(row.value)
 
     result = {}
     for stat_key in stat_keys:
@@ -60,12 +64,14 @@ def global_stats(session):
         except KeyError:
             # no stats entry available, maybe closely after midnight
             # and task hasn't run yet, take latest value
-            row = (session.query(Stat.value)
-                          .filter(Stat.key == stat_key)
-                          .order_by(Stat.time.desc())
-                          .limit(1)).first()
+            row = session.execute(
+                select([columns.value])
+                .where(columns.key == stat_key)
+                .order_by(columns.time.desc())
+                .limit(1)
+            ).fetchone()
             if row is not None:
-                result[name] = row[0]
+                result[name] = row.value
             else:
                 result[name] = 0
 
@@ -79,14 +85,17 @@ def global_stats(session):
 def histogram(session, stat_key, days=365):
     today = util.utcnow().date()
     start = today - timedelta(days=days)
-    month_key = (func.year(Stat.time), func.month(Stat.time))
-    rows = (session.query(func.max(Stat.value), *month_key)
-                   .filter((Stat.key == stat_key),
-                           (Stat.time >= start))
-                   .group_by(*month_key)
-                   .order_by(*month_key))
+    columns = Stat.__table__.c
+    month_key = [func.year(columns.time), func.month(columns.time)]
+    rows = session.execute(
+        select(month_key + [func.max(columns.value)])
+        .where(columns.key == stat_key)
+        .where(columns.time >= start)
+        .group_by(*month_key)
+        .order_by(*month_key)
+    ).fetchall()
     result = []
-    for num, year, month in rows.all():
+    for year, month, num in rows:
         # Use the first of the month to graph the value
         # for the entire month.
         day = timegm(date(year, month, 1).timetuple()) * 1000
@@ -95,7 +104,12 @@ def histogram(session, stat_key, days=365):
 
 
 def regions(session):
-    rows = session.query(RegionStat).all()
+    columns = RegionStat.__table__.c
+    rows = session.execute(
+        select([columns.region, columns.gsm, columns.wcdma, columns.lte,
+                columns.blue, columns.wifi])
+    ).fetchall()
+
     regions = {}
     for row in rows:
         code = row.region
