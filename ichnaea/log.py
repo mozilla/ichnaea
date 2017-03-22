@@ -183,7 +183,7 @@ class DebugRavenClient(RavenClient):
 
     def __init__(self, *args, **kw):
         super(DebugRavenClient, self).__init__(*args, **kw)
-        self.msgs = deque(maxlen=10)
+        self.msgs = deque(maxlen=100)
 
     def _clear(self):
         self.msgs.clear()
@@ -194,7 +194,7 @@ class DebugRavenClient(RavenClient):
 
     def send(self, auth_header=None, **data):
         self.msgs.append(data)
-        self.state.set_success()
+        self._successful_send()
 
     def check(self, expected=()):
         """
