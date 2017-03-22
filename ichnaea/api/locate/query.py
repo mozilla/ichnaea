@@ -312,6 +312,19 @@ class Query(object):
             result['fallbacks'] = self.fallback.json()
         return result
 
+    def networks(self):
+        """Returns networks seen in the validated query."""
+        result = {'area': set(), 'blue': set(), 'cell': set(), 'wifi': set()}
+        if self.cell_area:
+            result['area'] = set([c.areaid for c in self.cell_area])
+        if self.blue:
+            result['blue'] = set([b.mac for b in self.blue])
+        if self.cell:
+            result['cell'] = set([c.cellid for c in self.cell])
+        if self.wifi:
+            result['wifi'] = set([w.mac for w in self.wifi])
+        return result
+
     def collect_metrics(self):
         """Should detailed metrics be collected for this query?"""
         allowed = bool(self.api_key and self.api_key.valid_key)

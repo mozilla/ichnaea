@@ -158,6 +158,19 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             },
         }])
 
+    def test_blue_seen(self, app, data_queues, session):
+        blue = BlueShardFactory()
+        offset = 0.00002
+        blues = [
+            blue,
+            BlueShardFactory(lat=blue.lat + offset),
+        ]
+        session.flush()
+        query = self.model_query(blues=blues)
+        res = self._call(app, body=query)
+        self.check_model_response(res, blue, lat=blue.lat + offset / 2)
+        self.check_queue(data_queues, 0)
+
     def test_cell(self, app, data_queues, session, stats):
         cell = CellShardFactory(radio=Radio.lte)
         session.flush()

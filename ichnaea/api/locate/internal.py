@@ -59,25 +59,39 @@ class InternalPositionSource(BaseInternalSource,
     """A position source based on our own crowd-sourced internal data."""
 
     def _store_query(self, query, results):
+        best_result = results.best()
+        if not best_result:
+            return
+
+        result_networks = {'area': set(), 'blue': set(),
+                           'cell': set(), 'wifi': set()}
+        for network in best_result.used_networks:
+            if network[2]:
+                # only add network if it was last_seen today
+                result_networks[network[0]].add(network[1])
+
+        if result_networks == query.networks():
+            # don't store queries, based exclusively on data,
+            # which was already validated today
+            return
+
         if not query.api_key.store_sample('locate'):
             # only store some percentage of the requests
             return
 
-        best_result = results.best()
-        if best_result:
-            report = query.json()
-            report.update(best_result.json())
+        report = query.json()
+        report.update(best_result.json())
 
-            data = [{
-                'api_key': query.api_key.valid_key,
-                'source': report['position']['source'],
-                'report': report,
-            }]
+        data = [{
+            'api_key': query.api_key.valid_key,
+            'source': report['position']['source'],
+            'report': report,
+        }]
 
-            try:
-                self.data_queues['update_incoming'].enqueue(data)
-            except Exception:  # pragma: no cover
-                self.raven_client.captureException()
+        try:
+            self.data_queues['update_incoming'].enqueue(data)
+        except Exception:  # pragma: no cover
+            self.raven_client.captureException()
 
     def search(self, query):
         results = super(InternalPositionSource, self).search(query)

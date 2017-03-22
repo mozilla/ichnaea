@@ -36,6 +36,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #496: Don't store queries if all networks where seen today.
+
 - #492: Add new datamap cleanup task to delete old datamap rows.
 
 - Update to botocore/boto3.
