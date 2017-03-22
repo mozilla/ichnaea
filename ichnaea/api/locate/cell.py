@@ -4,7 +4,7 @@ from collections import defaultdict
 import math
 
 import numpy
-from sqlalchemy.orm import load_only
+from sqlalchemy import select
 
 from ichnaea.api.locate.constants import (
     DataSource,
@@ -161,7 +161,7 @@ def query_cells(query, lookups, model, raven_client):
 
     # load all fields used in score calculation and those we
     # need for the position
-    load_fields = ('lat', 'lon', 'radius', 'region', 'samples',
+    load_fields = ('cellid', 'lat', 'lon', 'radius', 'region', 'samples',
                    'created', 'modified', 'last_seen',
                    'block_last', 'block_count')
     result = []
@@ -173,13 +173,16 @@ def query_cells(query, lookups, model, raven_client):
             shards[model.shard_model(lookup.radioType)].append(lookup.cellid)
 
         for shard, shard_cellids in shards.items():
+            columns = shard.__table__.c
+            fields = [getattr(columns, f) for f in load_fields]
             rows = (
-                query.session.query(shard)
-                             .filter(shard.cellid.in_(shard_cellids),
-                                     shard.lat.isnot(None),
-                                     shard.lon.isnot(None))
-                             .options(load_only(*load_fields))
-            ).all()
+                query.session.execute(
+                    select(fields)
+                    .where(columns.lat.isnot(None))
+                    .where(columns.lon.isnot(None))
+                    .where(columns.cellid.in_(shard_cellids)))
+            ).fetchall()
+
             result.extend([row for row in rows
                            if not station_blocked(row, today)])
     except Exception:
@@ -195,16 +198,20 @@ def query_areas(query, lookups, model, raven_client):
 
     # load all fields used in score calculation and those we
     # need for the position or region
-    load_fields = ('lat', 'lon', 'radius', 'region', 'num_cells',
+    load_fields = ('areaid', 'lat', 'lon', 'radius', 'region', 'num_cells',
                    'created', 'modified', 'last_seen')
     try:
-        areas = (query.session.query(model)
-                              .filter(model.areaid.in_(areaids),
-                                      model.lat.isnot(None),
-                                      model.lon.isnot(None))
-                              .options(load_only(*load_fields))).all()
+        columns = model.__table__.c
+        fields = [getattr(columns, f) for f in load_fields]
+        rows = (
+            query.session.execute(
+                select(fields)
+                .where(columns.lat.isnot(None))
+                .where(columns.lon.isnot(None))
+                .where(columns.areaid.in_(areaids)))
+        ).fetchall()
 
-        return areas
+        return rows
     except Exception:
         raven_client.captureException()
     return []

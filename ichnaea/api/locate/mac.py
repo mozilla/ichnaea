@@ -7,7 +7,7 @@ import math
 import numpy
 from scipy.cluster import hierarchy
 from scipy.optimize import leastsq
-from sqlalchemy.orm import load_only
+from sqlalchemy import select
 
 from ichnaea.api.locate.score import station_score
 from ichnaea.geocalc import distance
@@ -177,7 +177,7 @@ def query_macs(query, lookups, raven_client, db_model):
 
     # load all fields used in score calculation and those we
     # need for the position or region
-    load_fields = ('lat', 'lon', 'radius', 'region', 'samples',
+    load_fields = ('mac', 'lat', 'lon', 'radius', 'region', 'samples',
                    'created', 'modified', 'last_seen',
                    'block_last', 'block_count')
     result = []
@@ -189,13 +189,16 @@ def query_macs(query, lookups, raven_client, db_model):
             shards[db_model.shard_model(mac)].append(mac)
 
         for shard, shard_macs in shards.items():
+            columns = shard.__table__.c
+            fields = [getattr(columns, f) for f in load_fields]
             rows = (
-                query.session.query(shard)
-                             .filter(shard.mac.in_(shard_macs),
-                                     shard.lat.isnot(None),
-                                     shard.lon.isnot(None))
-                             .options(load_only(*load_fields))
-            ).all()
+                query.session.execute(
+                    select(fields)
+                    .where(columns.lat.isnot(None))
+                    .where(columns.lon.isnot(None))
+                    .where(columns.mac.in_(shard_macs)))
+            ).fetchall()
+
             result.extend([row for row in rows
                            if not station_blocked(row, today)])
     except Exception:
