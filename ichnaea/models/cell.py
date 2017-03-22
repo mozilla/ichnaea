@@ -1,5 +1,4 @@
 import base64
-import math
 import struct
 
 import colander
@@ -36,7 +35,6 @@ from ichnaea.models.schema import (
 )
 from ichnaea.models.station import (
     PositionMixin,
-    ScoreMixin,
     StationMixin,
     TimeTrackingMixin,
     ValidPositionSchema,
@@ -264,8 +262,7 @@ class ValidCellAreaSchema(ValidCellAreaKeySchema,
     last_seen = colander.SchemaNode(DateFromString(), missing=None)
 
 
-class CellAreaMixin(PositionMixin, TimeTrackingMixin,
-                    CreationMixin, ScoreMixin):
+class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
 
     _valid_schema = ValidCellAreaSchema()
 
@@ -280,25 +277,6 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin,
     avg_cell_radius = Column(Integer(unsigned=True))  #:
     num_cells = Column(Integer(unsigned=True))  #:
     last_seen = Column(Date)  #:
-
-    def score_sample_weight(self):
-        # treat areas for which we get the exact same
-        # cells multiple times as if we only got 1 cell
-        samples = self.num_cells
-        if samples > 1 and not self.radius:
-            samples = 1
-
-        # sample_weight is a number between:
-        # 1.0 for 1 sample
-        # 1.41 for 2 samples
-        # 10 for 100 samples
-        # we use a sqrt scale instead of log2 here, as this represents
-        # the number of cells in an area and not the sum of samples
-        # from all cells in the area
-        return min(math.sqrt(max(samples, 1)), 10.0)
-
-    def score_created_position(self):
-        return self.created.date()
 
     @declared_attr
     def __table_args__(cls):  # NOQA

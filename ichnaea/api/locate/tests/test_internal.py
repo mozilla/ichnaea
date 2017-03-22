@@ -1,4 +1,8 @@
 from ichnaea.api.locate.internal import InternalRegionSource
+from ichnaea.api.locate.score import (
+    area_score,
+    station_score,
+)
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.geocode import GEOCODER
 from ichnaea.tests.factories import (
@@ -30,7 +34,8 @@ class TestRegionSource(BaseSourceTest):
         self.check_model_results(results, [region])
         best_result = results.best()
         assert best_result.region_code == region.code
-        assert best_result.score == blue1.score(now) + blue2.score(now)
+        assert (best_result.score ==
+                station_score(blue1, now) + station_score(blue2, now))
         stats.check(counter=[
             (self.api_type + '.source',
                 ['key:test', 'region:none', 'source:internal',
@@ -51,12 +56,12 @@ class TestRegionSource(BaseSourceTest):
     def test_from_mcc(self, geoip_db, http_session,
                       session, source, stats):
         region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
-        cell = CellAreaFactory(mcc=235, num_cells=10)
+        area = CellAreaFactory(mcc=235, num_cells=10)
         session.flush()
 
         query = self.model_query(
             geoip_db, http_session, session, stats,
-            cells=[cell])
+            cells=[area])
         results = source.search(query)
         self.check_model_results(results, [region])
         assert results[0].score == 1.0
@@ -70,19 +75,19 @@ class TestRegionSource(BaseSourceTest):
                            session, source, stats):
         now = util.utcnow()
         regions = GEOCODER.regions_for_mcc(234, metadata=True)
-        cell = CellAreaFactory(mcc=234, num_cells=10)
+        area = CellAreaFactory(mcc=234, num_cells=10)
         session.flush()
 
         query = self.model_query(
             geoip_db, http_session, session, stats,
-            cells=[cell])
+            cells=[area])
         results = source.search(query)
         self.check_model_results(results, regions)
         assert results.best().region_code == 'GB'
         for result in results:
             score = 0.25
             if result.region_code == 'GB':
-                score += cell.score(now)
+                score += area_score(area, now)
             assert result.score == score
         stats.check(counter=[
             (self.api_type + '.source',
@@ -94,26 +99,26 @@ class TestRegionSource(BaseSourceTest):
                           session, source, stats):
         now = util.utcnow()
         region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
-        cell = CellAreaFactory(mcc=234, num_cells=6)
-        cell2 = CellAreaFactory(mcc=235, num_cells=8)
+        area = CellAreaFactory(mcc=234, num_cells=6)
+        area2 = CellAreaFactory(mcc=235, num_cells=8)
         session.flush()
 
         query = self.model_query(
             geoip_db, http_session, session, stats,
-            cells=[cell, cell2])
+            cells=[area, area2])
         results = source.search(query)
         assert len(results) > 2
         best_result = results.best()
         assert best_result.region_code == region.code
-        assert best_result.score == 1.25 + cell.score(now)
+        assert best_result.score == 1.25 + area_score(area, now)
 
     def test_invalid_mcc(self, geoip_db, http_session,
                          session, source, stats):
-        cell = CellAreaFactory.build(mcc=235, num_cells=10)
-        cell.mcc = 999
+        area = CellAreaFactory.build(mcc=235, num_cells=10)
+        area.mcc = 999
         query = self.model_query(
             geoip_db, http_session, session, stats,
-            cells=[cell])
+            cells=[area])
         results = source.search(query)
         self.check_model_results(results, None)
 
@@ -133,7 +138,8 @@ class TestRegionSource(BaseSourceTest):
         self.check_model_results(results, [region])
         best_result = results.best()
         assert best_result.region_code == region.code
-        assert best_result.score == wifi1.score(now) + wifi2.score(now)
+        assert (best_result.score ==
+                station_score(wifi1, now) + station_score(wifi2, now))
         stats.check(counter=[
             (self.api_type + '.source',
                 ['key:test', 'region:none', 'source:internal',

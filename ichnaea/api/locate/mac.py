@@ -9,6 +9,7 @@ from scipy.cluster import hierarchy
 from scipy.optimize import leastsq
 from sqlalchemy.orm import load_only
 
+from ichnaea.api.locate.score import station_score
 from ichnaea.geocalc import distance
 from ichnaea.models.mac import (
     decode_mac,
@@ -50,7 +51,7 @@ def cluster_networks(models, lookups,
         model.radius or min_radius,
         obs_data[model.mac][0],
         obs_data[model.mac][1],
-        model.score(now),
+        station_score(model, now),
         encode_mac(model.mac),
         bool(model.last_seen >= today))
         for model in models],

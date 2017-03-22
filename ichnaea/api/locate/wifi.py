@@ -19,6 +19,7 @@ from ichnaea.api.locate.result import (
     Region,
     RegionResultList,
 )
+from ichnaea.api.locate.score import station_score
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import WifiShard
 from ichnaea.models.constants import MIN_WIFI_SIGNAL
@@ -76,7 +77,7 @@ class WifiRegionMixin(object):
         regions = defaultdict(int)
         wifis = query_macs(query, query.wifi, self.raven_client, WifiShard)
         for wifi in wifis:
-            regions[wifi.region] += wifi.score(now)
+            regions[wifi.region] += station_score(wifi, now)
 
         for code, score in regions.items():
             region = GEOCODER.region_for_code(code)

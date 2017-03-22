@@ -215,13 +215,6 @@ class TestCellShard(object):
             created=two_weeks, block_last=two_weeks.date()).blocked(
             two_weeks.date()))
 
-    def test_score(self):
-        now = util.utcnow()
-        cell = CellShard.shard_model(Radio.gsm).create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
-            created=now, modified=now, radius=10, samples=2)
-        assert round(cell.score(now), 2) == 0.1
-
 
 class TestCellShardOCID(object):
 
@@ -301,13 +294,6 @@ class TestCellShardOCID(object):
         assert result.block_first == now.date()
         assert result.block_last == now.date()
         assert result.block_count == 1
-
-    def test_score(self):
-        now = util.utcnow()
-        cell = CellShardOCID.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2, cid=3,
-            created=now, modified=now, radius=10, samples=2)
-        assert round(cell.score(now), 2) == 0.1
 
 
 class TestCellArea(object):
@@ -429,17 +415,6 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         assert result.avg_cell_radius == 10
         assert result.num_cells == 15
 
-    def test_score(self):
-        now = util.utcnow()
-        area = CellArea.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
-            created=now, modified=now, radius=10, num_cells=4)
-        assert round(area.score(now), 2) == 0.2
-        area = CellArea.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
-            created=now, modified=now, radius=0, num_cells=100)
-        assert round(area.score(now), 2) == 0.1
-
 
 class TestCellAreaOCID(object):
 
@@ -473,14 +448,3 @@ class TestCellAreaOCID(object):
         assert result.region == 'GB'
         assert result.avg_cell_radius == 11
         assert result.num_cells == 15
-
-    def test_score(self):
-        now = util.utcnow()
-        area = CellAreaOCID.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
-            created=now, modified=now, radius=10, num_cells=4)
-        assert round(area.score(now), 2) == 0.2
-        area = CellAreaOCID.create(
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=2,
-            created=now, modified=now, radius=0, num_cells=100)
-        assert round(area.score(now), 2) == 0.1

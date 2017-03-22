@@ -110,11 +110,3 @@ class TestBlueShard(object):
         stmt = 'select hex(`mac`) from blue_shard_0'
         row = session.execute(stmt).fetchone()
         assert row == ('111101123456', )
-
-    def test_score(self):
-        now = util.utcnow()
-        blue = BlueShard.create(
-            mac='111101123456', created=now, modified=now,
-            radius=10, samples=2,
-        )
-        assert round(blue.score(now), 2) == 0.1

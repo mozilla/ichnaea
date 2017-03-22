@@ -19,6 +19,10 @@ from ichnaea.api.locate.result import (
     Region,
     RegionResultList,
 )
+from ichnaea.api.locate.score import (
+    area_score,
+    station_score,
+)
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.geocalc import distance
 from ichnaea.geocode import GEOCODER
@@ -69,7 +73,7 @@ def cluster_cells(cells, lookups, min_age=0):
             cell.lat, cell.lon, cell.radius,
             obs_data[cell.cellid][0],
             obs_data[cell.cellid][1],
-            cell.score(now),
+            station_score(cell, now),
             encode_cellid(*cell.cellid),
             bool(cell.last_seen >= today))
             for cell in area_cells],
@@ -98,7 +102,7 @@ def cluster_areas(areas, lookups, min_age=0):
             area.lat, area.lon, area.radius,
             obs_data[area.areaid][0],
             obs_data[area.areaid][1],
-            area.score(now),
+            area_score(area, now),
             encode_cellarea(*area.areaid),
             bool(area.last_seen >= today))],
             dtype=NETWORK_DTYPE))
@@ -309,7 +313,7 @@ class CellRegionMixin(object):
             for area in areas:
                 code = area.region
                 if code and code in grouped_regions:
-                    grouped_regions[code][1] += area.score(now)
+                    grouped_regions[code][1] += area_score(area, now)
 
         for region, score in grouped_regions.values():
             results.add(self.result_type(

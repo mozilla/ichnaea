@@ -1,5 +1,3 @@
-import math
-
 import colander
 from sqlalchemy import (
     Column,
@@ -95,64 +93,6 @@ class TimeTrackingMixin(object):
     modified = Column(DateTime)  #:
 
 
-class ScoreMixin(object):
-    """A model mix-in exposing a score."""
-
-    def score_sample_weight(self):
-        # treat networks for which we get the exact same
-        # observations multiple times as if we only got 1 sample
-        samples = self.samples
-        if samples > 1 and not self.radius:
-            samples = 1
-
-        # sample_weight is a number between:
-        # 0.5 for 1 sample
-        # 1.0 for 2 samples
-        # 3.32 for 10 samples
-        # 6.64 for 100 samples
-        # 10.0 for 1024 samples or more
-        return min(max(math.log(max(samples, 1), 2), 0.5), 10.0)
-
-    def score_created_position(self):
-        # The creation date stays intact after a station moved to a new
-        # position. For scoring purposes we only want to consider how
-        # long the station has been at its current position.
-        created = self.created.date()
-        if not self.block_last:
-            return created
-        return max(created, self.block_last)
-
-    def score(self, now):
-        """
-        Returns a score as a floating point number.
-
-        The score represents the quality or trustworthiness of this record.
-
-        :param now: The current time.
-        :type now: datetime.datetime
-        """
-        # age_weight is a number between:
-        # 1.0 (data from last month) to
-        # 0.277 (data from a year ago)
-        # 0.2 (data from two years ago)
-        month_old = max((now - self.modified).days, 0) // 30
-        age_weight = 1 / math.sqrt(month_old + 1)
-
-        # collection_weight is a number between:
-        # 0.1 (data was only seen on a single day)
-        # 0.2 (data was seen on two different days)
-        # 1.0 (data was first and last seen at least 10 days apart)
-        last_seen = self.modified.date()
-        if self.last_seen is not None:
-            last_seen = max(last_seen, self.last_seen)
-
-        collected_over = max(
-            (last_seen - self.score_created_position()).days, 1)
-        collection_weight = min(collected_over / 10.0, 1.0)
-
-        return age_weight * collection_weight * self.score_sample_weight()
-
-
 class ValidStationSchema(ValidBboxSchema,
                          ValidPositionSchema,
                          ValidTimeTrackingSchema):
@@ -173,8 +113,7 @@ class ValidStationSchema(ValidBboxSchema,
 class StationMixin(BboxMixin,
                    PositionMixin,
                    TimeTrackingMixin,
-                   CreationMixin,
-                   ScoreMixin):
+                   CreationMixin):
     """A model mix-in with common station columns."""
 
     radius = Column(Integer(unsigned=True))  #:

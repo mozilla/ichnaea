@@ -19,6 +19,7 @@ from ichnaea.api.locate.result import (
     Region,
     RegionResultList,
 )
+from ichnaea.api.locate.score import station_score
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import BlueShard
 from ichnaea.models.constants import MIN_BLUE_SIGNAL
@@ -76,7 +77,7 @@ class BlueRegionMixin(object):
         regions = defaultdict(int)
         blues = query_macs(query, query.blue, self.raven_client, BlueShard)
         for blue in blues:
-            regions[blue.region] += blue.score(now)
+            regions[blue.region] += station_score(blue, now)
 
         for code, score in regions.items():
             region = GEOCODER.region_for_code(code)

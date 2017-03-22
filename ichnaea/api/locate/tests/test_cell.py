@@ -5,6 +5,10 @@ from ichnaea.api.locate.constants import (
     CELL_MAX_ACCURACY,
     CELLAREA_MIN_ACCURACY,
 )
+from ichnaea.api.locate.score import (
+    area_score,
+    station_score,
+)
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellAreaFactory,
@@ -41,7 +45,7 @@ class TestCellPosition(BaseSourceTest):
             cells=[cell])
         results = source.search(query)
         self.check_model_results(results, [cell])
-        assert results.best().score == cell.score(now)
+        assert results.best().score == station_score(cell, now)
 
     def test_cell_wrong_cid(self, geoip_db, http_session,
                             session, source, stats):
@@ -73,7 +77,8 @@ class TestCellPosition(BaseSourceTest):
             results, [cell],
             lat=cell.lat + 0.3333333, lon=cell.lon + 0.3333333,
             accuracy=CELL_MAX_ACCURACY)
-        assert results.best().score == cell.score(now) + cell2.score(now)
+        assert (results.best().score ==
+                station_score(cell, now) + station_score(cell2, now))
 
     def test_incomplete_keys(self, geoip_db, http_session,
                              session_tracker, session, source, stats):
@@ -102,7 +107,7 @@ class TestCellPosition(BaseSourceTest):
             cells=[area, area2])
         results = source.search(query)
         self.check_model_results(results, [area])
-        assert results.best().score == area.score(now)
+        assert results.best().score == area_score(area, now)
 
     def test_minimum_radius(self, geoip_db, http_session,
                             session, source, stats):

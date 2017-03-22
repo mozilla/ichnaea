@@ -4,6 +4,7 @@ from ichnaea.api.locate.constants import (
     DataSource,
     MAX_WIFIS_IN_CLUSTER,
 )
+from ichnaea.api.locate.score import station_score
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.api.locate.wifi import WifiPositionMixin
@@ -220,7 +221,8 @@ class TestWifi(BaseSourceTest):
         assert round(best_result.lon, 7) == round(wifi21.lon, 7)
         assert round(best_result.accuracy, 2) == 10.0
         assert (round(best_result.score, 2) ==
-                round(wifi21.score(now) + wifi22.score(now), 2))
+                round(station_score(wifi21, now) +
+                      station_score(wifi22, now), 2))
         other_result = [res for res in results
                         if res.score < best_result.score][0]
         assert round(other_result.lat, 4) == round(wifi11.lat, 4)
@@ -240,7 +242,7 @@ class TestWifi(BaseSourceTest):
         session.flush()
 
         # calculate expected result
-        score = sum([wifi.score(now) for wifi in wifis])
+        score = sum([station_score(wifi, now) for wifi in wifis])
 
         query = self.model_query(
             geoip_db, http_session, session, stats,

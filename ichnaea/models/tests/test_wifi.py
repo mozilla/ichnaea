@@ -110,11 +110,3 @@ class TestWifiShard(object):
         stmt = 'select hex(`mac`) from wifi_shard_0'
         row = session.execute(stmt).fetchone()
         assert row == ('111101123456', )
-
-    def test_score(self):
-        now = util.utcnow()
-        wifi = WifiShard.create(
-            mac='111101123456', created=now, modified=now,
-            radius=10, samples=2,
-        )
-        assert round(wifi.score(now), 2) == 0.1
