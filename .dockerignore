@@ -10,4 +10,6 @@ docker
 docker-compose.yml
 docs/build/html/.git
 node.make
+pip-selfcheck.json
 server
+venv
