@@ -15,7 +15,7 @@ here = os.path.relpath(os.path.abspath(os.path.dirname(__file__)))
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
 
-__version__ = '2.0'
+__version__ = '2.0.1'
 
 numpy_include = numpy.get_include()
 ext_modules = [
