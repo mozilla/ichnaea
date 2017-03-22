@@ -1,6 +1,6 @@
 # These environment variables must be set in CircleCI UI
 #
-# DOCKERHUB_REPO - docker hub repo, format: <username>/<repo>
+# DOCKERHUB_REPO - docker hub repo, mozilla/location
 # DOCKER_EMAIL   - login info for docker hub
 # DOCKER_USER
 # DOCKER_PASS
@@ -55,21 +55,21 @@ test:
     - ./server test
 
 # appropriately tag and push the container to dockerhub
-# deployment:
-#   hub_latest:
-#     branch: "master"
-#     commands:
-#       - "[ ! -z $DOCKERHUB_REPO ]"
-#       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-#       - "docker push ${DOCKERHUB_REPO}:latest"
+deployment:
+  hub_latest:
+    branch: "master"
+    commands:
+      - "[ ! -z $DOCKERHUB_REPO ]"
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - "docker push ${DOCKERHUB_REPO}:latest"
 
-#   hub_releases:
-#     # push all tags
-#     tag: /.*/
-#     commands:
-#       - "[ ! -z $DOCKERHUB_REPO ]"
-#       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-#       - "echo ${DOCKERHUB_REPO}:${CIRCLE_TAG}"
-#       - "docker tag ${DOCKERHUB_REPO} ${DOCKERHUB_REPO}:${CIRCLE_TAG}"
-#       - "docker images"
-#       - "docker push ${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+  hub_releases:
+    # push all tags
+    tag: /.*/
+    commands:
+      - "[ ! -z $DOCKERHUB_REPO ]"
+      - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
+      - "echo ${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+      - "docker tag ${DOCKERHUB_REPO} ${DOCKERHUB_REPO}:${CIRCLE_TAG}"
+      - "docker images"
+      - "docker push ${DOCKERHUB_REPO}:${CIRCLE_TAG}"

@@ -63,48 +63,48 @@ case "$1" in
 
       # Builds and starts the scheduler container.
       scheduler)
-        SCHEDULER_ID="$(docker ps -a -q --filter name=ichnaea_scheduler)"
+        SCHEDULER_ID="$(docker ps -a -q --filter name=location_scheduler)"
         if [ ! -z "$SCHEDULER_ID" ]; then
           $0 stop scheduler
         fi
-        docker build -t mozilla/ichnaea .
+        docker build -t mozilla/location .
         docker run -d \
-          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
-          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
-          --name="ichnaea_scheduler" mozilla/ichnaea scheduler
+          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
+          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+          --name="location_scheduler" mozilla/location scheduler
         ;;
 
       # Builds and starts the web container.
       web)
-        WEB_ID="$(docker ps -a -q --filter name=ichnaea_web)"
+        WEB_ID="$(docker ps -a -q --filter name=location_web)"
         if [ ! -z "$WEB_ID" ]; then
           $0 stop web
         fi
-        docker build -t mozilla/ichnaea .
+        docker build -t mozilla/location .
         docker run -d \
-          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
-          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
-          -p 8000:8000/tcp --name="ichnaea_web" mozilla/ichnaea web
+          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
+          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+          -p 8000:8000/tcp --name="location_web" mozilla/location web
         ;;
 
       # Builds and starts the worker container.
       worker)
-        WORKER_ID="$(docker ps -a -q --filter name=ichnaea_worker)"
+        WORKER_ID="$(docker ps -a -q --filter name=location_worker)"
         if [ ! -z "$WORKER_ID" ]; then
           $0 stop worker
         fi
-        docker build -t mozilla/ichnaea .
+        docker build -t mozilla/location .
         docker run -d \
-          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
-          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
-          --name="ichnaea_worker" mozilla/ichnaea worker
+          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
+          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+          --name="location_worker" mozilla/location worker
         ;;
 
       # Builds and starts the services supporting the application container.
       services)
-        cd docker/mysql; docker build $PULL_ARG -t mozilla/ichnaea_mysql:latest .
+        cd docker/mysql; docker build $PULL_ARG -t mozilla/location_mysql:latest .
         cd $HERE
-        cd docker/redis; docker build $PULL_ARG -t mozilla/ichnaea_redis:latest .
+        cd docker/redis; docker build $PULL_ARG -t mozilla/location_redis:latest .
         cd $HERE
         docker-compose build $PULL_ARG
         docker-compose up -d
@@ -128,28 +128,28 @@ case "$1" in
 
       # Kills and removes the scheduler container.
       scheduler)
-        SCHEDULER_ID="$(docker ps -a -q --filter name=ichnaea_scheduler)"
+        SCHEDULER_ID="$(docker ps -a -q --filter name=location_scheduler)"
         if [ ! -z "$SCHEDULER_ID" ]; then
-          docker kill ichnaea_scheduler >/dev/null
-          docker rm ichnaea_scheduler >/dev/null
+          docker kill location_scheduler >/dev/null
+          docker rm location_scheduler >/dev/null
         fi
         ;;
 
       # Kills and removes the web container.
       web)
-        WEB_ID="$(docker ps -a -q --filter name=ichnaea_web)"
+        WEB_ID="$(docker ps -a -q --filter name=location_web)"
         if [ ! -z "$WEB_ID" ]; then
-          docker kill ichnaea_web >/dev/null
-          docker rm ichnaea_web >/dev/null
+          docker kill location_web >/dev/null
+          docker rm location_web >/dev/null
         fi
         ;;
 
       # Kills and removes the worker container.
       worker)
-        WORKER_ID="$(docker ps -a -q --filter name=ichnaea_worker)"
+        WORKER_ID="$(docker ps -a -q --filter name=location_worker)"
         if [ ! -z "$WORKER_ID" ]; then
-          docker kill ichnaea_worker >/dev/null
-          docker rm ichnaea_worker >/dev/null
+          docker kill location_worker >/dev/null
+          docker rm location_worker >/dev/null
         fi
         ;;
 
@@ -172,14 +172,14 @@ case "$1" in
   # Runs command inside the container.
   run)
     $0 start services
-    docker build $PULL_ARG -t mozilla/ichnaea .
+    docker build $PULL_ARG -t mozilla/location .
     docker run -it --rm \
-        -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_redis`" \
-        -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' ichnaea_mysql`" \
+        -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
+        -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
         -e "DB_USER=root" \
         --volume `pwd`/docs/build/html:/app/docs/build/html \
         --volume `pwd`/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles \
-        mozilla/ichnaea $2 $3 $4 $5 $6 $7 $8 $9
+        mozilla/location $2 $3 $4 $5 $6 $7 $8 $9
     ;;
 
   # Runs alembic inside the container.
@@ -189,19 +189,19 @@ case "$1" in
 
   # Runs bower using a special node container.
   bower_list)
-    cd docker/node; docker build $PULL_ARG -t mozilla/ichnaea_node .
+    cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
     cd $HERE
     docker run -it --rm \
-        --volume `pwd`:/app mozilla/ichnaea_node \
+        --volume `pwd`:/app mozilla/location_node \
         make -f node.make bower_list
     ;;
 
   # Updates CSS resources using a special node container.
   css)
-    cd docker/node; docker build $PULL_ARG -t mozilla/ichnaea_node .
+    cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
     cd $HERE
     docker run -it --rm \
-        --volume `pwd`:/app mozilla/ichnaea_node \
+        --volume `pwd`:/app mozilla/location_node \
         make -f node.make css
     ;;
 
@@ -212,10 +212,10 @@ case "$1" in
 
   # Updates JS resources using a special node container.
   js)
-    cd docker/node; docker build $PULL_ARG -t mozilla/ichnaea_node .
+    cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
     cd $HERE
     docker run -it --rm \
-        --volume `pwd`:/app mozilla/ichnaea_node \
+        --volume `pwd`:/app mozilla/location_node \
         make -f node.make js
     ;;
 

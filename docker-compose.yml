@@ -1,15 +1,15 @@
 mysql:
-  container_name: ichnaea_mysql
+  container_name: location_mysql
   expose:
     - "3306"
-  image: mozilla/ichnaea_mysql:latest
+  image: mozilla/location_mysql:latest
   ports:
     - "3306"
 
 redis:
-  container_name: ichnaea_redis
+  container_name: location_redis
   expose:
     - "6379"
-  image: mozilla/ichnaea_redis:latest
+  image: mozilla/location_redis:latest
   ports:
     - "6379"
