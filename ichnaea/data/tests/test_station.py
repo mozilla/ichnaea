@@ -20,6 +20,7 @@ from ichnaea.models import (
     CellShard,
     Radio,
     ReportSource,
+    station_blocked,
     StatCounter,
     StatKey,
     WifiShard,
@@ -232,7 +233,7 @@ class StationTest(BaseStationTest):
         blocks = []
         for obs in observations:
             cell = self.get_station(session, obs)
-            if cell.blocked():
+            if station_blocked(cell):
                 blocks.append(cell)
 
         assert len(blocks) == 1

@@ -33,6 +33,7 @@ from ichnaea.models import (
     encode_cellid,
     CellArea,
     CellShard,
+    station_blocked,
 )
 from ichnaea.models.constants import MIN_CELL_SIGNAL
 from ichnaea import util
@@ -178,7 +179,8 @@ def query_cells(query, lookups, model, raven_client):
                                      shard.lon.isnot(None))
                              .options(load_only(*load_fields))
             ).all()
-            result.extend([row for row in rows if not row.blocked(today)])
+            result.extend([row for row in rows
+                           if not station_blocked(row, today)])
     except Exception:
         raven_client.captureException()
 

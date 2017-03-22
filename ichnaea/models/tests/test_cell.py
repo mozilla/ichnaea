@@ -13,7 +13,10 @@ from ichnaea.conftest import (
     GB_MCC,
     GB_MNC,
 )
-from ichnaea.models import ReportSource
+from ichnaea.models import (
+    ReportSource,
+    station_blocked,
+)
 from ichnaea.models.cell import (
     CellArea,
     CellAreaOCID,
@@ -194,26 +197,25 @@ class TestCellShard(object):
     def test_blocked(self):
         today = util.utcnow()
         two_weeks = today - timedelta(days=14)
-        assert not CellShardGsm().blocked()
+        assert not station_blocked(CellShardGsm())
 
-        assert (CellShardGsm(
-            created=two_weeks, block_count=1).blocked())
-        assert (CellShardGsm(
-            created=today - timedelta(30), block_count=1).blocked())
-        assert not (CellShardGsm(
-            created=today - timedelta(45), block_count=1).blocked())
-        assert (CellShardGsm(
-            created=today - timedelta(45), block_count=2).blocked())
-        assert not (CellShardGsm(
-            created=today - timedelta(105), block_count=3).blocked())
+        assert station_blocked(CellShardGsm(
+            created=two_weeks, block_count=1))
+        assert station_blocked(CellShardGsm(
+            created=today - timedelta(30), block_count=1))
+        assert not station_blocked(CellShardGsm(
+            created=today - timedelta(45), block_count=1))
+        assert station_blocked(CellShardGsm(
+            created=today - timedelta(45), block_count=2))
+        assert not station_blocked(CellShardGsm(
+            created=today - timedelta(105), block_count=3))
 
-        assert (CellShardGsm(
-            created=two_weeks, block_last=today.date()).blocked())
-        assert not (CellShardGsm(
-            created=two_weeks, block_last=two_weeks.date()).blocked())
-        assert (CellShardGsm(
-            created=two_weeks, block_last=two_weeks.date()).blocked(
-            two_weeks.date()))
+        assert station_blocked(CellShardGsm(
+            created=two_weeks, block_last=today.date()))
+        assert not station_blocked(CellShardGsm(
+            created=two_weeks, block_last=two_weeks.date()))
+        assert station_blocked(CellShardGsm(
+            created=two_weeks, block_last=two_weeks.date()), two_weeks.date())
 
 
 class TestCellShardOCID(object):

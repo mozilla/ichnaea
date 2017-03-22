@@ -42,6 +42,9 @@ from ichnaea.models.observation import (  # NOQA
     WifiObservation,
     WifiReport,
 )
+from ichnaea.models.station import (  # NOQA
+    station_blocked,
+)
 from ichnaea.models.wifi import (  # NOQA
     WifiShard,
 )

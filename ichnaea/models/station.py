@@ -127,23 +127,24 @@ class StationMixin(BboxMixin,
     block_last = Column(Date)  #:
     block_count = Column(TinyInteger(unsigned=True))  #:
 
-    def blocked(self, today=None):
-        """Is the station currently blocked?"""
-        if today is None:
-            today = util.utcnow().date()
 
-        if self.block_last:
-            # Block the station if it has been at most X days since
-            # the last time it has been blocked.
-            age = today - self.block_last
-            if bool(age < TEMPORARY_BLOCKLIST_DURATION):
-                return True
+def station_blocked(obj, today=None):
+    """Is the station currently blocked?"""
+    if today is None:
+        today = util.utcnow().date()
 
-        if (self.created and self.block_count):
-            # Allow the station to be blocked once for each 30 day
-            # period of the time it has been known to us.
-            age = abs((self.created.date() - today).days)
-            if self.block_count >= int(round(age / 30.0)):
-                return True
+    if obj.block_last:
+        # Block the station if it has been at most X days since
+        # the last time it has been blocked.
+        age = today - obj.block_last
+        if bool(age < TEMPORARY_BLOCKLIST_DURATION):
+            return True
 
-        return False
+    if (obj.created and obj.block_count):
+        # Allow the station to be blocked once for each 30 day
+        # period of the time it has been known to us.
+        age = abs((obj.created.date() - today).days)
+        if obj.block_count >= int(round(age / 30.0)):
+            return True
+
+    return False

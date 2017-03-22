@@ -22,6 +22,7 @@ from ichnaea.models import (
     CellObservation,
     WifiObservation,
     ReportSource,
+    station_blocked,
     StatCounter,
     StatKey,
 )
@@ -414,7 +415,7 @@ class StationUpdater(object):
         for row in rows:
             unique_key = row.unique_key
             stations[unique_key] = row
-            blocklist[unique_key] = row.blocked(today=self.today)
+            blocklist[unique_key] = station_blocked(row, self.today)
 
         return (blocklist, stations)
 

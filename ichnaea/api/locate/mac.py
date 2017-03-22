@@ -11,9 +11,10 @@ from sqlalchemy.orm import load_only
 
 from ichnaea.api.locate.score import station_score
 from ichnaea.geocalc import distance
-from ichnaea.models.mac import (
+from ichnaea.models import (
     decode_mac,
     encode_mac,
+    station_blocked,
 )
 from ichnaea import util
 
@@ -195,7 +196,8 @@ def query_macs(query, lookups, raven_client, db_model):
                                      shard.lon.isnot(None))
                              .options(load_only(*load_fields))
             ).all()
-            result.extend([row for row in rows if not row.blocked(today)])
+            result.extend([row for row in rows
+                           if not station_blocked(row, today)])
     except Exception:
         raven_client.captureException()
     return result
