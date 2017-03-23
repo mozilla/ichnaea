@@ -1,14 +1,16 @@
 from ichnaea.api.locate.cell import (
-    CellPositionSource,
+    CellPositionMixin,
 )
 from ichnaea.api.locate.constants import (
     CELL_MAX_ACCURACY,
     CELLAREA_MIN_ACCURACY,
+    DataSource,
 )
 from ichnaea.api.locate.score import (
     area_score,
     station_score,
 )
+from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.locate.tests.base import BaseSourceTest
 from ichnaea.tests.factories import (
     CellAreaFactory,
@@ -17,9 +19,23 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
+class CellTestPositionSource(CellPositionMixin, PositionSource):
+
+    fallback_field = None  #:
+    source = DataSource.internal
+
+    def should_search(self, query, results):
+        return self.should_search_cell(query, results)
+
+    def search(self, query):
+        results = self.search_cell(query)
+        query.emit_source_stats(self.source, results)
+        return results
+
+
 class TestCellPosition(BaseSourceTest):
 
-    Source = CellPositionSource
+    Source = CellTestPositionSource
 
     def test_check_empty(self, geoip_db, http_session, session, source, stats):
         query = self.model_query(

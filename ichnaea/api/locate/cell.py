@@ -7,7 +7,6 @@ import numpy
 from sqlalchemy import select
 
 from ichnaea.api.locate.constants import (
-    DataSource,
     CELL_MIN_ACCURACY,
     CELL_MAX_ACCURACY,
     CELLAREA_MIN_ACCURACY,
@@ -23,7 +22,6 @@ from ichnaea.api.locate.score import (
     area_score,
     station_score,
 )
-from ichnaea.api.locate.source import PositionSource
 from ichnaea.geocalc import distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
@@ -332,23 +330,4 @@ class CellRegionMixin(object):
                 accuracy=region.radius,
                 score=score))
 
-        return results
-
-
-class CellPositionSource(CellPositionMixin, PositionSource):
-    """
-    Implements a search using our cell data.
-
-    This source is only used in tests.
-    """
-
-    fallback_field = None  #:
-    source = DataSource.internal
-
-    def should_search(self, query, results):
-        return self.should_search_cell(query, results)
-
-    def search(self, query):
-        results = self.search_cell(query)
-        query.emit_source_stats(self.source, results)
         return results
