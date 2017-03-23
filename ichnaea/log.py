@@ -67,7 +67,7 @@ RAVEN_TRANSPORTS = {
     'gevent': GeventedHTTPTransport,
     'sync': HTTPTransport,
     'threaded': ThreadedHTTPTransport,
-}  #: Mapping of raven transport names to classes.
+}
 
 
 def configure_logging():

@@ -23,7 +23,8 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.geocalc import distance
 
-LOCATION_NOT_FOUND = '404'  #: Magic constant to cache not found.
+# Magic constant to cache not found.
+LOCATION_NOT_FOUND = '404'
 
 
 class ExternalResult(namedtuple('ExternalResult',

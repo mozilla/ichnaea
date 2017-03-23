@@ -17,10 +17,10 @@ class Source(object):
     crowd-sourced data collection.
     """
 
-    fallback_field = None  #:
-    result_list = None  #:
-    result_type = None  #:
-    source = None  #:
+    fallback_field = None
+    result_list = None
+    result_type = None
+    source = None
 
     def __init__(self, geoip_db, raven_client, redis_client,
                  stats_client, data_queues):
@@ -68,8 +68,8 @@ class PositionSource(Source):
     a latitude, a longitude and an accuracy in meters in it.
     """
 
-    result_list = PositionResultList  #:
-    result_type = Position  #:
+    result_list = PositionResultList
+    result_type = Position
 
 
 class RegionSource(Source):
@@ -78,5 +78,5 @@ class RegionSource(Source):
     a region name and code in it.
     """
 
-    result_list = RegionResultList  #:
-    result_type = Region  #:
+    result_list = RegionResultList
+    result_type = Region

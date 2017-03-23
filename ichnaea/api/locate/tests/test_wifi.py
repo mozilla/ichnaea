@@ -14,7 +14,7 @@ from ichnaea import util
 
 class WifiTestPositionSource(WifiPositionMixin, PositionSource):
 
-    fallback_field = None  #:
+    fallback_field = None
     source = DataSource.internal
 
     def should_search(self, query, results):

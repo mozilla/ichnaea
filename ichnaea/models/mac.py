@@ -140,7 +140,7 @@ class MacStationMixin(StationMixin):
 
     _shards = None
 
-    mac = Column(MacColumn(6))  #:
+    mac = Column(MacColumn(6))
 
     @declared_attr
     def __table_args__(cls):  # NOQA

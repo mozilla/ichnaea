@@ -33,9 +33,9 @@ from ichnaea.models.schema import (
 class BaseLookup(HashableDict, CreationMixin, ValidationMixin):
     """A base class for lookup models."""
 
-    _valid_schema = None  #:
-    _fields = ()  #:
-    _comparators = ()  #:
+    _valid_schema = None
+    _fields = ()
+    _comparators = ()
 
     def better(self, other):
         """Is self better than the other?"""
@@ -103,14 +103,14 @@ class BaseCellLookup(BaseLookup):
         'mobileCountryCode',
         'mobileNetworkCode',
         'locationAreaCode',
-    )  #:
+    )
     _signal_fields = (
         'age',
         'asu',
         'signalStrength',
         'timingAdvance',
-    )  #:
-    _fields = _key_fields + _signal_fields  #:
+    )
+    _fields = _key_fields + _signal_fields
 
     _comparators = (
         ('timingAdvance', operator.lt),

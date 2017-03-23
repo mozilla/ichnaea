@@ -22,11 +22,11 @@ from ichnaea.webapp.view import BaseView
 class BaseAPIView(BaseView):
     """Common base class for all API related views."""
 
-    check_api_key = True  #: Should API keys be checked?
-    error_on_invalidkey = True  #: Deny access for invalid API keys?
-    metric_path = None  #: Dotted URL path, for example v1.submit.
-    schema = None  #: An instance of a colander schema to validate the data.
-    view_type = None  #: The type of view, for example submit or locate.
+    check_api_key = True  # Should API keys be checked?
+    error_on_invalidkey = True  # Deny access for invalid API keys?
+    metric_path = None  # Dotted URL path, for example v1.submit.
+    schema = None  # An instance of a colander schema to validate the data.
+    view_type = None  # The type of view, for example submit or locate.
 
     def __init__(self, request):
         super(BaseAPIView, self).__init__(request)

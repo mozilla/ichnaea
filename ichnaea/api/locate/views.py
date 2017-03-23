@@ -15,9 +15,8 @@ from ichnaea.api.views import BaseAPIView
 class BaseLocateView(BaseAPIView):
     """Common base class for all locate related views."""
 
-    #: :exc:`ichnaea.api.exceptions.LocationNotFound`
     not_found = LocationNotFound
-    searcher = None  #:
+    searcher = None
 
     def locate(self, api_key):
         request_data, errors = self.preprocess_request()
@@ -56,18 +55,17 @@ class BaseLocateView(BaseAPIView):
 class BasePositionView(BaseLocateView):
     """Common base class for all position related views."""
 
-    #: Use renderer with prettier float output.
-    renderer = 'json'  #:
-    searcher = 'position_searcher'  #:
-    view_type = 'locate'  #:
+    renderer = 'json'
+    searcher = 'position_searcher'
+    view_type = 'locate'
 
 
 class LocateV0View(BasePositionView):
     """View class for v1/search HTTP API."""
 
-    metric_path = 'v1.search'  #:
-    not_found = LocationNotFoundV0  #:
-    route = '/v1/search'  #:
+    metric_path = 'v1.search'
+    not_found = LocationNotFoundV0
+    route = '/v1/search'
     schema = LOCATE_V0_SCHEMA
 
     def prepare_response(self, result):
@@ -87,8 +85,8 @@ class LocateV0View(BasePositionView):
 class LocateV1View(BasePositionView):
     """View class for v1/geolocate HTTP API."""
 
-    metric_path = 'v1.geolocate'  #:
-    route = '/v1/geolocate'  #:
+    metric_path = 'v1.geolocate'
+    route = '/v1/geolocate'
     schema = LOCATE_V1_SCHEMA
 
     def prepare_response(self, result):
@@ -109,13 +107,13 @@ class LocateV1View(BasePositionView):
 class RegionV1View(LocateV1View):
     """View class for v1/country HTTP API."""
 
-    check_api_key = False  #:
-    error_on_invalidkey = False  #:
-    metric_path = 'v1.country'  #:
-    renderer = 'json'  #:
-    route = '/v1/country'  #:
-    searcher = 'region_searcher'  #:
-    view_type = 'region'  #:
+    check_api_key = False
+    error_on_invalidkey = False
+    metric_path = 'v1.country'
+    renderer = 'json'
+    route = '/v1/country'
+    searcher = 'region_searcher'
+    view_type = 'region'
 
     def prepare_response(self, result):
         response = {

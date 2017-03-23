@@ -91,9 +91,9 @@ SUB_RADII = {
     'SD': 450000.0,
     'SO': 500000.0,
     'US': 1200000.0,
-}  #:
+}
 
-SUB_RADIUS = 400000.0  #:
+SUB_RADIUS = 400000.0
 
 REGION_RADIUS = 5000000.0
 """
@@ -147,7 +147,7 @@ CITY_RADII = {
     3871336: 32000.0,  # Santiago
     3936456: 40000.0,  # Lima
     5128581: 41000.0,  # New York
-}  #:
+}
 
 CITY_RADIUS = 25000.0
 """
@@ -162,7 +162,7 @@ GEOIP_GENC_MAP = {
     'PS': 'XW',  # Palestine -> West Bank
     'SJ': 'XR',  # Svalbard and Jan Mayen -> Svalbard
     'UM': 'US',  # US Minor Outlying Territories -> US
-}  #:
+}
 
 
 def configure_geoip(filename=GEOIP_PATH, mode=MODE_AUTO,

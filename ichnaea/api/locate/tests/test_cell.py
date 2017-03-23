@@ -21,7 +21,7 @@ from ichnaea import util
 
 class CellTestPositionSource(CellPositionMixin, PositionSource):
 
-    fallback_field = None  #:
+    fallback_field = None
     source = DataSource.internal
 
     def should_search(self, query, results):

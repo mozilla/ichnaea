@@ -15,8 +15,8 @@ if TESTING:
 broker_url = REDIS_URI
 result_backend = REDIS_URI
 
-#: Based on `Celery / Redis caveats
-#: <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
+# Based on `Celery / Redis caveats
+# <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
 broker_transport_options = {
     'socket_connect_timeout': 60,
     'socket_keepalive': True,
@@ -24,29 +24,29 @@ broker_transport_options = {
     'visibility_timeout': 43200,
 }
 
-#: Name of the default queue.
+# Name of the default queue.
 task_default_queue = 'celery_default'
 
-#: Definition of all queues.
+# Definition of all queues.
 task_queues = TASK_QUEUES
 
-#: All modules being searched for @task decorators.
+# All modules being searched for @task decorators.
 imports = [
     'ichnaea.data.tasks',
 ]
 
-#: Disable task results.
+# Disable task results.
 task_ignore_result = True
 
-#: Optimization for a mix of fast and slow tasks.
+# Optimization for a mix of fast and slow tasks.
 worker_prefetch_multiplier = 8
-worker_disable_rate_limits = True  #: Optimization
-task_compression = 'gzip'  #: Optimization
+worker_disable_rate_limits = True
+task_compression = 'gzip'
 
-#: Internal data format, only accept JSON variants.
+# Internal data format, only accept JSON variants.
 accept_content = ['json', 'internal_json']
-result_serializer = 'internal_json'  #: Internal data format
-task_serializer = 'internal_json'  #: Internal data format
+result_serializer = 'internal_json'
+task_serializer = 'internal_json'
 
 # cleanup
 del REDIS_URI

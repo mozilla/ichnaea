@@ -64,7 +64,7 @@ class ContributeView(BaseView):
     A view returning information about how to contribute to the project.
     """
 
-    route = '/contribute.json'  #:
+    route = '/contribute.json'
 
     def __call__(self):
         """
@@ -82,7 +82,7 @@ class HeartbeatView(BaseView):
     The view actively checks the database, geoip and redis connections.
     """
 
-    route = '/__heartbeat__'  #:
+    route = '/__heartbeat__'
 
     def __call__(self):
         """
@@ -127,7 +127,7 @@ class LBHeartbeatView(BaseView):
     This view is typically used in load balancer health checks.
     """
 
-    route = '/__lbheartbeat__'  #:
+    route = '/__lbheartbeat__'
 
     def __call__(self):
         """Return a response with a 200 or 503 status."""
@@ -142,7 +142,7 @@ class VersionView(BaseView):
     A view which returns information about the running software version.
     """
 
-    route = '/__version__'  #:
+    route = '/__version__'
 
     def __call__(self):
         """

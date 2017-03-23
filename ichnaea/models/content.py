@@ -102,9 +102,9 @@ class DataMapGridColumn(TypeDecorator):
 class DataMap(object):
     """DataMap base shard model."""
 
-    grid = Column(DataMapGridColumn(8))  #:
-    created = Column(Date)  #:
-    modified = Column(Date)  #:
+    grid = Column(DataMapGridColumn(8))
+    created = Column(Date)
+    modified = Column(Date)
 
     @declared_attr
     def __table_args__(cls):  # NOQA
@@ -205,12 +205,12 @@ class RegionStat(_Model):
         PrimaryKeyConstraint('region'),
     )
 
-    region = Column(String(2))  #:
-    gsm = Column(Integer(unsigned=True))  #:
-    wcdma = Column(Integer(unsigned=True))  #:
-    lte = Column(Integer(unsigned=True))  #:
-    blue = Column(BigInteger(unsigned=True))  #:
-    wifi = Column(BigInteger(unsigned=True))  #:
+    region = Column(String(2))
+    gsm = Column(Integer(unsigned=True))
+    wcdma = Column(Integer(unsigned=True))
+    lte = Column(Integer(unsigned=True))
+    blue = Column(BigInteger(unsigned=True))
+    wifi = Column(BigInteger(unsigned=True))
 
 
 class StatCounter(object):
@@ -247,6 +247,6 @@ class Stat(_Model):
         PrimaryKeyConstraint('key', 'time'),
     )
 
-    key = Column(TinyIntEnum(StatKey))  #:
-    time = Column(Date)  #:
-    value = Column(BigInteger(unsigned=True))  #:
+    key = Column(TinyIntEnum(StatKey))
+    time = Column(Date)
+    value = Column(BigInteger(unsigned=True))

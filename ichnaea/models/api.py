@@ -62,21 +62,21 @@ class ApiKey(_Model):
 
     __tablename__ = 'api_key'
 
-    valid_key = Column(String(40), primary_key=True)  #: UUID API key.
-    maxreq = Column(Integer)  #: Maximum number of requests per day.
-    allow_fallback = Column(Boolean)  #: Use the fallback source?
-    allow_locate = Column(Boolean)  #: Allow locate queries?
-    allow_transfer = Column(Boolean)  #: Allow transfer queries?
-    shortname = Column(String(40))  #: Short descriptive name.
+    valid_key = Column(String(40), primary_key=True)  # UUID API key.
+    maxreq = Column(Integer)  # Maximum number of requests per day.
+    allow_fallback = Column(Boolean)  # Use the fallback source?
+    allow_locate = Column(Boolean)  # Allow locate queries?
+    allow_transfer = Column(Boolean)  # Allow transfer queries?
+    shortname = Column(String(40))  # Short descriptive name.
 
-    fallback_name = Column(String(40))  #: Fallback metric name.
-    fallback_url = Column(String(256))  #: URL of the fallback provider.
-    fallback_ratelimit = Column(Integer)  #: Fallback rate limit count.
-    fallback_ratelimit_interval = Column(Integer)  #: Interval in seconds.
-    fallback_cache_expire = Column(Integer)  #: Cache expiry in seconds.
+    fallback_name = Column(String(40))  # Fallback metric name.
+    fallback_url = Column(String(256))  # URL of the fallback provider.
+    fallback_ratelimit = Column(Integer)  # Fallback rate limit count.
+    fallback_ratelimit_interval = Column(Integer)  # Interval in seconds.
+    fallback_cache_expire = Column(Integer)  # Cache expiry in seconds.
 
-    store_sample_locate = Column(TinyInteger)  #: Sample rate 0-100.
-    store_sample_submit = Column(TinyInteger)  #: Sample rate 0-100.
+    store_sample_locate = Column(TinyInteger)  # Sample rate 0-100.
+    store_sample_submit = Column(TinyInteger)  # Sample rate 0-100.
 
     @classmethod
     def get(cls, session, valid_key):

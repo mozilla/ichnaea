@@ -31,7 +31,7 @@ TASK_QUEUES = (
     Queue('celery_monitor', routing_key='celery_monitor'),
     Queue('celery_reports', routing_key='celery_reports'),
     Queue('celery_wifi', routing_key='celery_wifi'),
-)  #: List of :class:`kombu.Queue` instances.
+)
 
 register('internal_json',
          simplejson.dumps,

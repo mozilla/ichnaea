@@ -20,10 +20,8 @@ from ichnaea.api.views import BaseAPIView
 class BaseSubmitView(BaseAPIView):
     """Common base class for all submit related views."""
 
-    error_on_invalidkey = False  #:
-    view_type = 'submit'  #:
-
-    #: :exc:`ichnaea.api.exceptions.UploadSuccess`
+    error_on_invalidkey = False
+    view_type = 'submit'
     success = UploadSuccess
 
     def __init__(self, request):
@@ -80,25 +78,23 @@ class BaseSubmitView(BaseAPIView):
 class SubmitV0View(BaseSubmitView):
     """"Submit version 0 view for `/v1/submit`."""
 
-    metric_path = 'v1.submit'  #:
-    route = '/v1/submit'  #:
+    metric_path = 'v1.submit'
+    route = '/v1/submit'
     schema = SUBMIT_V0_SCHEMA
-
-    #: :exc:`ichnaea.api.exceptions.UploadSuccessV0`
     success = UploadSuccessV0
 
 
 class SubmitV1View(BaseSubmitView):
     """"Submit version 1 view for `/v1/geosubmit`."""
 
-    metric_path = 'v1.geosubmit'  #:
-    route = '/v1/geosubmit'  #:
+    metric_path = 'v1.geosubmit'
+    route = '/v1/geosubmit'
     schema = SUBMIT_V1_SCHEMA
 
 
 class SubmitV2View(BaseSubmitView):
     """"Submit version 2 view for `/v2/geosubmit`."""
 
-    metric_path = 'v2.geosubmit'  #:
-    route = '/v2/geosubmit'  #:
+    metric_path = 'v2.geosubmit'
+    route = '/v2/geosubmit'
     schema = SUBMIT_V2_SCHEMA

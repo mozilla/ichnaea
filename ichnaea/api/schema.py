@@ -125,49 +125,49 @@ class RenamingMapping(colander.Mapping):
 
 class RenamingMappingSchema(colander.MappingSchema):
 
-    schema_type = RenamingMapping  #:
+    schema_type = RenamingMapping
 
 
 class OptionalMapping(RenamingMapping):
 
-    unknown = 'ignore'  #:
+    unknown = 'ignore'
 
 
 class OptionalMappingSchema(RenamingMappingSchema):
 
-    schema_type = OptionalMapping  #:
+    schema_type = OptionalMapping
 
 
 class OptionalSequence(colander.Sequence):
 
-    missing = colander.drop  #:
+    missing = colander.drop
 
 
 class OptionalSequenceSchema(colander.SequenceSchema):
 
-    schema_type = OptionalSequence  #:
+    schema_type = OptionalSequence
 
 
 class OptionalNode(colander.SchemaNode):
 
-    missing = colander.drop  #:
+    missing = colander.drop
 
 
 class OptionalBoundedFloatNode(OptionalNode):
 
-    schema_type = BoundedFloat  #:
+    schema_type = BoundedFloat
 
 
 class OptionalIntNode(OptionalNode):
 
-    schema_type = colander.Integer  #:
+    schema_type = colander.Integer
 
 
 class OptionalStringNode(OptionalNode):
 
-    schema_type = colander.String  #:
+    schema_type = colander.String
 
 
 class OptionalStringVocabularyNode(OptionalNode):
 
-    schema_type = StringVocabularyNode  #:
+    schema_type = StringVocabularyNode

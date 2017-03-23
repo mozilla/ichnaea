@@ -21,12 +21,12 @@ class ExportConfig(_Model):
     """
     __tablename__ = 'export_config'
 
-    name = Column(String(40), primary_key=True)  #: Unique name.
-    batch = Column(Integer)  #: Export batch size.
-    schema = Column(String(32))  #: The export schema.
-    url = Column(String(512))  #: Export URL.
-    skip_keys = Column(SetColumn(1024))  #: Set of API keys to skip.
-    skip_sources = Column(SetColumn(64))  #: Set of export sources to skip.
+    name = Column(String(40), primary_key=True)  # Unique name.
+    batch = Column(Integer)  # Export batch size.
+    schema = Column(String(32))  # The export schema.
+    url = Column(String(512))  # Export URL.
+    skip_keys = Column(SetColumn(1024))  # Set of API keys to skip.
+    skip_sources = Column(SetColumn(64))  # Set of export sources to skip.
 
     @classmethod
     def all(cls, session, detach=True):

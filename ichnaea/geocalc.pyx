@@ -1,9 +1,4 @@
 # cython: emit_code_comments=False
-"""
-Contains helper functions for various geo related calculations.
-
-These are implemented in Cython / C using NumPy.
-"""
 
 from libc.math cimport asin, atan, atan2, cos
 from libc.math cimport fmax, fmin, M_PI, sin, sqrt, tan
@@ -12,13 +7,13 @@ cimport cython
 
 import numpy
 
-cdef double MAX_LAT = 85.051  #: Max Web Mercator latitude
-cdef double MIN_LAT = -85.051  #: Min Web Mercator latitude
-cdef double MAX_LON = 180.0  #: Max Web Mercator longitude
-cdef double MIN_LON = -180.0  #: Min Web Mercator longitude
+cdef double MAX_LAT = 85.051  # Max Web Mercator latitude
+cdef double MIN_LAT = -85.051  # Min Web Mercator latitude
+cdef double MAX_LON = 180.0  # Max Web Mercator longitude
+cdef double MIN_LON = -180.0  # Min Web Mercator longitude
 
-# Constant used in Haversine formula
-cdef double EARTH_RADIUS = 6371.009  #: Earth radius in km.
+# Constant used in Haversine formula, Earth radius in km.
+cdef double EARTH_RADIUS = 6371.009
 
 # Constants for WSG-84 ellipsoid
 cdef double EARTH_MAJOR_RADIUS = 6378.137

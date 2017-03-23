@@ -69,10 +69,10 @@ class Searcher(object):
     in the order they are specified and use the best possible result.
     """
 
-    result_list = None  #: :class:`ichnaea.api.locate.result.ResultList`
-    result_type = None  #: :class:`ichnaea.api.locate.result.Result`
-    sources = ()  #:
-    source_classes = ()  #:
+    result_list = None
+    result_type = None
+    sources = ()
+    source_classes = ()
 
     def __init__(self, geoip_db, raven_client, redis_client,
                  stats_client, data_queues):
@@ -126,13 +126,13 @@ class PositionSearcher(Searcher):
     a longitude and an accuracy in meters.
     """
 
-    result_list = PositionResultList  #:
-    result_type = Position  #:
+    result_list = PositionResultList
+    result_type = Position
     source_classes = (
         ('internal', InternalPositionSource),
         ('geoip', GeoIPPositionSource),
         ('fallback', FallbackPositionSource),
-    )  #:
+    )
 
     def format_result(self, result):
         return {
@@ -148,12 +148,12 @@ class RegionSearcher(Searcher):
     A RegionSearcher will return a region name and code.
     """
 
-    result_list = RegionResultList  #:
-    result_type = Region  #:
+    result_list = RegionResultList
+    result_type = Region
     source_classes = (
         ('internal', InternalRegionSource),
         ('geoip', GeoIPRegionSource),
-    )  #:
+    )
 
     def format_result(self, result):
         return {

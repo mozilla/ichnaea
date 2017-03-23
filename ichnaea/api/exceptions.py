@@ -17,9 +17,9 @@ class JSONException(HTTPException):
     a JSON body.
     """
 
-    code = 500  #:
-    empty_body = False  #:
-    message = ''  #:
+    code = 500
+    empty_body = False
+    message = ''
 
     def __init__(self):
         # explicitly avoid calling the HTTPException init magic
@@ -49,7 +49,7 @@ class TransferSuccess(JSONException):
     A successful transfer response.
     """
 
-    code = 200  #:
+    code = 200
 
     @classmethod
     def json_body(cls):
@@ -62,7 +62,7 @@ class UploadSuccess(JSONException):
     A successful upload response.
     """
 
-    code = 200  #:
+    code = 200
 
     @classmethod
     def json_body(cls):
@@ -76,8 +76,8 @@ class UploadSuccessV0(UploadSuccess):
     in earlier version 0 HTTP APIs.
     """
 
-    code = 204  #:
-    empty_body = True  #:
+    code = 204
+    empty_body = True
 
 
 class BaseAPIError(JSONException):
@@ -86,10 +86,10 @@ class BaseAPIError(JSONException):
     and have a similar JSON body.
     """
 
-    code = 400  #:
-    domain = ''  #:
-    reason = ''  #:
-    message = ''  #:
+    code = 400
+    domain = ''
+    reason = ''
+    message = ''
 
     @classmethod
     def json_body(cls):
@@ -112,10 +112,10 @@ class BaseAPIClientError(BaseAPIError, BaseClientError):
     A base class for all errors that are the client's fault.
     """
 
-    code = 400  #:
-    domain = 'global'  #:
-    reason = 'badRequest'  #:
-    message = 'Bad Request'  #:
+    code = 400
+    domain = 'global'
+    reason = 'badRequest'
+    message = 'Bad Request'
 
 
 class BaseAPIServiceError(BaseAPIError, BaseServiceError):
@@ -123,10 +123,10 @@ class BaseAPIServiceError(BaseAPIError, BaseServiceError):
     A base class for all errors that are the service's fault.
     """
 
-    code = 500  #:
-    domain = 'global'  #:
-    reason = 'internalError'  #:
-    message = 'Internal Error'  #:
+    code = 500
+    domain = 'global'
+    reason = 'internalError'
+    message = 'Internal Error'
 
 
 class DailyLimitExceeded(BaseAPIClientError):
@@ -134,10 +134,10 @@ class DailyLimitExceeded(BaseAPIClientError):
     Response given when daily quota was exceeded.
     """
 
-    code = 403  #:
-    domain = 'usageLimits'  #:
-    reason = 'dailyLimitExceeded'  #:
-    message = 'You have exceeded your daily limit.'  #:
+    code = 403
+    domain = 'usageLimits'
+    reason = 'dailyLimitExceeded'
+    message = 'You have exceeded your daily limit.'
 
 
 class InvalidAPIKey(BaseAPIClientError):
@@ -145,10 +145,10 @@ class InvalidAPIKey(BaseAPIClientError):
     Response for missing or invalid API keys.
     """
 
-    code = 400  #:
-    domain = 'usageLimits'  #:
-    reason = 'keyInvalid'  #:
-    message = 'Missing or invalid API key.'  #:
+    code = 400
+    domain = 'usageLimits'
+    reason = 'keyInvalid'
+    message = 'Missing or invalid API key.'
 
 
 class LocationNotFound(BaseAPIClientError):
@@ -156,10 +156,10 @@ class LocationNotFound(BaseAPIClientError):
     Response given when mo location could be found.
     """
 
-    code = 404  #:
-    domain = 'geolocation'  #:
-    reason = 'notFound'  #:
-    message = 'Not found'  #:
+    code = 404
+    domain = 'geolocation'
+    reason = 'notFound'
+    message = 'Not found'
 
 
 class LocationNotFoundV0(LocationNotFound):
@@ -168,7 +168,7 @@ class LocationNotFoundV0(LocationNotFound):
     in earlier version 0 HTTP APIs.
     """
 
-    code = 200  #:
+    code = 200
 
     @classmethod
     def json_body(cls):
@@ -181,10 +181,10 @@ class ParseError(BaseAPIClientError):
     Response given when the request couldn't be parsed.
     """
 
-    code = 400  #:
-    domain = 'global'  #:
-    reason = 'parseError'  #:
-    message = 'Parse Error'  #:
+    code = 400
+    domain = 'global'
+    reason = 'parseError'
+    message = 'Parse Error'
 
 
 class ServiceUnavailable(BaseAPIServiceError):
@@ -192,7 +192,7 @@ class ServiceUnavailable(BaseAPIServiceError):
     Response given when the service is (partially) unavailable.
     """
 
-    code = 503  #:
-    domain = 'global'  #:
-    reason = 'serviceUnavailable'  #:
-    message = 'Service Unavailable'  #:
+    code = 503
+    domain = 'global'
+    reason = 'serviceUnavailable'
+    message = 'Service Unavailable'

@@ -11,14 +11,14 @@ from sqlalchemy.ext.declarative import (
 MYSQL_SETTINGS = {
     'mysql_engine': 'InnoDB',
     'mysql_charset': 'utf8',
-}  #: Common MySQL database settings.
+}
 
 
 class BaseModel(object):
     """A base model with a common set of database settings."""
 
-    _indices = ()  #:
-    _settings = MYSQL_SETTINGS  #:
+    _indices = ()
+    _settings = MYSQL_SETTINGS
 
     @declared_attr
     def __table_args__(cls):  # NOQA
@@ -34,7 +34,7 @@ class HashableDict(object):
     namedtuple. Instances of this class can be used as dictionary keys.
     """
 
-    _fields = ()  #:
+    _fields = ()
 
     def __init__(self, **kw):
         for field in self._fields:
@@ -67,7 +67,7 @@ class ValidationMixin(object):
     A mixin to tie a class and its valid colander schema together.
     """
 
-    _valid_schema = None  #:
+    _valid_schema = None
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):

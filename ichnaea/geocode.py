@@ -39,13 +39,13 @@ class Geocoder(object):
     into region codes.
     """
 
-    _buffered_shapes = None  #: maps region code to a buffered prepared shape
-    _prepared_shapes = None  #: maps region code to a precise prepared shape
-    _shapes = None  #: maps region code to a precise shape
-    _tree = None  #: RTree of buffered region envelopes
-    _tree_ids = None  #: maps RTree entry id to region code
-    _valid_regions = None  #: Set of known and valid region codes
-    _radii = None  #: A cache of region radii
+    _buffered_shapes = None  # maps region code to a buffered prepared shape
+    _prepared_shapes = None  # maps region code to a precise prepared shape
+    _shapes = None  # maps region code to a precise shape
+    _tree = None  # RTree of buffered region envelopes
+    _tree_ids = None  # maps RTree entry id to region code
+    _valid_regions = None  # Set of known and valid region codes
+    _radii = None  # A cache of region radii
 
     def __init__(self,
                  regions_file=REGIONS_FILE,

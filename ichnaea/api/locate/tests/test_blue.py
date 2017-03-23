@@ -14,7 +14,7 @@ class BlueTestPositionSource(BluePositionMixin, PositionSource):
     This source is only used in tests.
     """
 
-    fallback_field = None  #:
+    fallback_field = None
     source = DataSource.internal
 
     def should_search(self, query, results):

@@ -14,7 +14,7 @@ from ichnaea.geocalc import distance
 class Result(object):
     """An abstract query result."""
 
-    _repr_fields = ()  #: The list of important attributes.
+    _repr_fields = ()  # The list of important attributes.
 
     def __init__(self, accuracy=None, region_code=None, region_name=None,
                  fallback=None, lat=None, lon=None, source=None, score=0.0,
@@ -56,7 +56,7 @@ class Position(Result):
 
     _repr_fields = ('lat', 'lon',
                     'accuracy', 'score',
-                    'fallback', 'source')  #:
+                    'fallback', 'source')
 
     def json(self):
         if self.lat is None or self.lon is None or self.accuracy is None:
@@ -75,13 +75,13 @@ class Region(Result):
 
     _repr_fields = ('region_code', 'region_name',
                     'accuracy', 'score',
-                    'fallback', 'source')  #:
+                    'fallback', 'source')
 
 
 class ResultList(object):
     """An abstract collection of query results."""
 
-    result_type = None  #:
+    result_type = None
 
     def __init__(self, result=None):
         self._results = []
@@ -125,7 +125,7 @@ class ResultList(object):
 class PositionResultList(ResultList):
     """A collection of position results."""
 
-    result_type = Position  #:
+    result_type = Position
 
     def best_cluster(self):
         """Return the best cluster from this collection."""
@@ -195,7 +195,7 @@ class PositionResultList(ResultList):
 class RegionResultList(ResultList):
     """A collection of region results."""
 
-    result_type = Region  #:
+    result_type = Region
 
     def best_cluster(self):
         """Return the best cluster from this collection."""

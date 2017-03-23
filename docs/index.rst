@@ -36,7 +36,6 @@ Table of contents
    import_export
    install/index
    algo/index
-   internal_api/index
    glossary
    changes/index
 

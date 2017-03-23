@@ -17,10 +17,8 @@ class BaseTransferView(BaseAPIView):
     """Common base class for all transfer related views."""
 
     check_api_key = True
-    error_on_invalidkey = True  #:
-    view_type = 'transfer'  #:
-
-    #: :exc:`ichnaea.api.exceptions.TransferSuccess`
+    error_on_invalidkey = True
+    view_type = 'transfer'
     success = TransferSuccess
 
     def __init__(self, request):
@@ -61,6 +59,6 @@ class BaseTransferView(BaseAPIView):
 class TransferV1View(BaseTransferView):
     """"Transfer version 1 view for `/v1/transfer`."""
 
-    metric_path = 'v1.transfer'  #:
-    route = '/v1/transfer'  #:
+    metric_path = 'v1.transfer'
+    route = '/v1/transfer'
     schema = TRANSFER_V1_SCHEMA

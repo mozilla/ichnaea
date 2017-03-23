@@ -22,8 +22,8 @@ from ichnaea.api.locate.wifi import (
 class BaseInternalSource(object):
     """A source based on our own crowd-sourced internal data."""
 
-    fallback_field = None  #:
-    source = DataSource.internal  #:
+    fallback_field = None
+    source = DataSource.internal
 
     def should_search(self, query, results):
         if not super(BaseInternalSource, self).should_search(

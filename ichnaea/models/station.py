@@ -52,11 +52,11 @@ class ValidBboxSchema(colander.MappingSchema, ValidatorNode):
 class BboxMixin(object):
     """A model mix-in with columns for a bounding box."""
 
-    max_lat = Column(Double(asdecimal=False))  #:
-    min_lat = Column(Double(asdecimal=False))  #:
+    max_lat = Column(Double(asdecimal=False))
+    min_lat = Column(Double(asdecimal=False))
 
-    max_lon = Column(Double(asdecimal=False))  #:
-    min_lon = Column(Double(asdecimal=False))  #:
+    max_lon = Column(Double(asdecimal=False))
+    min_lon = Column(Double(asdecimal=False))
 
 
 class ValidPositionSchema(colander.MappingSchema, ValidatorNode):
@@ -75,8 +75,8 @@ class ValidPositionSchema(colander.MappingSchema, ValidatorNode):
 class PositionMixin(object):
     """A model mix-in with lat and lon float columns."""
 
-    lat = Column(Double(asdecimal=False))  #:
-    lon = Column(Double(asdecimal=False))  #:
+    lat = Column(Double(asdecimal=False))
+    lon = Column(Double(asdecimal=False))
 
 
 class ValidTimeTrackingSchema(colander.MappingSchema, ValidatorNode):
@@ -89,8 +89,8 @@ class ValidTimeTrackingSchema(colander.MappingSchema, ValidatorNode):
 class TimeTrackingMixin(object):
     """A model mix-in with created and modified datetime columns."""
 
-    created = Column(DateTime)  #:
-    modified = Column(DateTime)  #:
+    created = Column(DateTime)
+    modified = Column(DateTime)
 
 
 class ValidStationSchema(ValidBboxSchema,
@@ -116,16 +116,16 @@ class StationMixin(BboxMixin,
                    CreationMixin):
     """A model mix-in with common station columns."""
 
-    radius = Column(Integer(unsigned=True))  #:
-    region = Column(String(2))  #:
-    samples = Column(Integer(unsigned=True))  #:
-    source = Column(TinyIntEnum(constants.ReportSource))  #:
-    weight = Column(Double(asdecimal=False))  #:
+    radius = Column(Integer(unsigned=True))
+    region = Column(String(2))
+    samples = Column(Integer(unsigned=True))
+    source = Column(TinyIntEnum(constants.ReportSource))
+    weight = Column(Double(asdecimal=False))
 
-    last_seen = Column(Date)  #:
-    block_first = Column(Date)  #:
-    block_last = Column(Date)  #:
-    block_count = Column(TinyInteger(unsigned=True))  #:
+    last_seen = Column(Date)
+    block_first = Column(Date)
+    block_last = Column(Date)
+    block_count = Column(TinyInteger(unsigned=True))
 
 
 def station_blocked(obj, today=None):

@@ -17,8 +17,8 @@ class DataQueue(object):
     been last put into the queue.
     """
 
-    queue_ttl = 86400  #: Maximum TTL value for the Redis list.
-    queue_max_age = 3600  #: Maximum age that data can sit in the queue.
+    queue_ttl = 86400  # Maximum TTL value for the Redis list.
+    queue_max_age = 3600  # Maximum age that data can sit in the queue.
 
     def __init__(self, key, redis_client,
                  batch=0, compress=False, json=True):

@@ -7,7 +7,8 @@ from ichnaea.webapp.config import (
     shutdown_worker,
 )
 
-_APP = None  #: Internal module global holding the runtime web app.
+# Internal module global holding the runtime web app.
+_APP = None
 
 
 def wsgi_app(environ, start_response):  # pragma: no cover
