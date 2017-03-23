@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import func, select
 
 from ichnaea.models import (
     BlueShard,
@@ -35,17 +35,25 @@ class StatCounterUpdater(object):
         value = stat_counter.get(self.task.redis_client)
 
         # Get value for the given day from the database.
-        stat = (session.query(Stat)
-                       .filter((Stat.key == stat_key),
-                               (Stat.time == day))).first()
+        columns = Stat.__table__.c
+        stat = session.execute(
+            select([columns.value])
+            .where(columns.key == stat_key)
+            .where(columns.time == day)
+        ).fetchone()
+
         if stat is not None:
             # If the day already has an entry, update it.
             if value:
-                stat.value += value
+                session.execute(
+                    Stat.__table__.update()
+                    .where(columns.key == stat_key)
+                    .where(columns.time == day)
+                    .values(value=value + columns.value)
+                )
                 stat_counter.decr(pipe, value)
         else:
             # Get the most recent value for the stat from the database.
-            columns = Stat.__table__.c
             before = session.execute(
                 select([columns.value])
                 .where(columns.key == stat_key)
@@ -54,9 +62,7 @@ class StatCounterUpdater(object):
                 .limit(1)
             ).fetchone()
 
-            old_value = 0
-            if before:
-                old_value = before.value
+            old_value = before.value if before else 0
 
             # Insert a new stat value.
             stmt = Stat.__table__.insert(
@@ -109,29 +115,36 @@ class StatRegion(object):
         if not stats:
             return
 
-        region_stats = dict(session.query(RegionStat.region,
-                                          RegionStat).all())
-        for region, values in stats.items():
-            if region in region_stats:
-                region_stats[region].gsm = values['gsm']
-                region_stats[region].wcdma = values['wcdma']
-                region_stats[region].lte = values['lte']
-                region_stats[region].blue = values['blue']
-                region_stats[region].wifi = values['wifi']
-            else:
-                session.add(RegionStat(
-                    region=region,
-                    gsm=values['gsm'],
-                    wcdma=values['wcdma'],
-                    lte=values['lte'],
-                    blue=values['blue'],
-                    wifi=values['wifi'],
-                ))
+        rows = session.execute(
+            select([RegionStat.__table__.c.region])
+        ).fetchall()
+        region_stats = set([row.region for row in rows])
 
-        obsolete_regions = list(set(region_stats.keys()) - set(stats.keys()))
+        inserts = []
+        updates = []
+        for region, values in stats.items():
+            data = {
+                'region': region,
+                'gsm': values['gsm'],
+                'wcdma': values['wcdma'],
+                'lte': values['lte'],
+                'blue': values['blue'],
+                'wifi': values['wifi'],
+            }
+            if region in region_stats:
+                updates.append(data)
+            else:
+                inserts.append(data)
+
+        if inserts:
+            session.bulk_insert_mappings(RegionStat, inserts)
+
+        if updates:
+            session.bulk_update_mappings(RegionStat, updates)
+
+        obsolete_regions = list(region_stats - set(stats.keys()))
         if obsolete_regions:
-            table = RegionStat.__table__
             session.execute(
-                delete(table)
-                .where(table.c.region.in_(obsolete_regions))
+                RegionStat.__table__.delete()
+                .where(RegionStat.__table__.c.region.in_(obsolete_regions))
             )

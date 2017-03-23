@@ -40,14 +40,14 @@ class DataMapUpdater(object):
         self.task = task
         self.shard_id = shard_id
         self.shard = DataMap.shards().get(shard_id)
+        self.shard_table = self.shard.__table__
 
     def _update_shards(self, session, grids):
         today = util.utcnow().date()
 
-        columns = self.shard.__table__.c
         rows = session.execute(
-            select([columns.grid, columns.modified])
-            .where(columns.grid.in_(grids))
+            select([self.shard_table.c.grid, self.shard_table.c.modified])
+            .where(self.shard_table.c.grid.in_(grids))
         ).fetchall()
 
         outdated = set()

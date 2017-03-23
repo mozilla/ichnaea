@@ -17,7 +17,7 @@ from ichnaea import util
 
 class CellAreaUpdater(object):
 
-    area_model = CellArea
+    area_table = CellArea.__table__
     cell_model = CellShard
     queue_name = 'update_cellarea'
 
@@ -70,31 +70,40 @@ class CellAreaUpdater(object):
                        'max_lat', 'max_lon', 'min_lat', 'min_lon')
 
         shard = self.cell_model.shard_model(radio)
-        columns = shard.__table__.c
-        fields = [getattr(columns, f) for f in load_fields]
+        fields = [getattr(shard.__table__.c, f) for f in load_fields]
 
         cells = session.execute(
             select(fields)
-            .where(columns.radio == radio)
-            .where(columns.mcc == mcc)
-            .where(columns.mnc == mnc)
-            .where(columns.lac == lac)
-            .where(columns.lat.isnot(None))
-            .where(columns.lon.isnot(None))
+            .where(shard.__table__.c.radio == radio)
+            .where(shard.__table__.c.mcc == mcc)
+            .where(shard.__table__.c.mnc == mnc)
+            .where(shard.__table__.c.lac == lac)
+            .where(shard.__table__.c.lat.isnot(None))
+            .where(shard.__table__.c.lon.isnot(None))
         ).fetchall()
 
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
-            area_table = self.area_model.__table__
             session.execute(
-                delete(area_table)
-                .where(area_table.c.areaid == areaid)
+                delete(self.area_table)
+                .where(self.area_table.c.areaid == areaid)
             )
             return
 
         # Otherwise update the area entry based on all the cells
-        area = (session.query(self.area_model)
-                       .filter(self.area_model.areaid == areaid)).first()
+        area = session.execute(
+            select([self.area_table.c.areaid,
+                    self.area_table.c.modified,
+                    self.area_table.c.lat,
+                    self.area_table.c.lon,
+                    self.area_table.c.radius,
+                    self.area_table.c.region,
+                    self.area_table.c.avg_cell_radius,
+                    self.area_table.c.num_cells,
+                    self.area_table.c.last_seen,
+                    ])
+            .where(self.area_table.c.areaid == areaid)
+        ).fetchone()
 
         cell_extremes = numpy.array([
             (numpy.nan if cell.max_lat is None else cell.max_lat,
@@ -132,31 +141,38 @@ class CellAreaUpdater(object):
             last_seen = max(cell_last_seen)
 
         if area is None:
-            stmt = self.area_model.__table__.insert(
-                mysql_on_duplicate='num_cells = num_cells'  # no-op
-            ).values(
-                areaid=areaid,
-                radio=radio,
-                mcc=mcc,
-                mnc=mnc,
-                lac=lac,
-                created=self.utcnow,
-                modified=self.utcnow,
-                lat=ctr_lat,
-                lon=ctr_lon,
-                radius=radius,
-                region=region,
-                avg_cell_radius=avg_cell_radius,
-                num_cells=num_cells,
-                last_seen=last_seen,
+            session.execute(
+                self.area_table.insert(
+                    mysql_on_duplicate='num_cells = num_cells'  # no-op
+                ).values(
+                    areaid=areaid,
+                    radio=radio,
+                    mcc=mcc,
+                    mnc=mnc,
+                    lac=lac,
+                    created=self.utcnow,
+                    modified=self.utcnow,
+                    lat=ctr_lat,
+                    lon=ctr_lon,
+                    radius=radius,
+                    region=region,
+                    avg_cell_radius=avg_cell_radius,
+                    num_cells=num_cells,
+                    last_seen=last_seen,
+                )
             )
-            session.execute(stmt)
         else:
-            area.modified = self.utcnow
-            area.lat = ctr_lat
-            area.lon = ctr_lon
-            area.radius = radius
-            area.region = region
-            area.avg_cell_radius = avg_cell_radius
-            area.num_cells = num_cells
-            area.last_seen = last_seen
+            session.execute(
+                self.area_table.update()
+                .where(self.area_table.c.areaid == areaid)
+                .values(
+                    modified=self.utcnow,
+                    lat=ctr_lat,
+                    lon=ctr_lon,
+                    radius=radius,
+                    region=region,
+                    avg_cell_radius=avg_cell_radius,
+                    num_cells=num_cells,
+                    last_seen=last_seen,
+                )
+            )
