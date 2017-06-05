@@ -14,6 +14,7 @@ Migrations
 Changes
 ~~~~~~~
 
+- Adjust the text on the download and stats pages.
 
 20170314161700
 **************

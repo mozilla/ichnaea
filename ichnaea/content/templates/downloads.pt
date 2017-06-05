@@ -10,28 +10,8 @@
         Please see the
         <a href="https://mozilla.github.io/ichnaea/import_export.html">
             file format documentation</a> for the structure of these files.
-        The file format was developed in cooperation with the OpenCellID
-        project.
-    </p>
-
-    <h3>OpenCellID</h3>
-
-    <p class="text-justified">
-        The service incorporates aggregated cell data from our partner
-        the <a href="http://opencellid.org">OpenCellID project</a>.
-        The OpenCellID data is provided under the
-        <a href="https://creativecommons.org/licenses/by-sa/3.0/">
-            CC-BY-SA 3.0 license</a> and can be acquired from the
-        <a href="http://opencellid.org/downloads/">
-            OpenCellID downloads section</a>.
-    </p>
-
-    <p class="text-justified">
-        The OpenCellID project puts a stronger emphasis on public data
-        compared to possible privacy risks, whereas this project has a
-        stronger emphasis on privacy. Please consider contributing to
-        the OpenCellID project if you do not agree with the privacy
-        choices made by this project.
+        The file format was developed in cooperation with the
+        <a href="https://opencellid.org">OpenCellID project</a>.
     </p>
 
     <h3>Cell Networks</h3>
@@ -118,10 +98,7 @@
 
     <p class="text-justified">
         We have therefor chosen to use a conservative approach and do not
-        make the raw observation data public. In the future we might consider
-        an additional explicit user opt-in, to let users signal their
-        willingness to have their observation data published, as long as we
-        can make the possible risk clear to them.
+        make the raw observation data public.
     </p>
 
 </section>
