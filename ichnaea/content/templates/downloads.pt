@@ -10,19 +10,8 @@
         Please see the
         <a href="https://mozilla.github.io/ichnaea/import_export.html">
             file format documentation</a> for the structure of these files.
-        The file format was developed in cooperation with the OpenCellID
-        project.
-    </p>
-
-    <h3>OpenCellID</h3>
-
-    <p class="text-justified">
-        The service incorporates aggregated cell data from our partner the
-        <a href="https://en.wikipedia.org/wiki/OpenCellID">
-            OpenCellID project</a>.
-        The OpenCellID data is provided under the
-        <a href="https://creativecommons.org/licenses/by-sa/3.0/">
-            CC-BY-SA 3.0 license</a> and can be acquired from them.
+        The file format was developed in cooperation with the
+        <a href="https://opencellid.org">OpenCellID project</a>.
     </p>
 
     <h3>Cell Networks</h3>
