@@ -9,7 +9,7 @@ TOXENVDIR ?= $(HERE)/.tox/tmp
 TOXINIDIR ?= $(HERE)
 ICHNAEA_CFG ?= $(TOXINIDIR)/ichnaea/tests/data/test.ini
 
-MAXMINDDB_VERSION = 1.2.2
+MAXMINDDB_VERSION = 1.3.0
 MYSQL_DB = location
 MYSQL_TEST_DB = test_location
 
@@ -134,7 +134,7 @@ $(TOXINIDIR)/libmaxminddb/bootstrap:
 	rm -rf libmaxminddb
 	git clone --recursive git://github.com/maxmind/libmaxminddb
 	cd libmaxminddb; git reset --hard; git clean -fd
-	cd libmaxminddb; git checkout -f 1.1.1
+	cd libmaxminddb; git checkout -f 1.2.1
 	cd libmaxminddb; git submodule update --init --recursive
 
 $(TOXINIDIR)/libmaxminddb/Makefile:
