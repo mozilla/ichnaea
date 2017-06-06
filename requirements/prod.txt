@@ -1,68 +1,68 @@
-alembic==0.8.8  # rq.filter: <0.9
+alembic==0.8.10  # rq.filter: <0.9
 amqp==1.4.9  # rq.filter: <2.0
-anyjson==0.3.3
-argparse==1.4.0 ; python_version < '2.7'
+anyjson==0.3.3  # rq.filter: <0.4
+argparse==1.4.0 ; python_version < '2.7'  # rq.filter: <1.5
 billiard==3.3.0.23  # rq.filter: <3.5.0
 boto==2.47.0  # rq.filter: <3.0
-celery==3.1.23  # rq.filter: <4.0
+celery==3.1.25  # rq.filter: <4.0
 certifi==2017.4.17
-cffi==1.10.0
+cffi==1.10.0  # rq.filter: <2.0
 Chameleon==2.25  # rq.filter: <3.0
-chardet==3.0.2
+chardet==3.0.3  # rq.filter: <3.1
 colander==1.2  # rq.filter: <1.3
-configparser==3.5.0
-contextlib2==0.5.5 ; python_version < '3.2'
+configparser==3.5.0  # rq.filter: <3.6
+contextlib2==0.5.5 ; python_version < '3.2'  # rq.filter: <0.6
 cryptography==1.6  # rq.filter: <1.7
-datadog==0.12.0
-decorator==4.0.11
-enum34==1.0.4 ; python_version < '3.0'
-filechunkio==1.8
+datadog==0.12.0  # rq.filter: <0.13
+decorator==4.0.11  # rq.filter: <4.1
+enum34==1.0.4 ; python_version < '3.0'  # rq.filter: <1.1
+filechunkio==1.8  # rq.filter: <1.9
 genc==0.2
-geoip2==2.5.0
+geoip2==2.5.0  # rq.filter: <2.6
 gevent==1.1.2  # rq.filter: <1.2
-greenlet==0.4.12
+greenlet==0.4.12  # rq.filter: <0.5
 gunicorn==19.6.0  # rq.filter: <19.7
-hiredis==0.2.0
-idna==2.5
-importlib==1.0.4 ; python_version < '3.0'
-ipaddress==1.0.18 ; python_version < '3.0'
-iso8601==0.1.11
-kombu==3.0.35  # rq.filter: <4.0
-linecache2==1.0.0 ; python_version < '3.0'
-Mako==1.0.6
-MarkupSafe==1.0
+hiredis==0.2.0  # rq.filter: <0.3
+idna==2.5  # rq.filter: <2.6
+importlib==1.0.4 ; python_version < '3.0'  # rq.filter: <1.1
+ipaddress==1.0.18 ; python_version < '3.0'  # rq.filter: <1.1
+iso8601==0.1.11  # rq.filter: <0.2
+kombu==3.0.37  # rq.filter: <4.0
+linecache2==1.0.0 ; python_version < '3.0'  # rq.filter: <1.1
+Mako==1.0.6  # rq.filter: <1.1
+MarkupSafe==1.0  # rq.filter: <1.1
 maxminddb==1.3.0  # version also in Makefile
 mobile-codes==0.7
-ndg-httpsclient==0.4.2
-ordereddict==1.1 ; python_version < '3.0'
-PasteDeploy==1.5.2
-pyasn1==0.2.3
-pycparser==2.17
+ndg-httpsclient==0.4.2  # rq.filter: <0.5
+ordereddict==1.1 ; python_version < '3.0'  # rq.filter: <1.2
+PasteDeploy==1.5.2  # rq.filter: <1.6
+pyasn1==0.2.3  # rq.filter: <0.3
+pycparser==2.17  # rq.filter: <2.18
 PyMySQL==0.7.11  # rq.filter: <0.8
 pyopenssl==17.0.0
 pyramid==1.6.5  # rq.filter: <1.7.0
-pyramid-chameleon==0.3
-python-editor==1.0.3
+pyramid-chameleon==0.3  # rq.filter: <0.4
+python-editor==1.0.3  # rq.filter: <1.1
 pytz==2017.2
-raven==5.32.0  # rq.filter: <6.0
-redis==2.10.5
-repoze.lru==0.6
+raven==5.33.0  # rq.filter: <6.0
+redis==2.10.5  # rq.filter: <2.11
+repoze.lru==0.6  # rq.filter: <0.7
 requests==2.15.1  # rq.filter: <2.16
 Rtree==0.6.0 ; python_version < '2.7'  # rq.filter: <0.7.0
 Rtree==0.8.3 ; python_version >= '2.7'
 scandir==1.5 ; python_version < '3.5'
 scipy==0.17.1  # rq.filter: <0.18
-setproctitle==1.1.10
-Shapely==1.5.17
-simplejson==3.10.0
-six==1.10.0
+setproctitle==1.1.10  # rq.filter: <1.2
+Shapely==1.5.17  # rq.filter: <1.6
+simplejson==3.10.0  # rq.filter: <3.11
+six==1.10.0  # rq.filter: <1.11
 SQLAlchemy==1.0.17  # rq.filter: <1.1
-traceback2==1.4.0 ; python_version < '3.0'
-translationstring==1.3
-unittest2==1.1.0 ; python_version < '3.0'
-urllib3==1.21.1
+traceback2==1.4.0 ; python_version < '3.0'  # rq.filter: <1.5
+translationstring==1.3  # rq.filter: <1.4
+unittest2==1.1.0 ; python_version < '3.0'  # rq.filter: <1.2
+urllib3==1.21.1  # rq.filter: <1.22
 venusian==1.0  # rq.filter: <1.1
 WebOb==1.6.3  # rq.filter: <1.7
-wsgiref==0.1.2 ; python_version < '3.0'
-zope.deprecation==4.2.0
-zope.interface==4.1.3  # rq.filter: <4.2.0
+wsgiref==0.1.2 ; python_version < '3.0'  # rq.filter: <0.2
+zope.deprecation==4.1.2  # rq.filter: <4.2
+zope.interface==4.1.3  # rq.filter: <4.2
