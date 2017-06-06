@@ -6,7 +6,7 @@ Cython==0.24.1  # rq.filter: <0.25
 docutils==0.12  # rq.filter: <0.13
 factory_boy==2.6.1  # rq.filter: <2.7
 fake-factory==0.5.11  # rq.filter: <0.6
-funcsigs==1.0.2 ; python_version < "3.3"  # rq.filter: <1.1
+funcsigs==1.0.2  # rq.filter: <1.1
 imagesize==0.7.1  # rq.filter: <0.8
 Jinja2==2.8.1  # rq.filter: <2.9
 mock==2.0.0  # rq.filter: <2.1
@@ -23,4 +23,4 @@ Sphinx==1.4.8  # rq.filter: <1.5
 sphinx_rtd_theme==0.1.9  # rq.filter: <0.2
 tox==2.3.2  # rq.filter: <2.4
 virtualenv==15.1.0
-WebTest==2.0.27  # rq.filter: <2.1
+WebTest==2.0.23  # rq.filter: <2.0.24

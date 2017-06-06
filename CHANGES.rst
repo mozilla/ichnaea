@@ -8,16 +8,6 @@ Changelog
 Untagged
 ********
 
-Migrations
-~~~~~~~~~~
-
-Changes
-~~~~~~~
-
-
-20170606211700
-**************
-
 Changes
 ~~~~~~~
 
