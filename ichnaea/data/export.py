@@ -1,6 +1,7 @@
 from collections import defaultdict
 import re
 import time
+from urllib.parse import urlparse
 import uuid
 
 import boto3
@@ -10,7 +11,6 @@ import redis.exceptions
 import requests
 import requests.exceptions
 import simplejson
-from six.moves.urllib.parse import urlparse
 from sqlalchemy import select
 import sqlalchemy.exc
 

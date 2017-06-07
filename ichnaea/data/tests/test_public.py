@@ -2,10 +2,9 @@ import csv
 import os
 import re
 from datetime import timedelta
+from unittest import mock
 
 import boto3
-import mock
-import six
 
 from ichnaea.data.public import (
     write_stations_to_csv,
@@ -73,7 +72,7 @@ class TestExport(object):
                 with gzip_wrapper as gzip_file:
                     reader = csv.DictReader(gzip_file, CELL_FIELDS)
 
-                    header = six.next(reader)
+                    header = next(reader)
                     assert 'area' in header.values()
 
                     exported_cells = set()

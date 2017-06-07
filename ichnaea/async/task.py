@@ -7,7 +7,6 @@ from kombu.serialization import (
     dumps as kombu_dumps,
     loads as kombu_loads,
 )
-from six import get_unbound_function
 
 from ichnaea.cache import redis_pipeline
 from ichnaea.config import TESTING
@@ -67,7 +66,7 @@ class BaseTask(Task):
         # Set up celery beat entry after celery app initialization is done.
         enabled = cls._enabled
         if callable(enabled):
-            enabled = get_unbound_function(enabled)()
+            enabled = enabled()
 
         if enabled and cls._schedule:
             app.conf.beat_schedule.update(cls.beat_config())

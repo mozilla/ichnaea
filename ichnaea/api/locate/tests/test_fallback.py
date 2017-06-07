@@ -1,5 +1,6 @@
+from unittest import mock
+
 import colander
-import mock
 import pytest
 import requests_mock
 from redis import RedisError

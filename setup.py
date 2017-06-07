@@ -15,7 +15,7 @@ here = os.path.relpath(os.path.abspath(os.path.dirname(__file__)))
 with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
 
-__version__ = '2.0.1'
+__version__ = '2.1.0'
 
 numpy_include = numpy.get_include()
 ext_modules = [
@@ -38,10 +38,9 @@ setup(
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
         "Programming Language :: Python",
-        "Programming Language :: Python :: 2",
-        "Programming Language :: Python :: 2.7",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: Implementation :: CPython",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",

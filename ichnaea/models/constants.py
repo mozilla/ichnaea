@@ -7,14 +7,12 @@ from enum import IntEnum
 import re
 
 import mobile_codes
-from six import string_types
 
 from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
 
 
 class Radio(IntEnum):
     """An integer enum representing a radio type."""
-    __order__ = 'gsm cdma wcdma umts lte'
 
     gsm = 0
     cdma = 1
@@ -108,7 +106,7 @@ MAX_MCC = 999  # Maximum accepted network code.
 ALL_VALID_MCCS = (
     [int(record.mcc)
      for record in mobile_codes._countries()
-     if isinstance(record.mcc, string_types)] +
+     if isinstance(record.mcc, str)] +
     [int(code)
      for record in mobile_codes._countries()
      if isinstance(record.mcc, (tuple, list))

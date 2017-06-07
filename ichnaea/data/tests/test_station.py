@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import timedelta
+from unittest import mock
 
-import mock
 import pytest
 from sqlalchemy import text
 

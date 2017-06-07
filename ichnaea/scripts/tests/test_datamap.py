@@ -1,7 +1,6 @@
 import os
 import os.path
-
-from mock import MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 from ichnaea.models.content import (
     DataMap,

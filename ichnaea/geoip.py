@@ -14,7 +14,6 @@ from geoip2.errors import (
 )
 from maxminddb import InvalidDatabaseError
 from maxminddb.const import MODE_AUTO
-from six import PY2
 
 from ichnaea.config import GEOIP_PATH
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
@@ -253,11 +252,8 @@ class GeoIPWrapper(Reader):
         :returns: True if the C extension was installed correctly.
         :rtype: bool
         """
-        builtin_module = 'builtins'
-        if PY2:  # pragma: no cover
-            builtin_module = '__builtin__'
         for instance in (self.metadata(), self._db_reader):
-            if type(instance).__module__ != builtin_module:
+            if type(instance).__module__ != 'builtins':
                 return False
         return True
 

@@ -17,7 +17,6 @@ import time
 
 import colander
 import iso8601
-from six import string_types
 
 from ichnaea.models.constants import (
     MIN_TIMESTAMP,
@@ -51,7 +50,7 @@ class StringVocabularyNode(colander.String):
         value = super(StringVocabularyNode, self).deserialize(schema, cstruct)
         if not value:
             return colander.null
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             value = value.lower()
         if value in schema.vocabulary:
             return value

@@ -6,7 +6,6 @@ from maxminddb.const import (
     MODE_AUTO,
     MODE_MMAP,
 )
-import six
 
 from ichnaea.geocode import GEOCODER
 from ichnaea import geoip
@@ -60,10 +59,7 @@ class TestGeoIP(object):
                 assert isinstance(db, geoip.GeoIPNull)
         finally:
             shutil.rmtree(tmpdir)
-        if six.PY2:
-            raven.check(['IOError: No such file or directory'])
-        else:
-            raven.check(['FileNotFoundError'])
+        raven.check(['FileNotFoundError'])
 
     def test_open_invalid_file(self, raven):
         with tempfile.NamedTemporaryFile() as temp:

@@ -1,7 +1,6 @@
 from datetime import date, datetime
 
 import colander
-from six import string_types
 
 from ichnaea.models.constants import ReportSource
 
@@ -80,7 +79,7 @@ class ReportSourceType(colander.Integer):
         if isinstance(cstruct, ReportSource):
             return cstruct
         try:
-            if isinstance(cstruct, string_types):
+            if isinstance(cstruct, str):
                 cstruct = ReportSource[cstruct]
             else:
                 cstruct = ReportSource(cstruct)

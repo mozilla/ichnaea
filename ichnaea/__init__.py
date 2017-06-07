@@ -1,5 +1,4 @@
 # Disable deprecation warnings in production mode
-import sys
 import warnings
 
 from shapely import speedups
@@ -11,9 +10,3 @@ warnings.simplefilter('ignore', PendingDeprecationWarning)
 if speedups.available:
     speedups.enable()
 del speedups
-
-# Enable pyopenssl based SSL stack
-if sys.version_info < (3, 0):  # pragma: no cover
-    from requests.packages.urllib3.contrib import pyopenssl
-    pyopenssl.inject_into_urllib3()
-    del pyopenssl

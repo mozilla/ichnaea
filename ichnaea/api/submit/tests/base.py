@@ -1,4 +1,5 @@
-import mock
+from unittest import mock
+
 from redis import RedisError
 from simplejson import dumps
 

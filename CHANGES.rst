@@ -2,8 +2,13 @@
 Changelog
 =========
 
-2.0.1 (unreleased)
+2.1.0 (unreleased)
 ==================
+
+Compatibility
+~~~~~~~~~~~~~
+
+- Drop support for Python 2.7, require Python 3.6.
 
 Migrations
 ~~~~~~~~~~

@@ -1,7 +1,7 @@
 import time
+from unittest import mock
 
 import boto3
-import mock
 import requests_mock
 import simplejson
 

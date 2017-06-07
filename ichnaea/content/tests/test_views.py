@@ -1,7 +1,7 @@
 from calendar import timegm
+from unittest import mock
 
 import boto3
-import mock
 from pyramid.testing import DummyRequest
 from pyramid import testing
 import pytest

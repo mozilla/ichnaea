@@ -4,6 +4,7 @@ Contains website related routes and views.
 
 from operator import itemgetter
 import os
+from urllib import parse as urlparse
 
 import boto3
 from boto3.exceptions import Boto3Error
@@ -16,7 +17,6 @@ from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
 import simplejson
-from six.moves.urllib import parse as urlparse
 
 from ichnaea.config import (
     ASSET_BUCKET,

@@ -3,10 +3,10 @@ Functionality related to using Redis as a cache and a queue.
 """
 
 from contextlib import contextmanager
+from urllib.parse import urlparse
 
 import redis
 from redis.exceptions import RedisError
-from six.moves.urllib.parse import urlparse
 
 from ichnaea.config import REDIS_URI
 
