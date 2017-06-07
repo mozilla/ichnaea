@@ -321,19 +321,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_cell_radio_in_celltowers(self, app, session):
-        # This test covers a bug related to FxOS calling the
-        # geolocate API incorrectly.
-        cell = CellShardFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query['cellTowers'][0]['radio'] = cell.radio.name
-        del query['cellTowers'][0]['radioType']
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell)
-
     def test_cell_radiotype_in_celltowers(self, app, session):
         # This test covers an extension to the geolocate API
         cell = CellShardFactory()
@@ -341,22 +328,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         query = self.model_query(cells=[cell])
         query['cellTowers'][0]['radioType'] = cell.radio.name
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell)
-
-    def test_cell_radio_in_celltowers_dupes(self, app, session):
-        # This test covers a bug related to FxOS calling the
-        # geolocate API incorrectly.
-        cell = CellShardFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query['cellTowers'][0]['radio'] = cell.radio.name
-        del query['cellTowers'][0]['radioType']
-
-        cell_two = query['cellTowers'][0].copy()
-        query['cellTowers'].append(cell_two)
 
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
@@ -371,10 +342,8 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
         query = self.model_query(cells=[cell, cell2])
         query['radioType'] = Radio.lte.name
-        query['cellTowers'][0]['radio'] = 'wcdma'
-        query['cellTowers'][1]['radio'] = cell2.radio.name
-        del query['cellTowers'][0]['radioType']
-        del query['cellTowers'][1]['radioType']
+        query['cellTowers'][0]['radioType'] = 'wcdma'
+        query['cellTowers'][1]['radioType'] = cell2.radio.name
 
         res = self._call(app, body=query)
         self.check_model_response(res, cell)

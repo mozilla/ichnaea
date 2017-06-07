@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove radio field workaround in cell locate API.
+
 - Adjust the text on the download and stats pages.
 
 - Use SQLAlchemy core instead of ORM in various places.

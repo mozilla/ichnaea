@@ -32,15 +32,6 @@ class CellTowersSchema(colander.SequenceSchema):
     @colander.instantiate()
     class SequenceItem(RenamingMappingSchema):
 
-        # radio is a FxOS specific undocumented workaround
-        radio = colander.SchemaNode(
-            colander.String(),
-            validator=colander.OneOf(RADIO_STRINGS), missing=colander.drop,
-            to_name='radioType')
-        # radioType resolves to the internal field 'radio', so if both
-        # 'radio' and 'radioType' are provided, radioType should take
-        # precedence. colander respects the order that fields are defined
-        # and so radioType is defined after the 'radio' field.
         radioType = colander.SchemaNode(
             colander.String(), validator=colander.OneOf(RADIO_STRINGS),
             missing=colander.drop)
