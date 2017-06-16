@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Install MySQL 5.7 and Redis command line utilities.
+
 - Remove radio field workaround in cell locate API.
 
 - Adjust the text on the download and stats pages.
