@@ -187,15 +187,6 @@ case "$1" in
     $0 run alembic $2 $3 $4 $5 $6 $7 $8 $9
     ;;
 
-  # Runs bower using a special node container.
-  bower_list)
-    cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
-    cd $HERE
-    docker run -it --rm \
-        --volume `pwd`:/app mozilla/location_node \
-        make -f node.make bower_list
-    ;;
-
   # Updates CSS resources using a special node container.
   css)
     cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
@@ -235,7 +226,7 @@ case "$1" in
 
   # Shows usage information.
   help)
-    echo "Usage: $0 {start|stop|restart|run|alembic|bower_list|css|docs|js|map|shell|test|help}"
+    echo "Usage: $0 {start|stop|restart|run|alembic|css|docs|js|map|shell|test|help}"
     ;;
 
   # Shows help message.

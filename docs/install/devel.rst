@@ -110,7 +110,7 @@ CSS / JS / Images
 -----------------
 
 The project depends on a number of external web assets. Those dependencies
-are tracked via npm and bower in files under `docker/node`.
+are tracked via npm in files under `docker/node`.
 
 In order to install them, run:
 
@@ -119,15 +119,9 @@ In order to install them, run:
     ./server css
     ./server js
 
-This will install build tools and bower assets inside a docker container.
+This will install build tools and assets inside a docker container.
 It will also copy, compile and minify files in various folders under
 `ichnaea/content/static/`.
-
-To check if the external assets are outdated run:
-
-.. code-block:: bash
-
-    ./server bower_list
 
 
 Python Dependencies

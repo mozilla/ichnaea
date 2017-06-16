@@ -6,6 +6,7 @@ RUN groupadd -g 10001 app && \
     useradd -d /app -g 10001 -G app -M -s /bin/sh -u 10001 app
 
 RUN apt-get update && apt-get install -y \
+    bzip2 \
     git \
     make \
     && apt-get -y clean \
@@ -26,12 +27,11 @@ RUN npm install -d /node
 RUN npm dedupe
 RUN npm shrinkwrap --dev
 
+WORKDIR /node/node_modules/mapbox.js
+RUN npm install && \
+    make
+
 ENV PATH=$PATH:/node/node_modules/.bin/
-
-COPY ./.bowerrc /node/.bowerrc
-COPY ./bower.json /node/bower.json
-
-RUN bower install
 
 WORKDIR /app
 VOLUME /app

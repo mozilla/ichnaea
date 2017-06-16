@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Replace bower in CSS/JS dev setup with npm.
+
 - Install MySQL 5.7 and Redis command line utilities.
 
 - Remove radio field workaround in cell locate API.
