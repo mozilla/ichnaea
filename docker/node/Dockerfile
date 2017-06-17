@@ -21,11 +21,9 @@ WORKDIR /node
 CMD ["bash"]
 
 COPY ./package.json /node/package.json
-COPY ./npm-shrinkwrap.json /node/npm-shrinkwrap.json
-
-RUN npm install -d /node
+RUN npm install --no-save -d /node
 RUN npm dedupe
-RUN npm shrinkwrap --dev
+RUN npm shrinkwrap
 
 WORKDIR /node/node_modules/mapbox.js
 RUN npm install && \

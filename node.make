@@ -4,16 +4,20 @@ CSS_ROOT = $(STATIC_ROOT)/css
 FONT_ROOT = $(STATIC_ROOT)/fonts
 IMG_ROOT = $(STATIC_ROOT)/images
 JS_ROOT = $(STATIC_ROOT)/js
-NODE_MODULES = /node/node_modules
+NODE_ROOT = /node
+NODE_MODULES = $(NODE_ROOT)/node_modules
 
 CLEANCSS = cleancss -d
 UGLIFYJS = uglifyjs -c --stats
 
-.PHONY: all js css
+.PHONY: all js css shrinkwrap
 
 all: css js
 
-css:
+shrinkwrap:
+	cp $(NODE_ROOT)/npm-shrinkwrap.json $(HERE)/docker/node/
+
+css: shrinkwrap
 	cp $(NODE_MODULES)/mozilla-tabzilla/css/tabzilla.css \
 		$(CSS_ROOT)/tabzilla.css
 
@@ -47,7 +51,7 @@ css:
 	cp $(NODE_MODULES)/mapbox.js/dist/images/images/* $(CSS_ROOT)/images/
 	cp $(NODE_MODULES)/font-awesome/fonts/* $(FONT_ROOT)/
 
-js:
+js: shrinkwrap
 	$(UGLIFYJS) -o $(JS_ROOT)/bundle-privacy.js \
 		$(JS_ROOT)/privacy.js
 

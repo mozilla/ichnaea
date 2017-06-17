@@ -1,5 +1,5 @@
 /*!
-Copyright (c) 2014 Dominik Moritz
+Copyright (c) 2016 Dominik Moritz
 
 This file is part of the leaflet locate control. It is licensed under the MIT license.
 You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
@@ -22,23 +22,66 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
     }
 
     // attach your plugin to the global 'L' variable
-    if(typeof window !== 'undefined' && window.L){
-        window.L.Locate = factory(L);
+    if (typeof window !== 'undefined' && window.L){
+        window.L.Control.Locate = factory(L);
     }
-
 } (function (L) {
-    L.Control.Locate = L.Control.extend({
+    var LocateControl = L.Control.extend({
         options: {
+            /** Position of the control */
             position: 'topleft',
-            layer: new L.LayerGroup(),  // use your own layer for the location marker
+            /** The layer that the user's location should be drawn on. By default creates a new layer. */
+            layer: undefined,
+            /**
+             * Automatically sets the map view (zoom and pan) to the user's location as it updates.
+             * While the map is following the user's location, the control is in the `following` state,
+             * which changes the style of the control and the circle marker.
+             *
+             * Possible values:
+             *  - false: never updates the map view when location changes.
+             *  - 'once': set the view when the location is first determined
+             *  - 'always': always updates the map view when location changes.
+             *              The map view follows the users location.
+             *  - 'untilPan': (default) like 'always', except stops updating the
+             *                view if the user has manually panned the map.
+             *                The map view follows the users location until she pans.
+             */
+            setView: 'untilPan',
+            /** Keep the current map zoom level when setting the view and only pan. */
+            keepCurrentZoomLevel: false,
+            /** Smooth pan and zoom to the location of the marker. Only works in Leaflet 1.0+. */
+            flyTo: false,
+            /**
+             * The user location can be inside and outside the current view when the user clicks on the
+             * control that is already active. Both cases can be configures separately.
+             * Possible values are:
+             *  - 'setView': zoom and pan to the current location
+             *  - 'stop': stop locating and remove the location marker
+             */
+            clickBehavior: {
+                /** What should happen if the user clicks on the control while the location is within the current view. */
+                inView: 'stop',
+                /** What should happen if the user clicks on the control while the location is outside the current view. */
+                outOfView: 'setView',
+            },
+            /**
+             * If set, save the map bounds just before centering to the user's
+             * location. When control is disabled, set the view back to the
+             * bounds that were saved.
+             */
+            returnToPrevBounds: false,
+            /**
+             * Keep a cache of the location after the user deactivates the control. If set to false, the user has to wait
+             * until the locate API returns a new location before they see where they are again.
+             */
+            cacheLocation: true,
+            /** If set, a circle that shows the location accuracy is drawn. */
             drawCircle: true,
-            follow: false,  // follow with zoom and pan the user's location
-            stopFollowingOnDrag: false, // if follow is true, stop following when map is dragged (deprecated)
-            // if true locate control remains active on click even if the user's location is in view.
-            // clicking control will just pan to location
-            remainActive: false,
-            markerClass: L.circleMarker, // L.circleMarker or L.marker
-            // range circle
+            /** If set, the marker at the users' location is drawn. */
+            drawMarker: true,
+            /** The class to be used to create the marker. For example L.CircleMarker or L.Marker */
+            markerClass: L.CircleMarker,
+            /** Accuracy circle style properties. */
             circleStyle: {
                 color: '#136AEC',
                 fillColor: '#136AEC',
@@ -46,7 +89,7 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
                 weight: 2,
                 opacity: 0.5
             },
-            // inner marker
+            /** Inner marker style properties. Only works if your marker class supports `setStyle`. */
             markerStyle: {
                 color: '#136AEC',
                 fillColor: '#2A93EE',
@@ -55,31 +98,49 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
                 opacity: 0.9,
                 radius: 5
             },
-            // changes to range circle and inner marker while following
-            // it is only necessary to provide the things that should change
+            /**
+             * Changes to accuracy circle and inner marker while following.
+             * It is only necessary to provide the properties that should change.
+             */
             followCircleStyle: {},
             followMarkerStyle: {
-                //color: '#FFA500',
-                //fillColor: '#FFB000'
+                // color: '#FFA500',
+                // fillColor: '#FFB000'
             },
-            icon: 'fa fa-map-marker',  // fa-location-arrow or fa-map-marker
+            /** The CSS class for the icon. For example fa-location-arrow or fa-map-marker */
+            icon: 'fa fa-map-marker',
             iconLoading: 'fa fa-spinner fa-spin',
+            /** The element to be created for icons. For example span or i */
+            iconElementTag: 'span',
+            /** Padding around the accuracy circle. */
             circlePadding: [0, 0],
+            /** Use metric units. */
             metric: true,
-            onLocationError: function(err) {
-                // this event is called in case of any location error
-                // that is not a time out error.
+            /**
+             * This callback can be used in case you would like to override button creation behavior.
+             * This is useful for DOM manipulation frameworks such as angular etc.
+             * This function should return an object with HtmlElement for the button (link property) and the icon (icon property).
+             */
+            createButtonCallback: function (container, options) {
+                var link = L.DomUtil.create('a', 'leaflet-bar-part leaflet-bar-part-single', container);
+                link.title = options.strings.title;
+                var icon = L.DomUtil.create(options.iconElementTag, options.icon, link);
+                return { link: link, icon: icon };
+            },
+            /** This event is called in case of any location error that is not a time out error. */
+            onLocationError: function(err, control) {
                 alert(err.message);
             },
+            /**
+             * This even is called when the user's location is outside the bounds set on the map.
+             * The event is called repeatedly when the location changes.
+             */
             onLocationOutsideMapBounds: function(control) {
-                // this event is repeatedly called when the location changes
                 control.stop();
                 alert(control.options.strings.outsideMapBoundsMsg);
             },
-            setView: true, // automatically sets the map view to the user's location
-            // keep the current map zoom level when displaying the user's location. (if 'false', use maxZoom)
-            keepCurrentZoomLevel: false,
-            showPopup: true, // display a popup when the user click on the inner marker
+            /** Display a pop-up when the user click on the inner marker. */
+            showPopup: true,
             strings: {
                 title: "Show me where I am",
                 metersUnit: "meters",
@@ -87,19 +148,17 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
                 popup: "You are within {distance} {unit} from this point",
                 outsideMapBoundsMsg: "You seem located outside the boundaries of the map"
             },
+            /** The default options passed to leaflets locate method. */
             locateOptions: {
                 maxZoom: Infinity,
-                watch: true  // if you overwrite this, visualization cannot be updated
+                watch: true,  // if you overwrite this, visualization cannot be updated
+                setView: false // have to set this to false because we have to
+                               // do setView manually
             }
         },
 
         initialize: function (options) {
-            L.Map.addInitHook(function () {
-                if (this.options.locateControl) {
-                    this.addControl(this);
-                }
-            });
-
+            // set default options if nothing is set (merge one step deep)
             for (var i in options) {
                 if (typeof this.options[i] === 'object') {
                     L.extend(this.options[i], options[i]);
@@ -108,214 +167,73 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
                 }
             }
 
-            L.extend(this.options.locateOptions, {
-                setView: false // have to set this to false because we have to
-                               // do setView manually
-            });
+            // extend the follow marker style and circle from the normal style
+            this.options.followMarkerStyle = L.extend({}, this.options.markerStyle, this.options.followMarkerStyle);
+            this.options.followCircleStyle = L.extend({}, this.options.circleStyle, this.options.followCircleStyle);
         },
 
         /**
-         * This method launches the location engine.
-         * It is called before the marker is updated,
-         * event if it does not mean that the event will be ready.
-         *
-         * Override it if you want to add more functionalities.
-         * It should set the this._active to true and do nothing if
-         * this._active is not true.
+         * Add control to map. Returns the container for the control.
          */
-        _activate: function() {
-            if (this.options.setView) {
-                this._locateOnNextLocationFound = true;
-            }
-
-            if(!this._active) {
-                this._map.locate(this.options.locateOptions);
-            }
-            this._active = true;
-
-            if (this.options.follow) {
-                this._startFollowing(this._map);
-            }
-        },
-
-        /**
-         * Called to stop the location engine.
-         *
-         * Override it to shutdown any functionalities you added on start.
-         */
-        _deactivate: function() {
-            this._map.stopLocate();
-
-            this._map.off('dragstart', this._stopFollowing, this);
-            if (this.options.follow && this._following) {
-                this._stopFollowing(this._map);
-            }
-        },
-
-        /**
-         * Draw the resulting marker on the map.
-         *
-         * Uses the event retrieved from onLocationFound from the map.
-         */
-        drawMarker: function(map) {
-            if (this._event.accuracy === undefined) {
-                this._event.accuracy = 0;
-            }
-
-            var radius = this._event.accuracy;
-            if (this._locateOnNextLocationFound) {
-                if (this._isOutsideMapBounds()) {
-                    this.options.onLocationOutsideMapBounds(this);
-                } else {
-                    // If accuracy info isn't desired, keep the current zoom level
-                    if(this.options.keepCurrentZoomLevel || !this.options.drawCircle){
-                        map.panTo([this._event.latitude, this._event.longitude]);
-                    } else {
-                        map.fitBounds(this._event.bounds, {
-                            padding: this.options.circlePadding,
-                            maxZoom: this.options.keepCurrentZoomLevel ?
-                            map.getZoom() : this.options.locateOptions.maxZoom
-                        });
-                    }
-                }
-                this._locateOnNextLocationFound = false;
-            }
-
-            // circle with the radius of the location's accuracy
-            var style, o;
-            if (this.options.drawCircle) {
-                if (this._following) {
-                    style = this.options.followCircleStyle;
-                } else {
-                    style = this.options.circleStyle;
-                }
-
-                if (!this._circle) {
-                    this._circle = L.circle(this._event.latlng, radius, style)
-                    .addTo(this._layer);
-                } else {
-                    this._circle.setLatLng(this._event.latlng).setRadius(radius);
-                    for (o in style) {
-                        this._circle.options[o] = style[o];
-                    }
-                }
-            }
-
-            var distance, unit;
-            if (this.options.metric) {
-                distance = radius.toFixed(0);
-                unit =  this.options.strings.metersUnit;
-            } else {
-                distance = (radius * 3.2808399).toFixed(0);
-                unit = this.options.strings.feetUnit;
-            }
-
-            // small inner marker
-            var mStyle;
-            if (this._following) {
-                mStyle = this.options.followMarkerStyle;
-            } else {
-                mStyle = this.options.markerStyle;
-            }
-
-            if (!this._marker) {
-                this._marker = this.createMarker(this._event.latlng, mStyle)
-                .addTo(this._layer);
-            } else {
-                this.updateMarker(this._event.latlng, mStyle);
-            }
-
-            var t = this.options.strings.popup;
-            if (this.options.showPopup && t) {
-                this._marker.bindPopup(L.Util.template(t, {distance: distance, unit: unit}))
-                ._popup.setLatLng(this._event.latlng);
-            }
-
-            this._toggleContainerStyle();
-        },
-
-        /**
-         * Creates the marker.
-         *
-         * Should return the base marker so it is possible to bind a pop-up if the
-         * option is activated.
-         *
-         * Used by drawMarker, you can ignore it if you have overridden it.
-         */
-        createMarker: function(latlng, mStyle) {
-            return this.options.markerClass(latlng, mStyle);
-        },
-
-        /**
-         * Updates the marker with current coordinates.
-         *
-         * Used by drawMarker, you can ignore it if you have overridden it.
-         */
-        updateMarker: function(latlng, mStyle) {
-            this._marker.setLatLng(latlng);
-            for (var o in mStyle) {
-                this._marker.options[o] = mStyle[o];
-            }
-        },
-
-        /**
-         * Remove the marker from map.
-         */
-        removeMarker: function() {
-            this._layer.clearLayers();
-            this._marker = undefined;
-            this._circle = undefined;
-        },
-
         onAdd: function (map) {
             var container = L.DomUtil.create('div',
                 'leaflet-control-locate leaflet-bar leaflet-control');
 
-            this._layer = this.options.layer;
+            this._layer = this.options.layer || new L.LayerGroup();
             this._layer.addTo(map);
             this._event = undefined;
+            this._prevBounds = null;
 
-            // extend the follow marker style and circle from the normal style
-            var tmp = {};
-            L.extend(tmp, this.options.markerStyle, this.options.followMarkerStyle);
-            this.options.followMarkerStyle = tmp;
-            tmp = {};
-            L.extend(tmp, this.options.circleStyle, this.options.followCircleStyle);
-            this.options.followCircleStyle = tmp;
-
-            this._link = L.DomUtil.create('a', 'leaflet-bar-part leaflet-bar-part-single', container);
-            this._link.href = '#';
-            this._link.title = this.options.strings.title;
-            this._icon = L.DomUtil.create('span', this.options.icon, this._link);
+            var linkAndIcon = this.options.createButtonCallback(container, this.options);
+            this._link = linkAndIcon.link;
+            this._icon = linkAndIcon.icon;
 
             L.DomEvent
                 .on(this._link, 'click', L.DomEvent.stopPropagation)
                 .on(this._link, 'click', L.DomEvent.preventDefault)
-                .on(this._link, 'click', function() {
-                    var shouldStop = (this._event === undefined ||
-                        this._map.getBounds().contains(this._event.latlng) ||
-                        !this.options.setView || this._isOutsideMapBounds());
-                    if (!this.options.remainActive && (this._active && shouldStop)) {
-                        this.stop();
-                    } else {
-                        this.start();
-                    }
-                }, this)
+                .on(this._link, 'click', this._onClick, this)
                 .on(this._link, 'dblclick', L.DomEvent.stopPropagation);
 
             this._resetVariables();
-            this.bindEvents(map);
+
+            this._map.on('unload', this._unload, this);
 
             return container;
         },
 
         /**
-         * Binds the actions to the map events.
+         * This method is called when the user clicks on the control.
          */
-        bindEvents: function(map) {
-            map.on('locationfound', this._onLocationFound, this);
-            map.on('locationerror', this._onLocationError, this);
-            map.on('unload', this.stop, this);
+        _onClick: function() {
+            this._justClicked = true;
+            this._userPanned = false;
+
+            if (this._active && !this._event) {
+                // click while requesting
+                this.stop();
+            } else if (this._active && this._event !== undefined) {
+                var behavior = this._map.getBounds().contains(this._event.latlng) ?
+                    this.options.clickBehavior.inView : this.options.clickBehavior.outOfView;
+                switch (behavior) {
+                    case 'setView':
+                        this.setView();
+                        break;
+                    case 'stop':
+                        this.stop();
+                        if (this.options.returnToPrevBounds) {
+                            var f = this.options.flyTo ? this._map.flyToBounds : this._map.fitBounds;
+                            f.bind(this._map)(this._prevBounds);
+                        }
+                        break;
+                }
+            } else {
+                if (this.options.returnToPrevBounds) {
+                  this._prevBounds = this._map.getBounds();
+                }
+                this.start();
+            }
+
+            this._updateContainerStyle();
         },
 
         /**
@@ -326,11 +244,15 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
         start: function() {
             this._activate();
 
-            if (!this._event) {
-                this._setClasses('requesting');
-            } else {
-                this.drawMarker(this._map);
+            if (this._event) {
+                this._drawMarker(this._map);
+
+                // if we already have a location but the user clicked on the control
+                if (this.options.setView) {
+                    this.setView();
+                }
             }
+            this._updateContainerStyle();
         },
 
         /**
@@ -345,7 +267,142 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
             this._cleanClasses();
             this._resetVariables();
 
-            this.removeMarker();
+            this._removeMarker();
+        },
+
+        /**
+         * This method launches the location engine.
+         * It is called before the marker is updated,
+         * event if it does not mean that the event will be ready.
+         *
+         * Override it if you want to add more functionalities.
+         * It should set the this._active to true and do nothing if
+         * this._active is true.
+         */
+        _activate: function() {
+            if (!this._active) {
+                this._map.locate(this.options.locateOptions);
+                this._active = true;
+
+                // bind event listeners
+                this._map.on('locationfound', this._onLocationFound, this);
+                this._map.on('locationerror', this._onLocationError, this);
+                this._map.on('dragstart', this._onDrag, this);
+            }
+        },
+
+        /**
+         * Called to stop the location engine.
+         *
+         * Override it to shutdown any functionalities you added on start.
+         */
+        _deactivate: function() {
+            this._map.stopLocate();
+            this._active = false;
+
+            if (!this.options.cacheLocation) {
+                this._event = undefined;
+            }
+
+            // unbind event listeners
+            this._map.off('locationfound', this._onLocationFound, this);
+            this._map.off('locationerror', this._onLocationError, this);
+            this._map.off('dragstart', this._onDrag, this);
+        },
+
+        /**
+         * Zoom (unless we should keep the zoom level) and an to the current view.
+         */
+        setView: function() {
+            this._drawMarker();
+            if (this._isOutsideMapBounds()) {
+                this._event = undefined;  // clear the current location so we can get back into the bounds
+                this.options.onLocationOutsideMapBounds(this);
+            } else {
+                if (this.options.keepCurrentZoomLevel) {
+                    var f = this.options.flyTo ? this._map.flyTo : this._map.panTo;
+                    f.bind(this._map)([this._event.latitude, this._event.longitude]);
+                } else {
+                    var f = this.options.flyTo ? this._map.flyToBounds : this._map.fitBounds;
+                    f.bind(this._map)(this._event.bounds, {
+                        padding: this.options.circlePadding,
+                        maxZoom: this.options.locateOptions.maxZoom
+                    });
+                }
+            }
+        },
+
+        /**
+         * Draw the marker and accuracy circle on the map.
+         *
+         * Uses the event retrieved from onLocationFound from the map.
+         */
+        _drawMarker: function() {
+            if (this._event.accuracy === undefined) {
+                this._event.accuracy = 0;
+            }
+
+            var radius = this._event.accuracy;
+            var latlng = this._event.latlng;
+
+            // circle with the radius of the location's accuracy
+            if (this.options.drawCircle) {
+                var style = this._isFollowing() ? this.options.followCircleStyle : this.options.circleStyle;
+
+                if (!this._circle) {
+                    this._circle = L.circle(latlng, radius, style).addTo(this._layer);
+                } else {
+                    this._circle.setLatLng(latlng).setRadius(radius).setStyle(style);
+                }
+            }
+
+            var distance, unit;
+            if (this.options.metric) {
+                distance = radius.toFixed(0);
+                unit =  this.options.strings.metersUnit;
+            } else {
+                distance = (radius * 3.2808399).toFixed(0);
+                unit = this.options.strings.feetUnit;
+            }
+
+            // small inner marker
+            if (this.options.drawMarker) {
+                var mStyle = this._isFollowing() ? this.options.followMarkerStyle : this.options.markerStyle;
+                if (!this._marker) {
+                    this._marker = new this.options.markerClass(latlng, mStyle).addTo(this._layer);
+                } else {
+                    this._marker.setLatLng(latlng);
+                    // If the markerClass can be updated with setStyle, update it.
+                    if (this._marker.setStyle) {
+                        this._marker.setStyle(mStyle);
+                    }
+                }
+            }
+
+            var t = this.options.strings.popup;
+            if (this.options.showPopup && t && this._marker) {
+                this._marker
+                    .bindPopup(L.Util.template(t, {distance: distance, unit: unit}))
+                    ._popup.setLatLng(latlng);
+            }
+        },
+
+        /**
+         * Remove the marker from map.
+         */
+        _removeMarker: function() {
+            this._layer.clearLayers();
+            this._marker = undefined;
+            this._circle = undefined;
+        },
+
+        /**
+         * Unload the plugin and all event listeners.
+         * Kind of the opposite of onAdd.
+         */
+        _unload: function() {
+            this.stop();
+            this._map.off('unload', this._unload, this);
         },
 
         /**
@@ -358,7 +415,7 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
             }
 
             this.stop();
-            this.options.onLocationError(err);
+            this.options.onLocationError(err, this);
         },
 
         /**
@@ -374,47 +431,71 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
             }
 
             if (!this._active) {
+                // we may have a stray event
                 return;
             }
 
             this._event = e;
 
-            if (this.options.follow && this._following) {
-                this._locateOnNextLocationFound = true;
+            this._drawMarker();
+            this._updateContainerStyle();
+
+            switch (this.options.setView) {
+                case 'once':
+                    if (this._justClicked) {
+                        this.setView();
+                    }
+                    break;
+                case 'untilPan':
+                    if (!this._userPanned) {
+                        this.setView();
+                    }
+                    break;
+                case 'always':
+                    this.setView();
+                    break;
+                case false:
+                    // don't set the view
+                    break;
             }
 
-            this.drawMarker(this._map);
+            this._justClicked = false;
         },
 
         /**
-         * Dispatches the 'startfollowing' event on map.
+         * When the user drags. Need a separate even so we can bind and unbind even listeners.
          */
-        _startFollowing: function() {
-            this._map.fire('startfollowing', this);
-            this._following = true;
-            if (this.options.stopFollowingOnDrag) {
-                this._map.on('dragstart', this._stopFollowing, this);
+        _onDrag: function() {
+            // only react to drags once we have a location
+            if (this._event) {
+                this._userPanned = true;
+                this._updateContainerStyle();
+                this._drawMarker();
             }
         },
 
         /**
-         * Dispatches the 'stopfollowing' event on map.
+         * Compute whether the map is following the user location with pan and zoom.
          */
-        _stopFollowing: function() {
-            this._map.fire('stopfollowing', this);
-            this._following = false;
-            if (this.options.stopFollowingOnDrag) {
-                this._map.off('dragstart', this._stopFollowing, this);
+        _isFollowing: function() {
+            if (!this._active) {
+                return false;
             }
-            this._toggleContainerStyle();
+
+            if (this.options.setView === 'always') {
+                return true;
+            } else if (this.options.setView === 'untilPan') {
+                return !this._userPanned;
+            }
         },
 
         /**
          * Check if location is in map bounds
          */
         _isOutsideMapBounds: function() {
-            if (this._event === undefined)
+            if (this._event === undefined) {
                 return false;
+            }
             return this._map.options.maxBounds &&
                 !this._map.options.maxBounds.contains(this._event.latlng);
         },
@@ -422,15 +503,20 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
         /**
          * Toggles button class between following and active.
          */
-        _toggleContainerStyle: function() {
+        _updateContainerStyle: function() {
             if (!this._container) {
                 return;
             }
 
-            if (this._following) {
+            if (this._active && !this._event) {
+                // active but don't have a location yet
+                this._setClasses('requesting');
+            } else if (this._isFollowing()) {
                 this._setClasses('following');
-            } else {
+            } else if (this._active) {
                 this._setClasses('active');
+            } else {
+                this._cleanClasses();
             }
         },
 
@@ -472,12 +558,18 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
         },
 
         /**
-         * Reinitializes attributes.
+         * Reinitializes state variables.
          */
         _resetVariables: function() {
+            // whether locate is active or not
             this._active = false;
-            this._locateOnNextLocationFound = this.options.setView;
-            this._following = false;
+
+            // true if the control was clicked for the first time
+            // we need this so we can pan and zoom once we have the location
+            this._justClicked = false;
+
+            // true if the user has panned the map after clicking the control
+            this._userPanned = false;
         }
     });
 
@@ -499,5 +591,5 @@ You can find the project at: https://github.com/domoritz/leaflet-locatecontrol
       L.DomUtil.removeClasses = function(el, names) { LDomUtilApplyClassesMethod('removeClass', el, names); };
     })();
 
-    return L.Control.Locate;
+    return LocateControl;
 }, window));

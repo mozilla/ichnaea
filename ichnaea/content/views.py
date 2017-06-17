@@ -45,7 +45,7 @@ CSP_POLICY = """\
 default-src 'self' *.tiles.mapbox.com;
 font-src {base};
 img-src {base} {tiles} *.google-analytics.com *.tiles.mapbox.com data:;
-script-src {base} *.google-analytics.com 'unsafe-eval';
+script-src {base} *.google-analytics.com data: 'unsafe-eval';
 style-src {base};
 """
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()

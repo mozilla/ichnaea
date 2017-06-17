@@ -9,16 +9,16 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "bower": "~1.7",
-    "clean-css": "~3.4",
-    "datatables": "1.10.12",
-    "font-awesome": "4.4.0",
-    "jquery": "2.2.4",
-    "jquery-flot": "0.8.3",
-    "leaflet-hash": "0.2.1",
-    "leaflet.locatecontrol": "0.45.1",
-    "mapbox.js": "2.4.0",
-    "mozilla-tabzilla": "0.5.1",
-    "uglify-js": "~2.6"
+    "clean-css": "~4.1",
+    "clean-css-cli": "~4.1",
+    "datatables": "~1.10",
+    "font-awesome": "~4.7",
+    "jquery": "~2.2",
+    "jquery-flot": "~0.8",
+    "leaflet-hash": "~0.2",
+    "leaflet.locatecontrol": "~0.61",
+    "mapbox.js": "~3.1",
+    "mozilla-tabzilla": "~0.5",
+    "uglify-js": "~3.0"
   }
 }

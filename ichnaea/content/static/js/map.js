@@ -46,7 +46,8 @@ $(document).ready(function() {
 
     // add location control
     L.control.locate({
-        follow: false,
+        setView: 'once',
+        showPopup: false,
         locateOptions: {
             enableHighAccuracy: true,
             maximumAge: 3600000,
