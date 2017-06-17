@@ -283,7 +283,7 @@ class ContentViews(object):
         if data is None:
             data = regions(self.session)
             self._set_cache('stats_regions', data)
-        return {'page_title': 'Region Statistics', 'metrics': data}
+        return {'page_title': 'Regions', 'metrics': data}
 
 
 _EMPTY_HOMEPAGE_RESPONSE = '''\

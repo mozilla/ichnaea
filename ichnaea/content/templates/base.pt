@@ -34,6 +34,7 @@
                     <li><a href="/api">API</a></li>
                     <li><a href="/downloads">Downloads</a></li>
                     <li><a href="/map">Map</a></li>
+                    <li><a href="/stats/regions">Regions</a></li>
                     <li class="last"><a href="/stats">Statistics</a></li>
                 </ul>
             </nav>
@@ -54,7 +55,9 @@
     </tal:macro>
 
     <tal:slot metal:define-slot="heading">
-    <h1 id="main-feature">${page_title}</h1>
+    <div id="main-feature">
+        <h1 id="main-title">${page_title}</h1>
+    </div>
     </tal:slot>
 
     <tal:slot metal:define-slot="content">

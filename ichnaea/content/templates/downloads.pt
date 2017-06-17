@@ -16,24 +16,26 @@
 
     <h3>Cell Networks</h3>
 
-    <h4>License Note</h4>
+    <div class="callout-license">
+        <h4>License Note</h4>
 
-    <p xmlns:dct="http://purl.org/dc/terms/"
-       xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
-       class="text-justified">
-        <a rel="license"
-           href="https://creativecommons.org/publicdomain/zero/1.0/">
-            <img src="/static/images/publicdomain.png" alt="CC0" />
-        </a>
-        <br />
-        To the extent possible under law,
-        <a rel="dct:publisher"
-           href="https://location.services.mozilla.com/">
-            <span property="dct:title">Mozilla Corporation</span></a>
-        has waived all copyright and related or neighboring rights to
-        <i><span property="dct:title">MLS Cell Network Export Data</span></i>.
-        This work is published from the United States.
-    </p>
+        <p xmlns:dct="http://purl.org/dc/terms/"
+           xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
+           class="text-justified highlight">
+            <a rel="license"
+               href="https://creativecommons.org/publicdomain/zero/1.0/">
+                <img src="/static/images/publicdomain.png" alt="CC0" />
+            </a>
+            <br />
+            To the extent possible under law,
+            <a rel="dct:publisher"
+               href="https://location.services.mozilla.com/">
+                <span property="dct:title">Mozilla Corporation</span></a>
+            has waived all copyright and related or neighboring rights to
+            <i><span property="dct:title">MLS Cell Network Export Data</span></i>.
+            This work is published from the United States.
+        </p>
+    </div>
 
     <p class="text-justified">
         We export both a daily snapshot of the entire cell network collection
@@ -45,21 +47,27 @@
 
     <h4>Full Cell Exports</h4>
 
-    <ul tal:repeat="file files.full" tal:condition="files.full">
-        <li><a href="${file.path}">${file.name}</a> (${file.size}kB)</li>
+    <ul tal:condition="files.full">
+        <li tal:repeat="file files.full">
+            <a href="${file.path}">${file.name}</a> (${file.size}kB)
+        </li>
     </ul>
 
     <h4>Differential Cell Exports</h4>
 
     <div class="half-left" tal:condition="files.diff1">
-        <ul tal:repeat="file files.diff1">
-            <li><a href="${file.path}">${file.name}</a> (${file.size}kB)</li>
+        <ul>
+            <li tal:repeat="file files.diff1">
+                <a href="${file.path}">${file.name}</a> (${file.size}kB)
+            </li>
         </ul>
     </div>
 
     <div class="half-right" tal:condition="files.diff2">
-        <ul tal:repeat="file files.diff2">
-            <li><a href="${file.path}">${file.name}</a> (${file.size}kB)</li>
+        <ul>
+            <li tal:repeat="file files.diff2">
+                <a href="${file.path}">${file.name}</a> (${file.size}kB)
+            </li>
         </ul>
     </div>
 

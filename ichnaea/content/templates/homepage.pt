@@ -7,7 +7,7 @@
 
     <div class="map-callout-left text-justified">
         <p>
-            The Mozilla Location Service (MLS) is an open service which
+            The Mozilla Location Service (MLS) is an open service, which
             lets devices determine their location based on network
             infrastructure like Bluetooth beacons, cell towers and
             WiFi access points. This network based location service

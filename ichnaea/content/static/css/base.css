@@ -125,17 +125,16 @@ a img { border: 0; }
 html { background: #fff; }
 
 body {
-    font-size: 14px;
+    font-size: 20px;
     line-height: 1.5;
-    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
-    color: #333;
+    font-family: 'Zilla Slab', 'Open Sans', sans-serif;
+    color: #000;
     background: #fff;
 }
 
 #outer-wrapper {
     position: relative;
     border-top: 2px solid #fff;
-    background: #f9f9f9 url('../images/bg-stone.png') 0 0 repeat-x;
 }
 
 #wrapper {
@@ -150,51 +149,40 @@ body {
 }
 
 a {
-    color: rgb(0,150,221);
+    color: #0395d6;
     text-decoration: none;
 }
 
 a:hover, a:focus, a:active {
-    color: rgb(0,83,159);
+    color: #36c8ff;
     text-decoration: underline;
 }
 
 h1, h2, h3, h4, h5, h6 {
-    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
-    font-weight: normal;
+    font-family: 'Zilla Slab', 'Open Sans Light', sans-serif;
+    font-weight: 700;
     display: block;
-    margin: 0 0 12px 0;
-    line-height: 100%;
-    text-shadow: 0px 1px 0px rgba(255,255,255,0.75);
-    color: #484848;
+    line-height: 1.25;
+    margin: 0 0 10px 0;
+    color: #000;
 }
 
 h1 {
     font-size: 36px;
-    letter-spacing: -1.5px;
+    color: #fff;
+    background-color: #000;
 }
 
 h2 {
     font-size: 32px;
-    letter-spacing: -1px;
 }
 
 h3 {
     font-size: 28px;
-    letter-spacing: -0.5px;
 }
 
 h4 {
     font-size: 24px;
-    letter-spacing: -0.25px;
-}
-
-h5 {
-    font-size: 16px;
-}
-
-h6 {
-    font-size: 14px;
 }
 
 p,
@@ -211,8 +199,8 @@ li {
 
 pre,
 code {
-    color: #666;
-    font-size: 14px;
+    color: #0395d6;
+    font-size: 16px;
 }
 
 img {
@@ -237,12 +225,13 @@ img {
     border-top: 1px solid rgba(0, 0, 0, 0.2);
     padding: 10px 20px 10px 0;
     text-align: left;
+    font-size: 16px;
 }
 .table thead th, .table thead td {
     border-top: 0;
     padding-top: 0;
-    font-size: 16px;
-    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
+    font-size: 20px;
+    font-family: 'Zilla Slab', 'Open Sans Light', sans-serif;
     font-weight: normal;
 }
 .table th.text-right, .table td.text-right {
@@ -286,6 +275,10 @@ img {
     padding-bottom: 20px;
 }
 
+#main-title {
+    padding: 5px 5px;
+    display: inline-block;
+}
 
 #masthead:after, #main-feature:after, #main-content:after, #colophon:after {
     display: block;
@@ -298,14 +291,15 @@ img {
 #masthead nav {
     float: right;
     margin-right: 16px;
-    text-transform: uppercase;
-    font-size: 13px;
-    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'Open Sans', sans-serif;
 }
 
 #masthead nav ul {
     margin-bottom: 0;
 }
+
 #masthead nav li {
     display: inline-block;
     list-style-type: none;
@@ -313,42 +307,46 @@ img {
 }
 
 #masthead nav li a {
+    color: #000;
     display: inline-block;
     padding: 12px;
-    font-weight: normal;
+    text-decoration: none;
 }
 
-#masthead nav li .current {
-    background-position: 50% 0;
-    background-repeat: no-repeat;
-    background-image: url('../images/menu-current.png');
-}
-
-#masthead nav li a,
-#masthead nav li a:link,
-#masthead nav li a:visited {
-    color: #484848;
+#masthead nav li a:hover {
+    color: #f0881e;
 }
 
 .header-logo {
     padding-top: 20px;
 }
+
 .header-logo img {
     float: left;
     padding-right: 5px;
 }
+
 .header-logo h2 {
+    font-size: 30px;
     padding-top: 5px;
 }
 
+.header-logo h2 a {
+    font-family: 'Zilla Slab Highlight', 'Open Sans', sans-serif;
+    text-decoration: none;
+    text-transform: lowercase;
+}
+
 #colophon {
-    color: #666;
     padding: 40px 0;
     font-size: .875em;
     line-height: 1.285;
     background: #fff;
     width: 100%;
     margin: 1em 0 0;
+    background-color: #000;
+    color: #fff;
+    font-size: 15px;
 }
 
 #colophon .row {
@@ -359,6 +357,7 @@ img {
 #colophon .footer-logo {
     float: left;
     width: 120px;
+    height: 34px;
     margin: 0;
 }
 
@@ -372,7 +371,8 @@ img {
     float: left;
     width: 140px;
     margin: 0 10px;
-    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
+    font-family: 'Zilla Slab', 'Open Sans', sans-serif;
+    font-size: 15px;
 }
 
 #colophon .footer-nav li {
@@ -380,16 +380,12 @@ img {
     margin: 0 0 2px 0;
 }
 
-#colophon a,
-#colophon a:link,
-#colophon a:visited {
-    color: rgb(0,150,221);
+#colophon .footer-nav li a {
+    color: #36c8ff;
 }
 
-#colophon a:hover,
-#colophon a:focus,
-#colophon a:active {
-    color: #0073aa;
+#colophon .footer-nav li a:hover {
+    text-decoration: underline;
 }
 
 #colophon p {
@@ -407,8 +403,8 @@ img {
     margin: 15px 0;
     padding: 15px;
     padding-right: 35px;
-    color: #333;
-    background-color: #fcfcfc;
+    color: #000;
+    background-color: #b8d8e9;
     box-shadow: 1px 1px 2px #999;
     line-height: 1.5;
 }
@@ -451,7 +447,7 @@ img {
 [role="tab"] {
     cursor: pointer;
     margin-bottom: 10px;
-    font-family: 'Open Sans Light', 'Droid Arabic Naskh', sans-serif;
+    font-family: 'Zilla Slab', 'Open Sans Light', sans-serif;
     font-weight: bold;
 }
 
@@ -469,7 +465,7 @@ img {
 .chart_container {
     position: relative;
     margin-top: 20px;
-    font-family: 'Open Sans', 'Droid Arabic Naskh', sans-serif;
+    font-family: 'Zilla Slab', 'Open Sans', sans-serif;
     width: 960px;
 }
 .chart {
@@ -479,8 +475,11 @@ img {
     width: 100%;
     height: 100%;
 }
+#chart_tooltip {
+    font-size: 18px;
+}
 .flot-tick-label {
-    font-size: 12px;
+    font-size: 14px;
 }
 .flot-x-axis .flot-tick-label {
     margin-top: 5px;
@@ -505,8 +504,14 @@ img {
     text-align: center;
 }
 
+.api-callout-open h4 {
+    color: #fff;
+    background-color: #f0881e;
+    padding: 5px;
+}
+
 .api-callout-asis {
-    background-color: #fff;
+    background-color: #b8d8e9;
     clear: both;
     font-size: 1.2em;
     font-style: italic;
@@ -574,6 +579,19 @@ img {
     float: right;
 }
 
+/* License callout for download page */
+
+.callout-license h4 {
+    color: #fff;
+    background-color: #000;
+    display: inline-block;
+    padding: 5px;
+}
+
+.callout-license .highlight {
+    margin-top: 5px;
+}
+
 /* Leaflet locate control */
 
 .leaflet-touch .leaflet-bar-part-single {
@@ -614,8 +632,8 @@ img {
 /* Data table */
 
 .dataTable {
-    border-top: 3px solid #0096DD;
-    border-bottom: 2px solid #0096DD !important;
+    border-top: 3px solid #0096dd;
+    border-bottom: 2px solid #0096dd !important;
 }
 
 .fixedHeader .dataTable {
@@ -623,9 +641,9 @@ img {
 }
 
 .dataTable thead th {
-    background: #FEFEFE !important;
-    border-bottom: 1px solid #CCC !important;
-    font-size: 13px !important;
+    background: #fefefe !important;
+    border-bottom: 1px solid #ccc !important;
+    font-size: 16px !important;
     padding: 10px 16px !important;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
@@ -636,7 +654,7 @@ img {
 }
 
 .dataTable tbody td {
-    border-top: 1px solid #EEE;
+    border-top: 1px solid #eee;
     padding: 8px 16px !important;
 }
 
@@ -649,15 +667,15 @@ img {
 }
 
 .dataTable tbody tr:nth-child(even) {
-    background-color: #FEFEFE !important;
+    background-color: #f0f0f0 !important;
 }
 
 .dataTable tbody tr:hover {
-    background-color: #F0F0F0 !important;
+    background-color: #f0f0f0 !important;
 }
 
 .dataTable tbody tr:nth-child(even):hover {
-    background-color: #EEE !important;
+    background-color: #eee !important;
 }
 
 .dataTable thead th.sorting_asc:after,
@@ -689,7 +707,6 @@ img {
         width: 320px;
         padding-bottom: 5px;
     }
-
     #masthead,
     #main-feature,
     #main-content,
@@ -731,10 +748,7 @@ img {
         letter-spacing: -0.25px;
     }
     h4 {
-        font-size: 16px;
-    }
-    h5 {
-        font-size: 14px;
+        font-size: 20px;
     }
     #colophon .row {
         width: 300px;

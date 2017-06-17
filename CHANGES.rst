@@ -16,7 +16,7 @@ Migrations
 Changes
 ~~~~~~~
 
-- Remove tabzilla.
+- Remove tabzilla, update web site style.
 
 - Add Zilla Slab font files, remove non-woff fonts.
 
