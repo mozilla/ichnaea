@@ -18,18 +18,8 @@ shrinkwrap:
 	cp $(NODE_ROOT)/npm-shrinkwrap.json $(HERE)/docker/node/
 
 css: shrinkwrap
-	cp $(NODE_MODULES)/mozilla-tabzilla/css/tabzilla.css \
-		$(CSS_ROOT)/tabzilla.css
-
-	mkdir -p $(STATIC_ROOT)/media/img/
-	cp $(NODE_MODULES)/mozilla-tabzilla/media/img/tabzilla-static.png \
-		$(STATIC_ROOT)/media/img/tabzilla-static.png
-	cp $(NODE_MODULES)/mozilla-tabzilla/media/img/tabzilla-static-high-res.png \
-		$(STATIC_ROOT)/media/img/tabzilla-static-high-res.png
-
 	$(CLEANCSS) \
 		-o $(CSS_ROOT)/bundle-base.css \
-		$(CSS_ROOT)/tabzilla.css \
 		$(CSS_ROOT)/base.css
 
 	cp $(NODE_MODULES)/datatables/media/css/jquery.dataTables.css \

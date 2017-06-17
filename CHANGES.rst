@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove tabzilla.
+
 - Add Zilla Slab font files, remove non-woff fonts.
 
 - Replace custom base map with `mapbox.dark`.

@@ -28,10 +28,6 @@
     <tal:macro metal:define-slot="header">
     <div id="wrapper">
         <header id="masthead">
-            <div id="tabzilla">
-                <a href="https://www.mozilla.org/">Mozilla</a>
-            </div>
-
             <nav id="nav-main" role="navigation">
                 <ul id="nav-main-menu">
                     <li class="first"><a href="/">Home</a></li>
@@ -68,8 +64,10 @@
     <footer id="colophon">
         <div class="row">
             <div class="footer-logo">
-                <img src="/static/images/moz-logo.svg"
-                     alt="Mozilla" />
+                <a href="https://www.mozilla.org/">
+                    <img src="/static/images/moz-logo.svg"
+                         alt="Mozilla" />
+                </a>
             </div>
             <div class="footer-license">
                 This content is ©2012–${view.this_year} by Mozilla.

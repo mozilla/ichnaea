@@ -330,10 +330,6 @@ img {
     color: #484848;
 }
 
-#tabzilla:before {
-    background-color: #666;
-}
-
 .header-logo {
     padding-top: 20px;
 }
@@ -750,6 +746,9 @@ img {
         float: none;
         margin-bottom: 20px;
     }
+    #colophon .footer-logo {
+        width: 120px;
+    }
     .table th, .table td {
         padding: 5px 5px 5px 0;
     }
@@ -845,7 +844,7 @@ img {
     #colophon .footer-logo,
     #colophon .footer-license {
         float: left;
-        width: 180px;
+        width: 120px;
         margin: 0 10px;
     }
     #colophon .footer-nav {

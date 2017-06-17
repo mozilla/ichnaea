@@ -135,12 +135,6 @@
       "integrity": "sha512-yJHVQEhyqPLUTgt9B83PXu6W3rx4MvvHvSUvToogpwoGDOUQ+yDrR0HRot+yOCdCO7u4hX3pWft6kWBBcqh0UA==",
       "dev": true
     },
-    "mozilla-tabzilla": {
-      "version": "0.5.1",
-      "resolved": "https://registry.npmjs.org/mozilla-tabzilla/-/mozilla-tabzilla-0.5.1.tgz",
-      "integrity": "sha1-YGBseo//VCwi/DZfvZdh+NxgMgQ=",
-      "dev": true
-    },
     "mustache": {
       "version": "2.2.1",
       "resolved": "https://registry.npmjs.org/mustache/-/mustache-2.2.1.tgz",
