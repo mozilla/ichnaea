@@ -68,9 +68,7 @@
     <footer id="colophon">
         <div class="row">
             <div class="footer-logo">
-                <img src="/static/images/mozilla-logo.png"
-                     srcset="/static/images/mozilla-logo.png 1x,
-                             /static/images/mozilla-logo@2x.png 2x"
+                <img src="/static/images/moz-logo.svg"
                      alt="Mozilla" />
             </div>
             <div class="footer-license">
