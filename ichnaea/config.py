@@ -76,8 +76,6 @@ GEOIP_PATH = os.environ.get('GEOIP_PATH')
 if not GEOIP_PATH:
     GEOIP_PATH = os.path.join(HERE, 'tests/data/GeoIP2-City-Test.mmdb')
 
-MAP_ID_BASE = os.environ.get('MAP_ID_BASE')
-MAP_ID_LABELS = os.environ.get('MAP_ID_LABELS')
 MAP_TOKEN = os.environ.get('MAP_TOKEN')
 
 REDIS_HOST = os.environ.get('REDIS_HOST')

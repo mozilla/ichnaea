@@ -21,8 +21,6 @@ import simplejson
 from ichnaea.config import (
     ASSET_BUCKET,
     ASSET_URL,
-    MAP_ID_BASE,
-    MAP_ID_LABELS,
     MAP_TOKEN,
 )
 from ichnaea.content.stats import (
@@ -50,7 +48,7 @@ style-src {base};
 """
 CSP_POLICY = CSP_POLICY.replace("\n", ' ').strip()
 TILES_PATTERN = '{z}/{x}/{y}.png'
-HOMEPAGE_MAP_IMAGE = ('{scheme}://a.tiles.mapbox.com/v4/{map_id}'
+HOMEPAGE_MAP_IMAGE = ('https://a.tiles.mapbox.com/v4/mapbox.dark'
                       '/0/0/0@2x.png?access_token={token}')
 
 
@@ -72,7 +70,7 @@ CSP_POLICY = CSP_POLICY.format(base=CSP_BASE, tiles=MAP_TILES_SRC)
 
 def configure_content(config, enable=None):
     if enable is None:
-        enable = MAP_ID_BASE and MAP_ID_LABELS and MAP_TILES_URL and MAP_TOKEN
+        enable = MAP_TILES_URL and MAP_TOKEN
 
     if not enable:
         config.add_view(empty_homepage_view,
@@ -178,11 +176,7 @@ class ContentViews(object):
 
     @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
-        scheme = urlparse.urlparse(self.request.url).scheme
-        image_base_url = HOMEPAGE_MAP_IMAGE.format(
-            scheme=scheme,
-            map_id=MAP_ID_BASE,
-            token=MAP_TOKEN)
+        image_base_url = HOMEPAGE_MAP_IMAGE.format(token=MAP_TOKEN)
         image_url = MAP_TILES_URL.format(z=0, x=0, y='0@2x')
         return {
             'page_title': 'Overview',
@@ -222,8 +216,8 @@ class ContentViews(object):
     def map_view(self):
         return {
             'page_title': 'Map',
-            'map_id_base': MAP_ID_BASE,
-            'map_id_labels': MAP_ID_LABELS,
+            'map_id_base': 'mapbox.dark',
+            'map_id_labels': None,
             'map_tiles_url': MAP_TILES_URL,
             'map_token': MAP_TOKEN,
         }

@@ -16,6 +16,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Replace custom base map with `mapbox.dark`.
+
 - Update CSS/JS dependencies.
 
 - Replace bower in CSS/JS dev setup with npm.

@@ -346,8 +346,6 @@ def region_searcher(data_queues, geoip_db,
 @pytest.fixture(scope='session')
 def map_config(monkeysession):
     tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
-    monkeysession.setattr('ichnaea.content.views.MAP_ID_BASE', 'base')
-    monkeysession.setattr('ichnaea.content.views.MAP_ID_LABELS', 'labels')
     monkeysession.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
     monkeysession.setattr('ichnaea.content.views.MAP_TOKEN', 'pk.123456')
 

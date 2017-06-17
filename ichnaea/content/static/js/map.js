@@ -5,37 +5,23 @@ $(document).ready(function() {
     // we still allow more zoom levels on the base map, to make
     // it easier to see which streets are covered
     var mapDOMElement = $('#map');
-    var mapIdBase = mapDOMElement.data('map_id_base');
-    var mapIdLabels = mapDOMElement.data('map_id_labels');
     var mapTilesUrl = mapDOMElement.data('map_tiles_url');
     var mapToken = mapDOMElement.data('map_token');
 
-    var maxZoom = 13;
-    if (L.Browser.retina) {
-        maxZoom = 12;
-    }
-
     // Restrict to typical Web Mercator bounds
-    var southWest = L.latLng(-85.0511, -270.0),
-        northEast = L.latLng(85.0511, 270.0),
+    var southWest = L.latLng(-85.0511, -210.0),
+        northEast = L.latLng(85.0511, 210.0),
         bounds = L.latLngBounds(southWest, northEast);
 
     // Set public access token
     L.mapbox.accessToken = mapToken
 
-    var map = L.mapbox.map('map', mapIdBase, {
-        minZoom: 1,
-        maxZoom: maxZoom,
-        maxBounds: bounds,
-        tileLayer: { detectRetina: true }
-    }).setView([15.0, 10.0], 2);
+    var map = L.mapbox.map('map', 'mapbox.dark', {
+        maxZoom: 12,
+        maxBounds: bounds
+    }).setView([35.0, 9.0], 2);
 
     var hash = new L.Hash(map);
-
-    // add open street map attribution for base tiles
-    map.attributionControl.setPrefix(
-        '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    );
 
     // add scale
     L.control.scale({
@@ -65,15 +51,7 @@ $(document).ready(function() {
     // add tile layer
     if (mapTilesUrl) {
         L.tileLayer(mapTilesUrl, {
-            detectRetina: true,
             maxNativeZoom: 11
-        }).addTo(map);
-    }
-
-    // add tile layer
-    if (mapIdLabels) {
-        L.mapbox.tileLayer(mapIdLabels, {
-            detectRetina: true
         }).addTo(map);
     }
 

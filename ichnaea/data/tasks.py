@@ -27,9 +27,7 @@ def _cell_export_enabled():
 
 
 def _web_content_enabled():
-    return bool(config.MAP_ID_BASE and
-                config.MAP_ID_LABELS and
-                config.MAP_TOKEN)
+    return bool(config.MAP_TOKEN)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',

@@ -580,6 +580,12 @@ img {
   padding: 3px 0 0 4px;
 }
 
+/* Leaflet geocoder control */
+
+.leaflet-control-mapbox-geocoder-results {
+    background-color: rgb(255, 255, 255);
+}
+
 /* Data table */
 
 .dataTable {

@@ -127,14 +127,10 @@ The web functionality by default is limited to the public HTTP API.
 If the map related settings are configured, the website content is
 also being made available.
 
-The ``MAP_ID_BASE`` and ``MAP_ID_LABELS`` settings specify Mapbox map
-ids for a base map and a map containing only labels. The ``MAP_TOKEN``
-specifies a Mapbox access token.
+The ``MAP_TOKEN`` specifies a Mapbox access token.
 
 .. code-block:: ini
 
-    MAP_ID_BASE = example_base.map-123
-    MAP_ID_LABELS = example_labels.map-234
     MAP_TOKEN = pk.example_public_access_token
 
 
