@@ -67,8 +67,6 @@ class TestContentViews(object):
     def test_map(self, views):
         result = views.map_view()
         assert result['page_title'] == 'Map'
-        assert result['map_id_base'] == 'mapbox.dark'
-        assert result['map_id_labels'] is None
         tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
         assert result['map_tiles_url'] == tiles_url
         assert result['map_token'] == 'pk.123456'

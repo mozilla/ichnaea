@@ -1,9 +1,4 @@
 $(document).ready(function() {
-    // the retina version uses zoom level + 1 image tiles
-    // and we only generated tiles down to zoom level 13,
-    // noted via the maxNativeZoom restriction on the tile layer
-    // we still allow more zoom levels on the base map, to make
-    // it easier to see which streets are covered
     var mapDOMElement = $('#map');
     var mapTilesUrl = mapDOMElement.data('map_tiles_url');
     var mapToken = mapDOMElement.data('map_token');

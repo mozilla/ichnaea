@@ -216,8 +216,6 @@ class ContentViews(object):
     def map_view(self):
         return {
             'page_title': 'Map',
-            'map_id_base': 'mapbox.dark',
-            'map_id_labels': None,
             'map_tiles_url': MAP_TILES_URL,
             'map_token': MAP_TOKEN,
         }

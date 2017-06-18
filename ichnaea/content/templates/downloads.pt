@@ -14,8 +14,6 @@
         <a href="https://opencellid.org">OpenCellID project</a>.
     </p>
 
-    <h3>Cell Networks</h3>
-
     <div class="callout-license">
         <h4>License Note</h4>
 
@@ -24,7 +22,9 @@
            class="text-justified highlight">
             <a rel="license"
                href="https://creativecommons.org/publicdomain/zero/1.0/">
-                <img src="/static/images/publicdomain.png" alt="CC0" />
+                <img src="/static/images/publicdomain.png"
+                     width="88" height="31"
+                     title="CC0" />
             </a>
             <br />
             To the extent possible under law,
@@ -36,6 +36,8 @@
             This work is published from the United States.
         </p>
     </div>
+
+    <h3>Cell Networks</h3>
 
     <p class="text-justified">
         We export both a daily snapshot of the entire cell network collection

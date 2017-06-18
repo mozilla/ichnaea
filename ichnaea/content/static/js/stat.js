@@ -25,44 +25,6 @@ function make_graph(url, graph_id) {
     placeholder.css("width", graphWidth + "px");
     placeholder.css("height", graphHeight + "px");
 
-    var result = {};
-    $.ajax({
-        url: url,
-        dataType: "json",
-        async: false,
-        success: function(json) {
-            result = json;
-        }
-    });
-
-    var options = {
-        grid: {
-            hoverable: true,
-            borderWidth: {top: 0, right: 0, bottom: 1, left: 1}
-        },
-        legend: { show: false, position: "nw" },
-        series: {
-            lines: {show: true, fill: false},
-            points: {show: true}
-        },
-        xaxis: {mode: "time", timeformat: "%b %Y"},
-        yaxis: {tickDecimals: 1, tickFormatter: suffixFormatter}
-    };
-
-    var colors = ["rgb(0,150,221)", "rgb(184,216,233)", "rgb(240,136,30)"];
-
-    var series = [];
-    for (var i=0; i < result.series.length; i++) {
-        series.push({
-            label: result.series[i].title,
-            data: result.series[i].data,
-            color: colors[i]
-        });
-    }
-
-    var plot = $.plot(document.querySelector(graph_id + " .chart"),
-                      series, options);
-
     $("<div id='chart_tooltip'></div>").css({
         position: "absolute",
         display: "none",
@@ -84,6 +46,45 @@ function make_graph(url, graph_id) {
             $("#chart_tooltip").hide();
         }
     });
+
+    var colors = ["rgb(0,150,221)", "rgb(184,216,233)", "rgb(240,136,30)"];
+
+    var options = {
+        grid: {
+            hoverable: true,
+            borderWidth: {top: 0, right: 0, bottom: 1, left: 1}
+        },
+        legend: { show: false, position: "nw" },
+        series: {
+            lines: {show: true, fill: false},
+            points: {show: true}
+        },
+        xaxis: {mode: "time", timeformat: "%b %Y"},
+        yaxis: {tickDecimals: 1, tickFormatter: suffixFormatter}
+    };
+
+    $.ajax({
+        url: url,
+        dataType: 'json'
+    }).then(
+        function(data, textStatus, jqXHR) {
+            var series = [];
+            for (var i=0; i < data.series.length; i++) {
+                series.push({
+                    label: data.series[i].title,
+                    data: data.series[i].data,
+                    color: colors[i]
+                });
+            }
+            return series;
+        }
+    ).then(
+        function(series) {
+            var plot = $.plot(document.querySelector(graph_id + " .chart"),
+                              series, options);
+            return plot;
+        }
+    )
 }
 
 $(document).ready(function() {

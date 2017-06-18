@@ -44,6 +44,7 @@
                    src="/static/images/mls-logo.png"
                    srcset="/static/images/mls-logo.png 1x,
                            /static/images/mls-logo@2x.png 2x"
+                   width="80" height="80"
                    title="Mozilla Location Service"/></a>
 
                 <h2>
@@ -69,7 +70,8 @@
             <div class="footer-logo">
                 <a href="https://www.mozilla.org/">
                     <img src="/static/images/moz-logo.svg"
-                         alt="Mozilla" />
+                         width="120" height="34"
+                         title="Mozilla" />
                 </a>
             </div>
             <div class="footer-license">
