@@ -54,5 +54,8 @@ class TestBeat(object):
 class TestWorkerConfig(object):
 
     def test_config(self, celery):
-        assert celery.conf['task_always_eager']
-        assert 'redis' in celery.conf['result_backend']
+        # BBB: Celery 4
+        # assert celery.conf['task_always_eager']
+        # assert 'redis' in celery.conf['result_backend']
+        assert celery.conf['CELERY_ALWAYS_EAGER']
+        assert 'redis' in celery.conf['CELERY_RESULT_BACKEND']

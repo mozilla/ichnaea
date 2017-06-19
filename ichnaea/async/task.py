@@ -16,6 +16,12 @@ from ichnaea.db import db_worker_session
 class BaseTask(Task):
     """A base task giving access to various outside connections."""
 
+    # BBB: Celery 4 non-underscore attributes
+    abstract = True
+    acks_late = False
+    ignore_result = True
+    max_retries = 3
+
     _countdown = None
     _enabled = True
     _schedule = None
@@ -69,7 +75,9 @@ class BaseTask(Task):
             enabled = enabled()
 
         if enabled and cls._schedule:
-            app.conf.beat_schedule.update(cls.beat_config())
+            # BBB: Celery 4
+            # app.conf.beat_schedule.update(cls.beat_config())
+            app.conf.CELERYBEAT_SCHEDULE.update(cls.beat_config())
 
     def __call__(self, *args, **kw):
         """
@@ -99,7 +107,11 @@ class BaseTask(Task):
         if TESTING:
             # We do the extra check to make sure this was really used from
             # inside tests
-            serializer = self.app.conf.task_serializer
+
+            # BBB: Celery 4
+            # serializer = self.app.conf.task_serializer
+            serializer = self.app.conf.CELERY_TASK_SERIALIZER
+
             content_type, encoding, data = kombu_dumps(args, serializer)
             args = kombu_loads(data, content_type, encoding)
 

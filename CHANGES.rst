@@ -8,6 +8,8 @@ Changelog
 Compatibility
 ~~~~~~~~~~~~~
 
+- Move back to Celery 3.
+
 - Drop support for Python 2.7, require Python 3.6.
 
 Migrations
