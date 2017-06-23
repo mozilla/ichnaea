@@ -44,6 +44,7 @@ RUN apt-get update && apt-get -y install \
 
 # Install dependencies.
 COPY ./docker.make /app/
+COPY ./vendor /app/vendor/
 RUN make -f docker.make build_deps
 
 # Install Python libraries.

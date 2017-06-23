@@ -6,13 +6,15 @@ PYTHON = $(BIN)/python
 INSTALL = $(BIN)/pip install --no-cache-dir \
 	--disable-pip-version-check --require-hashes
 
-DATAMAPS_DOWNLOAD = https://github.com/ericfischer/datamaps/archive
+VENDOR = $(HERE)/vendor
+
 DATAMAPS_COMMIT = 76e620adabbedabd6866b23b30c145b53bae751e
 DATAMAPS_NAME = datamaps-$(DATAMAPS_COMMIT)
+DATAMAPS_DIR = $(VENDOR)/$(DATAMAPS_NAME)
 
-LIBMAXMIND_DOWNLOAD = https://github.com/maxmind/libmaxminddb/releases/download
 LIBMAXMIND_VERSION = 1.2.1
 LIBMAXMIND_NAME = libmaxminddb-$(LIBMAXMIND_VERSION)
+LIBMAXMIND_DIR = $(VENDOR)/$(LIBMAXMIND_NAME)
 
 TESTS ?= ichnaea
 ifeq ($(TESTS), ichnaea)
@@ -29,23 +31,19 @@ all:
 	@echo "No default make step."
 
 build_datamaps:
-	wget -q $(DATAMAPS_DOWNLOAD)/$(DATAMAPS_COMMIT).tar.gz
-	tar zxf $(DATAMAPS_COMMIT).tar.gz
-	rm -f $(DATAMAPS_COMMIT).tar.gz
-	cd $(DATAMAPS_NAME); make -s all
-	cp $(DATAMAPS_NAME)/encode /usr/local/bin/
-	cp $(DATAMAPS_NAME)/enumerate /usr/local/bin/
-	cp $(DATAMAPS_NAME)/merge /usr/local/bin/
-	cp $(DATAMAPS_NAME)/render /usr/local/bin/
-	rm -rf $(HERE)/$(DATAMAPS_NAME)
+	cd $(VENDOR); tar zxf $(DATAMAPS_NAME).tar.gz
+	cd $(DATAMAPS_DIR); make -s all
+	cp $(DATAMAPS_DIR)/encode /usr/local/bin/
+	cp $(DATAMAPS_DIR)/enumerate /usr/local/bin/
+	cp $(DATAMAPS_DIR)/merge /usr/local/bin/
+	cp $(DATAMAPS_DIR)/render /usr/local/bin/
+	rm -rf $(DATAMAPS_DIR)
 
 build_libmaxmind:
-	wget -q $(LIBMAXMIND_DOWNLOAD)/$(LIBMAXMIND_VERSION)/$(LIBMAXMIND_NAME).tar.gz
-	tar xzf $(LIBMAXMIND_NAME).tar.gz
-	rm -f $(LIBMAXMIND_NAME).tar.gz
-	cd $(LIBMAXMIND_NAME); ./configure && make -s && make install
+	cd $(VENDOR); tar xzf $(LIBMAXMIND_NAME).tar.gz
+	cd $(LIBMAXMIND_DIR); ./configure && make -s && make install
 	ldconfig
-	rm -rf $(HERE)/$(LIBMAXMIND_NAME)/
+	rm -rf $(LIBMAXMIND_DIR)
 
 build_deps: build_datamaps build_libmaxmind
 
