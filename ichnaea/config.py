@@ -33,6 +33,9 @@ VERSION_INFO = {
 ASSET_BUCKET = os.environ.get('ASSET_BUCKET')
 ASSET_URL = os.environ.get('ASSET_URL')
 
+# One of pymysql or mysqlconnector
+DB_LIBRARY = os.environ.get('DB_LIBRARY', 'pymysql')
+
 DB_HOST = os.environ.get('DB_HOST')
 DB_RO_HOST = os.environ.get('DB_RO_HOST', DB_HOST)
 DB_RW_HOST = os.environ.get('DB_RW_HOST', DB_HOST)
@@ -55,16 +58,16 @@ DB_RO_URI = os.environ.get('DB_RO_URI')
 DB_DDL_URI = os.environ.get('DB_DDL_URI')
 
 if not DB_RO_URI:
-    DB_RO_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
-        DB_RO_USER, DB_RO_PWD, DB_RO_HOST, DB_PORT, DB_NAME))
+    DB_RO_URI = ('mysql+%s://%s:%s@%s:%s/%s' % (
+        DB_LIBRARY, DB_RO_USER, DB_RO_PWD, DB_RO_HOST, DB_PORT, DB_NAME))
 
 if not DB_RW_URI:
-    DB_RW_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
-        DB_RW_USER, DB_RW_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
+    DB_RW_URI = ('mysql+%s://%s:%s@%s:%s/%s' % (
+        DB_LIBRARY, DB_RW_USER, DB_RW_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
 
 if not DB_DDL_URI:
-    DB_DDL_URI = ('mysql+pymysql://%s:%s@%s:%s/%s' % (
-        DB_DDL_USER, DB_DDL_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
+    DB_DDL_URI = ('mysql+%s://%s:%s@%s:%s/%s' % (
+        DB_LIBRARY, DB_DDL_USER, DB_DDL_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
 
 ALEMBIC_CFG = AlembicConfig()
 ALEMBIC_CFG.set_section_option(

@@ -17,6 +17,7 @@ from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
 from ichnaea.config import (
+    DB_LIBRARY,
     DB_DDL_URI,
     DB_RW_URI,
     DB_RO_URI,
@@ -28,6 +29,13 @@ DB_TYPE = {
     'ddl': DB_DDL_URI,
     'ro': DB_RO_URI,
     'rw': DB_RW_URI,
+}
+
+DB_TRANSPORTS = {
+    'default': DB_LIBRARY,
+    'gevent': 'pymysql',
+    'sync': 'mysqlconnector',
+    'threaded': 'pymysql',
 }
 
 
@@ -44,7 +52,7 @@ def on_duplicate(insert, compiler, **kw):
 Insert.argument_for('mysql', 'on_duplicate', None)
 
 
-def configure_db(type_=None, uri=None, _db=None):
+def configure_db(type_=None, uri=None, transport='default', _db=None):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -57,7 +65,7 @@ def configure_db(type_=None, uri=None, _db=None):
         uri = DB_TYPE[type_]
         if type_ == 'ddl':
             pool = False
-    return Database(uri, pool=pool)
+    return Database(uri, pool=pool, transport=transport)
 
 
 # the request db_session and db_tween_factory are inspired by
@@ -120,7 +128,7 @@ class Database(object):
     :param uri: A database connection string.
     """
 
-    def __init__(self, uri, pool=True):
+    def __init__(self, uri, pool=True, transport='default'):
         options = {
             'echo': False,
             'isolation_level': 'REPEATABLE READ',
@@ -139,6 +147,14 @@ class Database(object):
             })
         options['connect_args'] = {'charset': 'utf8'}
         options['execution_options'] = {'autocommit': False}
+
+        if transport != 'default':
+            # Possibly adjust DB library
+            new_transport = DB_TRANSPORTS[transport]
+            db_type, rest = uri.split('+')
+            old_transport, rest = rest.split(':', 1)
+            uri = db_type + '+' + new_transport + ':' + rest
+
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(

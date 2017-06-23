@@ -226,7 +226,7 @@ case "$1" in
 
   # Shows usage information.
   help)
-    echo "Usage: $0 {start|stop|restart|run|alembic|css|docs|js|map|shell|test|help}"
+    echo "Usage: $0 {start|stop|restart|run|alembic|css|docs|js|local_map|shell|test|help}"
     ;;
 
   # Shows help message.

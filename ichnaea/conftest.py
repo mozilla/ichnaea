@@ -188,6 +188,13 @@ def clean_db(db):
     setup_database()
 
 
+@pytest.fixture(scope='session')
+def sync_db(database):
+    db = configure_db('rw', transport='sync')
+    yield db
+    db.close()
+
+
 @pytest.fixture(scope='function')
 def restore_db(db):
     yield db
@@ -214,6 +221,25 @@ def session(db):
             trans.rollback()
             session.close()
             db.session_factory.configure(bind=db.engine)
+
+    API_CACHE.clear()
+
+
+@pytest.fixture(scope='function')
+def sync_session(sync_db):
+    with sync_db.engine.connect() as conn:
+        with conn.begin() as trans:
+            sync_db.session_factory.configure(bind=conn)
+            session = sync_db.session()
+
+            # Set the global session context for factory-boy.
+            SESSION['default'] = session
+            yield session
+            del SESSION['default']
+
+            trans.rollback()
+            session.close()
+            sync_db.session_factory.configure(bind=sync_db.engine)
 
     API_CACHE.clear()
 

@@ -30,14 +30,18 @@ RUN echo 'deb http://repo.mysql.com/apt/debian/ jessie mysql-5.7' > \
 RUN apt-get update && apt-get -y install \
     file \
     gcc \
+    g++ \
     libffi-dev \
     libgeos-dev \
+    libmysqlclient-dev \
     libpng-dev \
+    libprotobuf-dev \
     libspatialindex-dev \
     libssl-dev \
     make \
-    mysql-community-client \
+    mysql-client \
     pngquant \
+    protobuf-compiler \
     redis-tools \
     wget \
     && rm -rf /var/lib/apt/lists/*
