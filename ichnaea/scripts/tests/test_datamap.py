@@ -18,12 +18,12 @@ from ichnaea import util
 
 class TestMap(object):
 
-    def _check_quadtree(self, path):  # pragma: no cover
+    def _check_quadtree(self, path):
         assert os.path.isdir(path)
         for name in ('1,0', 'meta'):
             assert os.path.isfile(os.path.join(path, name))
 
-    def test_files(self, db, session):  # pragma: no cover
+    def test_files(self, sync_session):
         today = util.utcnow().date()
         rows = [
             dict(time=today, lat=12.345, lon=12.345),
@@ -34,11 +34,12 @@ class TestMap(object):
             lat, lon = DataMap.scale(row['lat'], row['lon'])
             data = DataMap.shard_model(lat, lon)(
                 grid=(lat, lon), created=row['time'], modified=row['time'])
-            session.add(data)
-        session.flush()
+            sync_session.add(data)
+        sync_session.flush()
 
         lines = []
         rows = 0
+
         with util.selfdestruct_tempdir() as temp_dir:
             quaddir = os.path.join(temp_dir, 'quadtrees')
             os.mkdir(quaddir)
@@ -50,7 +51,7 @@ class TestMap(object):
                 filepath = os.path.join(temp_dir, filename)
                 result = export_file(
                     filepath, shard.__tablename__,
-                    _session=session)
+                    _session=sync_session)
 
                 if not result:
                     assert not os.path.isfile(filepath)

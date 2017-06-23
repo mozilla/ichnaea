@@ -18,6 +18,10 @@ Migrations
 Changes
 ~~~~~~~
 
+- Rely on `cleanup_datamap` task to remove old datamap entries.
+
+- Use mysql-connector for datamap script.
+
 - Remove tabzilla, update web site style.
 
 - Add Zilla Slab font files, remove non-woff fonts.

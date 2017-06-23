@@ -5,7 +5,6 @@ Script is installed as `location_map`.
 """
 
 import argparse
-from datetime import timedelta
 import hashlib
 import os
 import os.path
@@ -55,20 +54,18 @@ def recursive_scandir(top):  # pragma: no cover
 
 
 def export_file(filename, tablename, _db=None, _session=None):
-    today = util.utcnow().date()
-    one_year_ago = today - timedelta(days=365)
-    one_year_ago = one_year_ago.strftime('%Y-%m-%d')
     # this is executed in a worker process
     stmt = text('''\
 SELECT
 `grid`, CAST(ROUND(DATEDIFF(CURDATE(), `modified`) / 30) AS UNSIGNED) as `num`
 FROM {tablename}
-WHERE modified >= '{modified}'
-LIMIT :limit OFFSET :offset
-'''.format(tablename=tablename, modified=one_year_ago).replace('\n', ' '))
-    db = configure_db('ro', _db=_db)
+WHERE `grid` > :grid
+ORDER BY `grid`
+LIMIT :limit
+'''.format(tablename=tablename).replace('\n', ' '))
 
-    offset = 0
+    db = configure_db('ro', transport='sync', _db=_db)
+    min_grid = b''
     limit = 200000
 
     result_rows = 0
@@ -79,7 +76,7 @@ LIMIT :limit OFFSET :offset
                 session = _session
             while True:
                 result = session.execute(
-                    stmt.bindparams(limit=limit, offset=offset))
+                    stmt.bindparams(limit=limit, grid=min_grid))
                 rows = result.fetchall()
                 result.close()
                 if not rows:
@@ -93,7 +90,7 @@ LIMIT :limit OFFSET :offset
 
                 fd.writelines(lines)
                 result_rows += len(lines)
-                offset += limit
+                min_grid = rows[-1].grid
 
     if not result_rows:
         os.remove(filename)
