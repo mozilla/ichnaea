@@ -20,11 +20,11 @@ class TestDump(object):
     def test_compiles(self):
         assert hasattr(dump, 'console_entry')
 
-    def test_main(self, db):
+    def test_main(self, sync_db):
         assert dump.main(
             ['script', '--datatype=blue', '--filename=/tmp/foo.tar.gz',
              '--lat=51.0', '--lon=0.1', '--radius=25000'],
-            _db=db, _dump_file=_dump_nothing) == 0
+            _db=sync_db, _dump_file=_dump_nothing) == 0
 
     def test_where(self):
         assert dump.where_area(None, None, None) is None
@@ -60,21 +60,22 @@ class TestDump(object):
     def _mac_keys(self, networks):
         return [network.mac for network in networks]
 
-    def test_blue(self, session):
+    def test_blue(self, sync_session):
         # Add one network outside the desired area.
         BlueShardFactory(lat=46.5743, lon=6.3532, region='FR')
         blues = BlueShardFactory.create_batch(1)
-        session.flush()
-        self._export(session, 'blue', self._mac_keys(blues), restrict=True)
+        sync_session.flush()
+        self._export(sync_session, 'blue', self._mac_keys(blues),
+                     restrict=True)
 
-    def test_cell(self, session):
+    def test_cell(self, sync_session):
         cells = CellShardFactory.create_batch(2)
         # Add one far away network, with no area restriction.
         cells.append(CellShardFactory(lat=46.5743, lon=6.3532, region='FR'))
-        session.flush()
-        self._export(session, 'cell', self._cell_keys(cells))
+        sync_session.flush()
+        self._export(sync_session, 'cell', self._cell_keys(cells))
 
-    def test_wifi(self, session):
+    def test_wifi(self, sync_session):
         wifis = WifiShardFactory.create_batch(5)
-        session.flush()
-        self._export(session, 'wifi', self._mac_keys(wifis))
+        sync_session.flush()
+        self._export(sync_session, 'wifi', self._mac_keys(wifis))
