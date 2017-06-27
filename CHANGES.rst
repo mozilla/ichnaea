@@ -2,7 +2,7 @@
 Changelog
 =========
 
-2.1.0 (unreleased)
+2.1.0 (2017-06-27)
 ==================
 
 Compatibility
@@ -11,9 +11,6 @@ Compatibility
 - Move back to Celery 3.
 
 - Drop support for Python 2.7, require Python 3.6.
-
-Migrations
-~~~~~~~~~~
 
 Changes
 ~~~~~~~
