@@ -1,0 +1,10 @@
+schedule: "every day"
+search: False
+update: insecure
+requirements:
+  - requirements/all.txt:
+      update: security
+  - requirements/binary.txt:
+      update: security
+  - requirements/build.txt:
+      update: security
