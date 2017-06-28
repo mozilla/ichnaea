@@ -27,7 +27,7 @@ RUN echo 'deb http://repo.mysql.com/apt/debian/ jessie mysql-5.7' > \
     apt-key adv --keyserver pgp.mit.edu --recv-keys 8C718D3B5072E1F5
 
 # Install apt-installable dependencies.
-RUN apt-get update && apt-get -y install \
+RUN apt-get update && apt-get -y install --no-install-recommends \
     file \
     gcc \
     g++ \
@@ -40,6 +40,7 @@ RUN apt-get update && apt-get -y install \
     libssl-dev \
     make \
     mysql-client \
+    pkg-config \
     pngquant \
     protobuf-compiler \
     redis-tools \
