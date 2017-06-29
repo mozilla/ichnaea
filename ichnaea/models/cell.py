@@ -636,6 +636,7 @@ class CellShard(StationMixin):
     @classmethod
     def export_stmt(cls):
         stmt = '''SELECT
+`cellid` AS `export_key`,
 CONCAT_WS(",",
     CASE radio
         WHEN 0 THEN "GSM"
@@ -667,9 +668,9 @@ CONCAT_WS(",",
     COALESCE(`block_count`, "0")
 ) AS `export_value`
 FROM %s
+WHERE `cellid` > :export_key
 ORDER BY `cellid`
-LIMIT :l
-OFFSET :o
+LIMIT :limit
 ''' % cls.__tablename__
         return stmt.replace('\n', ' ')
 

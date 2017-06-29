@@ -15,7 +15,7 @@ from ichnaea import util
 
 def write_stations_to_csv(session, path, today,
                           start_time=None, end_time=None):
-    where = 'radio != 1 AND lat IS NOT NULL AND lon IS NOT NULL'
+    where = 'lat IS NOT NULL AND lon IS NOT NULL'
     if start_time is not None and end_time is not None:
         where = where + ' AND modified >= "%s" AND modified < "%s"'
         fmt = '%Y-%m-%d %H:%M:%S'
@@ -34,6 +34,7 @@ def write_stations_to_csv(session, path, today,
 
     tables = [shard.__tablename__ for shard in CellShard.shards().values()]
     stmt = '''SELECT
+    `cellid`,
     CONCAT_WS(",",
         CASE radio
             WHEN 0 THEN "GSM"
@@ -56,10 +57,9 @@ def write_stations_to_csv(session, path, today,
         ""
     ) AS `cell_value`
 FROM %s
-WHERE %s
+WHERE %s AND `cellid` > :cellid
 ORDER BY `cellid`
-LIMIT :l
-OFFSET :o
+LIMIT :limit
 '''
 
     with util.gzip_open(path, 'w', compresslevel=5) as gzip_wrapper:
@@ -67,17 +67,20 @@ OFFSET :o
             gzip_file.write(header_row)
             for table in tables:
                 table_stmt = text(stmt % (table, where))
-                offset = 0
+                min_cellid = ''
                 limit = 25000
                 while True:
                     rows = session.execute(
-                        table_stmt.bindparams(o=offset, l=limit)).fetchall()
+                        table_stmt.bindparams(
+                            limit=limit,
+                            cellid=min_cellid
+                        )).fetchall()
                     if rows:
                         buf = '\r\n'.join([row.cell_value for row in rows])
                         if buf:
                             buf += '\r\n'
                         gzip_file.write(buf)
-                        offset += limit
+                        min_cellid = rows[-1].cellid
                     else:
                         break
 

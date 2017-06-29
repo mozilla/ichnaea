@@ -219,6 +219,7 @@ class MacStationMixin(StationMixin):
     @classmethod
     def export_stmt(cls):
         stmt = '''SELECT
+`mac` AS `export_key`,
 CONCAT_WS(",",
     LOWER(HEX(`mac`)),
     COALESCE(ROUND(`lat`, 7), ""),
@@ -240,8 +241,8 @@ CONCAT_WS(",",
     COALESCE(`block_count`, "0")
 ) AS `export_value`
 FROM %s
+WHERE `mac` > :export_key
 ORDER BY `mac`
-LIMIT :l
-OFFSET :o
+LIMIT :limit
 ''' % cls.__tablename__
         return stmt.replace('\n', ' ')

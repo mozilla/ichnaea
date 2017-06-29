@@ -11,6 +11,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Internal optmization in SQL export queries.
+
 
 2.1.0 (2017-06-27)
 ==================

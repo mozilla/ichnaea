@@ -46,19 +46,22 @@ def dump_model(shard_model, session, fd, where=None):
         LOGGER.info('Exporting table: %s', model.__tablename__)
         stmt = model.export_stmt()
         if where:
-            stmt = stmt.replace(' ORDER BY ', ' WHERE %s ORDER BY ' % where)
+            stmt = stmt.replace(' WHERE ', ' WHERE %s AND ' % where)
         stmt = text(stmt)
-        offset = 0
+        min_key = ''
         limit = 25000
         while True:
             rows = session.execute(
-                stmt.bindparams(o=offset, l=limit)).fetchall()
+                stmt.bindparams(
+                    export_key=min_key,
+                    limit=limit
+                )).fetchall()
             if rows:
                 buf = '\n'.join([row.export_value for row in rows])
                 if buf:
                     buf += '\n'
                 fd.write(buf)
-                offset += limit
+                min_key = rows[-1].export_key
             else:
                 break
 
