@@ -46,9 +46,9 @@ Now run the following command to get the code:
     cd ichnaea
     git submodule update --init --recursive
 
-Next you need to use the ``./server`` helper script to download and
-create all the required docker containers. As a first command you
-can use:
+For a development environment, you need to use the ``./server`` helper
+script to download and create all the required docker containers.
+As a first command you can use:
 
 .. code-block:: bash
 
@@ -56,6 +56,10 @@ can use:
 
 The first time around it'll take a good while. This will also start
 a container running MySQL and one running Redis.
+
+Please note that running the tests will wipe the database and Redis
+instance it is connected to. DO NOT USE the server helper script for
+a production install.
 
 Next up, you can run the entire application, with its three different
 application containers:
