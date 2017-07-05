@@ -11,6 +11,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Avoid filling the datamap queues if the web content is disabled.
+
 - Internal optmization in SQL export queries.
 
 

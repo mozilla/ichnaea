@@ -11,7 +11,8 @@ from celery.schedules import crontab
 
 from ichnaea.async.app import celery_app
 from ichnaea.async.task import BaseTask
-from ichnaea import config
+from ichnaea.data import _cell_export_enabled
+from ichnaea.data import _web_content_enabled
 from ichnaea.data import area
 from ichnaea.data import datamap
 from ichnaea.data import export
@@ -20,14 +21,6 @@ from ichnaea.data import public
 from ichnaea.data import station
 from ichnaea.data import stats
 from ichnaea import models
-
-
-def _cell_export_enabled():
-    return bool(config.ASSET_BUCKET)
-
-
-def _web_content_enabled():
-    return bool(config.MAP_TOKEN)
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_export',
@@ -125,7 +118,6 @@ def update_statregion(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
-                 expires=570, _schedule=timedelta(seconds=600),
-                 _enabled=_web_content_enabled)
+                 expires=570, _schedule=timedelta(seconds=600))
 def update_statcounter(self):
     stats.StatCounterUpdater(self)()
