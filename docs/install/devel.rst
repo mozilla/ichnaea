@@ -4,6 +4,10 @@
 Development
 ===========
 
+.. note:: If you want to install a production version of the code,
+          please skip these instructions and follow
+          :ref:`the deployment docs <deploy>` instead.
+
 Prerequisites
 -------------
 
@@ -82,6 +86,14 @@ Each of these commands also takes a second argument of either
 scheduler, services, web or worker. This allows you to start and stop
 only a specific type of container.
 
+The server script also reacts to a `PULL` environment variable, which
+allows you to skip pulling for new docker images during each invocation.
+Prefix the command with `PULL=0`, for example:
+
+.. code-block:: bash
+
+    PULL=0 ./server start
+
 To interact and inspect the application image, there is one more helper
 command:
 
@@ -91,6 +103,30 @@ command:
 
 This will drop you into a bash shell inside a container based on the
 application image.
+
+
+Unit Tests
+----------
+
+.. note:: The tests clear out the databae and Redis on each test run,
+          so don't run these against a production instance or you will
+          loose all your data.
+
+If you have a local development environment, you can run all tests
+including coverage tests via:
+
+.. code-block:: bash
+
+    ./server test
+
+Or run individual test modules via for example:
+
+.. code-block:: bash
+
+    ./server test TESTS=ichnaea.tests.test_geoip
+
+.. note:: Since the tests use a real database and Redis connection,
+          you cannot parallelize any tests.
 
 
 Documentation

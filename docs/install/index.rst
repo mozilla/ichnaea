@@ -15,5 +15,5 @@ consistent application environment in development and production.
    devel
    deploy
    config
+   debug
    metrics
-   testing
