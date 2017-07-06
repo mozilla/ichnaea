@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Remove the monitor queue size task.
+
 - Check API keys for region requests.
 
 - Avoid filling the datamap queues if the web content is disabled.

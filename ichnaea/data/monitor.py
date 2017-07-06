@@ -56,18 +56,3 @@ class ApiUsers(object):
             self.task.stats_client.gauge(
                 '%s.user' % api_type, value,
                 tags=['key:%s' % api_name, 'interval:%s' % interval])
-
-
-class QueueSize(object):
-
-    def __init__(self, task):
-        self.task = task
-
-    def __call__(self):
-        keys = self.task.redis_client.scan_iter(
-            match='export_queue_*', count=100)
-        export_queues = set([key.decode('utf-8') for key in keys])
-        for name in export_queues | self.task.app.all_queues:
-            value = self.task.redis_client.llen(name)
-            self.task.stats_client.gauge(
-                'queue', value, tags=['queue:' + name])

@@ -49,12 +49,6 @@ def monitor_api_users(self):
     monitor.ApiUsers(self)()
 
 
-@celery_app.task(base=BaseTask, bind=True, queue='celery_monitor',
-                 expires=57, _schedule=timedelta(seconds=60))
-def monitor_queue_size(self):
-    monitor.QueueSize(self)()
-
-
 @celery_app.task(base=BaseTask, bind=True, queue='celery_reports',
                  _countdown=2, expires=20, _schedule=timedelta(seconds=32))
 def update_incoming(self):

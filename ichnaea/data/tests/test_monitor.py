@@ -1,10 +1,8 @@
 from datetime import timedelta
-from random import randint
 
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
-    monitor_queue_size,
 )
 from ichnaea import util
 
@@ -52,21 +50,6 @@ class TestMonitor(object):
             ('api.limit', ['key:no_key_1', 'path:v1.search']),
             ('api.limit', ['key:no_key_2', 'path:v1.geolocate']),
         ])
-
-    def test_monitor_queue_size(self, celery, redis, stats):
-        data = {
-            'export_queue_internal': 3,
-            'export_queue_backup:abcd-ef-1234': 7,
-        }
-        for name in celery.all_queues:
-            data[name] = randint(1, 10)
-
-        for k, v in data.items():
-            redis.lpush(k, *range(v))
-
-        monitor_queue_size.delay().get()
-        stats.check(
-            gauge=[('queue', 1, v, ['queue:' + k]) for k, v in data.items()])
 
 
 class TestMonitorAPIUsers(object):

@@ -157,7 +157,6 @@ and inside it run:
         "total": {
             "ichnaea.data.tasks.monitor_api_key_limits": 1,
             "ichnaea.data.tasks.monitor_api_users": 1,
-            "ichnaea.data.tasks.monitor_queue_size": 15,
             "ichnaea.data.tasks.update_blue": 304,
             "ichnaea.data.tasks.update_cell": 66,
             "ichnaea.data.tasks.update_cellarea": 21,
