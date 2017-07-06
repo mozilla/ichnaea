@@ -51,7 +51,6 @@ Now check the API keys:
                  allow_fallback: 0
                    allow_locate: 1
                  allow_transfer: 0
-                      shortname: NULL
                   fallback_name: NULL
                    fallback_url: NULL
              fallback_ratelimit: NULL

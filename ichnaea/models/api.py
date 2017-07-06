@@ -67,7 +67,6 @@ class ApiKey(_Model):
     allow_fallback = Column(Boolean)  # Use the fallback source?
     allow_locate = Column(Boolean)  # Allow locate queries?
     allow_transfer = Column(Boolean)  # Allow transfer queries?
-    shortname = Column(String(40))  # Short descriptive name.
 
     fallback_name = Column(String(40))  # Fallback metric name.
     fallback_url = Column(String(256))  # URL of the fallback provider.

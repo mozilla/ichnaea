@@ -1,8 +1,5 @@
 import uuid
 
-import pytest
-from sqlalchemy.orm.exc import DetachedInstanceError
-
 from ichnaea.models.api import ApiKey
 from ichnaea.tests.factories import ApiKeyFactory
 
@@ -36,21 +33,12 @@ class TestApiKey(object):
 
     def test_get(self, session, session_tracker):
         key = uuid.uuid4().hex
-        session.add(ApiKey(valid_key=key, shortname='foo'))
+        session.add(ApiKey(valid_key=key))
         session.flush()
         session_tracker(1)
 
         result = ApiKey.get(session, key)
         assert isinstance(result, ApiKey)
-        session_tracker(2)
-
-        # shortname wasn't loaded at first
-        assert 'shortname' not in result.__dict__
-
-        with pytest.raises(DetachedInstanceError):
-            # and cannot be eagerly loaded
-            assert result.shortname == 'foo'
-
         session_tracker(2)
 
         result2 = ApiKey.get(session, key)

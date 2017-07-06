@@ -8,6 +8,8 @@ Changelog
 Migrations
 ~~~~~~~~~~
 
+- 73c5f5ae5b23: Drop shortname column from API key table.
+
 Changes
 ~~~~~~~
 
