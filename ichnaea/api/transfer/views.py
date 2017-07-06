@@ -16,8 +16,6 @@ from ichnaea.api.transfer.schema import TRANSFER_V1_SCHEMA
 class BaseTransferView(BaseAPIView):
     """Common base class for all transfer related views."""
 
-    check_api_key = True
-    error_on_invalidkey = True
     view_type = 'transfer'
     success = TransferSuccess
 

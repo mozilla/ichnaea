@@ -34,6 +34,18 @@ _GET_QUERY += lambda q: q.options(load_only(*_GET_FIELDS))
 _MARKER = object()
 
 
+def empty_api_key():
+    # Create an empty API key. This is used if API key lookup failed,
+    # and the view code stills expects an API key model object.
+    return ApiKey(valid_key=None,
+                  allow_fallback=False,
+                  allow_locate=True,
+                  allow_region=True,
+                  allow_transfer=False,
+                  store_sample_locate=100,
+                  store_sample_submit=100)
+
+
 class ApiKey(_Model):
     """
     ApiKey model.
@@ -94,8 +106,10 @@ class ApiKey(_Model):
         """
         if api_type == 'locate':
             return bool(self.allow_locate)
-        elif api_type in ('region', 'submit'):
-            # Region and submit are always allowed, even without an API key.
+        elif api_type == 'region':
+            return bool(self.allow_region)
+        elif api_type == 'submit':
+            # Submit are always allowed, even without an API key.
             return True
         elif api_type == 'transfer':
             return bool(self.allow_transfer)

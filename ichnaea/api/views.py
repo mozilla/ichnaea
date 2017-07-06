@@ -13,7 +13,10 @@ from ichnaea.api.exceptions import (
 )
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.exceptions import GZIPDecodeError
-from ichnaea.models.api import ApiKey
+from ichnaea.models.api import (
+    ApiKey,
+    empty_api_key,
+)
 from ichnaea.models.constants import VALID_APIKEY_REGEX
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
@@ -22,8 +25,9 @@ from ichnaea.webapp.view import BaseView
 class BaseAPIView(BaseView):
     """Common base class for all API related views."""
 
-    check_api_key = True  # Should API keys be checked?
     error_on_invalidkey = True  # Deny access for invalid API keys?
+    ip_logging = True  # Count unique IP addresses?
+    rate_limiting = True  # Track rate limits?
     metric_path = None  # Dotted URL path, for example v1.submit.
     schema = None  # An instance of a colander schema to validate the data.
     view_type = None  # The type of view, for example submit or locate.
@@ -62,65 +66,11 @@ class BaseAPIView(BaseView):
             tags=['path:' + self.metric_path,
                   'key:' + valid_key])
 
-        if self.request.client_addr and log_ip:
+        if log_ip and self.ip_logging and self.request.client_addr:
             try:
                 self.log_unique_ip(valid_key)
             except Exception:  # pragma: no cover
                 self.raven_client.captureException()
-
-    def check(self):
-        api_key = None
-        api_key_text = self.parse_apikey()
-        skip_check = False
-
-        if api_key_text is None:
-            self.log_count(None, False)
-            if self.error_on_invalidkey:
-                raise self.prepare_exception(InvalidAPIKey())
-
-        if api_key_text is not None:
-            try:
-                session = self.request.db_session
-                api_key = ApiKey.get(session, api_key_text)
-            except Exception:
-                # if we cannot connect to backend DB, skip api key check
-                skip_check = True
-                self.raven_client.captureException()
-
-        if api_key is not None and api_key.allowed(self.view_type):
-            self.log_count(api_key.valid_key, True)
-
-            rate_key = 'apilimit:{key}:{path}:{time}'.format(
-                key=api_key_text,
-                path=self.metric_path,
-                time=util.utcnow().strftime('%Y%m%d')
-            )
-
-            should_limit = rate_limit_exceeded(
-                self.redis_client,
-                rate_key,
-                maxreq=api_key.maxreq
-            )
-
-            if should_limit:
-                raise self.prepare_exception(DailyLimitExceeded())
-        elif skip_check:
-            pass
-        else:
-            if api_key_text is not None:
-                self.log_count('invalid', False)
-            if self.error_on_invalidkey:
-                raise self.prepare_exception(InvalidAPIKey())
-
-        # If we failed to look up an ApiKey, create an empty one
-        # rather than passing None through
-        api_key = api_key or ApiKey(valid_key=None,
-                                    allow_fallback=False,
-                                    allow_locate=True,
-                                    allow_transfer=False,
-                                    store_sample_locate=100,
-                                    store_sample_submit=100)
-        return self.view(api_key)
 
     def parse_apikey(self):
         try:
@@ -133,6 +83,20 @@ class BaseAPIView(BaseView):
                 VALID_APIKEY_REGEX.match(api_key_text)):
             return api_key_text
         return None
+
+    def rate_limited(self, api_key_text, api_key):
+        rate_key = 'apilimit:{key}:{path}:{time}'.format(
+            key=api_key_text,
+            path=self.metric_path,
+            time=util.utcnow().strftime('%Y%m%d')
+        )
+
+        should_limit = rate_limit_exceeded(
+            self.redis_client,
+            rate_key,
+            maxreq=api_key.maxreq
+        )
+        return should_limit
 
     def preprocess_request(self):
         errors = []
@@ -165,14 +129,41 @@ class BaseAPIView(BaseView):
 
     def __call__(self):
         """Execute the view and return a response."""
-        if self.check_api_key:
-            return self.check()
+        api_key = None
+        api_key_text = self.parse_apikey()
+        skip_check = False
+
+        if api_key_text is None:
+            self.log_count(None, False)
+            if self.error_on_invalidkey:
+                raise self.prepare_exception(InvalidAPIKey())
+
+        if api_key_text is not None:
+            try:
+                session = self.request.db_session
+                api_key = ApiKey.get(session, api_key_text)
+            except Exception:
+                # if we cannot connect to backend DB, skip api key check
+                skip_check = True
+                self.raven_client.captureException()
+
+        if api_key is not None and api_key.allowed(self.view_type):
+            self.log_count(api_key.valid_key, True)
+
+            if self.rate_limiting:
+                # Potentially avoid rate limiting Redis overhead.
+                if self.rate_limited(api_key_text, api_key):
+                    raise self.prepare_exception(DailyLimitExceeded())
+        elif skip_check:
+            pass
         else:
-            api_key = ApiKey(
-                valid_key=None, allow_fallback=False,
-                allow_locate=True, allow_transfer=False,
-                store_sample_locate=100, store_sample_submit=100)
-            # Only use the unchecked API key in the request for simple
-            # logging purposes.
-            self.log_count(self.parse_apikey(), False)
-            return self.view(api_key)
+            if api_key_text is not None:
+                self.log_count('invalid', False)
+            if self.error_on_invalidkey:
+                raise self.prepare_exception(InvalidAPIKey())
+
+        # If we failed to look up an ApiKey, create an empty one
+        # rather than passing None through
+        if api_key is None:
+            api_key = empty_api_key()
+        return self.view(api_key)

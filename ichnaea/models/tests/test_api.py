@@ -70,6 +70,8 @@ class TestApiKey(object):
         assert api_key.allowed('unknown') is None
         assert not ApiKeyFactory.build(allow_locate=None).allowed('locate')
         assert not ApiKeyFactory.build(allow_locate=False).allowed('locate')
+        assert not ApiKeyFactory.build(allow_region=None).allowed('region')
+        assert not ApiKeyFactory.build(allow_region=False).allowed('region')
         assert not ApiKeyFactory.build(allow_transfer=None).allowed('transfer')
 
     def test_store_sample(self):
