@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from ichnaea.cache import redis_pipeline
 from ichnaea.data.tasks import (
+    cleanup_stat,
     update_statcounter,
     update_statregion,
 )
@@ -110,6 +111,36 @@ class TestStatCounter(object):
         self.check_stat(session, StatKey.unique_blue, self.today, 4)
         self.check_stat(session, StatKey.unique_cell, self.today, 5)
         self.check_stat(session, StatKey.unique_wifi, self.today, 6)
+
+
+class TestStatCleaner(object):
+
+    @property
+    def today(self):
+        return util.utcnow().date()
+
+    def _one(self, key, time):
+        return Stat(key=key, time=time, value=1)
+
+    def test_empty(self, celery, session):
+        cleanup_stat.delay().get()
+        assert session.query(Stat).count() == 0
+
+    def test_cleanup(self, celery, session):
+        session.add_all([
+            self._one(StatKey.cell, self.today),
+            self._one(StatKey.cell, self.today - timedelta(days=366 * 2)),
+            self._one(StatKey.wifi, self.today),
+            self._one(StatKey.wifi, self.today - timedelta(days=366 * 2)),
+            self._one(StatKey.blue, self.today),
+            self._one(StatKey.blue, self.today - timedelta(days=366 * 2)),
+            self._one(StatKey.unique_blue, self.today),
+            self._one(StatKey.unique_blue, self.today - timedelta(days=366)),
+        ])
+        session.flush()
+
+        cleanup_stat.delay().get()
+        assert session.query(Stat).count() == 5
 
 
 class TestStatRegion(object):

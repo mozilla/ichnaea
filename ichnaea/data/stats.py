@@ -1,6 +1,6 @@
 from datetime import timedelta
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 
 from ichnaea.models import (
     BlueShard,
@@ -70,6 +70,25 @@ class StatCounterUpdater(object):
             ).values(key=stat_key, time=day, value=old_value + value)
             session.execute(stmt)
             stat_counter.decr(pipe, value)
+
+
+class StatCleaner(object):
+
+    def __init__(self, task):
+        self.task = task
+
+    def __call__(self):
+        today = util.utcnow().date()
+        two_years = today - timedelta(days=365 * 2)
+
+        deleted_rows = 0
+        with self.task.db_session() as session:
+            table = Stat.__table__
+            deleted_rows = session.execute(
+                delete(table)
+                .where(table.c.time < two_years)
+            )
+        return deleted_rows
 
 
 class StatRegion(object):

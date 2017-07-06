@@ -15,6 +15,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Add new cleanup stat task.
+
 - Remove the monitor queue size task.
 
 - Check API keys for region requests.

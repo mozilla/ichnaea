@@ -112,6 +112,12 @@ def update_statregion(self):
 
 
 @celery_app.task(base=BaseTask, bind=True, queue='celery_content',
+                 expires=18000, _schedule=crontab(hour=0, minute=23))
+def cleanup_stat(self):
+    stats.StatCleaner(self)()
+
+
+@celery_app.task(base=BaseTask, bind=True, queue='celery_content',
                  expires=570, _schedule=timedelta(seconds=600))
 def update_statcounter(self):
     stats.StatCounterUpdater(self)()
