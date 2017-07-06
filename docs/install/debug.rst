@@ -50,6 +50,7 @@ Now check the API keys:
                          maxreq: NULL
                  allow_fallback: 0
                    allow_locate: 1
+                   allow_region: 1
                  allow_transfer: 0
                   fallback_name: NULL
                    fallback_url: NULL

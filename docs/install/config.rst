@@ -152,7 +152,7 @@ But to start off, you can add a simple literal `test` API key:
 .. code-block:: sql
 
     INSERT INTO api_key
-    (`valid_key`, `allow_locate`) VALUES ("test", 1);
+    (`valid_key`, `allow_locate`, `allow_region`) VALUES ("test", 1, 1);
 
 
 Export Configuration

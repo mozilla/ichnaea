@@ -95,6 +95,7 @@ class ApiKeyFactory(BaseSQLFactory):
     maxreq = 0
     allow_fallback = False
     allow_locate = True
+    allow_region = True
     allow_transfer = False
 
     fallback_name = 'fall'

@@ -18,11 +18,11 @@ from ichnaea.db import BAKERY
 
 # Five minutes +/- 10% cache timeout.
 API_CACHE_TIMEOUT = 300 + randint(-30, 30)
-API_CACHE = lru.ExpiringLRUCache(100, default_timeout=API_CACHE_TIMEOUT)
+API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
 
 _GET_FIELDS = (
     'valid_key', 'maxreq',
-    'allow_fallback', 'allow_locate', 'allow_transfer',
+    'allow_fallback', 'allow_locate', 'allow_region', 'allow_transfer',
     'fallback_name', 'fallback_url', 'fallback_ratelimit',
     'fallback_ratelimit_interval', 'fallback_cache_expire',
     'store_sample_submit', 'store_sample_locate',
@@ -66,6 +66,7 @@ class ApiKey(_Model):
     maxreq = Column(Integer)  # Maximum number of requests per day.
     allow_fallback = Column(Boolean)  # Use the fallback source?
     allow_locate = Column(Boolean)  # Allow locate queries?
+    allow_region = Column(Boolean)  # Allow region queries?
     allow_transfer = Column(Boolean)  # Allow transfer queries?
 
     fallback_name = Column(String(40))  # Fallback metric name.

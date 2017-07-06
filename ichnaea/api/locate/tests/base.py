@@ -425,7 +425,7 @@ class CommonPositionTest(BaseLocateTest):
         self.check_response(data_queues, res, 'limit_exceeded')
 
     def test_api_key_blocked(self, app, data_queues, session):
-        api_key = ApiKeyFactory(allow_locate=False)
+        api_key = ApiKeyFactory(allow_locate=False, allow_region=False)
         session.flush()
 
         res = self._call(

@@ -8,6 +8,8 @@ Changelog
 Migrations
 ~~~~~~~~~~
 
+- 30a4df7eafd5: Add allow_region column to API key table.
+
 - 73c5f5ae5b23: Drop shortname column from API key table.
 
 Changes

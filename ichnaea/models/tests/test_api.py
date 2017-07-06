@@ -10,7 +10,10 @@ class TestApiKey(object):
         key = uuid.uuid4().hex
         session.add(ApiKey(
             valid_key=key, maxreq=10,
-            allow_fallback=True, allow_locate=True, allow_transfer=True,
+            allow_fallback=True,
+            allow_locate=True,
+            allow_region=True,
+            allow_transfer=True,
             fallback_name='test_fallback',
             fallback_url='https://localhost:9/api?key=k',
             fallback_ratelimit=100,
@@ -24,6 +27,7 @@ class TestApiKey(object):
         assert result.maxreq == 10
         assert result.allow_fallback is True
         assert result.allow_locate is True
+        assert result.allow_region is True
         assert result.allow_transfer is True
         assert result.fallback_name == 'test_fallback'
         assert result.fallback_url == 'https://localhost:9/api?key=k'
@@ -41,6 +45,7 @@ class TestApiKey(object):
         assert isinstance(result, ApiKey)
         session_tracker(2)
 
+        # Test get cache
         result2 = ApiKey.get(session, key)
         assert isinstance(result2, ApiKey)
         session_tracker(2)
@@ -50,12 +55,14 @@ class TestApiKey(object):
         assert result is None
         session_tracker(1)
 
+        # Test get cache
         result2 = ApiKey.get(session, 'unknown')
         assert result2 is None
         session_tracker(1)
 
     def test_allowed(self):
-        api_key = ApiKeyFactory.build(allow_locate=True, allow_transfer=True)
+        api_key = ApiKeyFactory.build(
+            allow_locate=True, allow_region=True, allow_transfer=True)
         assert api_key.allowed('locate')
         assert api_key.allowed('region')
         assert api_key.allowed('submit')
