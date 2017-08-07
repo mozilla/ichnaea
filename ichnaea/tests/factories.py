@@ -75,14 +75,14 @@ class FuzzyUUID(fuzzy.BaseFuzzyAttribute):
 class FuzzyMacKey(fuzzy.BaseFuzzyAttribute):
 
     def fuzz(self):
-        num = fuzzy.random.randint(100000, 999999)
+        num = factory.random.randgen.randint(100000, 999999)
         return 'a82066{num:06d}'.format(num=num)
 
 
 class FuzzyMac(fuzzy.BaseFuzzyAttribute):
 
     def fuzz(self):
-        num = fuzzy.random.randint(10000000, 99999999)
+        num = factory.random.randgen.randint(10000000, 99999999)
         return 'a820{num:08d}'.format(num=num)
 
 
