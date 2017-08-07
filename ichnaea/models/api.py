@@ -23,7 +23,7 @@ API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
 _GET_FIELDS = (
     'valid_key', 'maxreq',
     'allow_fallback', 'allow_locate', 'allow_region', 'allow_transfer',
-    'fallback_name', 'fallback_url', 'fallback_ratelimit',
+    'fallback_name', 'fallback_schema', 'fallback_url', 'fallback_ratelimit',
     'fallback_ratelimit_interval', 'fallback_cache_expire',
     'store_sample_submit', 'store_sample_locate',
 )
@@ -82,6 +82,7 @@ class ApiKey(_Model):
     allow_transfer = Column(Boolean)  # Allow transfer queries?
 
     fallback_name = Column(String(40))  # Fallback metric name.
+    fallback_schema = Column(String(64))  # Fallback API schema.
     fallback_url = Column(String(256))  # URL of the fallback provider.
     fallback_ratelimit = Column(Integer)  # Fallback rate limit count.
     fallback_ratelimit_interval = Column(Integer)  # Interval in seconds.

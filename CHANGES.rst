@@ -8,6 +8,8 @@ Changelog
 Migrations
 ~~~~~~~~~~
 
+- 5797389a3842: Add fallback_schema column to API key table.
+
 - 30a4df7eafd5: Add allow_region column to API key table.
 
 - 73c5f5ae5b23: Drop shortname column from API key table.

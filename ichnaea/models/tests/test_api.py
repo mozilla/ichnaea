@@ -15,6 +15,7 @@ class TestApiKey(object):
             allow_region=True,
             allow_transfer=True,
             fallback_name='test_fallback',
+            fallback_schema='ichnaea/v1',
             fallback_url='https://localhost:9/api?key=k',
             fallback_ratelimit=100,
             fallback_ratelimit_interval=60,
@@ -30,6 +31,7 @@ class TestApiKey(object):
         assert result.allow_region is True
         assert result.allow_transfer is True
         assert result.fallback_name == 'test_fallback'
+        assert result.fallback_schema == 'ichnaea/v1'
         assert result.fallback_url == 'https://localhost:9/api?key=k'
         assert result.fallback_ratelimit == 100
         assert result.fallback_ratelimit_interval == 60
