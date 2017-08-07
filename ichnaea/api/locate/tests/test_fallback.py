@@ -13,8 +13,8 @@ from ichnaea.api.locate.fallback import (
     ExternalResult,
     FallbackCache,
     FallbackPositionSource,
-    OUTBOUND_SCHEMA,
-    RESULT_SCHEMA,
+    ICHNAEA_V1_OUTBOUND_SCHEMA,
+    ICHNAEA_V1_RESULT_SCHEMA,
 )
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
@@ -62,74 +62,80 @@ class TestExternalResult(object):
         assert result.score == 5.0
 
 
-class TestResultSchema(object):
+class TestIchnaeaV1ResultSchema(object):
+
+    def _call(self, *args, **kw):
+        return ICHNAEA_V1_RESULT_SCHEMA.deserialize(*args, **kw)
 
     def test_empty(self):
         with pytest.raises(colander.Invalid):
-            RESULT_SCHEMA.deserialize({})
+            self._call({})
 
     def test_accuracy_float(self):
-        data = RESULT_SCHEMA.deserialize(
+        data = self._call(
             {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 11.6})
         assert (data ==
                 {'lat': 1.0, 'lon': 1.0, 'accuracy': 11.6, 'fallback': None})
 
     def test_accuracy_missing(self):
         with pytest.raises(colander.Invalid):
-            RESULT_SCHEMA.deserialize(
+            self._call(
                 {'location': {'lat': 1.0, 'lng': 1.0}, 'fallback': 'lacf'})
 
     def test_fallback(self):
-        data = RESULT_SCHEMA.deserialize(
+        data = self._call(
             {'location': {'lat': 1.0, 'lng': 1.0},
              'accuracy': 10.0, 'fallback': 'lacf'})
         assert (data ==
                 {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': 'lacf'})
 
     def test_fallback_invalid(self):
-        data = RESULT_SCHEMA.deserialize(
+        data = self._call(
             {'location': {'lat': 1.0, 'lng': 1.0},
              'accuracy': 10.0, 'fallback': 'cidf'})
         assert (data ==
                 {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
 
     def test_fallback_missing(self):
-        data = RESULT_SCHEMA.deserialize(
+        data = self._call(
             {'location': {'lat': 1.0, 'lng': 1.0}, 'accuracy': 10.0})
         assert (data ==
                 {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
 
     def test_location_incomplete(self):
         with pytest.raises(colander.Invalid):
-            RESULT_SCHEMA.deserialize(
+            self._call(
                 {'location': {'lng': 1.0}, 'accuracy': 10.0,
                  'fallback': 'lacf'})
 
     def test_location_missing(self):
         with pytest.raises(colander.Invalid):
-            RESULT_SCHEMA.deserialize({'accuracy': 10.0, 'fallback': 'lacf'})
+            self._call({'accuracy': 10.0, 'fallback': 'lacf'})
 
 
-class TestOutboundSchema(object):
+class TestIchnaeaV1OutboundSchema(object):
+
+    def _call(self, *args, **kw):
+        return ICHNAEA_V1_OUTBOUND_SCHEMA.deserialize(*args, **kw)
 
     def test_empty(self):
-        assert OUTBOUND_SCHEMA.deserialize({}) == {}
-        assert OUTBOUND_SCHEMA.deserialize({'unknown_field': 1}) == {}
+        assert self._call({}) == {}
+        assert self._call({'unknown_field': 1}) == {}
 
     def test_fallback(self):
-        assert (OUTBOUND_SCHEMA.deserialize(
+        assert (self._call(
             {'fallbacks': {'ipf': False}}) ==
             {'fallbacks': {}})
-        assert (OUTBOUND_SCHEMA.deserialize(
+        assert (self._call(
             {'fallbacks': {'lacf': False}}) ==
             {'fallbacks': {'lacf': False}})
-        assert (OUTBOUND_SCHEMA.deserialize(
+        assert (self._call(
             {'fallbacks': {'ipf': True, 'lacf': False}}) ==
             {'fallbacks': {'lacf': False}})
 
     def test_query(self):
         query = Query()
-        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        data = self._call(query.json())
         assert data == {'fallbacks': {'lacf': True}}
 
     def test_blue(self):
@@ -138,7 +144,7 @@ class TestOutboundSchema(object):
             {'macAddress': blue.mac, 'age': 1500, 'name': 'beacon',
              'signalStrength': -90}
             for blue in blues])
-        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        data = self._call(query.json())
         assert (data == {
             'bluetoothBeacons': [{
                 'macAddress': blues[0].mac,
@@ -168,7 +174,7 @@ class TestOutboundSchema(object):
              'signalStrength': -70,
              'timingAdvance': 15,
              'unknown_field': 'foo'}])
-        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        data = self._call(query.json())
         assert (data == {
             'cellTowers': [{
                 'radioType': cell.radio.name,
@@ -190,7 +196,7 @@ class TestOutboundSchema(object):
             {'macAddress': wifi.mac, 'age': 2000,
              'signalStrength': -90, 'ssid': 'wifi'}
             for wifi in wifis])
-        data = OUTBOUND_SCHEMA.deserialize(query.json())
+        data = self._call(query.json())
         assert (data == {
             'wifiAccessPoints': [{
                 'macAddress': wifis[0].mac,

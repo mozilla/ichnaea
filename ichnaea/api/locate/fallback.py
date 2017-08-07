@@ -26,6 +26,9 @@ from ichnaea.geocalc import distance
 # Magic constant to cache not found.
 LOCATION_NOT_FOUND = '404'
 
+# Default fallback schema
+DEFAULT_SCHEMA = 'ichnaea/v1'
+
 
 class ExternalResult(namedtuple('ExternalResult',
                                 'lat lon accuracy fallback')):
@@ -44,7 +47,7 @@ class ExternalResult(namedtuple('ExternalResult',
         return 10.0
 
 
-class ResultSchema(RenamingMappingSchema):
+class IchnaeaV1ResultSchema(RenamingMappingSchema):
 
     @colander.instantiate()
     class location(RenamingMappingSchema):  # NOQA
@@ -56,7 +59,7 @@ class ResultSchema(RenamingMappingSchema):
     fallback = OptionalNode(colander.String(), missing=None)
 
     def deserialize(self, data):
-        data = super(ResultSchema, self).deserialize(data)
+        data = super(IchnaeaV1ResultSchema, self).deserialize(data)
         fallback = data.get('fallback', None)
         if fallback != 'lacf':
             fallback = None
@@ -68,10 +71,10 @@ class ResultSchema(RenamingMappingSchema):
         }
 
 
-RESULT_SCHEMA = ResultSchema()
+ICHNAEA_V1_RESULT_SCHEMA = IchnaeaV1ResultSchema()
 
 
-class OutboundSchema(OptionalMappingSchema):
+class IchnaeaV1OutboundSchema(OptionalMappingSchema):
 
     @colander.instantiate(missing=colander.drop)
     class fallbacks(OptionalMappingSchema):  # NOQA
@@ -119,7 +122,7 @@ class OutboundSchema(OptionalMappingSchema):
             ssid = OptionalNode(colander.String())
 
 
-OUTBOUND_SCHEMA = OutboundSchema()
+ICHNAEA_V1_OUTBOUND_SCHEMA = IchnaeaV1OutboundSchema()
 
 
 class FallbackCache(object):
@@ -308,8 +311,6 @@ class FallbackPositionSource(PositionSource):
     an external web service.
     """
 
-    outbound_schema = OUTBOUND_SCHEMA
-    result_schema = RESULT_SCHEMA
     source = DataSource.fallback
 
     def __init__(self, *args, **kw):
@@ -319,6 +320,12 @@ class FallbackPositionSource(PositionSource):
             self.redis_client,
             self.stats_client,
         )
+        self.outbound_schemas = {
+            DEFAULT_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
+        }
+        self.result_schemas = {
+            DEFAULT_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
+        }
 
     def _stat_count(self, stat, tags):
         self.stats_client.incr('locate.fallback.' + stat, tags=tags)
@@ -347,8 +354,15 @@ class FallbackPositionSource(PositionSource):
 
     def _make_external_call(self, query):
         outbound = None
+        # Determine fallback schema, default to our own
+        fallback_schema = query.api_key.fallback_schema
+        outbound_schema = self.outbound_schemas.get(
+            fallback_schema, self.outbound_schemas[DEFAULT_SCHEMA])
+        result_schema = self.result_schemas.get(
+            fallback_schema, self.result_schemas[DEFAULT_SCHEMA])
+
         try:
-            outbound = self.outbound_schema.deserialize(query.json())
+            outbound = outbound_schema.deserialize(query.json())
         except colander.Invalid:  # pragma: no cover
             self.raven_client.captureException()
 
@@ -382,7 +396,7 @@ class FallbackPositionSource(PositionSource):
             validated = None
             try:
                 body = response.json()
-                validated = self.result_schema.deserialize(body)
+                validated = result_schema.deserialize(body)
             except (colander.Invalid,
                     simplejson.JSONDecodeError):  # pragma: no cover
                 self.raven_client.captureException()
