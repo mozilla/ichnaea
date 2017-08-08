@@ -88,6 +88,7 @@ class FuzzyMac(fuzzy.BaseFuzzyAttribute):
 
 
 class ApiKeyFactory(BaseSQLFactory):
+    # Database model instance
 
     class Meta:
         model = ApiKey
@@ -111,6 +112,7 @@ class ApiKeyFactory(BaseSQLFactory):
 
 
 class KeyFactory(BaseMemoryFactory):
+    # In-memory representation
 
     class Meta:
         model = Key
@@ -154,6 +156,9 @@ class BboxFactory(Factory):
 
 class BlueShardFactory(BaseSQLFactory):
 
+    class Meta:
+        model = BlueShard.create
+
     mac = FuzzyMac()
     lat = GB_LAT
     lon = GB_LON
@@ -166,11 +171,11 @@ class BlueShardFactory(BaseSQLFactory):
     modified = util.utcnow()
     last_seen = util.utcnow().date()
 
-    class Meta:
-        model = BlueShard.create
-
 
 class BlueObservationFactory(BaseMemoryFactory):
+
+    class Meta:
+        model = BlueObservation.create
 
     mac = FuzzyMacKey()
     lat = GB_LAT
@@ -179,9 +184,6 @@ class BlueObservationFactory(BaseMemoryFactory):
     signal = -80
     snr = 30
     source = ReportSource.gnss
-
-    class Meta:
-        model = BlueObservation.create
 
 
 class CellAreaKeyFactory(Factory):
@@ -228,6 +230,9 @@ class CellShardFactory(BaseCellShardFactory, BaseSQLFactory):
 
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
+    class Meta:
+        model = CellArea.create
+
     radius = CELLAREA_MIN_ACCURACY / 2.0
     region = 'GB'
     avg_cell_radius = CELL_MIN_ACCURACY / 2.0
@@ -235,9 +240,6 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
     created = util.utcnow()
     modified = util.utcnow()
     last_seen = util.utcnow().date()
-
-    class Meta:
-        model = CellArea.create
 
 
 class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
@@ -284,6 +286,9 @@ class RegionStatFactory(BaseSQLFactory):
 
 class WifiShardFactory(BaseSQLFactory):
 
+    class Meta:
+        model = WifiShard.create
+
     mac = FuzzyMac()
     lat = GB_LAT
     lon = GB_LON
@@ -296,11 +301,11 @@ class WifiShardFactory(BaseSQLFactory):
     modified = util.utcnow()
     last_seen = util.utcnow().date()
 
-    class Meta:
-        model = WifiShard.create
-
 
 class WifiObservationFactory(BaseMemoryFactory):
+
+    class Meta:
+        model = WifiObservation.create
 
     mac = FuzzyMacKey()
     lat = GB_LAT
@@ -309,6 +314,3 @@ class WifiObservationFactory(BaseMemoryFactory):
     signal = -80
     snr = 30
     source = ReportSource.gnss
-
-    class Meta:
-        model = WifiObservation.create
