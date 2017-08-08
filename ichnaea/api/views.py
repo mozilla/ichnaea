@@ -11,13 +11,13 @@ from ichnaea.api.exceptions import (
     InvalidAPIKey,
     ParseError,
 )
+from ichnaea.api.key import (
+    get_key,
+    Key,
+    validated_key,
+)
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.exceptions import GZIPDecodeError
-from ichnaea.models.api import (
-    ApiKey,
-    empty_api_key,
-)
-from ichnaea.models.constants import VALID_APIKEY_REGEX
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
 
@@ -77,12 +77,8 @@ class BaseAPIView(BaseView):
             api_key_text = self.request.GET.get('key', None)
         except Exception:  # pragma: no cover
             api_key_text = None
-        # check length against DB column length and restrict
-        # to a known set of characters
-        if (api_key_text and (3 < len(api_key_text) < 41) and
-                VALID_APIKEY_REGEX.match(api_key_text)):
-            return api_key_text
-        return None
+        # Validate key and potentially return None
+        return validated_key(api_key_text)
 
     def rate_limited(self, api_key_text, api_key):
         rate_key = 'apilimit:{key}:{path}:{time}'.format(
@@ -141,7 +137,7 @@ class BaseAPIView(BaseView):
         if api_key_text is not None:
             try:
                 session = self.request.db_session
-                api_key = ApiKey.get(session, api_key_text)
+                api_key = get_key(session, api_key_text)
             except Exception:
                 # if we cannot connect to backend DB, skip api key check
                 skip_check = True
@@ -165,5 +161,5 @@ class BaseAPIView(BaseView):
         # If we failed to look up an ApiKey, create an empty one
         # rather than passing None through
         if api_key is None:
-            api_key = empty_api_key()
+            api_key = Key()
         return self.view(api_key)

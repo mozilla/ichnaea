@@ -14,6 +14,7 @@ from sqlalchemy import (
 )
 import webtest
 
+from ichnaea.api.key import API_CACHE
 from ichnaea.api.locate.searcher import (
     configure_position_searcher,
     configure_region_searcher,
@@ -39,7 +40,6 @@ from ichnaea.log import (
     configure_stats,
 )
 from ichnaea.models import _Model
-from ichnaea.models.api import API_CACHE
 from ichnaea.queue import DataQueue
 from ichnaea.webapp.config import (
     main,

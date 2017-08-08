@@ -8,14 +8,14 @@ from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
 )
-from ichnaea.tests.factories import ApiKeyFactory
+from ichnaea.tests.factories import KeyFactory
 
 
 class SourceTest(object):
 
     def _make_query(self, geoip_db, stats, **kw):
         return Query(
-            api_key=ApiKeyFactory.build(valid_key='test'),
+            api_key=KeyFactory(valid_key='test'),
             geoip_db=geoip_db,
             stats_client=stats,
             **kw)

@@ -6,6 +6,7 @@ from factory.alchemy import SQLAlchemyModelFactory
 from factory.base import Factory
 from factory import fuzzy
 
+from ichnaea.api.key import Key
 from ichnaea.api.locate.constants import (
     BLUE_MIN_ACCURACY,
     CELL_MIN_ACCURACY,
@@ -43,7 +44,7 @@ class BaseMemoryFactory(Factory):
 
     @classmethod
     def _create(cls, constructor, *args, **kwargs):
-        """Create an instance of the model, and save it to the database."""
+        """Create an instance of the model."""
         if ismethod(constructor) and '_raise_invalid' not in kwargs:
             kwargs['_raise_invalid'] = True
         return constructor(*args, **kwargs)
@@ -99,6 +100,30 @@ class ApiKeyFactory(BaseSQLFactory):
     allow_transfer = False
 
     fallback_name = 'fall'
+    fallback_schema = None
+    fallback_url = 'http://127.0.0.1:9/?api'
+    fallback_ratelimit = 10
+    fallback_ratelimit_interval = 60
+    fallback_cache_expire = 60
+
+    store_sample_locate = 100
+    store_sample_submit = 100
+
+
+class KeyFactory(BaseMemoryFactory):
+
+    class Meta:
+        model = Key
+
+    valid_key = FuzzyUUID()
+    maxreq = 0
+    allow_fallback = False
+    allow_locate = True
+    allow_region = True
+    allow_transfer = False
+
+    fallback_name = 'fall'
+    fallback_schema = None
     fallback_url = 'http://127.0.0.1:9/?api'
     fallback_ratelimit = 10
     fallback_ratelimit_interval = 60

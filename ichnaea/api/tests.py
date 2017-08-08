@@ -3,9 +3,111 @@ import time
 import colander
 from pyramid.request import Request
 
+from ichnaea.api.key import (
+    get_key,
+    Key,
+)
 from ichnaea.api import exceptions as api_exceptions
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.api.schema import RenamingMapping
+from ichnaea.tests.factories import (
+    ApiKeyFactory,
+    KeyFactory,
+)
+
+
+class TestKey(object):
+
+    def test_empty(self, session_tracker):
+        key = Key()
+        assert isinstance(key, Key)
+        assert key.valid_key is None
+        session_tracker(0)
+
+    def test_get(self, session, session_tracker):
+        api_key = ApiKeyFactory()
+        session.flush()
+        session_tracker(1)
+
+        result = get_key(session, api_key.valid_key)
+        assert isinstance(result, Key)
+        session_tracker(2)
+
+        # Test get cache
+        result2 = get_key(session, api_key.valid_key)
+        assert isinstance(result2, Key)
+        session_tracker(2)
+
+    def test_get_miss(self, session, session_tracker):
+        result = get_key(session, 'unknown')
+        assert result is None
+        session_tracker(1)
+
+        # Test get cache
+        result2 = get_key(session, 'unknown')
+        assert result2 is None
+        session_tracker(1)
+
+    def test_allowed(self):
+        def one(**kw):
+            return KeyFactory(**kw)
+
+        key = one(allow_locate=True, allow_region=True, allow_transfer=True)
+        assert key.allowed('locate')
+        assert key.allowed('region')
+        assert key.allowed('submit')
+        assert key.allowed('transfer')
+        assert key.allowed('unknown') is None
+
+        assert not one(allow_locate=None).allowed('locate')
+        assert not one(allow_locate=False).allowed('locate')
+        assert not one(allow_region=None).allowed('region')
+        assert not one(allow_region=False).allowed('region')
+        assert not one(allow_transfer=None).allowed('transfer')
+
+    def test_store_sample(self):
+        key = KeyFactory(store_sample_locate=None, store_sample_submit=None)
+        assert key.store_sample('locate') is False
+        assert key.store_sample('submit') is False
+        assert key.store_sample('region') is False
+        assert key.store_sample('transfer') is False
+
+        key = KeyFactory(store_sample_locate=0, store_sample_submit=100)
+        assert key.store_sample('locate') is False
+        assert key.store_sample('submit') is True
+
+        key = KeyFactory(store_sample_locate=50)
+        results = []
+        for i in range(20):
+            results.append(key.store_sample('locate'))
+        assert True in results
+        assert False in results
+
+    def test_can_fallback(self):
+        def one(**kw):
+            return KeyFactory(**kw)
+
+        assert one(allow_fallback=True).can_fallback()
+        assert not one(allow_fallback=False).can_fallback()
+        assert not one(allow_fallback=None).can_fallback()
+        assert not (one(
+            allow_fallback=True, fallback_name=None).can_fallback())
+        assert not (one(
+            allow_fallback=True, fallback_url=None).can_fallback())
+        assert not (one(
+            allow_fallback=True, fallback_ratelimit=None).can_fallback())
+        assert (one(
+            allow_fallback=True, fallback_ratelimit=0).can_fallback())
+        assert not (one(
+            allow_fallback=True,
+            fallback_ratelimit_interval=None).can_fallback())
+        assert not (one(
+            allow_fallback=True,
+            fallback_ratelimit_interval=0).can_fallback())
+        assert (one(
+            allow_fallback=True, fallback_cache_expire=None).can_fallback())
+        assert (one(
+            allow_fallback=True, fallback_cache_expire=0).can_fallback())
 
 
 class TestRenamingMapping(object):

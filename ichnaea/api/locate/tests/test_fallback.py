@@ -28,9 +28,9 @@ from ichnaea.api.locate.tests.base import (
 from ichnaea.api.locate.tests.test_query import QueryTest
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
-    ApiKeyFactory,
     BlueShardFactory,
     CellShardFactory,
+    KeyFactory,
     WifiShardFactory,
 )
 
@@ -221,7 +221,7 @@ def cache(raven, redis, session, stats):
 class TestCache(QueryTest):
 
     def _query(self, **kwargs):
-        return Query(api_key=ApiKeyFactory(fallback_cache_expire=60), **kwargs)
+        return Query(api_key=KeyFactory(fallback_cache_expire=60), **kwargs)
 
     def test_get_blue(self, cache, stats):
         blues = BlueShardFactory.build_batch(2)
@@ -541,7 +541,7 @@ class TestFallback(BaseSourceTest):
 
     def test_api_key_disallows(self, geoip_db, http_session,
                                session, source, stats):
-        api_key = ApiKeyFactory.build(allow_fallback=False)
+        api_key = KeyFactory(allow_fallback=False)
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
@@ -633,7 +633,7 @@ class TestFallback(BaseSourceTest):
 
     def test_rate_limit_allow(self, geoip_db, http_session,
                               session, source, stats):
-        api_key = ApiKeyFactory.build(allow_fallback=True)
+        api_key = KeyFactory(allow_fallback=True)
         cell = CellShardFactory()
 
         with requests_mock.Mocker() as mock_request:
@@ -649,7 +649,7 @@ class TestFallback(BaseSourceTest):
 
     def test_rate_limit_blocks(self, geoip_db, http_session,
                                redis, session, source, stats):
-        api_key = ApiKeyFactory.build(allow_fallback=True)
+        api_key = KeyFactory(allow_fallback=True)
         cell = CellShardFactory()
 
         with requests_mock.Mocker() as mock_request:

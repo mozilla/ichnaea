@@ -37,6 +37,7 @@ from ichnaea.tests.factories import (
     BlueShardFactory,
     CellAreaFactory,
     CellShardFactory,
+    KeyFactory,
     WifiShardFactory,
 )
 from ichnaea import util
@@ -80,7 +81,7 @@ class BaseSourceTest(object):
     def make_query(self, geoip_db, http_session, session, stats, **kw):
         api_key = kw.pop(
             'api_key',
-            ApiKeyFactory.build(valid_key='test', allow_fallback=True))
+            KeyFactory(valid_key='test', allow_fallback=True))
 
         return Query(
             api_key=api_key,

@@ -7,7 +7,7 @@ from ichnaea.api.locate.source import (
     PositionSource,
     RegionSource,
 )
-from ichnaea.tests.factories import ApiKeyFactory
+from ichnaea.tests.factories import KeyFactory
 
 
 class DummyRegionSource(RegionSource):
@@ -38,7 +38,7 @@ class SearcherTest(object):
     def _search(self, data_queues, geoip_db, raven, redis, stats, session,
                 klass, **kw):
         query = Query(
-            api_key=ApiKeyFactory.build(valid_key='test'),
+            api_key=KeyFactory(valid_key='test'),
             api_type='locate',
             session=session,
             stats_client=stats,

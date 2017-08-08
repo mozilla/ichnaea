@@ -13,10 +13,10 @@ from ichnaea.api.locate.result import (
 from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
 from ichnaea.tests.factories import (
-    ApiKeyFactory,
     BlueShardFactory,
     CellAreaFactory,
     CellShardFactory,
+    KeyFactory,
     WifiShardFactory,
 )
 
@@ -325,7 +325,7 @@ class TestQuery(QueryTest):
         assert query.geoip_only is False
 
     def test_api_key(self):
-        api_key = ApiKeyFactory.build()
+        api_key = KeyFactory()
         query = Query(api_key=api_key)
         assert query.api_key.valid_key == api_key.valid_key
         assert query.api_key == api_key
@@ -345,7 +345,7 @@ class TestQueryStats(QueryTest):
                     api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
-            api_key=api_key or ApiKeyFactory.build(valid_key='test'),
+            api_key=api_key or KeyFactory(valid_key='test'),
             api_type=api_type,
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
@@ -357,7 +357,7 @@ class TestQueryStats(QueryTest):
         return query
 
     def test_no_log(self, geoip_db, stats):
-        api_key = ApiKeyFactory.build(valid_key=None)
+        api_key = KeyFactory(valid_key=None)
         self._make_query(
             geoip_db, stats,
             api_key=api_key, api_type='locate')
@@ -423,7 +423,7 @@ class TestResultStats(QueryTest):
                     result, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
-            api_key=api_key or ApiKeyFactory.build(valid_key='test'),
+            api_key=api_key or KeyFactory(valid_key='test'),
             api_type=api_type,
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
@@ -435,7 +435,7 @@ class TestResultStats(QueryTest):
         return query
 
     def test_no_log(self, geoip_db, stats):
-        api_key = ApiKeyFactory.build(valid_key=None)
+        api_key = KeyFactory(valid_key=None)
         self._make_query(
             geoip_db, stats,
             self._make_result(), api_key=api_key, api_type='locate')
@@ -584,7 +584,7 @@ class TestSourceStats(QueryTest):
                     source, results, api_key=None, api_type='locate',
                     blue=(), cell=(), wifi=(), **kw):
         query = Query(
-            api_key=api_key or ApiKeyFactory.build(valid_key='test'),
+            api_key=api_key or KeyFactory(valid_key='test'),
             api_type=api_type,
             blue=self.blue_model_query(blue),
             cell=self.cell_model_query(cell),
