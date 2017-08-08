@@ -1,12 +1,8 @@
 from random import randint
 
 from repoze import lru
-from sqlalchemy.orm import load_only
-from sqlalchemy import (
-    bindparam,
-)
+from sqlalchemy import select
 
-from ichnaea.db import BAKERY
 from ichnaea.models import ApiKey
 from ichnaea.models.constants import VALID_APIKEY_REGEX
 
@@ -16,30 +12,30 @@ _MARKER = object()
 API_CACHE_TIMEOUT = 300 + randint(-30, 30)
 API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
 
-_GET_FIELDS = (
+_API_KEY_COLUMN_NAMES = (
     'valid_key', 'maxreq',
     'allow_fallback', 'allow_locate', 'allow_region', 'allow_transfer',
     'fallback_name', 'fallback_schema', 'fallback_url', 'fallback_ratelimit',
     'fallback_ratelimit_interval', 'fallback_cache_expire',
     'store_sample_submit', 'store_sample_locate',
 )
-_GET_QUERY = BAKERY(lambda session: session.query(ApiKey))
-_GET_QUERY += lambda q: q.filter(ApiKey.valid_key == bindparam('valid_key'))
-_GET_QUERY += lambda q: q.options(load_only(*_GET_FIELDS))
-
-
-def empty_key():
-    # Create an empty API key. This is used if API key lookup failed,
-    # and the view code stills expects an API key model object.
-    return Key()
 
 
 def get_key(session, valid_key):
     value = API_CACHE.get(valid_key, _MARKER)
     if value is _MARKER:
-        value = _GET_QUERY(session).params(valid_key=valid_key).first()
-        if value is not None:
-            value = Key(_model=value)
+        columns = ApiKey.__table__.c
+        fields = [getattr(columns, f) for f in _API_KEY_COLUMN_NAMES]
+        row = (
+            session.execute(
+                select(fields)
+                .where(columns.valid_key == valid_key))
+        ).fetchone()
+        if row is not None:
+            # Create Key from sqlalchemy.engine.result.RowProxy
+            value = Key(**dict(row.items()))
+        else:
+            value = None
         API_CACHE.put(valid_key, value)
     return value
 
@@ -57,6 +53,9 @@ class Key(object):
     """
     An in-memory representation of an API key, which is not tied
     to a database session.
+
+    Class level defaults represent the values used if the API key
+    lookup fails because of a database connection problem.
     """
 
     valid_key = None
@@ -76,10 +75,7 @@ class Key(object):
     store_sample_locate = 100
     store_sample_submit = 100
 
-    def __init__(self, _model=None, **kw):
-        if _model is not None:
-            for field in _GET_FIELDS:
-                setattr(self, field, getattr(_model, field, None))
+    def __init__(self, **kw):
         for key, value in kw.items():
             setattr(self, key, value)
 

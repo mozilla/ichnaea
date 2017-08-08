@@ -8,7 +8,6 @@ from sqlalchemy import (
     exc,
     event,
 )
-from sqlalchemy.ext import baked
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -22,8 +21,6 @@ from ichnaea.config import (
     DB_RW_URI,
     DB_RO_URI,
 )
-
-BAKERY = baked.bakery(size=500)
 
 DB_TYPE = {
     'ddl': DB_DDL_URI,
