@@ -164,6 +164,46 @@ It will also copy, compile and minify files in various folders under
 `ichnaea/content/static/`.
 
 
+Database migrations
+-------------------
+
+The codebase uses a library called
+`alembic <http://alembic.zzzcomputing.com/en/latest/>`_
+to faciliate database migrations.
+
+To create a new database migration step, start an application container
+with an open shell:
+
+.. code-block:: bash
+
+    ./server shell
+
+Create a new file via:
+
+.. code-block:: bash
+
+    bin/alembic revision -m 'Drop OCID tables'
+
+Use a short description for the `-m` argument, as it will become part of the
+generated file name. The output of the above command should be something
+like:
+
+.. code-block:: bash
+
+    Generating /app/ichnaea/alembic/versions/138cb0d71dfb_drop_ocid_tables.py ... done
+
+Copy the generated file out of the running container and into the codebase.
+While the container is still running, open a seperate terminal on your
+host machine and call:
+
+.. code-block:: bash
+
+    docker cp location_shell:/app/ichnaea/alembic/versions/138cb0d71dfb_drop_ocid_tables.py \
+        ichnaea/alembic/versions/
+
+Afterwards you can exit the container. Don't forget to `git add` the new file.
+
+
 Python Dependencies
 -------------------
 
