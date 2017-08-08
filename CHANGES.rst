@@ -8,6 +8,8 @@ Changelog
 Migrations
 ~~~~~~~~~~
 
+- 138cb0d71dfb: Drop cell OCID tables.
+
 - 5797389a3842: Add fallback_schema column to API key table.
 
 - 30a4df7eafd5: Add allow_region column to API key table.

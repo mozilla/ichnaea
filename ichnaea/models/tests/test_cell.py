@@ -20,11 +20,8 @@ from ichnaea.models import (
 from ichnaea.models.cell import (
     area_id,
     CellArea,
-    CellAreaOCID,
     CellShard,
-    CellShardOCID,
     CellShardGsm,
-    CellShardGsmOCID,
     CellShardWcdma,
     CellShardLte,
     decode_cellarea,
@@ -195,6 +192,34 @@ class TestCellShard(object):
         with pytest.raises(SQLAlchemyError):
             session.flush()
 
+    def test_cellid_null(self, session):
+        result = (session.query(CellShardGsm)
+                         .filter(CellShardGsm.cellid.is_(None))).all()
+        assert result == []
+
+        with warnings.catch_warnings():
+            warnings.simplefilter('ignore', SAWarning)
+            session.add(CellShardGsm(
+                cellid=None,
+                radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
+            with pytest.raises(Exception):
+                session.flush()
+
+    def test_cellid_too_short(self, session):
+        query = (session.query(CellShardGsm)
+                        .filter(CellShardGsm.cellid == (1, 2)))
+        pytest.raises(Exception, query.first)
+
+    def test_region(self, session):
+        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
+        session.add(CellShard.create(
+            cellid=cellid, lat=GB_LAT, lon=GB_LON, region=None,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
+        session.flush()
+
+        result = session.query(CellShardGsm).first()
+        assert result.region == 'GB'
+
     def test_blocked(self):
         today = util.utcnow()
         two_weeks = today - timedelta(days=14)
@@ -217,86 +242,6 @@ class TestCellShard(object):
             created=two_weeks, block_last=two_weeks.date()))
         assert station_blocked(CellShardGsm(
             created=two_weeks, block_last=two_weeks.date()), two_weeks.date())
-
-
-class TestCellShardOCID(object):
-
-    def test_areaid(self, session):
-        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
-        session.add(CellShardOCID.create(
-            cellid=cellid,
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
-        session.flush()
-
-        result = session.query(CellShardGsmOCID).first()
-        assert area_id(result) == cellid[:7]
-
-    def test_cellid(self, session):
-        query = (session.query(CellShardGsmOCID)
-                        .filter(CellShardGsmOCID.cellid == (1, 2)))
-        pytest.raises(Exception, query.first)
-
-    def test_cellid_null(self, session):
-        result = (session.query(CellShardGsmOCID)
-                         .filter(CellShardGsmOCID.cellid.is_(None))).all()
-        assert result == []
-
-        with warnings.catch_warnings():
-            warnings.simplefilter('ignore', SAWarning)
-            session.add(CellShardGsmOCID(
-                cellid=None,
-                radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
-            with pytest.raises(Exception):
-                session.flush()
-
-    def test_region(self, session):
-        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
-        session.add(CellShardOCID.create(
-            cellid=cellid, lat=GB_LAT, lon=GB_LON, region=None,
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345))
-        session.flush()
-
-        result = session.query(CellShardGsmOCID).first()
-        assert result.region == 'GB'
-
-    def test_fields(self, session):
-        now = util.utcnow()
-        cellid = encode_cellid(Radio.gsm, GB_MCC, GB_MNC, 123, 2345)
-        session.add(CellShardOCID.create(
-            cellid=cellid, created=now, modified=now,
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123, cid=2345, psc=1,
-            lat=GB_LAT, lon=GB_LON,
-            max_lat=GB_LAT + 0.1, min_lat=GB_LAT - 0.1,
-            max_lon=GB_LON + 0.1, min_lon=GB_LON - 0.1,
-            radius=11, region='GB', samples=15,
-            source=ReportSource.gnss, weight=1.5, last_seen=now.date(),
-            block_first=now.date(), block_last=now.date(), block_count=1))
-        session.flush()
-
-        query = (session.query(CellShardGsmOCID)
-                        .filter(CellShardGsmOCID.cellid == cellid))
-        result = query.first()
-        assert area_id(result) == cellid[:7]
-        assert encode_cellid(*result.cellid) == cellid
-        assert result.radio is Radio.gsm
-        assert result.mcc == GB_MCC
-        assert result.mnc == GB_MNC
-        assert result.lac == 123
-        assert result.cid == 2345
-        assert result.psc == 1
-        assert result.created == now
-        assert result.modified == now
-        assert result.lat == GB_LAT
-        assert result.lon == GB_LON
-        assert result.radius == 11
-        assert result.region == 'GB'
-        assert result.samples == 15
-        assert result.source is ReportSource.gnss
-        assert result.weight == 1.5
-        assert result.last_seen == now.date()
-        assert result.block_first == now.date()
-        assert result.block_last == now.date()
-        assert result.block_count == 1
 
 
 class TestCellArea(object):
@@ -397,6 +342,16 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
     def test_invalid(self):
         assert CellArea.validate({'radio': 'invalid'}) is None
 
+    def test_region(self, session):
+        areaid = encode_cellarea(Radio.gsm, GB_MCC, GB_MNC, 123)
+        session.add(CellArea.create(
+            areaid=areaid, lat=GB_LAT, lon=GB_LON, region=None,
+            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123))
+        session.flush()
+
+        result = session.query(CellArea).first()
+        assert result.region == 'GB'
+
     def test_fields(self, session):
         session.add(CellArea.create(
             areaid=(Radio.wcdma, GB_MCC, GB_MNC, 1234),
@@ -416,38 +371,4 @@ cast(conv(substr(hex(`areaid`), 11, 4), 16, 10) as unsigned)
         assert result.radius == 10
         assert result.region == 'GB'
         assert result.avg_cell_radius == 10
-        assert result.num_cells == 15
-
-
-class TestCellAreaOCID(object):
-
-    def test_region(self, session):
-        areaid = encode_cellarea(Radio.gsm, GB_MCC, GB_MNC, 123)
-        session.add(CellAreaOCID.create(
-            areaid=areaid, lat=GB_LAT, lon=GB_LON, region=None,
-            radio=Radio.gsm, mcc=GB_MCC, mnc=GB_MNC, lac=123))
-        session.flush()
-
-        result = session.query(CellAreaOCID).first()
-        assert result.region == 'GB'
-
-    def test_fields(self, session):
-        areaid = encode_cellarea(Radio.wcdma, GB_MCC, GB_MNC, 123)
-        session.add(CellAreaOCID.create(
-            areaid=areaid, radio=Radio.wcdma, mcc=GB_MCC, mnc=GB_MNC, lac=123,
-            lat=GB_LAT, lon=GB_LON, radius=10, region='GB',
-            avg_cell_radius=11, num_cells=15))
-        session.flush()
-
-        result = session.query(CellAreaOCID).first()
-        assert encode_cellarea(*result.areaid) == areaid
-        assert result.radio is Radio.wcdma
-        assert result.mcc == GB_MCC
-        assert result.mnc == GB_MNC
-        assert result.lac == 123
-        assert result.lat == GB_LAT
-        assert result.lon == GB_LON
-        assert result.radius == 10
-        assert result.region == 'GB'
-        assert result.avg_cell_radius == 11
         assert result.num_cells == 15
