@@ -306,7 +306,7 @@ first check and get the docker image for the new version, for example:
 
 .. code-block:: bash
 
-    docker pull mozilla/location:2.1.1
+    docker pull mozilla/location:2.2.0
 
 Next up stop all containers running the scheduler and async worker roles.
 If you use docker's own daemon support, the `ps`, `stop` and `rm` commands
@@ -317,7 +317,7 @@ Now run the database migrations found in the new image:
 .. code-block:: bash
 
     docker run -it --rm --env-file env.txt \
-        mozilla/location:2.1.1 alembic upgrade head
+        mozilla/location:2.2.0 alembic upgrade head
 
 The web app role can work with both the old database and new database
 schemas. The worker role might require the new database schema right
