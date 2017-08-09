@@ -17,7 +17,6 @@ from ichnaea.api.key import (
     Key,
     validated_key,
 )
-from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
@@ -64,12 +63,21 @@ class BaseAPIView(BaseView):
             ip = str(ip_address(addr))
         except ValueError:  # pragma: no cover
             ip = None
+
+        now = util.utcnow()
+        log_ip_key = 'apiuser:{api_type}:{key}:{date}'.format(
+            api_type=self.view_type,
+            key=valid_key,
+            date=now.date().strftime('%Y-%m-%d'),
+        )
+        rate_key = 'apilimit:{key}:{path}:{time}'.format(
+            key=valid_key,
+            path=self.metric_path,
+            time=now.strftime('%Y%m%d')
+        )
+
+        should_limit = False
         if ip:
-            log_ip_key = 'apiuser:{api_type}:{api_key}:{date}'.format(
-                api_type=self.view_type,
-                api_key=valid_key,
-                date=util.utcnow().date().strftime('%Y-%m-%d'),
-            )
             try:
                 with self.redis_client.pipeline() as pipe:
                     pipe.pfadd(log_ip_key, ip)
@@ -78,18 +86,16 @@ class BaseAPIView(BaseView):
             except RedisError:  # pragma: no cover
                 self.raven_client.captureException()
 
-        # Rate limit
-        rate_key = 'apilimit:{key}:{path}:{time}'.format(
-            key=valid_key,
-            path=self.metric_path,
-            time=util.utcnow().strftime('%Y%m%d')
-        )
+        if maxreq:
+            try:
+                with self.redis_client.pipeline() as pipe:
+                    pipe.incr(rate_key, 1)
+                    pipe.expire(rate_key, 86400)
+                    count, expire = pipe.execute()
+                    should_limit = bool(count > maxreq)
+            except RedisError:  # pragma: no cover
+                self.raven_client.captureException()
 
-        should_limit = rate_limit_exceeded(
-            self.redis_client,
-            rate_key,
-            maxreq=maxreq
-        )
         return should_limit
 
     def preprocess_request(self):
