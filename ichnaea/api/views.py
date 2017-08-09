@@ -4,6 +4,7 @@ Implementation of a API specific HTTP service view.
 
 import colander
 from ipaddress import ip_address
+from redis import RedisError
 import simplejson as json
 
 from ichnaea.api.exceptions import (
@@ -26,8 +27,7 @@ class BaseAPIView(BaseView):
     """Common base class for all API related views."""
 
     error_on_invalidkey = True  # Deny access for invalid API keys?
-    ip_logging = True  # Count unique IP addresses?
-    rate_limiting = True  # Track rate limits?
+    ip_log_and_rate_limit = True  # Count unique IP addresses and track limits?
     metric_path = None  # Dotted URL path, for example v1.submit.
     schema = None  # An instance of a colander schema to validate the data.
     view_type = None  # The type of view, for example submit or locate.
@@ -38,40 +38,6 @@ class BaseAPIView(BaseView):
         self.redis_client = request.registry.redis_client
         self.stats_client = request.registry.stats_client
 
-    def log_unique_ip(self, valid_key):
-        addr = self.request.client_addr
-        if isinstance(addr, bytes):  # pragma: no cover
-            addr = addr.decode('ascii')
-        try:
-            ip = str(ip_address(addr))
-        except ValueError:  # pragma: no cover
-            ip = None
-        if ip:
-            redis_key = 'apiuser:{api_type}:{api_key}:{date}'.format(
-                api_type=self.view_type,
-                api_key=valid_key,
-                date=util.utcnow().date().strftime('%Y-%m-%d'),
-            )
-            with self.redis_client.pipeline() as pipe:
-                pipe.pfadd(redis_key, ip)
-                pipe.expire(redis_key, 691200)  # 8 days
-                pipe.execute()
-
-    def log_count(self, valid_key, log_ip):
-        if valid_key is None:
-            valid_key = 'none'
-
-        self.stats_client.incr(
-            self.view_type + '.request',
-            tags=['path:' + self.metric_path,
-                  'key:' + valid_key])
-
-        if log_ip and self.ip_logging and self.request.client_addr:
-            try:
-                self.log_unique_ip(valid_key)
-            except Exception:  # pragma: no cover
-                self.raven_client.captureException()
-
     def parse_apikey(self):
         try:
             api_key_text = self.request.GET.get('key', None)
@@ -80,9 +46,41 @@ class BaseAPIView(BaseView):
         # Validate key and potentially return None
         return validated_key(api_key_text)
 
-    def rate_limited(self, api_key_text, api_key):
+    def log_count(self, valid_key):
+        self.stats_client.incr(
+            self.view_type + '.request',
+            tags=['path:' + self.metric_path,
+                  'key:' + valid_key])
+
+    def log_ip_and_rate_limited(self, valid_key, maxreq):
+        # Log IP
+        addr = self.request.client_addr
+        if not addr:
+            # Use localhost as a marker
+            addr = '127.0.0.1'
+        if isinstance(addr, bytes):  # pragma: no cover
+            addr = addr.decode('ascii')
+        try:
+            ip = str(ip_address(addr))
+        except ValueError:  # pragma: no cover
+            ip = None
+        if ip:
+            log_ip_key = 'apiuser:{api_type}:{api_key}:{date}'.format(
+                api_type=self.view_type,
+                api_key=valid_key,
+                date=util.utcnow().date().strftime('%Y-%m-%d'),
+            )
+            try:
+                with self.redis_client.pipeline() as pipe:
+                    pipe.pfadd(log_ip_key, ip)
+                    pipe.expire(log_ip_key, 691200)  # 8 days
+                    pipe.execute()
+            except RedisError:  # pragma: no cover
+                self.raven_client.captureException()
+
+        # Rate limit
         rate_key = 'apilimit:{key}:{path}:{time}'.format(
-            key=api_key_text,
+            key=valid_key,
             path=self.metric_path,
             time=util.utcnow().strftime('%Y%m%d')
         )
@@ -90,7 +88,7 @@ class BaseAPIView(BaseView):
         should_limit = rate_limit_exceeded(
             self.redis_client,
             rate_key,
-            maxreq=api_key.maxreq
+            maxreq=maxreq
         )
         return should_limit
 
@@ -130,31 +128,32 @@ class BaseAPIView(BaseView):
         skip_check = False
 
         if api_key_text is None:
-            self.log_count(None, False)
+            self.log_count('none')
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 
         if api_key_text is not None:
             try:
-                session = self.request.db_session
-                api_key = get_key(session, api_key_text)
+                api_key = get_key(self.request.db_session, api_key_text)
             except Exception:
                 # if we cannot connect to backend DB, skip api key check
                 skip_check = True
                 self.raven_client.captureException()
 
         if api_key is not None and api_key.allowed(self.view_type):
-            self.log_count(api_key.valid_key, True)
+            valid_key = api_key.valid_key
+            self.log_count(valid_key)
 
-            if self.rate_limiting:
-                # Potentially avoid rate limiting Redis overhead.
-                if self.rate_limited(api_key_text, api_key):
+            # Potentially avoid overhead of Redis connection.
+            if self.ip_log_and_rate_limit:
+                if self.log_ip_and_rate_limited(valid_key, api_key.maxreq):
                     raise self.prepare_exception(DailyLimitExceeded())
+
         elif skip_check:
             pass
         else:
             if api_key_text is not None:
-                self.log_count('invalid', False)
+                self.log_count('invalid')
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 

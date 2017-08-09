@@ -107,8 +107,7 @@ class LocateV1View(BasePositionView):
 class RegionV1View(LocateV1View):
     """View class for v1/country HTTP API."""
 
-    ip_logging = False
-    rate_limiting = False
+    ip_log_and_rate_limit = False
     metric_path = 'v1.country'
     renderer = 'json'
     route = '/v1/country'
