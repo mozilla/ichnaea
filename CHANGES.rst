@@ -19,6 +19,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- Combine rate limit and unique IP counting into one Redis call.
+
 - Add new cleanup stat task.
 
 - Remove the monitor queue size task.

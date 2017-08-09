@@ -62,7 +62,7 @@ class BaseAPIView(BaseView):
         try:
             ip = str(ip_address(addr))
         except ValueError:  # pragma: no cover
-            ip = None
+            ip = '127.0.0.1'
 
         now = util.utcnow()
         log_ip_key = 'apiuser:{api_type}:{key}:{date}'.format(
@@ -77,24 +77,17 @@ class BaseAPIView(BaseView):
         )
 
         should_limit = False
-        if ip:
-            try:
-                with self.redis_client.pipeline() as pipe:
-                    pipe.pfadd(log_ip_key, ip)
-                    pipe.expire(log_ip_key, 691200)  # 8 days
-                    pipe.execute()
-            except RedisError:  # pragma: no cover
-                self.raven_client.captureException()
-
-        if maxreq:
-            try:
-                with self.redis_client.pipeline() as pipe:
-                    pipe.incr(rate_key, 1)
-                    pipe.expire(rate_key, 86400)
-                    count, expire = pipe.execute()
-                    should_limit = bool(count > maxreq)
-            except RedisError:  # pragma: no cover
-                self.raven_client.captureException()
+        try:
+            with self.redis_client.pipeline() as pipe:
+                pipe.pfadd(log_ip_key, ip)
+                pipe.expire(log_ip_key, 691200)  # 8 days
+                pipe.incr(rate_key, 1)
+                pipe.expire(rate_key, 90000)  # 25 hours
+                _, _, count, _ = pipe.execute()
+                if maxreq and count > maxreq:
+                    should_limit = True
+        except RedisError:  # pragma: no cover
+            self.raven_client.captureException()
 
         return should_limit
 
