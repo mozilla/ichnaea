@@ -50,19 +50,19 @@ Now run the following command to get the code:
     cd ichnaea
     git submodule update --init --recursive
 
-For a development environment, you need to use the ``./server`` helper
+For a development environment, you need to use the ``./dev`` helper
 script to download and create all the required docker containers.
 As a first command you can use:
 
 .. code-block:: bash
 
-    ./server test
+    ./dev test
 
 The first time around it'll take a good while. This will also start
 a container running MySQL and one running Redis.
 
 Please note that running the tests will wipe the database and Redis
-instance it is connected to. DO NOT USE the server helper script for
+instance it is connected to. DO NOT USE the dev helper script for
 a production install.
 
 Next up, you can run the entire application, with its three different
@@ -70,7 +70,7 @@ application containers:
 
 .. code-block:: bash
 
-    ./server start
+    ./dev start
 
 This will start a web, worker and scheduler container.
 
@@ -78,7 +78,7 @@ It will also expose port 8000 of the web container on localhost, so
 you can interact with the web site directly, without having to use the
 IP address of the web container.
 
-The server script provides a couple more commands, to control and
+The dev script provides a couple more commands, to control and
 interact with the containers.
 
 There are start/stop/restart commands to interact with all containers.
@@ -86,20 +86,20 @@ Each of these commands also takes a second argument of either
 scheduler, services, web or worker. This allows you to start and stop
 only a specific type of container.
 
-The server script also reacts to a `PULL` environment variable, which
+The dev script also reacts to a `PULL` environment variable, which
 allows you to skip pulling for new docker images during each invocation.
 Prefix the command with `PULL=0`, for example:
 
 .. code-block:: bash
 
-    PULL=0 ./server start
+    PULL=0 ./dev start
 
 To interact and inspect the application image, there is one more helper
 command:
 
 .. code-block:: bash
 
-    ./server shell
+    ./dev shell
 
 This will drop you into a bash shell inside a container based on the
 application image.
@@ -117,13 +117,13 @@ including coverage tests via:
 
 .. code-block:: bash
 
-    ./server test
+    ./dev test
 
 Or run individual test modules via for example:
 
 .. code-block:: bash
 
-    ./server test TESTS=ichnaea.tests.test_geoip
+    ./dev test TESTS=ichnaea.tests.test_geoip
 
 .. note:: Since the tests use a real database and Redis connection,
           you cannot parallelize any tests.
@@ -136,7 +136,7 @@ In order to create and test the documentation locally run:
 
 .. code-block:: bash
 
-    ./server docs
+    ./dev docs
 
 This will create an application container with a volume mount to the
 local ``docs/build/html`` directory and update the documentation so
@@ -156,8 +156,8 @@ In order to install them, run:
 
 .. code-block:: bash
 
-    ./server css
-    ./server js
+    ./dev css
+    ./dev js
 
 This will install build tools and assets inside a docker container.
 It will also copy, compile and minify files in various folders under
@@ -176,7 +176,7 @@ with an open shell:
 
 .. code-block:: bash
 
-    ./server shell
+    ./dev shell
 
 Create a new file via:
 
@@ -211,4 +211,4 @@ The project uses `requires.io <https://requires.io/github/mozilla/ichnaea/requir
 to track whether or not the Python dependencies are outdated.
 
 If they are, update the version pins in the various `requirements/*.txt`
-files and rerun `./server test` and `./server docs`.
+files and rerun `./dev test` and `./dev docs`.

@@ -6,10 +6,10 @@
 *.sublime-workspace
 circle.yml
 contribute.json
+dev
 docker
 docker-compose.yml
 docs/build/html/.git
 node.make
 pip-selfcheck.json
-server
 venv

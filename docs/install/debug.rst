@@ -74,7 +74,7 @@ And the export config:
     1 row in set (0.00 sec)
 
 If you are missing either of these entries, you might have setup your
-database as part of a development setup and used the `./server test`
+database as part of a development setup and used the `./dev test`
 script. This sets up the database for testing needs, but doesn't
 configure the export config required for running a real application setup.
 
@@ -84,8 +84,8 @@ can run:
 
 .. code-block:: bash
 
-    <...docker or server script...> alembic downgrade base
-    <...docker or server script...> alembic upgrade head
+    <...docker or dev script...> alembic downgrade base
+    <...docker or dev script...> alembic upgrade head
 
 This tears down the database schema to an empty state and upgrades it
 again. As part of the upgrade, the API key and export config are added.
@@ -111,7 +111,7 @@ external connections from inside it:
 
 .. code-block:: bash
 
-    <...docker or server script...> shell
+    <...docker or dev script...> shell
 
 And inside the container:
 

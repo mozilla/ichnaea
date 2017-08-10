@@ -52,7 +52,7 @@ dependencies:
 
 test:
   override:
-    - ./server test
+    - ./dev test
 
 # appropriately tag and push the container to dockerhub
 deployment:
