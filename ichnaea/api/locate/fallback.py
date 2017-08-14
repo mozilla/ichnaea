@@ -28,6 +28,7 @@ LOCATION_NOT_FOUND = '404'
 
 # Default fallback schema
 DEFAULT_SCHEMA = 'ichnaea/v1'
+UNWIREDLABS_SCHEMA = 'unwiredlabs/v1'
 
 
 class ExternalResult(namedtuple('ExternalResult',
@@ -123,6 +124,96 @@ class IchnaeaV1OutboundSchema(OptionalMappingSchema):
 
 
 ICHNAEA_V1_OUTBOUND_SCHEMA = IchnaeaV1OutboundSchema()
+
+
+class UnwiredlabsV1ResultSchema(RenamingMappingSchema):
+
+    status = colander.SchemaNode(colander.String())
+    message = colander.SchemaNode(colander.String(), missing=None)
+    lat = colander.SchemaNode(BoundedFloat(), missing=None)
+    lon = colander.SchemaNode(BoundedFloat(), missing=None)
+    accuracy = colander.SchemaNode(colander.Float(), missing=None)
+    fallback = OptionalNode(colander.String(), missing=None)
+
+    def deserialize(self, data):
+        data = super(UnwiredlabsV1ResultSchema, self).deserialize(data)
+
+        # The API always returns 200 Ok responses, but uses the
+        # status/message fields to indicate failures.
+        status = data.get('status', None)
+        if status != 'ok':
+            message = data.get('message', None)
+            if message == 'No matches found':
+                # Fabricate a not found
+                return {
+                    'accuracy': None,
+                    'fallback': None,
+                    'lat': None,
+                    'lon': None,
+                }
+
+            raise colander.Invalid('Error response, message: %s' % message)
+
+        # Check required fields for status==ok responses
+        for field in ('lat', 'lon', 'accuracy'):
+            if data.get(field, None) is None:
+                raise colander.Invalid('Missing required field: %s' % field)
+
+        fallback = data.get('fallback', None)
+        if fallback != 'lacf':
+            fallback = None
+
+        return {
+            'accuracy': data['accuracy'],
+            'fallback': fallback,
+            'lat': data['lat'],
+            'lon': data['lon'],
+        }
+
+
+UNWIREDLABS_V1_RESULT_SCHEMA = UnwiredlabsV1ResultSchema()
+
+
+class UnwiredlabsV1OutboundSchema(RenamingMappingSchema):
+
+    token = OptionalNode(colander.String())
+
+    @colander.instantiate(missing=colander.drop)
+    class fallbacks(OptionalMappingSchema):  # NOQA
+
+        lacf = OptionalNode(colander.Boolean())
+
+    @colander.instantiate(missing=colander.drop, to_name='cells')
+    class cellTowers(OptionalSequenceSchema):  # NOQA
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            radioType = OptionalNode(colander.String(), to_name='radio')
+            locationAreaCode = OptionalNode(colander.Integer(), to_name='lac')
+            cellId = OptionalNode(colander.Integer(), to_name='cid')
+            mobileCountryCode = OptionalNode(colander.Integer(), to_name='mcc')
+            mobileNetworkCode = OptionalNode(colander.Integer(), to_name='mnc')
+            signalStrength = OptionalNode(colander.Integer(), to_name='signal')
+            timingAdvance = OptionalNode(colander.Integer(), to_name='tA')
+            primaryScramblingCode = OptionalNode(
+                colander.Integer(), to_name='psc')
+            asu = OptionalNode(colander.Integer())
+
+    @colander.instantiate(missing=colander.drop, to_name='wifi')
+    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            macAddress = OptionalNode(colander.String(), to_name='bssid')
+            channel = OptionalNode(colander.Integer())
+            frequency = OptionalNode(colander.Integer())
+            signalStrength = OptionalNode(colander.Integer(), to_name='signal')
+            signalToNoiseRatio = OptionalNode(colander.Integer())
+
+
+UNWIREDLABS_V1_OUTBOUND_SCHEMA = UnwiredlabsV1OutboundSchema()
 
 
 class FallbackCache(object):
@@ -322,9 +413,11 @@ class FallbackPositionSource(PositionSource):
         )
         self.outbound_schemas = {
             DEFAULT_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
+            UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_OUTBOUND_SCHEMA,
         }
         self.result_schemas = {
             DEFAULT_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
+            UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_RESULT_SCHEMA,
         }
 
     def _stat_count(self, stat, tags):

@@ -19,6 +19,8 @@ Migrations
 Changes
 ~~~~~~~
 
+- #508: Add support for unwiredlabs as a fallback provider.
+
 - Combine rate limit and unique IP counting into one Redis call.
 
 - Add new cleanup stat task.

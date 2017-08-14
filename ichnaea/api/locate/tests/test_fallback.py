@@ -15,6 +15,8 @@ from ichnaea.api.locate.fallback import (
     FallbackPositionSource,
     ICHNAEA_V1_OUTBOUND_SCHEMA,
     ICHNAEA_V1_RESULT_SCHEMA,
+    UNWIREDLABS_V1_OUTBOUND_SCHEMA,
+    UNWIREDLABS_V1_RESULT_SCHEMA,
 )
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import (
@@ -208,6 +210,148 @@ class TestIchnaeaV1OutboundSchema(object):
                 'age': 2000,
                 'signalStrength': -90,
                 'ssid': 'wifi',
+            }],
+            'fallbacks': {'lacf': True},
+        })
+
+
+class TestUnwiredlabsV1ResultSchema(object):
+
+    def _call(self, *args, **kw):
+        return UNWIREDLABS_V1_RESULT_SCHEMA.deserialize(*args, **kw)
+
+    def test_empty(self):
+        with pytest.raises(colander.Invalid):
+            self._call({})
+
+    def test_not_found(self):
+        data = self._call({'status': 'error', 'message': 'No matches found'})
+        assert (data ==
+                {'lat': None, 'lon': None, 'accuracy': None, 'fallback': None})
+
+    def test_status_error(self):
+        with pytest.raises(colander.Invalid):
+            self._call({'status': 'error', 'message': 'Invalid request',
+                        'lat': 1.0, 'lon': 1.0, 'accuracy': 11})
+
+    def test_status_missing(self):
+        with pytest.raises(colander.Invalid):
+            self._call({'lat': 1.0, 'lon': 1.0, 'accuracy': 11})
+
+    def test_accuracy_float(self):
+        data = self._call(
+            {'status': 'ok', 'lat': 1.0, 'lon': 1.0, 'accuracy': 11.6})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 11.6, 'fallback': None})
+
+    def test_accuracy_missing(self):
+        with pytest.raises(colander.Invalid):
+            self._call({'status': 'ok', 'lat': 1.0, 'lon': 1.0})
+
+    def test_fallback(self):
+        data = self._call(
+            {'status': 'ok', 'lat': 1.0, 'lon': 1.0,
+             'accuracy': 10, 'fallback': 'lacf'})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': 'lacf'})
+
+    def test_fallback_invalid(self):
+        data = self._call(
+            {'status': 'ok', 'lat': 1.0, 'lon': 1.0,
+             'accuracy': 10, 'fallback': 'scf'})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
+
+    def test_fallback_missing(self):
+        data = self._call(
+            {'status': 'ok', 'lat': 1.0, 'lon': 1.0, 'accuracy': 10})
+        assert (data ==
+                {'lat': 1.0, 'lon': 1.0, 'accuracy': 10.0, 'fallback': None})
+
+    def test_lat_missing(self):
+        with pytest.raises(colander.Invalid):
+            self._call({'status': 'ok', 'lon': 1.0, 'accuracy': 10})
+
+    def test_lon_missing(self):
+        with pytest.raises(colander.Invalid):
+            self._call({'status': 'ok', 'lat': 1.0, 'accuracy': 10})
+
+
+class TestUnwiredlabsV1OutboundSchema(object):
+
+    def _call(self, *args, **kw):
+        return UNWIREDLABS_V1_OUTBOUND_SCHEMA.deserialize(*args, **kw)
+
+    def test_empty(self):
+        assert self._call({}) == {}
+        assert self._call({'unknown_field': 1}) == {}
+
+    def test_fallback(self):
+        assert (self._call(
+            {'fallbacks': {'ipf': False}}) ==
+            {'fallbacks': {}})
+        assert (self._call(
+            {'fallbacks': {'lacf': False}}) ==
+            {'fallbacks': {'lacf': False}})
+        assert (self._call(
+            {'fallbacks': {'ipf': True, 'lacf': False}}) ==
+            {'fallbacks': {'lacf': False}})
+
+    def test_query(self):
+        query = Query()
+        data = self._call(query.json())
+        assert data == {'fallbacks': {'lacf': True}}
+
+    def test_cell(self):
+        cell = CellShardFactory.build(radio=Radio.lte)
+        query = Query(cell=[
+            {'radioType': cell.radio,
+             'mobileCountryCode': cell.mcc,
+             'mobileNetworkCode': cell.mnc,
+             'locationAreaCode': cell.lac,
+             'cellId': cell.cid,
+             'asu': 17,
+             'primaryScramblingCode': 5,
+             'signalStrength': -70,
+             'timingAdvance': 15,
+             'unknown_field': 'foo'}])
+        data = self._call(query.json())
+        assert (data == {
+            'cells': [{
+                'radio': cell.radio.name,
+                'mcc': cell.mcc,
+                'mnc': cell.mnc,
+                'lac': cell.lac,
+                'cid': cell.cid,
+                'asu': 17,
+                'psc': 5,
+                'signal': -70,
+                'tA': 15,
+            }],
+            'fallbacks': {'lacf': True},
+        })
+
+    def test_wifi(self):
+        wifis = WifiShardFactory.build_batch(2)
+        query = Query(wifi=[
+            {'macAddress': wifi.mac, 'channel': 3, 'frequency': 2412,
+             'signalStrength': -70, 'signalToNoiseRatio': 13,
+             'ssid': 'wifi'}
+            for wifi in wifis])
+        data = self._call(query.json())
+        assert (data == {
+            'wifi': [{
+                'bssid': wifis[0].mac,
+                'channel': 3,
+                'frequency': 2412,
+                'signal': -70,
+                'signalToNoiseRatio': 13,
+            }, {
+                'bssid': wifis[1].mac,
+                'channel': 3,
+                'frequency': 2412,
+                'signal': -70,
+                'signalToNoiseRatio': 13,
             }],
             'fallbacks': {'lacf': True},
         })

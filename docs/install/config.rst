@@ -154,6 +154,47 @@ But to start off, you can add a simple literal `test` API key:
     INSERT INTO api_key
     (`valid_key`, `allow_locate`, `allow_region`) VALUES ("test", 1, 1);
 
+Fallback
+~~~~~~~~
+
+You can also enable a fallback location provider on a per API key basis.
+This allows you to send queries from this API key onwards to a different
+external service, if the application itself can't provide a good enough
+result.
+
+In order to configure this fallback mode, some additional columns need
+to be set, for example:
+
+.. code-block:: ini
+
+    fallback_name: mozilla
+    fallback_schema: ichnaea/v1
+    fallback_url: https://location.services.mozilla.com/v1/geolocate?key=some_key
+    fallback_ratelimit: 10
+    fallback_ratelimit_interval: 60
+    fallback_cache_expire: 86400
+
+The name can be shared between multiple API keys and acts as a partition
+key for the cache and rate limit tracking.
+
+The schema can be either `NULL`, `ichnaea/v1` or `unwiredlabs/v1`.
+`NULL` and `ichnaea/v1` are currently synonymous. Setting the schema to
+either one of those means the external service uses the same API as
+ichnaea. Examples of this are Google's and Combain's location services.
+Setting it to `unwiredlabs/v1` means you use unwiredlabs.com as a fallback.
+
+Note that these services all have different terms about allowing caching
+or rate limiting.
+
+If the service allows caching their responses on an intermediate service,
+the `cache_expire` setting can be used to specify the number of seconds
+the responses should be cached. This can avoid repeated calls to the
+external service for the same queries.
+
+The rate limit settings are a combination of how many requests are allowed
+to be send to the external service. It's a "number" per "time interval"
+combination, so in the above example 10 requests per 60 seconds.
+
 
 Export Configuration
 --------------------
