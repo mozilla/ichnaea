@@ -183,6 +183,12 @@ either one of those means the external service uses the same API as
 ichnaea. Examples of this are Google's and Combain's location services.
 Setting it to `unwiredlabs/v1` means you use unwiredlabs.com as a fallback.
 
+If you set the url to one of the unwiredlabs endpoints, add your API
+token as an anchor to the end of it, so instead of specfifying
+``https://us1.unwiredlabs.com/v2/process.php``, you would instead use
+``https://us1.unwiredlabs.com/v2/process.php#my_secret_token``. The
+code will read the token from here and put it into the request body.
+
 Note that these services all have different terms about allowing caching
 or rate limiting.
 

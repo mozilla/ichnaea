@@ -176,7 +176,7 @@ UNWIREDLABS_V1_RESULT_SCHEMA = UnwiredlabsV1ResultSchema()
 
 class UnwiredlabsV1OutboundSchema(RenamingMappingSchema):
 
-    token = OptionalNode(colander.String())
+    token = colander.SchemaNode(colander.String(), missing=None)
 
     @colander.instantiate(missing=colander.drop)
     class fallbacks(OptionalMappingSchema):  # NOQA
@@ -415,6 +415,10 @@ class FallbackPositionSource(PositionSource):
             DEFAULT_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
             UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_OUTBOUND_SCHEMA,
         }
+        self.outbound_calls = {
+            DEFAULT_SCHEMA: self._external_call_ichnaea,
+            UNWIREDLABS_SCHEMA: self._external_call_unwiredlabs,
+        }
         self.result_schemas = {
             DEFAULT_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
             UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_RESULT_SCHEMA,
@@ -445,12 +449,35 @@ class FallbackPositionSource(PositionSource):
             on_error=True,
         )
 
+    def _external_call_ichnaea(self, query, payload):
+        return query.http_session.post(
+            query.api_key.fallback_url,
+            headers={'User-Agent': 'ichnaea'},
+            json=payload,
+            timeout=5.0,
+        )
+
+    def _external_call_unwiredlabs(self, query, payload):
+        # Parse the token from the URL and put it into the body.
+        url, token = query.api_key.fallback_url.split('#')
+        token_payload = payload.copy()
+        token_payload['token'] = token
+
+        return query.http_session.post(
+            url,
+            headers={'User-Agent': 'ichnaea'},
+            json=token_payload,
+            timeout=5.0,
+        )
+
     def _make_external_call(self, query):
         outbound = None
         # Determine fallback schema, default to our own
         fallback_schema = query.api_key.fallback_schema
         outbound_schema = self.outbound_schemas.get(
             fallback_schema, self.outbound_schemas[DEFAULT_SCHEMA])
+        outbound_call = self.outbound_calls.get(
+            fallback_schema, self.outbound_calls[DEFAULT_SCHEMA])
         result_schema = self.result_schemas.get(
             fallback_schema, self.result_schemas[DEFAULT_SCHEMA])
 
@@ -467,12 +494,7 @@ class FallbackPositionSource(PositionSource):
                 query.api_key.fallback_name or 'none')
 
             with self._stat_timed('lookup', tags=[fallback_tag]):
-                response = query.http_session.post(
-                    query.api_key.fallback_url,
-                    headers={'User-Agent': 'ichnaea'},
-                    json=outbound,
-                    timeout=5.0,
-                )
+                response = outbound_call(query, outbound)
 
             self._stat_count(
                 'lookup', tags=[fallback_tag,
