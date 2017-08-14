@@ -381,14 +381,17 @@ def cache(raven, redis, session, stats):
 class TestCache(QueryTest):
 
     def _query(self, **kwargs):
-        return Query(api_key=KeyFactory(fallback_cache_expire=60), **kwargs)
+        if 'api_key' not in kwargs:
+            kwargs['api_key'] = KeyFactory(fallback_cache_expire=60)
+        return Query(**kwargs)
 
     def test_get_blue(self, cache, stats):
         blues = BlueShardFactory.build_batch(2)
         query = self._query(blue=self.blue_model_query(blues))
         assert cache.get(query) is None
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:miss']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:miss']),
         ])
 
     def test_set_blue(self, cache, stats):
@@ -399,7 +402,8 @@ class TestCache(QueryTest):
         cache.set(query, result)
         assert cache.get(query) == result
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:hit']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:hit']),
         ])
 
     def test_get_cell(self, cache, stats):
@@ -407,7 +411,8 @@ class TestCache(QueryTest):
         query = self._query(cell=self.cell_model_query(cells))
         assert cache.get(query) is None
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:miss']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:miss']),
         ])
 
     def test_set_cell(self, cache, redis, stats):
@@ -420,7 +425,8 @@ class TestCache(QueryTest):
         assert 50 < redis.ttl(keys[0]) <= 60
         assert cache.get(query) == result
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:hit']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:hit']),
         ])
 
     def test_set_cell_not_found(self, cache, redis, stats):
@@ -433,7 +439,8 @@ class TestCache(QueryTest):
         assert redis.get(keys[0]) == b'"404"'
         assert cache.get(query) == result
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:hit']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:hit']),
         ])
 
     def test_get_cell_multi(self, cache, stats):
@@ -441,7 +448,8 @@ class TestCache(QueryTest):
         query = self._query(cell=self.cell_model_query(cells))
         assert cache.get(query) is None
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:bypassed']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:bypassed']),
         ])
 
     def test_get_wifi(self, cache, stats):
@@ -449,7 +457,8 @@ class TestCache(QueryTest):
         query = self._query(wifi=self.wifi_model_query(wifis))
         assert cache.get(query) is None
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:miss']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:miss']),
         ])
 
     def test_set_wifi(self, cache, stats):
@@ -460,7 +469,8 @@ class TestCache(QueryTest):
         cache.set(query, result)
         assert cache.get(query) == result
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:hit']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:hit']),
         ])
 
     def test_set_wifi_inconsistent(self, cache, stats):
@@ -496,8 +506,10 @@ class TestCache(QueryTest):
         assert cache.get(query) is None
 
         stats.check(counter=[
-            ('locate.fallback.cache', 1, 1, ['status:hit']),
-            ('locate.fallback.cache', 1, 1, ['status:inconsistent']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:hit']),
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:fall', 'status:inconsistent']),
         ])
 
     def test_get_mixed(self, cache, stats):
@@ -518,7 +530,8 @@ class TestCache(QueryTest):
         assert cache.get(query) is None
 
         stats.check(counter=[
-            ('locate.fallback.cache', 3, 1, ['status:bypassed']),
+            ('locate.fallback.cache', 3, 1,
+                ['fallback_name:fall', 'status:bypassed']),
         ])
 
 
@@ -860,7 +873,8 @@ class TestFallback(BaseSourceTest):
 
         raven.check([('RedisError', 1)])
         stats.check(counter=[
-            ('locate.fallback.cache', ['status:failure']),
+            ('locate.fallback.cache',
+                ['fallback_name:fall', 'status:failure']),
         ])
 
     def test_set_cache_redis_failure(self, geoip_db, http_session,
@@ -890,7 +904,8 @@ class TestFallback(BaseSourceTest):
 
         raven.check([('RedisError', 1)])
         stats.check(counter=[
-            ('locate.fallback.cache', ['status:miss']),
+            ('locate.fallback.cache',
+                ['fallback_name:fall', 'status:miss']),
         ])
 
     def test_cache_single_cell(self, geoip_db, http_session,
@@ -911,7 +926,8 @@ class TestFallback(BaseSourceTest):
 
             assert mock_request.call_count == 1
             stats.check(counter=[
-                ('locate.fallback.cache', ['status:miss']),
+                ('locate.fallback.cache',
+                    ['fallback_name:fall', 'status:miss']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:200']),
             ], timer=[
@@ -926,7 +942,8 @@ class TestFallback(BaseSourceTest):
 
             assert mock_request.call_count == 1
             stats.check(counter=[
-                ('locate.fallback.cache', ['status:hit']),
+                ('locate.fallback.cache',
+                    ['fallback_name:fall', 'status:hit']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:200']),
             ], timer=[
@@ -953,7 +970,8 @@ class TestFallback(BaseSourceTest):
 
             assert mock_request.call_count == 1
             stats.check(counter=[
-                ('locate.fallback.cache', ['status:miss']),
+                ('locate.fallback.cache',
+                    ['fallback_name:fall', 'status:miss']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:404']),
             ])
@@ -966,7 +984,8 @@ class TestFallback(BaseSourceTest):
 
             assert mock_request.call_count == 1
             stats.check(counter=[
-                ('locate.fallback.cache', ['status:hit']),
+                ('locate.fallback.cache',
+                    ['fallback_name:fall', 'status:hit']),
                 ('locate.fallback.lookup',
                     ['fallback_name:fall', 'status:404']),
             ])
@@ -993,7 +1012,8 @@ class TestFallback(BaseSourceTest):
             assert not mock_redis_client.mset.called
 
         stats.check(counter=[
-            ('locate.fallback.cache', ['status:hit']),
+            ('locate.fallback.cache',
+                ['fallback_name:fall', 'status:hit']),
         ])
 
 
@@ -1073,7 +1093,8 @@ class TestUnwiredLabsFallback(BaseSourceTest):
 
             assert mock_request.call_count == 1
             stats.check(counter=[
-                ('locate.fallback.cache', ['status:miss']),
+                ('locate.fallback.cache',
+                    ['fallback_name:labs', 'status:miss']),
                 ('locate.fallback.lookup',
                     ['fallback_name:labs', 'status:200']),
             ])
@@ -1087,7 +1108,8 @@ class TestUnwiredLabsFallback(BaseSourceTest):
 
             assert mock_request.call_count == 1
             stats.check(counter=[
-                ('locate.fallback.cache', ['status:hit']),
+                ('locate.fallback.cache',
+                    ['fallback_name:labs', 'status:hit']),
                 ('locate.fallback.lookup',
                     ['fallback_name:labs', 'status:200']),
             ])

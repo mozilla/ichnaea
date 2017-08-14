@@ -205,11 +205,13 @@ API Fallback Source Metrics
 The external fallback source has a couple extra metrics to observe the
 performance of outbound network calls and the effectiveness of its cache.
 
-``locate.fallback.cache#status:hit``,
-``locate.fallback.cache#status:miss``,
-``locate.fallback.cache#status:bypassed``,
-``locate.fallback.cache#status:inconsistent``,
-``locate.fallback.cache#status:failure`` : counter
+The fallback name tag specifies which fallback service is used.
+
+``locate.fallback.cache#fallback_name:<fallback_name>,status:hit``,
+``locate.fallback.cache#fallback_name:<fallback_name>,status:miss``,
+``locate.fallback.cache#fallback_name:<fallback_name>,status:bypassed``,
+``locate.fallback.cache#fallback_name:<fallback_name>,status:inconsistent``,
+``locate.fallback.cache#fallback_name:<fallback_name>,status:failure`` : counter
 
     Counts the number of hits and misses for the fallback cache. If
     the query should not be cached, a `bypassed` status is used.
@@ -220,13 +222,11 @@ performance of outbound network calls and the effectiveness of its cache.
 ``locate.fallback.lookup#fallback_name:<fallback_name>`` : timer
 
     Measures the time it takes to do each outbound network request.
-    The fallback name tag specifies which fallback service is used.
 
 ``locate.fallback.lookup#fallback_name:<fallback_name>,status:<code>`` : counter
 
-    Counts the HTTP response codes for all outbound requests per named
-    fallback service. There is one counter per HTTP response code,
-    for example `200`.
+    Counts the HTTP response codes for all outbound requests. There
+    is one counter per HTTP response code, for example `200`.
 
 
 Data Pipeline Metrics

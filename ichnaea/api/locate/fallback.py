@@ -230,8 +230,10 @@ class FallbackCache(object):
         self.cache_key_cell = redis_client.cache_keys['fallback_cell']
         self.cache_key_wifi = redis_client.cache_keys['fallback_wifi']
 
-    def _stat_count(self, stat, tags):
-        self.stats_client.incr('locate.fallback.' + stat, tags=tags)
+    def _stat_count(self, fallback_name, status):
+        tags = ['fallback_name:%s' % fallback_name,
+                'status:%s' % status]
+        self.stats_client.incr('locate.fallback.cache', tags=tags)
 
     def _should_cache(self, query):
         """
@@ -293,8 +295,10 @@ class FallbackCache(object):
         :returns: The cache result or None.
         :rtype: :class:`~ichnaea.api.locate.fallback.ExternalResult`
         """
+        fallback_name = query.api_key.fallback_name
+
         if not self._should_cache(query):
-            self._stat_count('cache', tags=['status:bypassed'])
+            self._stat_count(fallback_name, 'bypassed')
             return None
 
         cache_keys = self._cache_keys(query)
@@ -319,21 +323,21 @@ class FallbackCache(object):
                                        value.fallback)].append(value)
         except (simplejson.JSONDecodeError, RedisError):
             self.raven_client.captureException()
-            self._stat_count('cache', tags=['status:failure'])
+            self._stat_count(fallback_name, 'failure')
             return None
 
         if not clustered_results:
-            self._stat_count('cache', tags=['status:miss'])
+            self._stat_count(fallback_name, 'miss')
             return None
 
         if list(clustered_results.keys()) == [not_found_cluster]:
             # the only match was for not found results
-            self._stat_count('cache', tags=['status:hit'])
+            self._stat_count(fallback_name, 'hit')
             return clustered_results[not_found_cluster][0]
 
         if len(clustered_results) == 1:
             # all the cached values agree with each other
-            self._stat_count('cache', tags=['status:hit'])
+            self._stat_count(fallback_name, 'hit')
             results = list(clustered_results.values())[0]
 
             circles = numpy.array(
@@ -358,7 +362,7 @@ class FallbackCache(object):
             )
 
         # inconsistent results
-        self._stat_count('cache', tags=['status:inconsistent'])
+        self._stat_count(fallback_name, 'inconsistent')
         return None
 
     def set(self, query, result, expire=3600):
