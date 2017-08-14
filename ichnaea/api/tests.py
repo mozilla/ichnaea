@@ -193,7 +193,7 @@ class TestExceptions(object):
 
 class TestLimiter(object):
 
-    def test_limiter_maxrequests(self, redis):
+    def test_maxrequests(self, redis):
         rate_key = 'apilimit:key_a:v1.geolocate:20150101'
         maxreq = 5
         expire = 1
@@ -211,7 +211,7 @@ class TestLimiter(object):
             expire=expire,
         )
 
-    def test_limiter_expiry(self, redis):
+    def test_expiry(self, redis):
         rate_key = 'apilimit:key_a:v1.geolocate:20150101'
         maxreq = 100
         expire = 1
@@ -227,4 +227,14 @@ class TestLimiter(object):
             rate_key,
             maxreq=maxreq,
             expire=expire,
+        )
+
+    def test_no_limit(self):
+        rate_key = 'apilimit:key_a:v1.geolocate:20150101'
+        broken_redis = None
+        assert not rate_limit_exceeded(
+            broken_redis,
+            rate_key,
+            maxreq=0,
+            expire=1,
         )
