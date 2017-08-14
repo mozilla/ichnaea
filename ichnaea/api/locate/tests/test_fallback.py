@@ -13,6 +13,7 @@ from ichnaea.api.locate.fallback import (
     ExternalResult,
     FallbackCache,
     FallbackPositionSource,
+    DEFAULT_SCHEMA,
     ICHNAEA_V1_OUTBOUND_SCHEMA,
     ICHNAEA_V1_RESULT_SCHEMA,
     UNWIREDLABS_SCHEMA,
@@ -35,6 +36,12 @@ from ichnaea.tests.factories import (
     CellShardFactory,
     KeyFactory,
     WifiShardFactory,
+)
+
+LABS_KEY = KeyFactory(
+    fallback_name='labs',
+    fallback_schema=UNWIREDLABS_SCHEMA,
+    fallback_url='http://127.0.0.1:9/process.php#my_secret_token',
 )
 
 
@@ -378,6 +385,11 @@ def cache(raven, redis, session, stats):
     yield FallbackCache(raven, redis, stats)
 
 
+@pytest.fixture(scope='function')
+def labs_cache(raven, redis, session, stats):
+    yield FallbackCache(raven, redis, stats, schema=UNWIREDLABS_SCHEMA)
+
+
 class TestCache(QueryTest):
 
     def _query(self, **kwargs):
@@ -420,7 +432,7 @@ class TestCache(QueryTest):
         query = self._query(cell=self.cell_model_query([cell]))
         result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
         cache.set(query, result, expire=60)
-        keys = redis.keys('cache:fallback:cell:*')
+        keys = redis.keys('cache:fallback:ichnaea:1:cell:*')
         assert len(keys) == 1
         assert 50 < redis.ttl(keys[0]) <= 60
         assert cache.get(query) == result
@@ -429,12 +441,37 @@ class TestCache(QueryTest):
                 ['fallback_name:fall', 'status:hit']),
         ])
 
+    def test_get_cell_labs(self, labs_cache, stats):
+        cells = CellShardFactory.build_batch(1)
+        query = self._query(api_key=LABS_KEY,
+                            cell=self.cell_model_query(cells))
+        assert labs_cache.get(query) is None
+        stats.check(counter=[
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:labs', 'status:miss']),
+        ])
+
+    def test_set_cell_labs(self, labs_cache, redis, stats):
+        cell = CellShardFactory.build()
+        query = self._query(api_key=LABS_KEY,
+                            cell=self.cell_model_query([cell]))
+        result = ExternalResult(cell.lat, cell.lon, cell.radius, None)
+        labs_cache.set(query, result, expire=60)
+        keys = redis.keys('cache:fallback:unwired:1:cell:*')
+        assert len(keys) == 1
+        assert 50 < redis.ttl(keys[0]) <= 60
+        assert labs_cache.get(query) == result
+        stats.check(counter=[
+            ('locate.fallback.cache', 1, 1,
+                ['fallback_name:labs', 'status:hit']),
+        ])
+
     def test_set_cell_not_found(self, cache, redis, stats):
         cell = CellShardFactory.build()
         query = self._query(cell=self.cell_model_query([cell]))
         result = ExternalResult(None, None, None, None)
         cache.set(query, result)
-        keys = redis.keys('cache:fallback:cell:*')
+        keys = redis.keys('cache:fallback:ichnaea:1:cell:*')
         assert len(keys) == 1
         assert redis.get(keys[0]) == b'"404"'
         assert cache.get(query) == result
@@ -860,7 +897,8 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(source.cache, 'redis_client',
+            with mock.patch.object(source.caches[DEFAULT_SCHEMA],
+                                   'redis_client',
                                    mock_redis_client):
                 query = self.model_query(
                     geoip_db, http_session, session, stats,
@@ -890,7 +928,8 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(source.cache, 'redis_client',
+            with mock.patch.object(source.caches[DEFAULT_SCHEMA],
+                                   'redis_client',
                                    mock_redis_client):
                 query = self.model_query(
                     geoip_db, http_session, session, stats,
@@ -1000,7 +1039,8 @@ class TestFallback(BaseSourceTest):
             mock_request.register_uri(
                 'POST', requests_mock.ANY, json=self.fallback_result)
 
-            with mock.patch.object(source.cache, 'redis_client',
+            with mock.patch.object(source.caches[DEFAULT_SCHEMA],
+                                   'redis_client',
                                    mock_redis_client):
                 query = self.model_query(
                     geoip_db, http_session, session, stats,
@@ -1021,14 +1061,6 @@ class TestUnwiredLabsFallback(BaseSourceTest):
 
     fallback_model = DummyModel(lat=51.5366, lon=0.03989, radius=1500.0)
     Source = FallbackPositionSource
-
-    @property
-    def labs_key(self):
-        return KeyFactory(
-            fallback_name='labs',
-            fallback_schema=UNWIREDLABS_SCHEMA,
-            fallback_url='http://127.0.0.1:9/process.php#my_secret_token',
-        )
 
     @property
     def fallback_result(self):
@@ -1056,7 +1088,7 @@ class TestUnwiredLabsFallback(BaseSourceTest):
 
             query = self.model_query(
                 geoip_db, http_session, session, stats,
-                api_key=self.labs_key,
+                api_key=LABS_KEY,
                 cells=[cell],
                 fallback={
                     'lacf': True,
@@ -1086,7 +1118,7 @@ class TestUnwiredLabsFallback(BaseSourceTest):
 
             query = self.model_query(
                 geoip_db, http_session, session, stats,
-                api_key=self.labs_key,
+                api_key=LABS_KEY,
                 cells=[cell])
             results = source.search(query)
             self.check_model_results(results, None)
@@ -1101,7 +1133,7 @@ class TestUnwiredLabsFallback(BaseSourceTest):
 
             query = self.model_query(
                 geoip_db, http_session, session, stats,
-                api_key=self.labs_key,
+                api_key=LABS_KEY,
                 cells=[cell])
             results = source.search(query)
             self.check_model_results(results, None)

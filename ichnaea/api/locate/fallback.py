@@ -222,13 +222,31 @@ class FallbackCache(object):
     caching portion of the fallback position source logic.
     """
 
-    def __init__(self, raven_client, redis_client, stats_client):
+    # Define Redis keys for the fallback cache. Include the schema
+    # name and an integer version. Increase the integer if the way
+    # we cache contents changes.
+    cache_keys = {
+        DEFAULT_SCHEMA: {
+            'fallback_blue': b'cache:fallback:ichnaea:1:blue:',
+            'fallback_cell': b'cache:fallback:ichnaea:1:cell:',
+            'fallback_wifi': b'cache:fallback:ichnaea:1:wifi:',
+        },
+        UNWIREDLABS_SCHEMA: {
+            'fallback_blue': b'cache:fallback:unwired:1:blue:',
+            'fallback_cell': b'cache:fallback:unwired:1:cell:',
+            'fallback_wifi': b'cache:fallback:unwired:1:wifi:',
+        }
+    }
+
+    def __init__(self, raven_client, redis_client, stats_client,
+                 schema=DEFAULT_SCHEMA):
         self.raven_client = raven_client
         self.redis_client = redis_client
         self.stats_client = stats_client
-        self.cache_key_blue = redis_client.cache_keys['fallback_blue']
-        self.cache_key_cell = redis_client.cache_keys['fallback_cell']
-        self.cache_key_wifi = redis_client.cache_keys['fallback_wifi']
+        self.schema = DEFAULT_SCHEMA
+        self.cache_key_blue = self.cache_keys[schema]['fallback_blue']
+        self.cache_key_cell = self.cache_keys[schema]['fallback_cell']
+        self.cache_key_wifi = self.cache_keys[schema]['fallback_wifi']
 
     def _stat_count(self, fallback_name, status):
         tags = ['fallback_name:%s' % fallback_name,
@@ -400,6 +418,29 @@ class FallbackCache(object):
             self.raven_client.captureException()
 
 
+def _external_call_ichnaea(query, payload):
+    return query.http_session.post(
+        query.api_key.fallback_url,
+        headers={'User-Agent': 'ichnaea'},
+        json=payload,
+        timeout=5.0,
+    )
+
+
+def _external_call_unwiredlabs(query, payload):
+    # Parse the token from the URL and put it into the body.
+    url, token = query.api_key.fallback_url.split('#')
+    token_payload = payload.copy()
+    token_payload['token'] = token
+
+    return query.http_session.post(
+        url,
+        headers={'User-Agent': 'ichnaea'},
+        json=token_payload,
+        timeout=5.0,
+    )
+
+
 class FallbackPositionSource(PositionSource):
     """
     A FallbackPositionSource implements a search using
@@ -408,25 +449,31 @@ class FallbackPositionSource(PositionSource):
 
     source = DataSource.fallback
 
+    schemas = (DEFAULT_SCHEMA, UNWIREDLABS_SCHEMA)
+    outbound_schemas = {
+        DEFAULT_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
+        UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_OUTBOUND_SCHEMA,
+    }
+    outbound_calls = {
+        DEFAULT_SCHEMA: _external_call_ichnaea,
+        UNWIREDLABS_SCHEMA: _external_call_unwiredlabs,
+    }
+    result_schemas = {
+        DEFAULT_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
+        UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_RESULT_SCHEMA,
+    }
+
     def __init__(self, *args, **kw):
         super(FallbackPositionSource, self).__init__(*args, **kw)
-        self.cache = FallbackCache(
-            self.raven_client,
-            self.redis_client,
-            self.stats_client,
-        )
-        self.outbound_schemas = {
-            DEFAULT_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
-            UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_OUTBOUND_SCHEMA,
-        }
-        self.outbound_calls = {
-            DEFAULT_SCHEMA: self._external_call_ichnaea,
-            UNWIREDLABS_SCHEMA: self._external_call_unwiredlabs,
-        }
-        self.result_schemas = {
-            DEFAULT_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
-            UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_RESULT_SCHEMA,
-        }
+        # Initialze one cache per possible schema.
+        self.caches = {}
+        for schema in self.schemas:
+            self.caches[schema] = FallbackCache(
+                self.raven_client,
+                self.redis_client,
+                self.stats_client,
+                schema=schema,
+            )
 
     def _stat_count(self, stat, tags):
         self.stats_client.incr('locate.fallback.' + stat, tags=tags)
@@ -453,31 +500,8 @@ class FallbackPositionSource(PositionSource):
             on_error=True,
         )
 
-    def _external_call_ichnaea(self, query, payload):
-        return query.http_session.post(
-            query.api_key.fallback_url,
-            headers={'User-Agent': 'ichnaea'},
-            json=payload,
-            timeout=5.0,
-        )
-
-    def _external_call_unwiredlabs(self, query, payload):
-        # Parse the token from the URL and put it into the body.
-        url, token = query.api_key.fallback_url.split('#')
-        token_payload = payload.copy()
-        token_payload['token'] = token
-
-        return query.http_session.post(
-            url,
-            headers={'User-Agent': 'ichnaea'},
-            json=token_payload,
-            timeout=5.0,
-        )
-
-    def _make_external_call(self, query):
+    def _make_external_call(self, query, fallback_schema):
         outbound = None
-        # Determine fallback schema, default to our own
-        fallback_schema = query.api_key.fallback_schema
         outbound_schema = self.outbound_schemas.get(
             fallback_schema, self.outbound_schemas[DEFAULT_SCHEMA])
         outbound_call = self.outbound_calls.get(
@@ -536,20 +560,26 @@ class FallbackPositionSource(PositionSource):
         )
 
     def search(self, query):
-        results = self.result_list()
+        # Determine fallback schema, default to our own
+        fallback_schema = query.api_key.fallback_schema
+        if fallback_schema is None:
+            fallback_schema = DEFAULT_SCHEMA
 
+        cache = self.caches[fallback_schema]
+        results = self.result_list()
         result_data = None
-        cached_result = self.cache.get(query)
+
+        cached_result = cache.get(query)
         if cached_result:
             # use our own cache, without checking the rate limit
             result_data = cached_result
         elif not self._ratelimit_reached(query):
             # only rate limit the external call
-            result_data = self._make_external_call(query)
+            result_data = self._make_external_call(query, fallback_schema)
             if result_data is not None:
                 # we got a new possibly not_found answer
-                self.cache.set(query, result_data,
-                               expire=query.api_key.fallback_cache_expire or 1)
+                cache.set(query, result_data,
+                          expire=query.api_key.fallback_cache_expire or 1)
 
         if result_data is not None and not result_data.not_found():
             results.add(self.result_type(

@@ -65,9 +65,6 @@ class RedisClient(redis.StrictRedis):
     # for easy `cache-busting'.
     cache_keys = {
         'downloads': b'cache:downloads:3',
-        'fallback_blue': b'cache:fallback:blue:',
-        'fallback_cell': b'cache:fallback:cell:',
-        'fallback_wifi': b'cache:fallback:wifi:',
         'stats': b'cache:stats:4',
         'stats_regions': b'cache:stats_regions:4',
         'stats_blue_json': b'cache:stats_blue_json:2',
