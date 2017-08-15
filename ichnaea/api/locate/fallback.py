@@ -26,9 +26,13 @@ from ichnaea.geocalc import distance
 # Magic constant to cache not found.
 LOCATION_NOT_FOUND = '404'
 
-# Default fallback schema
-DEFAULT_SCHEMA = 'ichnaea/v1'
-UNWIREDLABS_SCHEMA = 'unwiredlabs/v1'
+# Supported fallback schemata
+COMBAIN_V1_SCHEMA = 'combain/v1'
+ICHNAEA_V1_SCHEMA = 'ichnaea/v1'
+GOOGLEMAPS_V1_SCHEMA = 'googlemaps/v1'
+UNWIREDLABS_V1_SCHEMA = 'unwiredlabs/v1'
+# Default fallback schema, if schema is None/NULL
+DEFAULT_SCHEMA = ICHNAEA_V1_SCHEMA
 
 
 class ExternalResult(namedtuple('ExternalResult',
@@ -77,10 +81,10 @@ ICHNAEA_V1_RESULT_SCHEMA = IchnaeaV1ResultSchema()
 
 class IchnaeaV1OutboundSchema(OptionalMappingSchema):
 
-    @colander.instantiate(missing=colander.drop)
-    class fallbacks(OptionalMappingSchema):  # NOQA
+    @colander.instantiate()
+    class fallbacks(RenamingMappingSchema):  # NOQA
 
-        lacf = OptionalNode(colander.Boolean())
+        lacf = colander.SchemaNode(colander.Boolean(), missing=True)
 
     @colander.instantiate(missing=colander.drop)
     class bluetoothBeacons(OptionalSequenceSchema):  # NOQA
@@ -124,6 +128,41 @@ class IchnaeaV1OutboundSchema(OptionalMappingSchema):
 
 
 ICHNAEA_V1_OUTBOUND_SCHEMA = IchnaeaV1OutboundSchema()
+
+
+class GoogleMapsV1OutboundSchema(OptionalMappingSchema):
+
+    considerIp = colander.SchemaNode(colander.Boolean(), missing=False)
+
+    @colander.instantiate(missing=colander.drop)
+    class cellTowers(OptionalSequenceSchema):  # NOQA
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            radioType = OptionalNode(colander.String())
+            mobileCountryCode = OptionalNode(colander.Integer())
+            mobileNetworkCode = OptionalNode(colander.Integer())
+            locationAreaCode = OptionalNode(colander.Integer())
+            cellId = OptionalNode(colander.Integer())
+            age = OptionalNode(colander.Integer())
+            signalStrength = OptionalNode(colander.Integer())
+            timingAdvance = OptionalNode(colander.Integer())
+
+    @colander.instantiate(missing=colander.drop)
+    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
+
+        @colander.instantiate()
+        class SequenceItem(OptionalMappingSchema):
+
+            macAddress = OptionalNode(colander.String())
+            age = OptionalNode(colander.Integer())
+            channel = OptionalNode(colander.Integer())
+            signalStrength = OptionalNode(colander.Integer())
+            signalToNoiseRatio = OptionalNode(colander.Integer())
+
+
+GOOGLEMAPS_V1_OUTBOUND_SCHEMA = GoogleMapsV1OutboundSchema()
 
 
 class UnwiredlabsV1ResultSchema(RenamingMappingSchema):
@@ -178,10 +217,10 @@ class UnwiredlabsV1OutboundSchema(RenamingMappingSchema):
 
     token = colander.SchemaNode(colander.String(), missing=None)
 
-    @colander.instantiate(missing=colander.drop)
-    class fallbacks(OptionalMappingSchema):  # NOQA
+    @colander.instantiate()
+    class fallbacks(RenamingMappingSchema):  # NOQA
 
-        lacf = OptionalNode(colander.Boolean())
+        lacf = colander.SchemaNode(colander.Boolean(), missing=True)
 
     @colander.instantiate(missing=colander.drop, to_name='cells')
     class cellTowers(OptionalSequenceSchema):  # NOQA
@@ -226,15 +265,25 @@ class FallbackCache(object):
     # name and an integer version. Increase the integer if the way
     # we cache contents changes.
     cache_keys = {
-        DEFAULT_SCHEMA: {
-            'fallback_blue': b'cache:fallback:ichnaea:1:blue:',
-            'fallback_cell': b'cache:fallback:ichnaea:1:cell:',
-            'fallback_wifi': b'cache:fallback:ichnaea:1:wifi:',
+        COMBAIN_V1_SCHEMA: {
+            'fallback_blue': b'cache:fallback:combain:v1:1:blue:',
+            'fallback_cell': b'cache:fallback:combain:v1:1:cell:',
+            'fallback_wifi': b'cache:fallback:combain:v1:1:wifi:',
         },
-        UNWIREDLABS_SCHEMA: {
-            'fallback_blue': b'cache:fallback:unwired:1:blue:',
-            'fallback_cell': b'cache:fallback:unwired:1:cell:',
-            'fallback_wifi': b'cache:fallback:unwired:1:wifi:',
+        GOOGLEMAPS_V1_SCHEMA: {
+            'fallback_blue': b'cache:fallback:googlemaps:v1:1:blue:',
+            'fallback_cell': b'cache:fallback:googlemaps:v1:1:cell:',
+            'fallback_wifi': b'cache:fallback:googlemaps:v1:1:wifi:',
+        },
+        ICHNAEA_V1_SCHEMA: {
+            'fallback_blue': b'cache:fallback:ichnaea:v1:1:blue:',
+            'fallback_cell': b'cache:fallback:ichnaea:v1:1:cell:',
+            'fallback_wifi': b'cache:fallback:ichnaea:v1:1:wifi:',
+        },
+        UNWIREDLABS_V1_SCHEMA: {
+            'fallback_blue': b'cache:fallback:unwiredlabs:v1:1:blue:',
+            'fallback_cell': b'cache:fallback:unwiredlabs:v1:1:cell:',
+            'fallback_wifi': b'cache:fallback:unwiredlabs:v1:1:wifi:',
         }
     }
 
@@ -418,7 +467,42 @@ class FallbackCache(object):
             self.raven_client.captureException()
 
 
-def _external_call_ichnaea(query, payload):
+def _add_fallback_ipf_false(payload):
+    # Disable ipf fallback, so we don't get position estimates
+    # based on the IP address of the service.
+
+    # Make shallow copies of payload parts, to avoid mutating argument,
+    # but avoid full deepcopy of the potentially large network parts.
+    new_payload = payload.copy()
+    new_fallbacks = new_payload['fallbacks'].copy()
+    new_fallbacks['ipf'] = False
+    new_payload['fallbacks'] = new_fallbacks
+    return new_payload
+
+
+def _external_call_ichnaea_v1(query, payload):
+    new_payload = _add_fallback_ipf_false(payload)
+    return query.http_session.post(
+        query.api_key.fallback_url,
+        headers={'User-Agent': 'ichnaea'},
+        json=new_payload,
+        timeout=5.0,
+    )
+
+
+def _external_call_combain_v1(query, payload):
+    new_payload = _add_fallback_ipf_false(payload)
+    return query.http_session.post(
+        query.api_key.fallback_url,
+        headers={'User-Agent': 'ichnaea'},
+        json=new_payload,
+        timeout=5.0,
+    )
+
+
+def _external_call_googlemaps_v1(query, payload):
+    # There is no fallbacks section, the schema takes care of adding
+    # a new top-level considerIp: false
     return query.http_session.post(
         query.api_key.fallback_url,
         headers={'User-Agent': 'ichnaea'},
@@ -427,16 +511,17 @@ def _external_call_ichnaea(query, payload):
     )
 
 
-def _external_call_unwiredlabs(query, payload):
+def _external_call_unwiredlabs_v1(query, payload):
+    new_payload = _add_fallback_ipf_false(payload)
+
     # Parse the token from the URL and put it into the body.
     url, token = query.api_key.fallback_url.split('#')
-    token_payload = payload.copy()
-    token_payload['token'] = token
+    new_payload['token'] = token
 
     return query.http_session.post(
         url,
         headers={'User-Agent': 'ichnaea'},
-        json=token_payload,
+        json=new_payload,
         timeout=5.0,
     )
 
@@ -449,18 +534,31 @@ class FallbackPositionSource(PositionSource):
 
     source = DataSource.fallback
 
-    schemas = (DEFAULT_SCHEMA, UNWIREDLABS_SCHEMA)
+    # The schema for ichnaea, combain and googlemaps are currently
+    # almost the same.
+    schemas = (
+        COMBAIN_V1_SCHEMA,
+        GOOGLEMAPS_V1_SCHEMA,
+        ICHNAEA_V1_SCHEMA,
+        UNWIREDLABS_V1_SCHEMA,
+    )
     outbound_schemas = {
-        DEFAULT_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
-        UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_OUTBOUND_SCHEMA,
+        COMBAIN_V1_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
+        GOOGLEMAPS_V1_SCHEMA: GOOGLEMAPS_V1_OUTBOUND_SCHEMA,
+        ICHNAEA_V1_SCHEMA: ICHNAEA_V1_OUTBOUND_SCHEMA,
+        UNWIREDLABS_V1_SCHEMA: UNWIREDLABS_V1_OUTBOUND_SCHEMA,
     }
     outbound_calls = {
-        DEFAULT_SCHEMA: _external_call_ichnaea,
-        UNWIREDLABS_SCHEMA: _external_call_unwiredlabs,
+        COMBAIN_V1_SCHEMA: _external_call_combain_v1,
+        GOOGLEMAPS_V1_SCHEMA: _external_call_googlemaps_v1,
+        ICHNAEA_V1_SCHEMA: _external_call_ichnaea_v1,
+        UNWIREDLABS_V1_SCHEMA: _external_call_unwiredlabs_v1,
     }
     result_schemas = {
-        DEFAULT_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
-        UNWIREDLABS_SCHEMA: UNWIREDLABS_V1_RESULT_SCHEMA,
+        COMBAIN_V1_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
+        GOOGLEMAPS_V1_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
+        ICHNAEA_V1_SCHEMA: ICHNAEA_V1_RESULT_SCHEMA,
+        UNWIREDLABS_V1_SCHEMA: UNWIREDLABS_V1_RESULT_SCHEMA,
     }
 
     def __init__(self, *args, **kw):
@@ -502,12 +600,9 @@ class FallbackPositionSource(PositionSource):
 
     def _make_external_call(self, query, fallback_schema):
         outbound = None
-        outbound_schema = self.outbound_schemas.get(
-            fallback_schema, self.outbound_schemas[DEFAULT_SCHEMA])
-        outbound_call = self.outbound_calls.get(
-            fallback_schema, self.outbound_calls[DEFAULT_SCHEMA])
-        result_schema = self.result_schemas.get(
-            fallback_schema, self.result_schemas[DEFAULT_SCHEMA])
+        outbound_schema = self.outbound_schemas[fallback_schema]
+        outbound_call = self.outbound_calls[fallback_schema]
+        result_schema = self.result_schemas[fallback_schema]
 
         try:
             outbound = outbound_schema.deserialize(query.json())

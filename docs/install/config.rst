@@ -177,14 +177,15 @@ to be set, for example:
 The name can be shared between multiple API keys and acts as a partition
 key for the cache and rate limit tracking.
 
-The schema can be either `NULL`, `ichnaea/v1` or `unwiredlabs/v1`.
-`NULL` and `ichnaea/v1` are currently synonymous. Setting the schema to
-either one of those means the external service uses the same API as
-ichnaea. Examples of this are Google's and Combain's location services.
-Setting it to `unwiredlabs/v1` means you use unwiredlabs.com as a fallback.
+The schema can be one of  `NULL`, `ichnaea/v1`, `combain/v1`, `googlemaps/v1`
+or `unwiredlabs/v1`.
+
+`NULL` and `ichnaea/v1` are currently synonymous. Setting the schema to one
+of those means the external service uses the same API as the geolocate v1
+API used in ichnaea.
 
 If you set the url to one of the unwiredlabs endpoints, add your API
-token as an anchor to the end of it, so instead of specfifying
+token as an anchor fragment to the end of it, so instead of specfifying
 ``https://us1.unwiredlabs.com/v2/process.php``, you would instead use
 ``https://us1.unwiredlabs.com/v2/process.php#my_secret_token``. The
 code will read the token from here and put it into the request body.

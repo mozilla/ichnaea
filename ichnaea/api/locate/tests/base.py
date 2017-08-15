@@ -75,13 +75,12 @@ def bound_model_accuracy(model, accuracy):
 
 class BaseSourceTest(object):
 
+    api_key = KeyFactory(valid_key='test', allow_fallback=True)
     api_type = 'locate'
     Source = None
 
     def make_query(self, geoip_db, http_session, session, stats, **kw):
-        api_key = kw.pop(
-            'api_key',
-            KeyFactory(valid_key='test', allow_fallback=True))
+        api_key = kw.pop('api_key', self.api_key)
 
         return Query(
             api_key=api_key,
