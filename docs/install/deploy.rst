@@ -16,8 +16,8 @@ A full deployment of the application in an AWS environment can include all
 of the parts shown in the diagram, but various of these parts are optional:
 
 .. image:: deploy.png
-   :height: 696px
-   :width: 924px
+   :height: 1860px
+   :width: 1440px
    :scale: 50%
    :alt: Deployment Diagram
 
