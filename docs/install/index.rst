@@ -17,3 +17,4 @@ consistent application environment in development and production.
    config
    debug
    metrics
+   architecture
