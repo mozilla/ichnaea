@@ -88,8 +88,6 @@ def main(ping_connections=False,
     registry.data_queues = data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
-        'transfer_incoming': DataQueue('transfer_incoming', redis_client,
-                                       batch=100, compress=True),
     }
 
     for name, func, default in (('position_searcher',

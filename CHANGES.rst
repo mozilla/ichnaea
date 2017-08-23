@@ -8,6 +8,8 @@ Changelog
 Migrations
 ~~~~~~~~~~
 
+- a0ee5e10f44b: Remove allow_transfer column from API key table.
+
 - 138cb0d71dfb: Drop cell OCID tables.
 
 - 5797389a3842: Add fallback_schema column to API key table.
@@ -18,6 +20,8 @@ Migrations
 
 Changes
 ~~~~~~~
+
+- Remove unfinished transfer HTTP API.
 
 - #508: Add support for unwiredlabs as a fallback provider.
 

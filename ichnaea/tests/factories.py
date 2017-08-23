@@ -98,7 +98,6 @@ class ApiKeyFactory(BaseSQLFactory):
     allow_fallback = False
     allow_locate = True
     allow_region = True
-    allow_transfer = False
 
     fallback_name = 'fall'
     fallback_schema = None
@@ -122,7 +121,6 @@ class KeyFactory(BaseMemoryFactory):
     allow_fallback = False
     allow_locate = True
     allow_region = True
-    allow_transfer = False
 
     fallback_name = 'fall'
     fallback_schema = None

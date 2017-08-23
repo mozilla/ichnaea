@@ -284,8 +284,6 @@ def data_queues(redis_client):
     data_queues = {
         'update_incoming': DataQueue('update_incoming', redis_client,
                                      batch=100, compress=True),
-        'transfer_incoming': DataQueue('transfer_incoming', redis_client,
-                                       batch=100, compress=True),
     }
     yield data_queues
 

@@ -14,7 +14,7 @@ API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
 
 _API_KEY_COLUMN_NAMES = (
     'valid_key', 'maxreq',
-    'allow_fallback', 'allow_locate', 'allow_region', 'allow_transfer',
+    'allow_fallback', 'allow_locate', 'allow_region',
     'fallback_name', 'fallback_schema', 'fallback_url', 'fallback_ratelimit',
     'fallback_ratelimit_interval', 'fallback_cache_expire',
     'store_sample_submit', 'store_sample_locate',
@@ -63,7 +63,6 @@ class Key(object):
     allow_fallback = False
     allow_locate = True
     allow_region = True
-    allow_transfer = False
 
     fallback_name = None
     fallback_schema = None
@@ -90,8 +89,6 @@ class Key(object):
         elif api_type == 'submit':
             # Submit are always allowed, even without an API key.
             return True
-        elif api_type == 'transfer':
-            return bool(self.allow_transfer)
         return None
 
     def can_fallback(self):

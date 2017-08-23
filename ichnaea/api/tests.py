@@ -52,25 +52,22 @@ class TestKey(object):
         def one(**kw):
             return KeyFactory(**kw)
 
-        key = one(allow_locate=True, allow_region=True, allow_transfer=True)
+        key = one(allow_locate=True, allow_region=True)
         assert key.allowed('locate')
         assert key.allowed('region')
         assert key.allowed('submit')
-        assert key.allowed('transfer')
         assert key.allowed('unknown') is None
 
         assert not one(allow_locate=None).allowed('locate')
         assert not one(allow_locate=False).allowed('locate')
         assert not one(allow_region=None).allowed('region')
         assert not one(allow_region=False).allowed('region')
-        assert not one(allow_transfer=None).allowed('transfer')
 
     def test_store_sample(self):
         key = KeyFactory(store_sample_locate=None, store_sample_submit=None)
         assert key.store_sample('locate') is False
         assert key.store_sample('submit') is False
         assert key.store_sample('region') is False
-        assert key.store_sample('transfer') is False
 
         key = KeyFactory(store_sample_locate=0, store_sample_submit=100)
         assert key.store_sample('locate') is False
@@ -184,11 +181,6 @@ class TestExceptions(object):
         error = api_exceptions.UploadSuccessV0
         response = self._check(error, 204, json=False, content_type=None)
         assert response.body == b''
-
-    def test_transfer_success(self):
-        error = api_exceptions.TransferSuccess
-        response = self._check(error, 200)
-        assert response.body == b'{}'
 
 
 class TestLimiter(object):

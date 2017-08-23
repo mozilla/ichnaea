@@ -44,19 +44,6 @@ class JSONException(HTTPException):
         return {}
 
 
-class TransferSuccess(JSONException):
-    """
-    A successful transfer response.
-    """
-
-    code = 200
-
-    @classmethod
-    def json_body(cls):
-        """A JSON representation of this response."""
-        return {}
-
-
 class UploadSuccess(JSONException):
     """
     A successful upload response.

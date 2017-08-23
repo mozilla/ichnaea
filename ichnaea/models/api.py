@@ -44,7 +44,6 @@ class ApiKey(_Model):
     allow_fallback = Column(Boolean)  # Use the fallback source?
     allow_locate = Column(Boolean)  # Allow locate queries?
     allow_region = Column(Boolean)  # Allow region queries?
-    allow_transfer = Column(Boolean)  # Allow transfer queries?
 
     fallback_name = Column(String(40))  # Fallback metric name.
     fallback_schema = Column(String(64))  # Fallback API schema.
