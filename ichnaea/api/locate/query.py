@@ -12,6 +12,7 @@ from ichnaea.api.locate.schema import (
     CellAreaLookup,
     CellLookup,
     FallbackLookup,
+    ProductLookup,
     WifiLookup,
 )
 
@@ -30,11 +31,12 @@ METRIC_MAPPING = {
 class Query(object):
 
     _fallback = None
+    _product = None
     _geoip = None
     _ip = None
     _region = None
 
-    def __init__(self, fallback=None, ip=None, blue=None, cell=None, wifi=None,
+    def __init__(self, fallback=None, product=None, ip=None, blue=None, cell=None, wifi=None,
                  api_key=None, api_type=None, session=None,
                  http_session=None, geoip_db=None, stats_client=None):
         """
@@ -42,6 +44,9 @@ class Query(object):
 
         :param fallback: A dictionary of fallback options.
         :type fallback: dict
+
+        :param product: A Product IMEI
+        :type product: str
 
         :param ip: An IP address, e.g. 127.0.0.1.
         :type ip: str
@@ -77,6 +82,7 @@ class Query(object):
         self.stats_client = stats_client
 
         self.fallback = fallback
+        self.product = product
         self.ip = ip
         self.blue = blue
         self.cell = cell
@@ -103,6 +109,23 @@ class Query(object):
             valid = FallbackLookup.create()
         self._fallback = valid
 
+    @property
+    def product(self):
+        """
+        A validated
+        :class:`~ichnaea.api.locate.schema.ProductLookup` instance.
+        """
+        return self._product
+
+    @product.setter
+    def product(self, values):
+        if not values:
+            values = {}
+        valid = ProductLookup.create(**values)
+        if valid is None:  # pragma: no cover
+            valid = ProductLookup.create()
+        self._product = valid
+    
     @property
     def geoip(self):
         """
@@ -310,6 +333,11 @@ class Query(object):
             result['wifiAccessPoints'] = [wifi.json() for wifi in self.wifi]
         if self.fallback:
             result['fallbacks'] = self.fallback.json()
+        if self.product:
+            result['id'] = str(self.product)
+        with open('debug.txt', 'a') as f:
+            f.write('Inbound JSON: ' + str(result) + '\n')
+
         return result
 
     def networks(self):

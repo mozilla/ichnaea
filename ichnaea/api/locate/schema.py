@@ -435,6 +435,22 @@ class FallbackLookup(BaseLookup):
     )
 
 
+class ProductSchema(colander.MappingSchema):
+    """
+    A schema validating the product ID field.
+    """
+
+    id = DefaultNode(colander.String(), missing=None)
+
+
+class ProductLookup(BaseLookup):
+    """A model class representing product lookup."""
+
+    _valid_schema = ProductSchema()
+    _fields = (
+        'id',
+    )
+
 class BaseLocateSchema(RenamingMappingSchema):
     """A base schema for all locate related schemata."""
 

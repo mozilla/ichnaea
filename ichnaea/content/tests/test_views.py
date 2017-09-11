@@ -33,7 +33,7 @@ class TestConfig(object):
             assert not configure_content(config, enable=False)
             res = empty_homepage_view(request)
             assert res.content_type == 'text/html'
-            assert b'It works' in res.body
+            assert b'Welcome to BBOXX Ichnaea!' in res.body
 
     def test_configure_content(self, config, map_config):
         assert configure_content(config)

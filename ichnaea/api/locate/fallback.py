@@ -23,6 +23,10 @@ from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
 from ichnaea.geocalc import distance
 
+import simplejson as json
+
+API_TOKEN = "p69160194029"
+
 # Magic constant to cache not found.
 LOCATION_NOT_FOUND = '404'
 
@@ -72,7 +76,7 @@ RESULT_SCHEMA = ResultSchema()
 
 
 class OutboundSchema(OptionalMappingSchema):
-
+    
     @colander.instantiate(missing=colander.drop)
     class fallbacks(OptionalMappingSchema):  # NOQA
 
@@ -347,14 +351,28 @@ class FallbackPositionSource(PositionSource):
 
     def _make_external_call(self, query):
         outbound = None
+        
+        with open('debug.txt', 'a') as f:
+            f.write('External Call starting\n')
+        
         try:
             outbound = self.outbound_schema.deserialize(query.json())
         except colander.Invalid:  # pragma: no cover
             self.raven_client.captureException()
-
+        
+        with open('debug.txt', 'a') as f:
+            f.write('Outbound original: ' + str(outbound) + '\n')
+        
+        if query.api_key.fallback_name == 'unwired':
+            new_json = self.uw_json(outbound, query.json())
+            outbound = new_json
+        
         if not outbound:  # pragma: no cover
             return None
-
+        
+        with open('debug.txt', 'a') as f:
+            f.write('Outbound: ' + str(outbound) + '\n')
+         
         try:
             fallback_tag = 'fallback_name:%s' % (
                 query.api_key.fallback_name or 'none')
@@ -380,20 +398,55 @@ class FallbackPositionSource(PositionSource):
                 response.raise_for_status()
 
             validated = None
-            try:
+            
+            with open('debug.txt', 'a') as f:
+                f.write('Response: ' + str(response.json()) + '\n')
+            
+            if query.api_key.fallback_name == 'unwired':
                 body = response.json()
-                validated = self.result_schema.deserialize(body)
-            except (colander.Invalid,
-                    simplejson.JSONDecodeError):  # pragma: no cover
-                self.raven_client.captureException()
+                if 'lat' in body.keys():
+                    validated = {
+                        'accuracy': body['accuracy'],
+                        'fallback': None,
+                        'lat': body['lat'],
+                        'lon': body['lon'],
+                    }
+
+            else:
+                try:
+                    body = response.json()
+                    validated = self.result_schema.deserialize(body)
+                except (colander.Invalid,
+                        simplejson.JSONDecodeError):  # pragma: no cover
+                    self.raven_client.captureException()
 
             if not validated:  # pragma: no cover
                 return None
-
+            
+            with open('debug.txt', 'a') as f:
+                f.write('Validated: ' + str(validated) + '\n')
+            
             return ExternalResult(**validated)
 
         except (simplejson.JSONDecodeError, RequestException):
             self.raven_client.captureException()
+
+    def uw_json(self, obj, query):
+        for cell in obj['cellTowers']:
+            cell['radio'] = cell.pop('radioType')
+            cell['mcc'] = cell.pop('mobileCountryCode')
+            cell['mnc'] = cell.pop('mobileNetworkCode')
+            cell['lac'] = cell.pop('locationAreaCode')
+            cell['cid'] = cell.pop('cellId')
+            cell['signal'] = cell.pop('signalStrength')
+            if 'timingAdvance' in cell.keys():
+                cell['tA'] = cell.pop('timingAdvance')
+
+        obj['cells'] = obj.pop('cellTowers')
+        obj['token'] = API_TOKEN
+        obj.pop('fallback', None)
+        obj['id'] = query['id']
+        return obj
 
     def should_search(self, query, results):
         return (

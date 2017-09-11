@@ -46,7 +46,7 @@ WIFI_MIN_ACCURACY = 10.0
 WIFI_MAX_ACCURACY = 500.0
 
 # Minimum accuracy returned for cell queries.
-CELL_MIN_ACCURACY = 1000.0
+CELL_MIN_ACCURACY = 10.0
 
 # Maximum accuracy returned for cell queries.
 CELL_MAX_ACCURACY = 50000.0

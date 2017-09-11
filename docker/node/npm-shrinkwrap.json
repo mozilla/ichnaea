@@ -28,9 +28,9 @@
       "dev": true
     },
     "commander": {
-      "version": "2.9.0",
-      "resolved": "https://registry.npmjs.org/commander/-/commander-2.9.0.tgz",
-      "integrity": "sha1-nJkJQXbhIkDLItbFFGCYQA/g99Q=",
+      "version": "2.10.0",
+      "resolved": "https://registry.npmjs.org/commander/-/commander-2.10.0.tgz",
+      "integrity": "sha512-q/r9trjmuikWDRJNTBHAVnWhuU6w+z80KgBq7j9YDclik5E7X4xi0KnlZBNFA1zOQ+SH/vHMWd2mC9QTOz7GpA==",
       "dev": true
     },
     "concat-map": {
@@ -166,10 +166,18 @@
       "dev": true
     },
     "uglify-js": {
-      "version": "3.0.17",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.0.17.tgz",
-      "integrity": "sha1-0ijNVcLfmz0vU/FHVoy0zEpyzAY=",
-      "dev": true
+      "version": "3.0.20",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.0.20.tgz",
+      "integrity": "sha512-O/c2/N97k1Ms+23VRx6gIAfGdijuW53SlASmXy0FVapK63rQrduHyE+5X6hUtqNiSLLao9Uv6ijotpNe8t991Q==",
+      "dev": true,
+      "dependencies": {
+        "commander": {
+          "version": "2.9.0",
+          "resolved": "https://registry.npmjs.org/commander/-/commander-2.9.0.tgz",
+          "integrity": "sha1-nJkJQXbhIkDLItbFFGCYQA/g99Q=",
+          "dev": true
+        }
+      }
     },
     "wrappy": {
       "version": "1.0.2",

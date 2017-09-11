@@ -289,7 +289,12 @@ _EMPTY_HOMEPAGE_RESPONSE = '''\
 <meta charset="UTF-8" />
 <title>ichnaea</title>
 </head><body>
-<h1>It works!</h1>
+<h1>Welcome to BBOXX Ichnaea!</h1>
+<p>Today's date and time is: <span id="demo"></span></p>
+
+<script>
+document.getElementById("demo").innerHTML = Date();
+</script>
 <p>This is an installation of the open-source software
 <a href="https://github.com/mozilla/ichnaea">Mozilla Ichnaea</a>.</p>
 <p>Mozilla is not responsible for the operation or problems with
