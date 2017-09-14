@@ -1,5 +1,8 @@
 # BBOXX Ichnaea
 
+**WARNING!**
+BBOXX Ichnaea has been replaced by the official Ichnaea production release v2.2.0. This change was made for ease of use, upgradability and security. Please refer to the docs for the live instance [here](https://github.com/BBOXX/StumblerLib). Use the issue tracking system there for any problems involving the live instance. This repo contains the modified version of Ichnaea used by BBOXX up until the upgrade to Ichnaea 2.2.0.
+***
 
 BBOXX Ichnaea is a modified version of Mozilla's [Ichnaea project](https://github.com/mozilla/ichnaea) (ver 2.1.0). The Ichnaea documentation is very detailed and it is recommended to read it. It contains information on the [architecture](https://mozilla.github.io/ichnaea/install/architecture.html) of the Ichnaea server code, as well as [installation](https://mozilla.github.io/ichnaea/install/index.html) ([development](https://mozilla.github.io/ichnaea/install/devel.html) or [production](https://mozilla.github.io/ichnaea/install/deploy.html)) and [debugging](https://mozilla.github.io/ichnaea/install/debug.html) instructions. Find the full docs [here](https://mozilla.github.io/ichnaea/).
 
