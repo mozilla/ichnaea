@@ -26,9 +26,7 @@ For other features, read the Ichnaea docs.
 It is NOT recommended to attempt to upgrade the BBOXX Ichnaea to newer versions of Ichnaea. Upgrading could delete the entire database. If you are confident with Docker and MySQL, you could backup the database (warning, it contains a LOT of data and will take a lot of time), upgrade Ichnaea, then restore the database.
 
 To SSH into the BBOXX Ichnaea, you will require a .pem file to grant SSH access.
-```
-ssh -i path/to/ichnaea-server.pem ubuntu@location.bboxx.co.uk
-```
+
 The HOME directory contains various Python scripts used in uploading CSV data to the database. These are only needed for CSV upload, they rarely need to be used.
 There's a folder named `ichnaea-2.1.0`, which contains the files required by the server and matches the structure of the Ichnaea repository, with an additional folder named `mls-update` and `latlon_test.py` Python script. `latlon_test.py` was used in updating the max/min lat/lon of each record in the database and should not be needed.
 
@@ -51,10 +49,7 @@ sudo ./server shell
 ```
 From here follow steps from the [debugging section](https://mozilla.github.io/ichnaea/install/debug.html) of the docs. However, do NOT perform alembic downgrades/upgrades as this will DELETE database data.
 
-To access the MySQL CLI:
-```
-mysql -h location.bboxx.co.uk -uroot -plocation location
-```
+
 It is recommended to not change any of the data inside the database. `SELECT` statements are acceptable to view table data. The only table that may be edited is the `api_key` table, where API keys are managed. `INSERT` may be used to add a new API key, or `UPDATE` may be used to modify an existing key. It is recommended to have MySQL knowledge before attempting to use the database.
 
 
