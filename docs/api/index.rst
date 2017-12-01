@@ -10,6 +10,24 @@ well as reporting a location based on IP addresses, cell or WiFi networks.
 New client developments should use the :ref:`api_region_latest`,
 :ref:`api_geolocate_latest` or :ref:`api_geosubmit_latest` APIs.
 
+Requesting an API Key
+=====================
+
+The key has a daily usage limit of about 100,000 requests. As we aren't
+offering a commercial service, please note that we do not make any
+guarantees about the accuracy of the results or the availability of
+the service.
+
+Please make sure that you actually need the raw API access to
+perform geolocation lookups.  If you just need to get location data
+from your web application, you can directly use the 
+`HTML5 API
+<https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation>`_.
+
+To apply for an API key, please email mls-contact@mozilla.com with
+the number of requests you're planning on making per day and how you
+are planning on using the location service.  This will help us plan
+out how we allocate resources to keep the service responsive.
 
 API Access Keys
 ===============
