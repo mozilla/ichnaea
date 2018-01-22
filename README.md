@@ -9,11 +9,11 @@ BBOXX Ichnaea is a modified version of Mozilla's [Ichnaea project](https://githu
 If you are simply looking to use the Geolocation API, then the details are [here](https://mozilla.github.io/ichnaea/api/geolocate.html). Please note that the BBOXX Ichnaea instance uses a different URL endpoint.
 
 ## API
-The BBOXX Ichnaea instance is hosted at http://location.bboxx.co.uk. To make a geolocation request, make a HTTP POST request to http://location.bboxx.co.uk/v1/geolocate?key=API_KEY where API_KEY is the API token that you have been given. For testing purposes, use the "test" API key (http://location.bboxx.co.uk/v1/geolocate?key=test). The payload of the POST should be a JSON file following the [structure](https://mozilla.github.io/ichnaea/api/geolocate.html) defined in the Ichnaea docs.
+The BBOXX Ichnaea instance is hosted at http://location.bboxx.co.uk:8000. To make a geolocation request, make a HTTP POST request to http://location.bboxx.co.uk:8000/v1/geolocate?key=API_KEY where API_KEY is the API token that you have been given. For testing purposes, use the "test" API key (http://location.bboxx.co.uk:8000/v1/geolocate?key=test). The payload of the POST should be a JSON file following the [structure](https://mozilla.github.io/ichnaea/api/geolocate.html) defined in the Ichnaea docs.
 
 Here's an example using cURL and a JSON file named `sample_ichnaea.json` in the current working directory
 ```
-curl -d @sample_ichnaea.json -H 'Content-Type: application/json' -i http://location.bboxx.co.uk/v1/geolocate?key=test
+curl -d @sample_ichnaea.json -H 'Content-Type: application/json' -i http://location.bboxx.co.uk:8000/v1/geolocate?key=test
 
 ```
 Depending on the API key used, different fallback methods are used. Some keys will cause requests to be passed through to UnWired Labs in the case where Ichnaea is unable to estimate a location, typically due to insufficient cell tower data in the MySQL database. To test this behaviour, use the "test_unwired" API key, which uses the UnWired Labs fallback.
