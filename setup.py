@@ -12,7 +12,7 @@ from setuptools import (
 
 here = os.path.relpath(os.path.abspath(os.path.dirname(__file__)))
 
-with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
+with open(os.path.join(here, 'README.md'), encoding='utf-8') as fd:
     long_description = fd.read()
 
 __version__ = '2.1.0'

@@ -1,1 +1,1 @@
-mysql-connector==2.2.3 --hash=sha256:ddac76aadfc89f0b0f35b9a8718548502517806798373381973707f847933953 --install-option=--with-mysql-capi='/usr/bin/mysql_config'
+mysql-connector==2.1.6 --hash=sha256:d5b95b8de234873563855e288f0c9ef85b119c0a862287cbcee7d6654cf60467 --install-option=--with-mysql-capi='/usr/bin/mysql_config'

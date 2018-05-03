@@ -24,7 +24,7 @@ path-exclude=/usr/share/locale/*\n\
 # Add MySQL apt repo & GPG key
 RUN echo 'deb http://repo.mysql.com/apt/debian/ jessie mysql-5.7' > \
     /etc/apt/sources.list.d/mysql.list && \
-    apt-key adv --keyserver pgp.mit.edu --recv-keys 8C718D3B5072E1F5
+    apt-key adv --keyserver hkp://pgp.mit.edu:80 --recv-keys 5072E1F5
 
 # Install apt-installable dependencies.
 RUN apt-get update && apt-get -y install \
