@@ -24,10 +24,14 @@ from your web application, you can directly use the
 `HTML5 API
 <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation>`_.
 
+Mozilla does not issue API keys to commercial ventures currently.
+
 To apply for an API key, please email mls-contact@mozilla.com with
-the number of requests you're planning on making per day and how you
-are planning on using the location service.  This will help us plan
-out how we allocate resources to keep the service responsive.
+the number of requests you're planning on making per day, how you
+are planning on using the location service. We also require a link to
+a publicly accessible source repository for your project.  This will
+help us plan out how we allocate resources to keep the service
+responsive.
 
 API Access Keys
 ===============
