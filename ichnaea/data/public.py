@@ -15,6 +15,8 @@ from ichnaea import util
 
 def write_stations_to_csv(session, path, today,
                           start_time=None, end_time=None):
+    linesep = '\r\n'
+
     where = 'lat IS NOT NULL AND lon IS NOT NULL'
     if start_time is not None and end_time is not None:
         where = where + ' AND modified >= "%s" AND modified < "%s"'
@@ -25,12 +27,12 @@ def write_stations_to_csv(session, path, today,
         one_year = today - timedelta(days=365)
         where = where + ' AND modified >= "%s"' % one_year.strftime('%Y-%m-%d')
 
-    header_row = [
+    field_names = [
         'radio', 'mcc', 'net', 'area', 'cell', 'unit',
         'lon', 'lat', 'range', 'samples', 'changeable',
         'created', 'updated', 'averageSignal',
     ]
-    header_row = ','.join(header_row) + '\n'
+    header_row = ','.join(field_names) + linesep
 
     tables = [shard.__tablename__ for shard in CellShard.shards().values()]
     stmt = '''SELECT
@@ -76,9 +78,7 @@ LIMIT :limit
                             cellid=min_cellid
                         )).fetchall()
                     if rows:
-                        buf = '\r\n'.join([row.cell_value for row in rows])
-                        if buf:
-                            buf += '\r\n'
+                        buf = ''.join(row.cell_value + linesep for row in rows)
                         gzip_file.write(buf)
                         min_cellid = rows[-1].cellid
                     else:
