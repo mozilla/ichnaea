@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+# default variables
+: "${PORT:=8000}"
+: "${SLEEP:=1}"
+: "${THREADS:=8}"
+: "${TRIES:=60}"
+: "${WORKERS:=4}"
+
+usage() {
+  echo "usage: bin/run web|web-dev|test"
+  exit 1
+}
+
+wait_for() {
+  tries=0
+  echo "Waiting for $1 to listen on $2..."
+  while true; do
+    [[ $tries -lt $TRIES ]] || return
+    (echo > /dev/tcp/$1/$2) >/dev/null 2>&1
+    result=
+    [[ $? -eq 0 ]] && return
+    sleep $SLEEP
+    tries=$((tries + 1))
+  done
+}
+
+[ $# -lt 1 ] && usage
+
+# Only wait for backend services in development
+# http://stackoverflow.com/a/13864829
+# [ ! -z ${DEVELOPMENT+check} ] && wait_for db 5432 && wait_for redis 6379
+
+case $1 in
+  web)
+    exec newrelic-admin run-program gunicorn taar_api.app:app -b 0.0.0.0:${PORT} --workers ${WORKERS} --threads ${THREADS} --access-logfile -
+    ;;
+#   web-dev)
+#     exec python taar_api/app.py --host=0.0.0.0 --port=${PORT}
+#     ;;
+  test)
+    coverage erase
+    tox
+    coverage report -m
+    if [[ ! -z ${CI+check} ]]; then
+      # submit coverage
+      coverage xml
+      env
+      bash <(curl -s https://codecov.io/bash) -s /tmp
+    fi
+    ;;
+  *)
+    exec "$@"
+    ;;
+esac
