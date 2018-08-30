@@ -1,4 +1,5 @@
-.*
+.Python
+.python-version
 *~
 *.py[co]
 *.so
