@@ -1,46 +1,64 @@
-# These environment variables must be set in CircleCI UI
-#
-# DOCKERHUB_REPO - docker hub repo, format: <username>/<repo>
-# DOCKER_EMAIL   - login info for docker hub
-# DOCKER_USER
-# DOCKER_PASS
-#
-
 version: 2
 jobs:
-  build_deploy:
-    machine:
-      enable: true
+  build_and_push:
+    docker:
+      - image: docker:stable
     steps:
-      - checkout
-      - run: ./bin/build
-      - run: ./bin/deploy
-  integration_test:
-    machine:
-      enable: true
-    steps:
-      - checkout
       - run:
-          name: Install Docker Compose
+          name: Install checkout deps
           command: |
-            curl -L https://github.com/docker/compose/releases/download/1.19.0/docker-compose-`uname -s`-`uname -m` > ~/docker-compose
-            chmod +x ~/docker-compose
-            sudo mv ~/docker-compose /usr/local/bin/docker-compose
-      - run: ./bin/test
+            set -x
+            apk update
+            apk add git openssh
+
+      - checkout
+      - setup_remote_docker
+
+      - run:
+          name: Create version.json
+          command: |
+            # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+            printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
+            "$CIRCLE_SHA1" \
+            "$CIRCLE_TAG" \
+            "$CIRCLE_PROJECT_USERNAME" \
+            "$CIRCLE_PROJECT_REPONAME" \
+            "$CIRCLE_BUILD_URL" > version.json
+
+      - run:
+          name: Build Docker image
+          command: |
+            docker info
+            docker build -t ${CIRCLE_PROJECT_REPONAME}:build .
+
+      - run:
+          name: Push to Dockerhub
+          command: |
+            export DOCKER_IMAGE="mozilla/${CIRCLE_PROJECT_REPONAME}:latest"
+            if [ -n "${CIRCLE_TAG}" ]; then
+                export DOCKER_IMAGE="mozilla/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_TAG}"
+            fi
+
+            if [ "${CIRCLE_BRANCH}" == "master" ] || [ -n "${CIRCLE_TAG}" ]; then
+                echo "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin
+                docker tag "${CIRCLE_PROJECT_REPONAME}:build" "${DOCKER_IMAGE}"
+                docker push "${DOCKER_IMAGE}"
+            fi
 
 workflows:
   version: 2
-  test_build_deploy:
+
+  # workflow jobs are _not_ run in tag builds by default
+  # we use filters to whitelist jobs that should be run for tags
+
+  # workflow jobs are run in _all_ branch builds by default
+  # we use filters to blacklist jobs that shouldn't be run for a branch
+
+  # see: https://circleci.com/docs/2.0/workflows/#git-tag-job-execution
+
+  build_and_push:
     jobs:
-      - integration_test:
+      - build_and_push:
           filters:
             tags:
               only: /.*/
-      - build_deploy:
-          requires:
-            - integration_test
-          filters:
-            tags:
-              only: /.*/
-            branches:
-              only: master
