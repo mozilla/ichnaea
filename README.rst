@@ -1,3 +1,6 @@
+.. image:: https://circleci.com/gh/mozilla/ichnaea.svg?style=svg
+    :target: https://circleci.com/gh/mozilla/ichnaea
+
 =======
 Ichnaea
 =======
