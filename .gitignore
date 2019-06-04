@@ -1,7 +1,7 @@
-.*
 *~
 *.py[co]
 *.so
 *.sublime-*
+.DS_Store
 docs/build/doctrees/
 ichnaea/content/static/tiles/
