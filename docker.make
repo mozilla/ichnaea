@@ -15,7 +15,7 @@ DATAMAPS_COMMIT = 76e620adabbedabd6866b23b30c145b53bae751e
 DATAMAPS_NAME = datamaps-$(DATAMAPS_COMMIT)
 DATAMAPS_DIR = $(VENDOR)/$(DATAMAPS_NAME)
 
-LIBMAXMIND_VERSION = 1.2.1
+LIBMAXMIND_VERSION = 1.3.2
 LIBMAXMIND_NAME = libmaxminddb-$(LIBMAXMIND_VERSION)
 LIBMAXMIND_DIR = $(VENDOR)/$(LIBMAXMIND_NAME)
 
@@ -54,8 +54,8 @@ build_python_deps:
 	pip install --no-cache-dir --disable-pip-version-check virtualenv
 	python -m virtualenv --no-site-packages .
 	$(INSTALL) -r requirements/build.txt
-	$(INSTALL) -r requirements/binary.txt
 	$(INSTALL) -r requirements/all.txt
+	$(INSTALL) -r requirements/binary.txt
 
 build_ichnaea:
 	$(BIN)/cythonize -f ichnaea/geocalc.pyx

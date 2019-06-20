@@ -152,6 +152,9 @@ class Database(object):
             old_transport, rest = rest.split(':', 1)
             uri = db_type + '+' + new_transport + ':' + rest
 
+        if DB_TRANSPORTS[transport] == 'mysqlconnector':
+            options['connect_args']['use_pure'] = True
+
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(

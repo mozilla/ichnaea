@@ -69,8 +69,8 @@ case "$1" in
         fi
         docker build -t mozilla/location .
         docker run -d \
-          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
-          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+          -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
+          -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
           --name="location_scheduler" mozilla/location scheduler
         ;;
 
@@ -82,8 +82,8 @@ case "$1" in
         fi
         docker build -t mozilla/location .
         docker run -d \
-          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
-          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+          -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
+          -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
           -p 8000:8000/tcp --name="location_web" mozilla/location web
         ;;
 
@@ -95,27 +95,27 @@ case "$1" in
         fi
         docker build -t mozilla/location .
         docker run -d \
-          -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
-          -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+          -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
+          -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
           --name="location_worker" mozilla/location worker
         ;;
 
       # Builds and starts the services supporting the application container.
       services)
         cd docker/mysql; docker build $PULL_ARG -t mozilla/location_mysql:latest .
-        cd $HERE
+        cd "$HERE"
         cd docker/redis; docker build $PULL_ARG -t mozilla/location_redis:latest .
-        cd $HERE
+        cd "$HERE"
         docker-compose build $PULL_ARG
         docker-compose up -d
         ;;
 
       # Builds and starts all containers.
       *)
-        $0 $1 services
-        $0 $1 scheduler
-        $0 $1 worker
-        $0 $1 web
+        $0 "$1" services
+        $0 "$1" scheduler
+        $0 "$1" worker
+        $0 "$1" web
         ;;
 
     esac
@@ -160,10 +160,10 @@ case "$1" in
 
       # Kills and removes all containers.
       *)
-        $0 $1 scheduler
-        $0 $1 web
-        $0 $1 worker
-        $0 $1 services
+        $0 "$1" scheduler
+        $0 "$1" web
+        $0 "$1" worker
+        $0 "$1" services
         ;;
 
     esac
@@ -174,26 +174,26 @@ case "$1" in
     $0 start services
     docker build $PULL_ARG -t mozilla/location .
     docker run -it --rm \
-        -e "REDIS_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis`" \
-        -e "DB_HOST=`docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql`" \
+        -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
+        -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
         -e "DB_USER=root" \
         --name="location_shell" \
-        --volume `pwd`/docs/build/html:/app/docs/build/html \
-        --volume `pwd`/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles \
-        mozilla/location $2 $3 $4 $5 $6 $7 $8 $9
+        --volume "$(pwd)/docs/build/html:/app/docs/build/html" \
+        --volume "$(pwd)/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles" \
+        mozilla/location "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
   # Runs alembic inside the container.
   alembic)
-    $0 run alembic $2 $3 $4 $5 $6 $7 $8 $9
+    $0 run alembic "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
   # Updates CSS resources using a special node container.
   css)
     cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
-    cd $HERE
+    cd "$HERE"
     docker run -it --rm \
-        --volume `pwd`:/app mozilla/location_node \
+        --volume "$(pwd):/app mozilla/location_node" \
         make -f node.make css
     ;;
 
@@ -205,9 +205,9 @@ case "$1" in
   # Updates JS resources using a special node container.
   js)
     cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
-    cd $HERE
+    cd "$HERE"
     docker run -it --rm \
-        --volume `pwd`:/app mozilla/location_node \
+        --volume "$(pwd):/app mozilla/location_node" \
         make -f node.make js
     ;;
 
@@ -222,7 +222,7 @@ case "$1" in
 
   # Run the tests inside the container.
   test)
-    $0 run test $2 $3 $4 $5 $6 $7 $8 $9
+    $0 run test "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
   # Shows usage information.

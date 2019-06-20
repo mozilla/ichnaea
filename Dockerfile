@@ -21,6 +21,9 @@ path-exclude=/usr/share/man/*\n\
 path-exclude=/usr/share/locale/*\n\
 " > /etc/dpkg/dpkg.cfg.d/apt-no-docs
 
+# Install GNUPG
+RUN apt-get update && apt-get -y install gnupg
+
 # Add MySQL apt repo & GPG key
 RUN echo 'deb http://repo.mysql.com/apt/debian/ jessie mysql-5.7' > \
     /etc/apt/sources.list.d/mysql.list && \
