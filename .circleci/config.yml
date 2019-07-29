@@ -48,16 +48,15 @@ jobs:
             working_directory: /ichnaea
             command: |
                 # consolidated from a bunch of commands in the older format
-                I="image-$(date +%j).gz" \
-                if [[ -e ~/docker/$I ]] \
-                    then echo "Loading $I" \
-                    pigz -d -c ~/docker/$I | docker load \
-                fi \
-                docker build -t ${DOCKERHUB_REPO} . \
-                I="image-$(date +%j).gz" \
-                mkdir -p ~/docker \
-                rm ~/docker/* \
-                docker save ${DOCKERHUB_REPO} | pigz --fast -c > ~/docker/$I \
+                I="image-$(date +%j).gz"
+                if [[ -e ~/docker/$I ]]
+                    then echo "Loading $I"
+                    pigz -d -c ~/docker/$I | docker load
+                fi
+                docker build -t ${DOCKERHUB_REPO:-mozilla/location} .
+                mkdir -p ~/docker
+                rm -f ~/docker/*
+                docker save ${DOCKERHUB_REPO:-mozilla/location} | pigz --fast -c > ~/docker/$I
                 ls -l ~/docker
     
         - run: docker images --no-trunc | awk '/^app/ {print $3}' | tee /ichnaea/docker-image-shasum256.txt
@@ -66,6 +65,7 @@ jobs:
     
         - run:
             name: Run tests
+            path: /ichnaea
             command: |
                 ./dev test
 
