@@ -35,14 +35,14 @@ jobs:
             path: /ichnaea/version.json
 
         - setup_remote_docker
-        
-        - run: 
+
+        - run:
             name: Get Info
             command: |
                docker info
                which docker-compose
                docker-compose --version
-        
+
         - run:
             name: Build Docker images
             working_directory: /ichnaea
@@ -58,11 +58,12 @@ jobs:
                 rm -f ~/docker/*
                 docker save ${DOCKERHUB_REPO:-mozilla/location} | pigz --fast -c > ~/docker/$I
                 ls -l ~/docker
-    
+
+        # write the sha256 sum to an artifact to make image verification easier
         - run: docker images --no-trunc | awk '/^app/ {print $3}' | tee /ichnaea/docker-image-shasum256.txt
         - store_artifacts:
             path: /ichnaea/docker-image-shasum256.txt
-    
+
         - run:
             name: Run tests
             path: /ichnaea
