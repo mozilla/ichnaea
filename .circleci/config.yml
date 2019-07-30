@@ -58,6 +58,7 @@ jobs:
                 rm -f ~/docker/*
                 docker save ${DOCKERHUB_REPO:-mozilla/location} | pigz --fast -c > ~/docker/$I
                 ls -l ~/docker
+                docker images --no-trunc
 
         # write the sha256 sum to an artifact to make image verification easier
         - run: docker images --no-trunc | awk '/^app/ {print $3}' | tee /ichnaea/docker-image-shasum256.txt
@@ -70,6 +71,7 @@ jobs:
             command: |
                 mkdir -p /tmp/dev/test-results/pytest
                 ./dev test DEV_TMP=/tmp/dev TEST_JUNIT_XML=/tmp/dev/test-results/pytest/results.xml
+                find /tmp/dev
 
         - store_test_results:
             path: /tmp/dev/test-results
