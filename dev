@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -o xtrace
 
 HERE="$(pwd)"
 
@@ -16,6 +17,7 @@ if [ ! -z "$DEV_TMP" ]; then
 else
     TMP_MNT=''
 fi
+echo "DEV_TMP=$DEV_TMP, using TMP_MNT $TMP_MNT"
 
 # First, let's make sure that Docker Compose has been installed.
 if ! [ -x "$(command -v docker-compose)" ]; then
