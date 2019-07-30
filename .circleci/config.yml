@@ -68,7 +68,8 @@ jobs:
             name: Run tests
             path: /ichnaea
             command: |
-                ./dev test
+                mkdir -p /tmp/dev/test-results/pytest
+                ./dev test DEV_TMP=/tmp/dev TEST_JUNIT_XML=/tmp/dev/test-results/pytest/results.xml
 
         - store_test_results:
-            path: /tmp/circleci-test-results
+            path: /tmp/dev/test-results

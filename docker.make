@@ -26,6 +26,11 @@ else
 	TEST_ARG = $(TESTS)
 endif
 
+TEST_JUNIT_XML ?= none
+ifneq ($(TEST_JUNIT_XML), none)
+    TEST_ARG += --junitxml=$(TEST_JUNIT_XML)
+endif
+
 .PHONY: all build_datamaps build_libmaxmind build_deps \
 	build_python_deps build_ichnaea build_check \
 	docs

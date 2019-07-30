@@ -9,6 +9,14 @@ else
   PULL_ARG='--pull'
 fi
 
+# Mount a folder at /tmp/dev
+# Used by CircleCI build to create a junit XML results file
+if [ ! -z "$DEV_TMP" ]; then
+    TMP_MNT='--volume "$(DEV_TMP):/tmp/dev"'
+else
+    TMP_MNT=''
+fi
+
 # First, let's make sure that Docker Compose has been installed.
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo "Please install Docker Compose and try again."
@@ -180,6 +188,7 @@ case "$1" in
         --name="location_shell" \
         --volume "$(pwd)/docs/build/html:/app/docs/build/html" \
         --volume "$(pwd)/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles" \
+        $TMP_MNT \
         mozilla/location "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
