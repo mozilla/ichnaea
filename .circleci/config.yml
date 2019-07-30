@@ -58,10 +58,9 @@ jobs:
                 rm -f ~/docker/*
                 docker save ${DOCKERHUB_REPO:-mozilla/location} | pigz --fast -c > ~/docker/$I
                 ls -l ~/docker
-                docker images --no-trunc
 
         # write the sha256 sum to an artifact to make image verification easier
-        - run: docker images --no-trunc | awk '/^app/ {print $3}' | tee /ichnaea/docker-image-shasum256.txt
+        - run: docker images --no-trunc | grep "^${DOCKERHUB_REPO:-mozilla/location} " |  awk "{print $3}" | tee /ichnaea/docker-image-shasum256.txt
         - store_artifacts:
             path: /ichnaea/docker-image-shasum256.txt
 
