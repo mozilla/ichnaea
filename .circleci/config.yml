@@ -20,6 +20,20 @@ jobs:
             path: /ichnaea
 
         - run:
+            name: Setup build environment
+            command: |
+                rm -rf /tmp/circleci
+                mkdir -p /tmp/circleci/artifacts
+                mkdir -p /tmp/circleci/test-results
+                chmod a+rwx /tmp/circleci/artifacts
+                chmod a+rwx /tmp/circleci/test-results
+                echo 'export DOCKERHUB_REPO="${DOCKERHUB_REPO:-mozilla/location}"' >> $BASH_ENV
+                echo 'export CI_BASE=/tmp/circleci' >> $BASH_ENV
+                echo 'export CI_ARTIFACTS=/tmp/circleci/artifacts' >> $BASH_ENV
+                echo 'export CI_TEST_RESULTS=/tmp/circleci/test-results' >> $BASH_ENV
+                source $BASH_ENV
+
+        - run:
             name: Create version.json
             working_directory: /ichnaea
             command: |
@@ -29,10 +43,7 @@ jobs:
                 "$CIRCLE_TAG" \
                 "$CIRCLE_PROJECT_USERNAME" \
                 "$CIRCLE_PROJECT_REPONAME" \
-                "$CIRCLE_BUILD_URL" > /ichnaea/version.json
-
-        - store_artifacts:
-            path: /ichnaea/version.json
+                "$CIRCLE_BUILD_URL" > /tmp/circleci/artifacts/version.json
 
         - setup_remote_docker
 
@@ -53,26 +64,26 @@ jobs:
                     then echo "Loading $I"
                     pigz -d -c ~/docker/$I | docker load
                 fi
-                docker build -t ${DOCKERHUB_REPO:-mozilla/location} .
+                docker build -t $DOCKERHUB_REPO .
                 mkdir -p ~/docker
                 rm -f ~/docker/*
-                docker save ${DOCKERHUB_REPO:-mozilla/location} | pigz --fast -c > ~/docker/$I
+                docker save $DOCKERHUB_REPO | pigz --fast -c > ~/docker/$I
                 ls -l ~/docker
-
-        # write the sha256 sum to an artifact to make image verification easier
-        - run: docker images --no-trunc | grep "^${DOCKERHUB_REPO:-mozilla/location} " | awk '{print $3}' | tee /ichnaea/docker-image-shasum256.txt
-        - store_artifacts:
-            path: /ichnaea/docker-image-shasum256.txt
+                # write the sha256 sum to an artifact to make image verification easier
+                docker images --no-trunc | grep "^${DOCKERHUB_REPO} " | awk '{print $3}' | tee ${CI_ARTIFACTS}/docker-image-shasum256.txt
 
         - run:
             name: Run tests
             path: /ichnaea
             environment:
-                DEV_TMP: /tmp/dev
+                DEV_TMP: /tmp/circleci
             command: |
                 mkdir -p ${DEV_TMP}/test-results/pytest
+                chmod a+rwx ${DEV_TMP}/test-results/pytest
                 ./dev test TEST_JUNIT_XML=${DEV_TMP}/test-results/pytest/results.xml
-                find ${DEV_TMP}
+
+        - store_artifacts:
+            path: /tmp/circleci/artifacts
 
         - store_test_results:
-            path: /tmp/dev/test-results
+            path: /tmp/circleci/test-results
