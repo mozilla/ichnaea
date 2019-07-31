@@ -13,7 +13,7 @@ fi
 # Mount a folder at /tmp/dev
 # Used by CircleCI build to create a junit XML results file
 if [ ! -z "$DEV_TMP" ]; then
-    TMP_MNT='--volume "$(DEV_TMP):/tmp/dev"'
+    TMP_MNT="--volume ${DEV_TMP}:/tmp/dev"
 else
     TMP_MNT=''
 fi

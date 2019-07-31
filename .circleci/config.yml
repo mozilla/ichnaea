@@ -67,10 +67,12 @@ jobs:
         - run:
             name: Run tests
             path: /ichnaea
+            environment:
+                DEV_TMP: /tmp/dev
             command: |
-                mkdir -p /tmp/dev/test-results/pytest
-                ./dev test DEV_TMP=/tmp/dev TEST_JUNIT_XML=/tmp/dev/test-results/pytest/results.xml
-                find /tmp/dev
+                mkdir -p ${DEV_TMP}/test-results/pytest
+                ./dev test TEST_JUNIT_XML=${DEV_TMP}/test-results/pytest/results.xml
+                find ${DEV_TMP}
 
         - store_test_results:
             path: /tmp/dev/test-results

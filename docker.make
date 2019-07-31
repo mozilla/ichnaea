@@ -81,3 +81,4 @@ docs:
 test:
 	TESTING=true $(BIN)/pytest $(TEST_ARG)
 	$(BIN)/flake8 ichnaea
+	find /tmp/dev
