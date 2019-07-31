@@ -83,7 +83,7 @@ jobs:
                 ./dev test TEST_JUNIT_XML=${DEV_TMP}/test-results/pytest/results.xml
 
         - store_artifacts:
-            path: /tmp/circleci/artifacts
+            path: /tmp/circleci
 
         - store_test_results:
             path: /tmp/circleci/test-results
