@@ -54,10 +54,56 @@ jobs:
             name: Build Docker images
             working_directory: /ichnaea
             command: |
-                docker build -t ${DOCKERHUB_REPO:-mozilla/location} .
+                docker build -t mozilla/location .
 
         - run:
             name: Run tests
             working_directory: /ichnaea
             command: |
                 ./dev test
+
+        - run:
+            name: Push to Dockerhub
+            working_directory: /ichnaea
+            command: |
+              # Quit early if docker credentials are not defined
+              if [ "${DOCKER_USERNAME}" == "" ] || [ "${DOCKER_PASSWORD}" == "" ]; then
+                echo "Skipping Push to Dockerhub, credentials not available."
+                exit 0
+              fi
+
+              function retry {
+                set +e
+                local n=0
+                local max=3
+                while true; do
+                "$@" && break || {
+                  if [[ $n -lt $max ]]; then
+                    ((n++))
+                    echo "Command failed. Attempt $n/$max:"
+                  else
+                    echo "Failed after $n attempts."
+                    exit 1
+                  fi
+                }
+                done
+                set -e
+              }
+
+              export DOCKER_TAG="${CIRCLE_SHA1}"
+              if [ -n "${CIRCLE_TAG}" ]; then
+                export DOCKER_TAG="${CIRCLE_TAG}"
+              fi
+              # push on master or git tag
+              if [ "${CIRCLE_BRANCH}" == "master" ] || [ -n "${CIRCLE_TAG}" ]; then
+                echo "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin
+                docker tag "mozilla/location" "mozilla/location:${DOCKER_TAG}"
+                retry docker push "mozilla/location:${DOCKER_TAG}"
+
+                # push `latest` on master only
+                if [ "${CIRCLE_BRANCH}" == "master" ]; then
+                  docker tag "mozilla/location" "mozilla/location:latest"
+                  retry docker push "mozilla/location:latest"
+                fi
+              fi
+
