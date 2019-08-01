@@ -1,8 +1,10 @@
 """Database related functionality."""
 
 from contextlib import contextmanager
-from pymysql.err import DatabaseError
+from ssl import PROTOCOL_TLSv1
 
+import certifi
+from pymysql.err import DatabaseError
 from sqlalchemy import (
     create_engine,
     exc,
@@ -154,6 +156,14 @@ class Database(object):
 
         if DB_TRANSPORTS[transport] == 'mysqlconnector':
             options['connect_args']['use_pure'] = True
+            # TODO: Update the TLS protocol version as we update MySQL
+            # AWS MySQL 5.6 supports TLS v1.0, not v1.1 or v1.2
+            # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_MySQL.html#MySQL.Concepts.SSLSupport
+            # The MySQL 5.7 Docker image supports TLS v1.0 and v1.1, not v1.2
+            # https://github.com/docker-library/mysql/issues/567
+            options['connect_args']['ssl_version'] = PROTOCOL_TLSv1
+            # Needed for SSL
+            options['connect_args']['ssl_ca'] = certifi.where()
 
         self.engine = create_engine(uri, **options)
 

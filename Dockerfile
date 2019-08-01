@@ -25,12 +25,14 @@ path-exclude=/usr/share/locale/*\n\
 RUN apt-get update && apt-get -y install gnupg
 
 # Add MySQL apt repo & GPG key
-RUN echo 'deb http://repo.mysql.com/apt/debian/ jessie mysql-5.7' > \
-    /etc/apt/sources.list.d/mysql.list && \
-    apt-key adv --keyserver pgp.mit.edu --recv-keys 8C718D3B5072E1F5
+COPY ./conf/mysql_pubkey.asc /tmp/mysql_pubkey.asc
+RUN apt-key add /tmp/mysql_pubkey.asc && \
+    echo 'deb http://repo.mysql.com/apt/debian/ buster mysql-5.7' > \
+    /etc/apt/sources.list.d/mysql.list
 
 # Install apt-installable dependencies.
-RUN apt-get update && apt-get -y install --no-install-recommends \
+RUN apt-get update && \
+    apt-get -y install --no-install-recommends \
     file \
     gcc \
     g++ \
