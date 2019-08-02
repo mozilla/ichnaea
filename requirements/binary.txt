@@ -1,5 +1,3 @@
-# MySQL driver written in Python
-# Code: https://github.com/mysql/mysql-connector-python
 mysql-connector-python==8.0.16 \
     --hash=sha256:1d6a15879f198b2e5938429a7547f68549bf18658e82a2a68a5b75ee23bd7a8c \
     --hash=sha256:2121a32dfaf1ff5a41a7924fb5f03d66c307bac403a42581bc13f788574b8051 \

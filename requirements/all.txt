@@ -1,40 +1,24 @@
+# FIXME: Change name of this file, since it isn't all the requirements
+
 -c constraints.txt
 
-# Database migrations tool
-# Code: https://github.com/sqlalchemy/alembic
 alembic==0.9.4 \
     --hash=sha256:aa07406e74b18583c92c909b319bd79b89f281c2161615b0a11e2001df45a8d1
-
-# Amazon Web Services SDK for Python
-# Code: https://github.com/boto/boto3
-# Code: https://github.com/boto/botocore
 boto3==1.4.5 \
     --hash=sha256:6d570df0f692e82b35e9abafbb4584b899b2803e8cfcb70d1f371ca08919831d \
     --hash=sha256:a4552ebaee08d1cc77c7f0e2756bb9e51b3f40076cf304c8c42e51e8b85d5e8f
 botocore==1.5.92 \
     --hash=sha256:5a14eec600f5595dabe3949819d30e2c13c49b0efe224a9051ee3ef0689246a4 \
     --hash=sha256:8d040deebd79e2060bac4e9e6a161897afd624f151478cc098b2d40d0c01b362
-
-# Distributed Task Queue
-# Code: https://github.com/celery/celery
 celery==3.1.25 \
     --hash=sha256:1954a224805f3835e5b6f5998ec9fe51db3413cc49e59fc720d314c7913427cf \
     --hash=sha256:6ced63033bc663e60c992564954dbb5c84c43899f7f1a04b739957350f6b55f3
-
-# Curated collection of root certificates
-# Code: https://github.com/certifi/python-certifi
 certifi==2017.7.27.1 \
     --hash=sha256:40523d2efb60523e113b44602298f0960e900388cf3bb6043f645cf57ea9e3f5 \
     --hash=sha256:54a07c09c586b0e4c619f02a5e94e36619da8e2b053e20f594348c0611803704
-
-# Schema-based serialization and deserialization library
-# Code: https://github.com/Pylons/colander
 colander==1.4 \
     --hash=sha256:3ed2941e006e88c7abe78ee0921f0b91801340acdcd46389380887027108e999 \
     --hash=sha256:e20e9acf190e5711cf96aa65a5405dac04b6e841028fc361d953a9923dbc4e72
-
-# Compiler for writing C extensions for Python
-# Code: https://github.com/cython/cython
 Cython==0.26 \
     --hash=sha256:33d2dbe6b7547bfbe2e70c51682263d517da45fbb40a48621656e8566ab0818b \
     --hash=sha256:3a75abae5447899eab63329f73607379b6c3415611f8b30067e761ad56f7861d \
@@ -64,37 +48,19 @@ Cython==0.26 \
     --hash=sha256:db9cb52f486ca8b65b2bde5e3ae826112938a0dc1cbaad8be34808de6003b2c9 \
     --hash=sha256:ea93ac8f3c8a05da7bf417414e91c81b156e8d5c578a053f3396d9feff6c803d \
     --hash=sha256:fbc063dfff767770d83e1ef2ec95a08ecced2ec71061d00981f9c59ffedff6af
-
-# SDK for metrics aggregation server
-# Code: https://github.com/DataDog/datadogpy
 datadog==0.16.0 \
     --hash=sha256:9ce3c3c4080f6dcb9c799d3d9e43ea3ed61132599d0e9143954d35ae9578a2d1
-
-# Test fixtures replacement
-# Code: https://github.com/FactoryBoy/factory_boy/
 factory-boy==2.9.2 \
     --hash=sha256:340c602f6fed2d8dd160397f28f2c0219e937f0488460450e8e5bf2add020ed6 \
     --hash=sha256:b8334bcc3c5b10af9a83ab5b8786f98cb322638dc1e6d320cad01c7f2b420e87
-
-# Run a collection of style and quality tools
-# Code: https://gitlab.com/pycqa/flake8
 flake8==3.4.1 \
     --hash=sha256:c20044779ff848f67f89c56a0e4624c04298cd476e25253ac0c36f910a1a11d8 \
     --hash=sha256:f1a9d8886a9cbefb52485f4f4c770832c7fb569c084a9a314fb1eaa37c0c2c86
-
-# Geopolitical Entities, Names, and Codes (GENC)
-# Code: https://github.com/hannosch/genc
 genc==0.2 \
     --hash=sha256:bf568548cd9c30e2a059110eeb33cecc7fb74875cf10e5c897caf6bc762b6221
-
-# MaxMind GeoIP2 Python API
-# Code: https://github.com/maxmind/GeoIP2-python
 geoip2==2.5.0 \
     --hash=sha256:198fc36b51dd757df02173862a7ba48c2f61ee416c26e782cd8a887fd9aedb41 \
     --hash=sha256:73cac570c028cf685dbd8a8c10c1aa0a8b2924ca37b5c039bc010330c94cc580
-
-# Coroutine-based concurrency library
-# Code: https://github.com/gevent/gevent
 gevent==1.2.2 \
     --hash=sha256:0901975628790e8a57fc92bb7062e5b856edea48c8de9caf36cfda14eae07329 \
     --hash=sha256:1af93825db5753550fa8ff5ab2f2132e8733170b3f8d38347b34fa4a984cb624 \
@@ -125,16 +91,10 @@ gevent==1.2.2 \
     --hash=sha256:deafd70d04ab62428d4e291e8e2c0fb22f38690e6a9f23a67ee6c304087634da \
     --hash=sha256:df52e06a2754c2d905aad75a7dc06a732c804d9edbc87f06f47c8f483ba98bca \
     --hash=sha256:fce894a64db3911897cdad6c37fbb23dfb18b7bf8b9cb8c00a8ea0a7253651c9
-
-# "Green Unicorn", a WSGI HTTP Server
-# Code: https://github.com/benoitc/gunicorn
 gunicorn==19.7.1 \
     --hash=sha256:75af03c99389535f218cc596c7de74df4763803f7b63eb09d77e92b3956b36c6 \
     --hash=sha256:eee1169f0ca667be05db3351a0960765620dad53f53434262ff8901b68a1b622
-
-# Python wrapper for a minimalistic C client for Redis
-# TODO: redis or hiredis or both?
-# Code: https://github.com/redis/hiredis-py
+# TODO: Appears to be unused. Confirm and remove.
 hiredis==0.3.1 \
     --hash=sha256:098d0c767115fb2ffee4f142d76ad86785829ef22b07a0ce2d289eef78186705 \
     --hash=sha256:09f2d7bc980b2d1f402b39d4cc7841988493cf06580fd4b3120cbcf8a73402e5 \
@@ -164,30 +124,15 @@ hiredis==0.3.1 \
     --hash=sha256:fb8b80d2fb45857fd19d04387e4207412124e470c3b5d4d3568a6d9b74a72e99 \
     --hash=sha256:fc3eb53b51acf467ae7d60e92af23dee33b20871d84ce33e6e61b9e00077ff48 \
     --hash=sha256:ffe6d9bc7f3637d962eb4706a2908ba4064ec997beb99540bb385a0f7d7fe39a
-
-# Messaging library
-# Code: https://github.com/celery/kombu
 kombu==3.0.37 \
     --hash=sha256:7ceab743e3e974f3e5736082e8cc514c009e254e646d6167342e0e192aee81a6 \
     --hash=sha256:e064a00c66b4d1058cd2b0523fb8d98c82c18450244177b6c0f7913016642650
-
-# Python MaxMind DB reader extension
-# Code: https://github.com/maxmind/MaxMind-DB-Reader-python
 maxminddb==1.3.0 \
     --hash=sha256:972399b6d08b4cbb7889f2d2489266d18811c5ef6109cc52eb28de4102bbc4be
-
-# Mobile Country Codes (unmaintained)
-# Code: https://github.com/andymckay/mobile-codes
 mobile-codes==0.7 \
     --hash=sha256:24f86a85cc98afae2e991307b15414c6870db83db35d9878ea49c6c945717a71
-
-# HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
-# Code: https://github.com/cedadev/ndg_httpsclient/
 ndg-httpsclient==0.4.2 \
     --hash=sha256:580987ef194334c50389e0d7de885fccf15605c13c6eecaabd8d6c43768eb8ac
-
-# Scientific computing with Python
-# Code: https://github.com/numpy/numpy
 numpy==1.15.1 \
     --hash=sha256:1c362ad12dd09a43b348bb28dd2295dd9cdf77f41f0f45965e04ba97f525b864 \
     --hash=sha256:2156a06bd407918df4ac0122df6497a9c137432118f585e5b17d543e593d1587 \
@@ -217,17 +162,11 @@ numpy==1.15.1 \
     --hash=sha256:df0b02c6705c5d1c25cc35c7b5d6b6f9b3b30833f9d178843397ae55ecc2eebb \
     --hash=sha256:e3660744cda0d94b90141cdd0db9308b958a372cfeee8d7188fdf5ad9108ea82 \
     --hash=sha256:f2362d0ca3e16c37782c1054d7972b8ad2729169567e3f0f4e5dd3cdf85f188e
-
-# Python Build Reasonableness for setuptools
-# TODO: Try removing
-# Code: https://github.com/openstack/pbr
+# TODO: Appears to be unused. Confirm and remove.
 pbr==3.1.1 \
     --hash=sha256:05f61c71aaefc02d8e37c0a3eeb9815ff526ea28b3b76324769e6158d7f95be1 \
     --hash=sha256:60c25b7dfd054ef9bb0ae327af949dd4676aa09ac3a9471cdc871d8a9213f9ac
-
-# Protocol buffers - Google's data interchange format
-# TODO: Try removing
-# Code: https://github.com/protocolbuffers/protobuf
+# TODO: Appears to be unused. Confirm and remove.
 protobuf==3.7.1 \
     --hash=sha256:21e395d7959551e759d604940a115c51c6347d90a475c9baf471a1a86b5604a9 \
     --hash=sha256:57e05e16955aee9e6a0389fcbd58d8289dd2420e47df1a1096b3a232c26eb2dd \
@@ -248,10 +187,7 @@ protobuf==3.7.1 \
     --hash=sha256:d6e88c4920660aa75c0c2c4b53407aef5efd9a6e0ca7d2fc84d79aba2ccbda3a \
     --hash=sha256:ec3c49b6d247152e19110c3a53d9bb4cf917747882017f70796460728b02722e \
     --hash=sha256:f1f5d8b8e0bc9651d81b40ad3d9fb7cdd858ea31fc116dd230393465849dbecd
-
-# Generic ASN.1 library
-# TODO: Try removing
-# Code: https://github.com/etingof/pyasn1
+# TODO: Appears to be unused. Confirm and remove.
 pyasn1==0.3.2 \
     --hash=sha256:0ffbed58dd0151292cdf600ddcdc64946d3d6d27a8e44e274bd9631aa7b947eb \
     --hash=sha256:134c28e9d8b1894c8811b2bd11680c2048b20d244844ee25afd3f5916df19e3b \
@@ -265,38 +201,20 @@ pyasn1==0.3.2 \
     --hash=sha256:e9d2a79f135b77df387c579d7b0f591f12db943f7ca8250b509533d8898571fb \
     --hash=sha256:ea3dd5752ba7560c2354485e5ac2b7bc6b457861e6429238477f11a04069eb04 \
     --hash=sha256:ec43f39b1e5bb54e61f056f05a2847577705bb462704834d3b701ab9cc402746
-
-# Pure Python MySQL Client
-# Code: https://github.com/PyMySQL/PyMySQL
 PyMySQL==0.7.11 \
     --hash=sha256:56e3f5bcef6501012233620b54f6a7b8a34edc5751e85e4e3da9a0d808df5f68 \
     --hash=sha256:ac3dfb1f650582eca2e1e0701598bc04364ac464daa425cbbc26bb32ae54cdd5
-
-# A Python web framework
-# Code: https://github.com/Pylons/pyramid
 pyramid==1.9.1 \
     --hash=sha256:7da99f42fbc31cb36ae5297091734cab4e27d222da806dd370f3466ea8c6c422 \
     --hash=sha256:840f4bbd5994609340de35079da0d1dd94f79942e27818d5d8566f8009fb0b36
-
-# Pyramid bindings for Chameleon, an HTML/XML template engine
-# Code: https://github.com/Pylons/pyramid_chameleon
 pyramid_chameleon==0.3 \
     --hash=sha256:d176792a50eb015d7865b44bd9b24a7bd0489fa9a5cebbd17b9e05048cef9017
-
-# Test framework
-# Code: https://github.com/pytest-dev/pytest
 pytest==3.2.0 \
     --hash=sha256:0225cf10b9e173f84729d5f4648211458a222c6e53a77a85e104bc5f31c244ee \
     --hash=sha256:d994b4f28c6d449a467ad3d336544945a0dcf350e3b7b301219547ef5aa8125e
-
-# Code coverage plugin for pytest
-# Code: https://github.com/pytest-dev/pytest-cov
 pytest-cov==2.5.1 \
     --hash=sha256:03aa752cf11db41d281ea1d807d954c4eda35cfa1b21d6971966cc041bbf6e2d \
     --hash=sha256:890fe5565400902b0c78b5357004aab1c814115894f4f21370e2433256a3eeec
-
-# Timezone calculations and the Olson timezone database
-# Code: https://launchpad.net/pytz
 pytz==2017.2 \
     --hash=sha256:03c9962afe00e503e2d96abab4e8998a0f84d4230fa57afe1e0528473698cdd9 \
     --hash=sha256:39504670abb5dae77f56f8eb63823937ce727d7cdd0088e6909e6dcac0f89043 \
@@ -307,40 +225,22 @@ pytz==2017.2 \
     --hash=sha256:d1d6729c85acea5423671382868627129432fba9a89ecbb248d8d1c7a9f01c67 \
     --hash=sha256:ddc93b6d41cfb81266a27d23a79e13805d4a5521032b512643af8729041a81b4 \
     --hash=sha256:f5c056e8f62d45ba8215e5cb8f50dfccb198b4b9fbea8500674f3443e4689589
-
-# Legacy client library for Sentry crash reporting server
-# Code: https://github.com/getsentry/raven-python
 raven==6.1.0 \
     --hash=sha256:02cabffb173b99d860a95d4908e8b1864aad1b8452146e13fd7e212aa576a884 \
     --hash=sha256:56dc9062dd42bca97350e5048ff417c914376366caa3b1b5f788b27ddc0a34b7
-
-# Python client for Redis
-# TODO: redis or hiredis or both?
-# Code: https://github.com/andymccurdy/redis-py
 redis==2.10.5 \
     --hash=sha256:5dfbae6acfc54edf0a7a415b99e0b21c0a3c27a7f787b292eea727b1facc5533 \
     --hash=sha256:97156b37d7cda4e7d8658be1148c983984e1a975090ba458cc7e244025191dbd
-
-# Python HTTP Requests for Humans™
-# Code: https://github.com/psf/requests
 requests[security]==2.18.3 \
     --hash=sha256:b62be4ec5999c24d10c98d248a136e7db20ca6616a2b65060cd9399417331e8a \
     --hash=sha256:fb68a7baef4965c12d9cd67c0f5a46e6e28be3d8c7b6910c758fbcc99880b518
-
-# Mocked responses for the requests library
-# Code: https://github.com/jamielennox/requests-mock
 requests-mock==1.3.0 \
     --hash=sha256:23edd6f7926aa13b88bf79cb467632ba2dd5a253034e9f41563f60ed305620c7 \
     --hash=sha256:bd86970d6c52cc97071f5185aa594de6a997a5ca63b3bb36aceb9bb9db49294b
-
-# R-Tree spatial index for Python GIS, requires libspatialindex
-# Code: https://github.com/Toblerity/Rtree
 Rtree==0.8.3 \
     --hash=sha256:6cb9cf3000963ea6a3db777a597baee2bc55c4fc891e4f1967f262cc96148649 \
     --hash=sha256:8526431aa15d8cea1c07b451ce853b62b1da4cf6b74c07810aba5b81d12efe66 \
     --hash=sha256:a9e67386073f93f22449f396d5993dfe479335169c376f3f7fb04a396391f0dc
-
-# Toolkit for mathematics, science, and engineering
 scipy==0.19.1 \
     --hash=sha256:023ee29faa76c184a607e21076f097dc32f3abba7c71ece374588f95920aa993 \
     --hash=sha256:1e8fedf602859b541ebae78667ccfc53158edef58d9ee19ee659309004565952 \
@@ -357,23 +257,15 @@ scipy==0.19.1 \
     --hash=sha256:a19a2ca7a7336495ec180adeaa0dfdcf41e96dbbee90d51c3ed828ba570884e6 \
     --hash=sha256:b3e97be2cd9f052d984fc5ba2d441897971b744c64d658617944c47bc366f8ff \
     --hash=sha256:b87a923ed390ba0aafcbbcc6f0e023d495f19d2bd22ae59bdef3b0aec6485b39
-
-# Customize the process title
-# https://github.com/dvarrazzo/py-setproctitle
+# TODO: Appears to be unused. Confirm and remove.
 setproctitle==1.1.10 \
     --hash=sha256:6283b7a58477dd8478fbb9e76defb37968ee4ba47b05ec1c053cb39638bd7398 \
     --hash=sha256:6a035eddac62898786aed2c2eee7334c28cfc8106e8eb29fdd117cac56c6cdf0
-
-# Manipulate and analyze geometric objects
-# Code: https://github.com/Toblerity/Shapely
 Shapely==1.5.17 \
     --hash=sha256:0a3d8ef71988b47050df043c8d0e0b5da731a777e563a4c85b72489ee1f9b1c0 \
     --hash=sha256:287eaf9dbeb91b6c31e7e8deec4502b7b2c09ca9b7a1e3d9cadff1618274429f \
     --hash=sha256:31fee47d9208078a19f40a451c0c99c085d16343e66cbd0dd5af0af6f48cfc3a \
     --hash=sha256:9c2156fe9426e10d3250c164e301a4b66489d6bbcd35d145e32a88ed37037ae7
-
-# Simple, fast, extensible JSON encoder/decoder
-# Code: https://github.com/simplejson/simplejson
 simplejson==3.11.1 \
     --hash=sha256:01a22d49ddd9a168b136f26cac87d9a335660ce07aa5c630b8e3607d6f4325e7 \
     --hash=sha256:11d91b88cc1e9645c79f0f6fd2961684249af963e2bbff5a00061ed4bbf55379 \
@@ -392,33 +284,18 @@ simplejson==3.11.1 \
     --hash=sha256:c76d55d78dc8b06c96fd08c6cc5e2b0b650799627d3f9ca4ad23f40db72d5f6d \
     --hash=sha256:ebbd52b59948350ad66205e66b299fcca0e0821ed275c21262c522f4a6cea9d2 \
     --hash=sha256:f60f01b16215568a08611eb6a4d61d76c4173c3d69aac9cad593777056c284d5
-
-
-# Documentation builder
-# Code: https://github.com/sphinx-doc/sphinx/
 Sphinx==1.6.3 \
     --hash=sha256:3ea0faf3e152a0e40372d8495c8cbd59e93f89266231c367d8098ec0dfede98f \
     --hash=sha256:af8bdb8c714552b77d01d4536e3d6d2879d6cb9d25423d29163d5788e27046e6
-
-# ReadTheDocs theme for Sphinx
-# Code: https://github.com/readthedocs/sphinx_rtd_theme
 sphinx-rtd-theme==0.2.4 \
     --hash=sha256:2df74b8ff6fae6965c527e97cca6c6c944886aae474b490e17f92adfbe843417 \
     --hash=sha256:62ee4752716e698bad7de8a18906f42d33664128eea06c46b718fc7fbd1a9f5c
-
-# Database toolkit
-# Code: https://github.com/sqlalchemy/sqlalchemy
 SQLAlchemy==1.1.13 \
     --hash=sha256:2a98ac87b30eaa2bee1f1044848b9590e476e7f93d033c6542e60b993a5cf898
-
-# Python promises
-# Code: https://github.com/celery/vine
+# TODO: Appears to be unused. Confirm and remove.
 vine==1.1.4 \
     --hash=sha256:52116d59bc45392af9fdd3b75ed98ae48a93e822cee21e5fda249105c59a7a72 \
     --hash=sha256:6849544be74ec3638e84d90bc1cf2e1e9224cc10d96cd4383ec3f69e9bce077b
-
-# Wrap a WSGI application without starting an HTTP server
-# Code: https://github.com/Pylons/webtest
 WebTest==2.0.28 \
     --hash=sha256:3b091401977fe1869d8cbc790a1e925dda7a8a4c37edd7b28a46eadb45d57fb9 \
     --hash=sha256:66339d35ba6d2ab5f0fb16b075348643b2717d04a6b1b8db68765011694ad426
