@@ -67,7 +67,7 @@ jobs:
             working_directory: /ichnaea
             command: |
               # Quit early if docker credentials are not defined
-              if [ "${DOCKER_USERNAME}" == "" ] || [ "${DOCKER_PASSWORD}" == "" ]; then
+              if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
                 echo "Skipping Push to Dockerhub, credentials not available."
                 exit 0
               fi
@@ -96,7 +96,7 @@ jobs:
               fi
               # push on master or git tag
               if [ "${CIRCLE_BRANCH}" == "master" ] || [ -n "${CIRCLE_TAG}" ]; then
-                echo "${DOCKER_PASSWORD}" | docker login -u="${DOCKER_USERNAME}" --password-stdin
+                echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
                 docker tag "mozilla/location" "mozilla/location:${DOCKER_TAG}"
                 retry docker push "mozilla/location:${DOCKER_TAG}"
 
