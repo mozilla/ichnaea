@@ -51,7 +51,6 @@ build_python_deps:
 	pip install --no-cache-dir --disable-pip-version-check virtualenv
 	python -m virtualenv --no-site-packages .
 	$(INSTALL) -r requirements/default.txt
-	$(INSTALL) -r requirements/build.txt
 
 build_ichnaea:
 	$(BIN)/cythonize -f ichnaea/geocalc.pyx

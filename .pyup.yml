@@ -7,5 +7,3 @@ requirements:
   - requirements/constraints.txt:
       update: all
       pin: true
-  - requirements/build.txt:
-      update: security
