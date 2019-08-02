@@ -94,7 +94,7 @@ gevent==1.2.2 \
 gunicorn==19.7.1 \
     --hash=sha256:75af03c99389535f218cc596c7de74df4763803f7b63eb09d77e92b3956b36c6 \
     --hash=sha256:eee1169f0ca667be05db3351a0960765620dad53f53434262ff8901b68a1b622
-# TODO: Appears to be unused. Confirm and remove.
+# TODO: Update to redis[hiredis]>=2.10.6 or later, and move hiredis to constraints
 hiredis==0.3.1 \
     --hash=sha256:098d0c767115fb2ffee4f142d76ad86785829ef22b07a0ce2d289eef78186705 \
     --hash=sha256:09f2d7bc980b2d1f402b39d4cc7841988493cf06580fd4b3120cbcf8a73402e5 \
@@ -257,7 +257,6 @@ scipy==0.19.1 \
     --hash=sha256:a19a2ca7a7336495ec180adeaa0dfdcf41e96dbbee90d51c3ed828ba570884e6 \
     --hash=sha256:b3e97be2cd9f052d984fc5ba2d441897971b744c64d658617944c47bc366f8ff \
     --hash=sha256:b87a923ed390ba0aafcbbcc6f0e023d495f19d2bd22ae59bdef3b0aec6485b39
-# TODO: Appears to be unused. Confirm and remove.
 setproctitle==1.1.10 \
     --hash=sha256:6283b7a58477dd8478fbb9e76defb37968ee4ba47b05ec1c053cb39638bd7398 \
     --hash=sha256:6a035eddac62898786aed2c2eee7334c28cfc8106e8eb29fdd117cac56c6cdf0
