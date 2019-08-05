@@ -52,7 +52,6 @@ build_python_deps:
 	python -m virtualenv --no-site-packages .
 	$(INSTALL) -r requirements/default.txt
 	$(INSTALL) -r requirements/build.txt
-	$(INSTALL) -r requirements/all.txt
 
 build_ichnaea:
 	$(BIN)/cythonize -f ichnaea/geocalc.pyx
