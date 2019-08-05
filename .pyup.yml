@@ -9,7 +9,5 @@ requirements:
       pin: true
   - requirements/all.txt:
       update: security
-  - requirements/binary.txt:
-      update: security
   - requirements/build.txt:
       update: security

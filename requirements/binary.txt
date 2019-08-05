@@ -1,1 +1,0 @@
-mysql-connector-python==8.0.16 --hash=sha256:ea7d80e2b406dba3b20836e95d76e926d0f80034e5a015c0d8309d820225cb5b
