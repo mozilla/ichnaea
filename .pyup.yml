@@ -1,6 +1,12 @@
+schedule: "every month"
 search: False
-update: insecure
 requirements:
+  - requirements/default.txt:
+      update: all
+      pin: true
+  - requirements/constraints.txt:
+      update: all
+      pin: true
   - requirements/all.txt:
       update: security
   - requirements/binary.txt:

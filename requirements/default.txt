@@ -1,0 +1,6 @@
+-c constraints.txt
+
+alembic==0.9.4 \
+    --hash=sha256:aa07406e74b18583c92c909b319bd79b89f281c2161615b0a11e2001df45a8d1
+SQLAlchemy==1.1.13 \
+    --hash=sha256:2a98ac87b30eaa2bee1f1044848b9590e476e7f93d033c6542e60b993a5cf898
