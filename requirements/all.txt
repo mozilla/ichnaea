@@ -1,10 +1,7 @@
 -c constraints.txt
 -r default.txt
 
-beautifulsoup4==4.6.0 --hash=sha256:11a9a27b7d3bddc6d86f59fb76afb70e921a25ac2d6cc55b40d072bd68435a76
 pbr==3.1.1 --hash=sha256:60c25b7dfd054ef9bb0ae327af949dd4676aa09ac3a9471cdc871d8a9213f9ac
 protobuf==3.7.1 --hash=sha256:cc5eb13f5ccc4b1b642cc147c2cdd121a34278b341c7a4d79e91182fff425836
 pyasn1==0.3.2 --hash=sha256:e9d2a79f135b77df387c579d7b0f591f12db943f7ca8250b509533d8898571fb
 vine==1.1.4 --hash=sha256:6849544be74ec3638e84d90bc1cf2e1e9224cc10d96cd4383ec3f69e9bce077b
-waitress==1.0.2 --hash=sha256:d00e6c533c0fba6b3cbc7f1f1fcf037c84ee47b3065ce20c2c2d55e3eaf3b063
-WebTest==2.0.28 --hash=sha256:3b091401977fe1869d8cbc790a1e925dda7a8a4c37edd7b28a46eadb45d57fb9
