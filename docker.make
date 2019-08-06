@@ -3,10 +3,7 @@
 HERE = $(shell pwd)
 BIN = $(HERE)/bin
 PYTHON = $(BIN)/python
-INSTALL = MYSQLXPB_PROTOBUF_INCLUDE_DIR=/usr/include/google/protobuf \
-	MYSQLXPB_PROTOBUF_LIB_DIR=/usr/lib/x86_64-linux-gnu \
-	MYSQLXPB_PROTOC=/usr/bin/protoc \
-	$(BIN)/pip install --no-cache-dir \
+INSTALL = $(BIN)/pip install --no-cache-dir \
 	--disable-pip-version-check --require-hashes
 
 VENDOR = $(HERE)/vendor
@@ -53,9 +50,7 @@ build_deps: build_datamaps build_libmaxmind
 build_python_deps:
 	pip install --no-cache-dir --disable-pip-version-check virtualenv
 	python -m virtualenv --no-site-packages .
-	$(INSTALL) -r requirements/build.txt
-	$(INSTALL) -r requirements/all.txt
-	$(INSTALL) -r requirements/binary.txt
+	$(INSTALL) -r requirements/default.txt
 
 build_ichnaea:
 	$(BIN)/cythonize -f ichnaea/geocalc.pyx
