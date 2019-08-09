@@ -1625,6 +1625,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -1645,6 +1646,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -1729,6 +1731,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -1749,6 +1752,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -1884,6 +1888,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -1904,6 +1909,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -1988,6 +1994,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2008,6 +2015,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2040,6 +2048,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -2060,6 +2069,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -2092,6 +2102,7 @@
          },
          "country" : {
             "geoname_id" : 660013,
+            "is_in_european_union" : true,
             "iso_code" : "FI",
             "names" : {
                "de" : "Finnland",
@@ -2112,6 +2123,7 @@
          },
          "registered_country" : {
             "geoname_id" : 660013,
+            "is_in_european_union" : true,
             "iso_code" : "FI",
             "names" : {
                "de" : "Finnland",
@@ -2196,6 +2208,7 @@
          },
          "country" : {
             "geoname_id" : 3077311,
+            "is_in_european_union" : true,
             "iso_code" : "CZ",
             "names" : {
                "de" : "Tschechische Republik",
@@ -2216,6 +2229,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3077311,
+            "is_in_european_union" : true,
             "iso_code" : "CZ",
             "names" : {
                "de" : "Tschechische Republik",
@@ -2351,6 +2365,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -2371,6 +2386,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -2455,6 +2471,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2475,6 +2492,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2507,6 +2525,7 @@
          },
          "country" : {
             "geoname_id" : 719819,
+            "is_in_european_union" : true,
             "iso_code" : "HU",
             "names" : {
                "de" : "Ungarn",
@@ -2527,6 +2546,7 @@
          },
          "registered_country" : {
             "geoname_id" : 719819,
+            "is_in_european_union" : true,
             "iso_code" : "HU",
             "names" : {
                "de" : "Ungarn",
@@ -2559,6 +2579,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -2579,6 +2600,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -2611,6 +2633,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2631,6 +2654,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2663,6 +2687,7 @@
          },
          "country" : {
             "geoname_id" : 660013,
+            "is_in_european_union" : true,
             "iso_code" : "FI",
             "names" : {
                "de" : "Finnland",
@@ -2683,6 +2708,7 @@
          },
          "registered_country" : {
             "geoname_id" : 660013,
+            "is_in_european_union" : true,
             "iso_code" : "FI",
             "names" : {
                "de" : "Finnland",
@@ -2715,6 +2741,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2735,6 +2762,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2791,6 +2819,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2811,6 +2840,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2843,6 +2873,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -2863,6 +2894,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -2895,6 +2927,7 @@
          },
          "country" : {
             "geoname_id" : 2510769,
+            "is_in_european_union" : true,
             "iso_code" : "ES",
             "names" : {
                "de" : "Spanien",
@@ -2914,6 +2947,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2510769,
+            "is_in_european_union" : true,
             "iso_code" : "ES",
             "names" : {
                "de" : "Spanien",
@@ -2946,6 +2980,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2966,6 +3001,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -2998,6 +3034,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -3018,6 +3055,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -3050,6 +3088,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3070,6 +3109,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3102,6 +3142,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -3122,6 +3163,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -3154,6 +3196,7 @@
          },
          "country" : {
             "geoname_id" : 732800,
+            "is_in_european_union" : true,
             "iso_code" : "BG",
             "names" : {
                "de" : "Bulgarien",
@@ -3174,6 +3217,7 @@
          },
          "registered_country" : {
             "geoname_id" : 732800,
+            "is_in_european_union" : true,
             "iso_code" : "BG",
             "names" : {
                "de" : "Bulgarien",
@@ -3206,6 +3250,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -3226,6 +3271,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -3362,6 +3408,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -3382,6 +3429,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -3414,6 +3462,7 @@
          },
          "country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
@@ -3434,6 +3483,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
@@ -3620,6 +3670,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -3640,6 +3691,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -3672,6 +3724,7 @@
          },
          "country" : {
             "geoname_id" : 2802361,
+            "is_in_european_union" : true,
             "iso_code" : "BE",
             "names" : {
                "de" : "Belgien",
@@ -3692,6 +3745,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2802361,
+            "is_in_european_union" : true,
             "iso_code" : "BE",
             "names" : {
                "de" : "Belgien",
@@ -3828,6 +3882,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -3848,6 +3903,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -3880,6 +3936,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3900,6 +3957,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3932,6 +3990,7 @@
          },
          "country" : {
             "geoname_id" : 2782113,
+            "is_in_european_union" : true,
             "iso_code" : "AT",
             "names" : {
                "de" : "Österreich",
@@ -3952,6 +4011,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2782113,
+            "is_in_european_union" : true,
             "iso_code" : "AT",
             "names" : {
                "de" : "Österreich",
@@ -4035,6 +4095,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -4055,6 +4116,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -4087,6 +4149,7 @@
          },
          "country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
@@ -4107,6 +4170,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
@@ -4498,6 +4562,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -4518,6 +4583,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -4550,6 +4616,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -4570,6 +4637,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -4963,6 +5031,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -4983,6 +5052,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5067,6 +5137,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -5087,6 +5158,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -5119,6 +5191,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -5139,6 +5212,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -5275,6 +5349,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5295,6 +5370,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5327,6 +5403,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -5347,6 +5424,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -5379,6 +5457,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5399,6 +5478,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5431,6 +5511,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -5451,6 +5532,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -5483,6 +5565,7 @@
          },
          "country" : {
             "geoname_id" : 2782113,
+            "is_in_european_union" : true,
             "iso_code" : "AT",
             "names" : {
                "de" : "Österreich",
@@ -5503,6 +5586,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2782113,
+            "is_in_european_union" : true,
             "iso_code" : "AT",
             "names" : {
                "de" : "Österreich",
@@ -5587,6 +5671,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -5607,6 +5692,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -5639,6 +5725,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -5659,6 +5746,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -5691,6 +5779,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -5711,6 +5800,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -5847,6 +5937,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -5867,6 +5958,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -5899,6 +5991,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -5919,6 +6012,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -5951,6 +6045,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -5971,6 +6066,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -6003,6 +6099,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -6023,6 +6120,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -6106,6 +6204,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -6126,6 +6225,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -6158,6 +6258,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -6178,6 +6279,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -6365,6 +6467,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -6385,6 +6488,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -6468,6 +6572,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -6488,6 +6593,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -6675,6 +6781,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -6695,6 +6802,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -6779,6 +6887,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -6799,6 +6908,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -6831,6 +6941,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -6851,6 +6962,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -6985,6 +7097,7 @@
          },
          "country" : {
             "geoname_id" : 2963597,
+            "is_in_european_union" : true,
             "iso_code" : "IE",
             "names" : {
                "de" : "Irland",
@@ -7005,6 +7118,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2963597,
+            "is_in_european_union" : true,
             "iso_code" : "IE",
             "names" : {
                "de" : "Irland",
@@ -7037,6 +7151,7 @@
          },
          "country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
@@ -7057,6 +7172,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
@@ -7141,6 +7257,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -7161,6 +7278,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -7245,6 +7363,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7265,6 +7384,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7297,6 +7417,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -7317,6 +7438,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -7349,6 +7471,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -7369,6 +7492,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -7452,6 +7576,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7472,6 +7597,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7555,6 +7681,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -7575,6 +7702,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -7607,6 +7735,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -7627,6 +7756,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -7890,6 +8020,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -7910,6 +8041,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -8096,6 +8228,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -8116,6 +8249,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -8148,6 +8282,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -8168,6 +8303,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -8405,6 +8541,7 @@
          },
          "country" : {
             "geoname_id" : 3077311,
+            "is_in_european_union" : true,
             "iso_code" : "CZ",
             "names" : {
                "de" : "Tschechische Republik",
@@ -8425,6 +8562,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3077311,
+            "is_in_european_union" : true,
             "iso_code" : "CZ",
             "names" : {
                "de" : "Tschechische Republik",
@@ -8560,6 +8698,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8580,6 +8719,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8664,6 +8804,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8684,6 +8825,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8716,6 +8858,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -8736,6 +8879,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -8768,6 +8912,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -8788,6 +8933,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -8871,6 +9017,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -8891,6 +9038,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -8975,6 +9123,7 @@
          },
          "country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -8995,6 +9144,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -9130,6 +9280,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -9150,6 +9301,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -9182,6 +9334,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9202,6 +9355,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9234,6 +9388,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -9254,6 +9409,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -9338,6 +9494,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9358,6 +9515,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9442,6 +9600,7 @@
          },
          "country" : {
             "geoname_id" : 2510769,
+            "is_in_european_union" : true,
             "iso_code" : "ES",
             "names" : {
                "de" : "Spanien",
@@ -9461,6 +9620,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2510769,
+            "is_in_european_union" : true,
             "iso_code" : "ES",
             "names" : {
                "de" : "Spanien",
@@ -9544,6 +9704,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9564,6 +9725,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9699,6 +9861,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -9719,6 +9882,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -9751,6 +9915,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -9771,6 +9936,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -9803,6 +9969,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -9823,6 +9990,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -10009,6 +10177,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10029,6 +10198,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10061,6 +10231,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -10081,6 +10252,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -10113,6 +10285,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10133,6 +10306,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10216,6 +10390,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -10236,6 +10411,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -10268,6 +10444,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -10288,6 +10465,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -10320,6 +10498,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10340,6 +10519,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10424,6 +10604,7 @@
          },
          "country" : {
             "geoname_id" : 719819,
+            "is_in_european_union" : true,
             "iso_code" : "HU",
             "names" : {
                "de" : "Ungarn",
@@ -10444,6 +10625,7 @@
          },
          "registered_country" : {
             "geoname_id" : 719819,
+            "is_in_european_union" : true,
             "iso_code" : "HU",
             "names" : {
                "de" : "Ungarn",
@@ -10476,6 +10658,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10496,6 +10679,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10528,6 +10712,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10548,6 +10733,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10684,6 +10870,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -10704,6 +10891,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -10736,6 +10924,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10756,6 +10945,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10788,6 +10978,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -10808,6 +10999,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -10840,6 +11032,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10860,6 +11053,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10892,6 +11086,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -10912,6 +11107,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -10944,6 +11140,7 @@
          },
          "country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10964,6 +11161,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798544,
+            "is_in_european_union" : true,
             "iso_code" : "PL",
             "names" : {
                "de" : "Polen",
@@ -10996,6 +11194,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -11016,6 +11215,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -11048,6 +11248,7 @@
          },
          "country" : {
             "geoname_id" : 2623032,
+            "is_in_european_union" : true,
             "iso_code" : "DK",
             "names" : {
                "de" : "Dänemark",
@@ -11068,6 +11269,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2623032,
+            "is_in_european_union" : true,
             "iso_code" : "DK",
             "names" : {
                "de" : "Dänemark",
@@ -11152,6 +11354,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11172,6 +11375,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11204,6 +11408,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -11224,6 +11429,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -11256,6 +11462,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -11276,6 +11483,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -11308,6 +11516,7 @@
          },
          "country" : {
             "geoname_id" : 2623032,
+            "is_in_european_union" : true,
             "iso_code" : "DK",
             "names" : {
                "de" : "Dänemark",
@@ -11328,6 +11537,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2623032,
+            "is_in_european_union" : true,
             "iso_code" : "DK",
             "names" : {
                "de" : "Dänemark",
@@ -11360,6 +11570,7 @@
          },
          "country" : {
             "geoname_id" : 2782113,
+            "is_in_european_union" : true,
             "iso_code" : "AT",
             "names" : {
                "de" : "Österreich",
@@ -11380,6 +11591,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2782113,
+            "is_in_european_union" : true,
             "iso_code" : "AT",
             "names" : {
                "de" : "Österreich",
@@ -11412,6 +11624,7 @@
          },
          "country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -11432,6 +11645,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2750405,
+            "is_in_european_union" : true,
             "iso_code" : "NL",
             "names" : {
                "de" : "Niederlande",
@@ -11464,6 +11678,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11484,6 +11699,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11516,6 +11732,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -11536,6 +11753,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -11568,6 +11786,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11588,6 +11807,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11620,6 +11840,7 @@
          },
          "country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -11640,6 +11861,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3175395,
+            "is_in_european_union" : true,
             "iso_code" : "IT",
             "names" : {
                "de" : "Italien",
@@ -11724,6 +11946,7 @@
          },
          "country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -11744,6 +11967,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -11832,6 +12056,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11855,6 +12080,7 @@
          },
          "registered_country" : {
             "geoname_id" : 3017382,
+            "is_in_european_union" : true,
             "iso_code" : "FR",
             "names" : {
                "de" : "Frankreich",
@@ -11920,6 +12146,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11996,6 +12223,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12072,6 +12300,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12148,6 +12377,7 @@
          },
          "country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12243,6 +12473,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
+            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12299,6 +12530,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -12319,6 +12551,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -12371,6 +12604,7 @@
          },
          "country" : {
             "geoname_id" : 2661886,
+            "is_in_european_union" : true,
             "iso_code" : "SE",
             "names" : {
                "de" : "Schweden",
@@ -12391,6 +12625,7 @@
          },
          "registered_country" : {
             "geoname_id" : 2921044,
+            "is_in_european_union" : true,
             "iso_code" : "DE",
             "names" : {
                "de" : "Deutschland",
@@ -12453,6 +12688,7 @@
          },
          "registered_country" : {
             "geoname_id" : 798549,
+            "is_in_european_union" : true,
             "iso_code" : "RO",
             "names" : {
                "de" : "Rumänien",
