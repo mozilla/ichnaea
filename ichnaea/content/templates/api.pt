@@ -61,6 +61,12 @@
     </p>
 
     <p class="text-justified">
+        Mozilla is currently evaluating its MLS service and terms and is
+        not currently distributing API keys.
+    </p>
+
+<!--
+    <p class="text-justified">
         If you are developing a new application, please
         <a href="/contact">contact us</a> to obtain an API key.
         Please make sure to describe your use-case and intended use of
@@ -72,7 +78,7 @@
         We'll try to get back to you in a manner of days, but depending
         on vacation times it might take longer.
     </p>
-
+-->
 </section>
 </tal:slot>
 

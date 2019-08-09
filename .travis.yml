@@ -1,5 +1,4 @@
-# new container based environment
-sudo: false
+dist: trusty
 
 cache:
   pip: true
@@ -26,15 +25,17 @@ python:
 
 notifications:
   email:
-    - hschlichting@mozilla.com
+    - jwhitlock@mozilla.com
 
 script:
     - pip install -U pip
     - travis_wait make build
     - make release_compile
+    # https://github.com/travis-ci/travis-ci/issues/7940
+    - export BOTO_CONFIG=/dev/null
     - make test
     - make docs
 
-# mysql is started automatically
 services:
+  - mysql
   - redis-server
