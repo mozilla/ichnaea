@@ -17,5 +17,5 @@ License
 
 ``ichnaea`` is offered under the Apache License 2.0.
 
-.. image:: https://travis-ci.org/mozilla/ichnaea.svg?branch=ckolos%2Fdammit
+.. image:: https://travis-ci.org/mozilla/ichnaea.svg?branch=1.5.x
     :target: https://travis-ci.org/mozilla/ichnaea
