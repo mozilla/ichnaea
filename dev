@@ -193,7 +193,7 @@ case "$1" in
     cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
     cd "$HERE"
     docker run -it --rm \
-        --volume "$(pwd):/app mozilla/location_node" \
+        --volume "$(pwd):/app" mozilla/location_node \
         make -f node.make css
     ;;
 
@@ -207,7 +207,7 @@ case "$1" in
     cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
     cd "$HERE"
     docker run -it --rm \
-        --volume "$(pwd):/app mozilla/location_node" \
+        --volume "$(pwd):/app" mozilla/location_node \
         make -f node.make js
     ;;
 
