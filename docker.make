@@ -61,7 +61,3 @@ build_check:
 	$(PYTHON) -c "import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
 	$(PYTHON) -c "import sys; from ichnaea.geocode import GEOCODER; sys.exit(not GEOCODER.region(51.5, -0.1) == 'GB')"
-
-test:
-	TESTING=true $(BIN)/pytest $(TEST_ARG)
-	$(BIN)/flake8 ichnaea

@@ -47,14 +47,6 @@ default:
 clean:
 	rm .docker-build* || true
 
-.PHONY: docs
-docs: my.env
-	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
-
-.PHONY: lint
-lint: my.env
-	${DC} run --rm --no-deps app shell flake8 ichnaea
-
 my.env:
 	@if [ ! -f my.env ]; \
 	then \
@@ -79,7 +71,15 @@ shell: my.env .docker-build
 
 .PHONY: test
 test: my.env .docker-build
-	./docker/run_tests_in_docker.sh ${ARGS}
+	${DC} run --rm app shell ./docker/run_tests.sh ${ARGS}
+
+.PHONY: docs
+docs: my.env
+	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
+
+.PHONY: lint
+lint: my.env
+	${DC} run --rm --no-deps app shell flake8 ichnaea
 
 .PHONY: run
 run: my.env

@@ -47,12 +47,7 @@ case "${SERVICE}" in
         cd ..
         make -f docker.make docs
         ;;
-    test)
-        echo "Running Tests"
-        cd ..
-        make -f docker.make test "$@"
-        ;;
     *)
-        echo "Usage: $0 {scheduler|web|worker|alembic|shell|docs|test}"
+        echo "Usage: $0 {scheduler|web|worker|alembic|shell}"
         exit 1
 esac
