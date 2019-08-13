@@ -3,12 +3,6 @@ set -e
 
 HERE="$(pwd)"
 
-if [ "$PULL" == "0" ]; then
-  PULL_ARG=''
-else
-  PULL_ARG='--pull'
-fi
-
 # First, let's make sure that Docker Compose has been installed.
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo "Please install Docker Compose and try again."
@@ -102,12 +96,8 @@ case "$1" in
 
       # Builds and starts the services supporting the application container.
       services)
-        cd docker/mysql; docker build $PULL_ARG -t mozilla/location_mysql:latest .
-        cd "$HERE"
-        cd docker/redis; docker build $PULL_ARG -t mozilla/location_redis:latest .
-        cd "$HERE"
-        docker-compose build $PULL_ARG
-        docker-compose up -d
+        docker-compose build mysql redis
+        docker-compose up -d mysql redis
         ;;
 
       # Builds and starts all containers.
@@ -172,15 +162,8 @@ case "$1" in
   # Runs command inside the container.
   run)
     $0 start services
-    docker build $PULL_ARG -t mozilla/location .
-    docker run -it --rm \
-        -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
-        -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
-        -e "DB_USER=root" \
-        --name="location_shell" \
-        --volume "$(pwd)/docs/build/html:/app/docs/build/html" \
-        --volume "$(pwd)/ichnaea/content/static/tiles:/app/ichnaea/content/static/tiles" \
-        mozilla/location "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
+    make build
+    docker-compose run --rm app "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
   # Runs alembic inside the container.
@@ -190,10 +173,9 @@ case "$1" in
 
   # Updates CSS resources using a special node container.
   css)
-    cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
+    docker-compose build node
     cd "$HERE"
-    docker run -it --rm \
-        --volume "$(pwd):/app" mozilla/location_node \
+    docker-compose run --rm --volume "$(pwd):/app" node \
         make -f node.make css
     ;;
 
@@ -204,20 +186,14 @@ case "$1" in
 
   # Updates JS resources using a special node container.
   js)
-    cd docker/node; docker build $PULL_ARG -t mozilla/location_node .
+    docker-compose build node
     cd "$HERE"
-    docker run -it --rm \
-        --volume "$(pwd):/app" mozilla/location_node \
+    docker-compose run --rm --volume "$(pwd):/app" node \
         make -f node.make js
     ;;
 
   local_map)
     $0 run local_map
-    ;;
-
-  # Open a shell inside the container.
-  shell)
-    $0 run shell
     ;;
 
   # Run the tests inside the container.
@@ -227,7 +203,7 @@ case "$1" in
 
   # Shows usage information.
   help)
-    echo "Usage: $0 {start|stop|restart|run|alembic|css|docs|js|local_map|shell|test|help}"
+    echo "Usage: $0 {start|stop|restart|run|alembic|css|docs|js|local_map|test|help}"
     ;;
 
   # Shows help message.

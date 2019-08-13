@@ -1,15 +1,33 @@
-mysql:
-  container_name: location_mysql
-  expose:
-    - "3306"
-  image: mozilla/location_mysql:latest
-  ports:
-    - "3306"
+version: "2"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - docker/config/app.env
+      - my.env
+    volumes:
+      - .:/app
 
-redis:
-  container_name: location_redis
-  expose:
-    - "6379"
-  image: mozilla/location_redis:latest
-  ports:
-    - "6379"
+  # Used for building CSS and JS assets
+  node:
+    build:
+      context: ./docker/node/
+      dockerfile: Dockerfile
+
+  mysql:
+    build:
+      context: ./docker/mysql/
+      dockerfile: Dockerfile
+    expose:
+      - "3306"
+    ports:
+      - "3306"
+
+  redis:
+    image: redis:3.2
+    expose:
+      - "6379"
+    ports:
+      - "6379:6379"

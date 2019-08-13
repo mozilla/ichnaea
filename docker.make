@@ -1,10 +1,8 @@
 # This makefile is executed from inside the docker container.
 
 HERE = $(shell pwd)
-BIN = $(HERE)/bin
-PYTHON = $(BIN)/python
-INSTALL = $(BIN)/pip install --no-cache-dir \
-	--disable-pip-version-check --require-hashes
+PYTHON = $(shell which python)
+PIP = $(shell which pip)
 
 VENDOR = $(HERE)/vendor
 
@@ -48,13 +46,13 @@ build_libmaxmind:
 build_deps: build_datamaps build_libmaxmind
 
 build_python_deps:
-	pip install --no-cache-dir --disable-pip-version-check virtualenv
-	python -m virtualenv --no-site-packages .
-	$(INSTALL) -r requirements/default.txt
+	$(PIP) install --no-cache-dir --disable-pip-version-check --require-hashes \
+	    -r requirements/default.txt
 
 build_ichnaea:
-	$(BIN)/cythonize -f ichnaea/geocalc.pyx
-	$(BIN)/pip install -e .
+	@which cythonize
+	cythonize -f ichnaea/geocalc.pyx
+	$(PIP) install -e .
 	$(PYTHON) -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
 
 build_check:
@@ -64,9 +62,6 @@ build_check:
 	$(PYTHON) -c "from ichnaea import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
 	$(PYTHON) -c "import sys; from ichnaea.geocode import GEOCODER; sys.exit(not GEOCODER.region(51.5, -0.1) == 'GB')"
-
-docs:
-	cd docs; SPHINXBUILD=$(BIN)/sphinx-build make html
 
 test:
 	TESTING=true $(BIN)/pytest $(TEST_ARG)

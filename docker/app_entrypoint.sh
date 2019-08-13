@@ -2,7 +2,10 @@
 set -e
 
 cd $(dirname $0)
-case "$1" in
+SERVICE=$1
+shift
+
+case "${SERVICE}" in
     map)
         echo "Creating datamaps image tiles."
         exec ./map.sh
@@ -22,7 +25,7 @@ case "$1" in
     alembic)
         echo "Running Alembic"
         cd ..
-        /app/bin/alembic $2 $3 $4 $5 $6 $7 $8 $9
+        /app/bin/alembic "$@"
         ;;
     local_map)
         echo "Creating datamaps image tiles."
@@ -33,7 +36,11 @@ case "$1" in
     shell)
         echo "Opening shell"
         cd ..
-        exec /bin/bash
+        if [ -z "$*" ]; then
+            exec /bin/bash
+        else
+            "$@"
+        fi
         ;;
     docs)
         echo "Updating docs"
@@ -43,7 +50,7 @@ case "$1" in
     test)
         echo "Running Tests"
         cd ..
-        make -f docker.make test $2 $3 $4 $5 $6 $7 $8 $9
+        make -f docker.make test "$@"
         ;;
     *)
         echo "Usage: $0 {scheduler|web|worker|alembic|shell|docs|test}"
