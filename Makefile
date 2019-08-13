@@ -70,7 +70,7 @@ build: my.env
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
-	    app
+	    app web
 	touch .docker-build
 
 .PHONY: shell
@@ -83,7 +83,11 @@ test: my.env .docker-build
 
 .PHONY: run
 run: my.env
-	${DC} up app
+	${DC} up web
+
+.PHONY: runservices
+runservices: my.env
+	${DC} up -d redis mysql
 
 .PHONY: stop
 stop: my.env

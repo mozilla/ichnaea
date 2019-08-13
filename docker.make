@@ -49,17 +49,16 @@ build_python_deps:
 	$(PIP) install --no-cache-dir --disable-pip-version-check --require-hashes \
 	    -r requirements/default.txt
 
-build_ichnaea:
+build_geocalc:
 	@which cythonize
-	cythonize -f ichnaea/geocalc.pyx
-	$(PIP) install -e .
-	$(PYTHON) -c "from compileall import compile_dir; compile_dir('ichnaea', quiet=True)"
+	cythonize -f geocalclib/geocalc.pyx
+	cd geocalclib && $(PIP) install --no-cache-dir --disable-pip-version-check .
 
 build_check:
 	@which encode enumerate merge render pngquant
 	$(PYTHON) -c "import sys; from mysql.connector import HAVE_CEXT; sys.exit(not HAVE_CEXT)"
 	$(PYTHON) -c "import sys; from shapely import speedups; sys.exit(not speedups.available)"
-	$(PYTHON) -c "from ichnaea import geocalc"
+	$(PYTHON) -c "import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
 	$(PYTHON) -c "import sys; from ichnaea.geocode import GEOCODER; sys.exit(not GEOCODER.region(51.5, -0.1) == 'GB')"
 

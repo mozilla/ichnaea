@@ -5,6 +5,7 @@ from unittest import mock
 import pytest
 from sqlalchemy import text
 
+from geocalc import destination
 from ichnaea.db import configure_db
 from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import (
@@ -12,7 +13,6 @@ from ichnaea.data.tasks import (
     update_cell,
     update_wifi,
 )
-from ichnaea.geocalc import destination
 from ichnaea.models import (
     decode_cellid,
     encode_cellarea,

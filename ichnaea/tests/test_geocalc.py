@@ -1,6 +1,6 @@
 import pytest
 
-from ichnaea.geocalc import (
+from geocalc import (
     bbox,
     destination,
     distance,

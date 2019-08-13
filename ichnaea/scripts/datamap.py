@@ -27,7 +27,7 @@ from ichnaea.db import (
     configure_db,
     db_worker_session,
 )
-from ichnaea.geocalc import random_points
+from geocalc import random_points
 from ichnaea.log import (
     configure_raven,
     configure_stats,

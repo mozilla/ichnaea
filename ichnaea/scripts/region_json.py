@@ -20,7 +20,7 @@ import shapely
 import shapely.geometry
 import shapely.ops
 
-from ichnaea import geocalc
+import geocalc
 from ichnaea import geocode
 from ichnaea import util
 

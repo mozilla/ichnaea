@@ -2,13 +2,7 @@ from codecs import open
 import os
 import os.path
 
-import numpy
-
-from setuptools import (
-    Extension,
-    find_packages,
-    setup,
-)
+from setuptools import find_packages, setup
 
 here = os.path.relpath(os.path.abspath(os.path.dirname(__file__)))
 
@@ -16,15 +10,6 @@ with open(os.path.join(here, 'README.rst'), encoding='utf-8') as fd:
     long_description = fd.read()
 
 __version__ = '2.2.1'
-
-numpy_include = numpy.get_include()
-ext_modules = [
-    Extension(
-        name='ichnaea.geocalc',
-        sources=['ichnaea/geocalc.c'],
-        include_dirs=[numpy_include],
-    ),
-]
 
 setup(
     name='ichnaea',
@@ -49,7 +34,6 @@ setup(
     keywords="web services geo location",
     packages=find_packages(),
     include_package_data=True,
-    ext_modules=ext_modules,
     zip_safe=False,
     entry_points={
         'console_scripts': [

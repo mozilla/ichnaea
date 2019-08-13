@@ -15,7 +15,7 @@ from ichnaea.db import (
     configure_db,
     db_worker_session,
 )
-from ichnaea.geocalc import bbox
+from geocalc import bbox
 from ichnaea.log import (
     configure_logging,
     LOGGER,

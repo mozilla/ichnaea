@@ -3,11 +3,11 @@ Contains helper functionality for parsing environment variables.
 """
 from __future__ import absolute_import
 
+import json
 import os
 import os.path
 
 from alembic.config import Config as AlembicConfig
-import pkg_resources
 import simplejson
 
 HERE = os.path.dirname(__file__)
@@ -20,15 +20,15 @@ CONTRIBUTE_INFO = {}
 with open(CONTRIBUTE_FILE, 'r') as fd:
     CONTRIBUTE_INFO = simplejson.load(fd)
 
-VERSION = pkg_resources.get_distribution('ichnaea').version
+
+VERSION_INFO = {}
 VERSION_FILE = os.path.join(HERE, 'version.json')
-VERSION_INFO = {
-    'build': None,
-    'commit': 'HEAD',
-    'source': 'https://github.com/mozilla/ichnaea',
-    'tag': 'master',
-    'version': VERSION,
-}
+if os.path.exists(VERSION_FILE):
+    with open(VERSION_FILE, "r") as fp:
+        try:
+            VERSION_INFO = json.load(fp)
+        except json.JsonDecodeException:
+            pass
 
 ASSET_BUCKET = os.environ.get('ASSET_BUCKET')
 ASSET_URL = os.environ.get('ASSET_URL')

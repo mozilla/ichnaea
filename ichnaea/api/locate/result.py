@@ -6,9 +6,9 @@ a concrete position or region result.
 from collections import defaultdict
 import operator
 
+from geocalc import distance
 from ichnaea.api.locate.constants import DataAccuracy
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
-from ichnaea.geocalc import distance
 
 
 class Result(object):

@@ -61,9 +61,13 @@ RUN make -f docker.make build_deps
 COPY ./requirements/*.txt /app/requirements/
 RUN make -f docker.make build_python_deps
 
-# Install the application code.
+# Install geocalc.
 COPY . /app
-RUN make -f docker.make build_ichnaea
+RUN make -f docker.make build_geocalc
+
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONPATH /app
 
 # Run a couple checks to see if things got installed correctly.
 RUN make -f docker.make build_check

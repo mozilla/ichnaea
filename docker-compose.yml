@@ -4,11 +4,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: local/ichnaea_app
     env_file:
       - docker/config/app.env
       - my.env
     volumes:
       - .:/app
+
+  web:
+    image: local/ichnaea_app
+    env_file:
+      - docker/config/app.env
+      - my.env
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - .:/app
+    command: ["web"]
+    ports:
+      - "8000:8000"
 
   # Used for building CSS and JS assets
   node:

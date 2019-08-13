@@ -22,7 +22,7 @@ from ichnaea.api.locate.score import (
     area_score,
     station_score,
 )
-from ichnaea.geocalc import distance
+from geocalc import distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     area_id,

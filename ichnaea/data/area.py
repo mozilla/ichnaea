@@ -3,9 +3,7 @@ from collections import defaultdict
 import numpy
 from sqlalchemy import delete, select
 
-from ichnaea.geocalc import (
-    circle_radius,
-)
+from geocalc import circle_radius
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellarea,
