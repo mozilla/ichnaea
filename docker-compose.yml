@@ -25,6 +25,29 @@ services:
     ports:
       - "8000:8000"
 
+  scheduler:
+    image: local/ichnaea_app
+    env_file:
+      - docker/config/app.env
+      - my.env
+    depends_on:
+      - redis
+    volumes:
+      - .:/app
+    command: ["scheduler"]
+
+  worker:
+    image: local/ichnaea_app
+    env_file:
+      - docker/config/app.env
+      - my.env
+    depends_on:
+      - redis
+      - mysql
+    volumes:
+      - .:/app
+    command: ["worker"]
+
   # Used for building CSS and JS assets
   node:
     build:

@@ -27,7 +27,8 @@ default:
 	@echo "Ichnaea make rules:"
 	@echo ""
 	@echo "  build            - build docker containers"
-	@echo "  run              - run webapp, scheduler, and worker"
+	@echo "  run              - run webapp"
+	@echo "  runcelery        - run scheduler and worker"
 	@echo "  runservices      - run service containers (mysql, redis, etc)"
 	@echo "  stop             - stop all service containers"
 	@echo ""
@@ -62,7 +63,7 @@ build: my.env
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
-	    app web
+	    app web scheduler
 	touch .docker-build
 
 .PHONY: shell
@@ -74,19 +75,23 @@ test: my.env .docker-build
 	${DC} run --rm app shell ./docker/run_tests.sh ${ARGS}
 
 .PHONY: docs
-docs: my.env
+docs: my.env .docker-build
 	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
 
 .PHONY: lint
-lint: my.env
+lint: my.env .docker-build
 	${DC} run --rm --no-deps app shell flake8 ichnaea
 
 .PHONY: run
-run: my.env
+run: my.env .docker-build
 	${DC} up web
 
+.PHONY: runcelery
+runcelery: my.env .docker-build
+	${DC} up scheduler worker
+
 .PHONY: runservices
-runservices: my.env
+runservices: my.env .docker-build
 	${DC} up -d redis mysql
 
 .PHONY: stop
