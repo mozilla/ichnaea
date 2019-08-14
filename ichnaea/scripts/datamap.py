@@ -420,5 +420,5 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
         parser.print_help()
 
 
-def console_entry():  # pragma: no cover
+if __name__ == "__main__":
     main(sys.argv)

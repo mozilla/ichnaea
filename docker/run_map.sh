@@ -1,3 +1,3 @@
 #!/bin/sh
 
-exec /app/bin/location_map --create --upload
+python ./ichnaea/scripts/datamap.py --create --upload
