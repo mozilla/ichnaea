@@ -27,7 +27,7 @@ path-exclude=/usr/share/locale/*\n\
 RUN apt-get update && apt-get -y install gnupg
 
 # Add MySQL apt repo & GPG key
-COPY ./conf/mysql_pubkey.asc /tmp/mysql_pubkey.asc
+COPY ./docker/mysql_pubkey.asc /tmp/mysql_pubkey.asc
 RUN apt-key add /tmp/mysql_pubkey.asc && \
     echo 'deb http://repo.mysql.com/apt/debian/ buster mysql-5.7' > \
     /etc/apt/sources.list.d/mysql.list

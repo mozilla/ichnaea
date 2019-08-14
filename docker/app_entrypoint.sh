@@ -8,30 +8,29 @@ shift
 case "${SERVICE}" in
     map)
         echo "Creating datamaps image tiles."
-        exec ./map.sh
+        exec ./run_map.sh
         ;;
     scheduler)
         echo "Starting Celery Scheduler"
-        exec ./scheduler.sh
+        exec ./run_scheduler.sh
         ;;
     web)
         echo "Starting Web Server"
-        exec ./web.sh
+        exec ./run_web.sh
         ;;
     worker)
         echo "Starting Celery Worker"
-        exec ./worker.sh
+        exec ./run_worker.sh
         ;;
     alembic)
         echo "Running Alembic"
         cd ..
-        /app/bin/alembic "$@"
+        alembic "$@"
         ;;
     local_map)
         echo "Creating datamaps image tiles."
         cd ..
-        /app/bin/location_map --create \
-            --output /app/ichnaea/content/static/tiles/
+        /app/bin/location_map --create --output /app/ichnaea/content/static/tiles/
         ;;
     shell)
         echo "Opening shell"

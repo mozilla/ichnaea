@@ -7,7 +7,6 @@
 circle.yml
 contribute.json
 dev
-docker
 docker-compose.yml
 docs/build/html/.git
 node.make

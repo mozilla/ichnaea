@@ -36,7 +36,6 @@ default:
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
 	@echo "  test             - run unit tests"
-	@echo "  testshell        - open a shell for running tests"
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
 	@echo ""
 	@echo "  setup            - set up mysql, redis, etc"
