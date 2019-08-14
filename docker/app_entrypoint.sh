@@ -22,11 +22,6 @@ case "${SERVICE}" in
         echo "Starting Celery Worker"
         exec ./run_worker.sh
         ;;
-    alembic)
-        echo "Running Alembic"
-        cd ..
-        alembic "$@"
-        ;;
     local_map)
         echo "Creating datamaps image tiles."
         cd ..
@@ -41,12 +36,7 @@ case "${SERVICE}" in
             "$@"
         fi
         ;;
-    docs)
-        echo "Updating docs"
-        cd ..
-        make -f docker.make docs
-        ;;
     *)
-        echo "Usage: $0 {scheduler|web|worker|alembic|shell}"
+        echo "Usage: $0 {scheduler|web|worker|shell}"
         exit 1
 esac

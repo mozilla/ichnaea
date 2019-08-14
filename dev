@@ -1,4 +1,7 @@
 #!/bin/bash
+
+# dev script for common developer tasks.
+
 set -e
 
 HERE="$(pwd)"
@@ -9,201 +12,34 @@ if ! [ -x "$(command -v docker-compose)" ]; then
   exit 1
 fi
 
-# Let's do the important things.
 case "$1" in
-
-  # Restarts some/all of the containers.
-  restart)
-
-    case "$2" in
-
-      # Restarts the scheduler container.
-      scheduler)
-        $0 stop scheduler
-        $0 start scheduler
-        ;;
-
-      # Restarts the web container.
-      web)
-        $0 stop web
-        $0 start web
-        ;;
-
-      # Restarts the worker container.
-      worker)
-        $0 stop worker
-        $0 start worker
-        ;;
-
-      # Restarts the services.
-      services)
-        $0 stop services
-        $0 start services
-        ;;
-
-      # Restarts all containers.
-      *)
-        $0 stop
-        $0 start
-        ;;
-
-    esac
-    ;;
-
-  # Builds and starts some/all of our containers.
-  start)
-
-    case "$2" in
-
-      # Builds and starts the scheduler container.
-      scheduler)
-        SCHEDULER_ID="$(docker ps -a -q --filter name=location_scheduler)"
-        if [ ! -z "$SCHEDULER_ID" ]; then
-          $0 stop scheduler
-        fi
-        docker build -t mozilla/location .
-        docker run -d \
-          -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
-          -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
-          --name="location_scheduler" mozilla/location scheduler
-        ;;
-
-      # Builds and starts the web container.
-      web)
-        WEB_ID="$(docker ps -a -q --filter name=location_web)"
-        if [ ! -z "$WEB_ID" ]; then
-          $0 stop web
-        fi
-        docker build -t mozilla/location .
-        docker run -d \
-          -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
-          -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
-          -p 8000:8000/tcp --name="location_web" mozilla/location web
-        ;;
-
-      # Builds and starts the worker container.
-      worker)
-        WORKER_ID="$(docker ps -a -q --filter name=location_worker)"
-        if [ ! -z "$WORKER_ID" ]; then
-          $0 stop worker
-        fi
-        docker build -t mozilla/location .
-        docker run -d \
-          -e "REDIS_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_redis)" \
-          -e "DB_HOST=$(docker inspect --format '{{ .NetworkSettings.IPAddress }}' location_mysql)" \
-          --name="location_worker" mozilla/location worker
-        ;;
-
-      # Builds and starts the services supporting the application container.
-      services)
-        docker-compose build mysql redis
-        docker-compose up -d mysql redis
-        ;;
-
-      # Builds and starts all containers.
-      *)
-        $0 "$1" services
-        $0 "$1" scheduler
-        $0 "$1" worker
-        $0 "$1" web
-        ;;
-
-    esac
-    ;;
-
-  # Stops some/all of our containers.
-  stop)
-
-    case "$2" in
-
-      # Kills and removes the scheduler container.
-      scheduler)
-        SCHEDULER_ID="$(docker ps -a -q --filter name=location_scheduler)"
-        if [ ! -z "$SCHEDULER_ID" ]; then
-          docker kill location_scheduler >/dev/null
-          docker rm location_scheduler >/dev/null
-        fi
-        ;;
-
-      # Kills and removes the web container.
-      web)
-        WEB_ID="$(docker ps -a -q --filter name=location_web)"
-        if [ ! -z "$WEB_ID" ]; then
-          docker kill location_web >/dev/null
-          docker rm location_web >/dev/null
-        fi
-        ;;
-
-      # Kills and removes the worker container.
-      worker)
-        WORKER_ID="$(docker ps -a -q --filter name=location_worker)"
-        if [ ! -z "$WORKER_ID" ]; then
-          docker kill location_worker >/dev/null
-          docker rm location_worker >/dev/null
-        fi
-        ;;
-
-      # Stops the service containers.
-      services)
-        docker-compose stop
-        ;;
-
-      # Kills and removes all containers.
-      *)
-        $0 "$1" scheduler
-        $0 "$1" web
-        $0 "$1" worker
-        $0 "$1" services
-        ;;
-
-    esac
-    ;;
-
-  # Runs command inside the container.
-  run)
-    $0 start services
-    make build
-    docker-compose run --rm app "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
-    ;;
 
   # Runs alembic inside the container.
   alembic)
-    $0 run alembic "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
+    docker-compose run --rm app shell alembic "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
   # Updates CSS resources using a special node container.
   css)
     docker-compose build node
     cd "$HERE"
-    docker-compose run --rm --volume "$(pwd):/app" node \
-        make -f node.make css
-    ;;
-
-  # Update the docs inside the container.
-  docs)
-    $0 run docs
+    docker-compose run --rm node make -f node.make css
     ;;
 
   # Updates JS resources using a special node container.
   js)
     docker-compose build node
     cd "$HERE"
-    docker-compose run --rm --volume "$(pwd):/app" node \
-        make -f node.make js
+    docker-compose run --rm node make -f node.make js
     ;;
 
   local_map)
-    $0 run local_map
-    ;;
-
-  # Run the tests inside the container.
-  test)
-    $0 run test "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
+    docker-compose run --rm app local_map
     ;;
 
   # Shows usage information.
   help)
-    echo "Usage: $0 {start|stop|restart|run|alembic|css|docs|js|local_map|test|help}"
+    echo "Usage: $0 {alembic|css|docs|js|local_map|help}"
     ;;
 
   # Shows help message.
