@@ -16,17 +16,17 @@ CMD ["shell"]
 # Create an app user owned var/run section.
 RUN mkdir -p /var/run/location/ && chown -R app:app /var/run/location/
 
-# Disable installing doc/man/locale files
+# Disable installing doc/man/locale files.
 RUN echo "\
 path-exclude=/usr/share/doc/*\n\
 path-exclude=/usr/share/man/*\n\
 path-exclude=/usr/share/locale/*\n\
 " > /etc/dpkg/dpkg.cfg.d/apt-no-docs
 
-# Install GNUPG
+# Install GNUPG.
 RUN apt-get update && apt-get -y install gnupg
 
-# Add MySQL apt repo & GPG key
+# Add MySQL apt repo & GPG key.
 COPY ./docker/mysql_pubkey.asc /tmp/mysql_pubkey.asc
 RUN apt-key add /tmp/mysql_pubkey.asc && \
     echo 'deb http://repo.mysql.com/apt/debian/ buster mysql-5.7' > \

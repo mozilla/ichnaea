@@ -4,8 +4,6 @@
 
 set -e
 
-HERE="$(pwd)"
-
 # First, let's make sure that Docker Compose has been installed.
 if ! [ -x "$(command -v docker-compose)" ]; then
   echo "Please install Docker Compose and try again."
@@ -19,27 +17,13 @@ case "$1" in
     docker-compose run --rm app shell alembic "$2" "$3" "$4" "$5" "$6" "$7" "$8" "$9"
     ;;
 
-  # Updates CSS resources using a special node container.
-  css)
-    docker-compose build node
-    cd "$HERE"
-    docker-compose run --rm node make -f node.make css
-    ;;
-
-  # Updates JS resources using a special node container.
-  js)
-    docker-compose build node
-    cd "$HERE"
-    docker-compose run --rm node make -f node.make js
-    ;;
-
   local_map)
     docker-compose run --rm app local_map
     ;;
 
   # Shows usage information.
   help)
-    echo "Usage: $0 {alembic|css|docs|js|local_map|help}"
+    echo "Usage: $0 {alembic|docs|local_map|help}"
     ;;
 
   # Shows help message.

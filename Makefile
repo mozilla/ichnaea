@@ -37,6 +37,8 @@ default:
 	@echo "  lint             - lint code"
 	@echo "  test             - run unit tests"
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
+	@echo "  buildjs          - generate js static assets"
+	@echo "  buildcss         - generate css static assets"
 	@echo ""
 	@echo "  setup            - set up mysql, redis, etc"
 	@echo "  help             - see this text"
@@ -62,7 +64,7 @@ build: my.env
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
-	    app web scheduler
+	    node app web scheduler
 	touch .docker-build
 
 .PHONY: shell
@@ -76,6 +78,14 @@ test: my.env .docker-build
 .PHONY: docs
 docs: my.env .docker-build
 	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
+
+.PHONY: buildjs
+buildjs: my.env .docker-build
+	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make js
+
+.PHONY: buildcss
+buildcss: my.env .docker-build
+	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make css
 
 .PHONY: lint
 lint: my.env .docker-build

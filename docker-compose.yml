@@ -53,6 +53,8 @@ services:
     build:
       context: ./docker/node/
       dockerfile: Dockerfile
+    volumes:
+      - .:/app
 
   mysql:
     build:
