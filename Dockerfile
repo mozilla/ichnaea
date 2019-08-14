@@ -1,14 +1,16 @@
-FROM python:3.6-slim
+FROM python:3.6.9-slim
 
-# add a non-privileged user for installing and running
-# the application
-RUN groupadd -g 10001 app && \
-    useradd -d /app -g 10001 -G app -M -s /bin/sh -u 10001 app
+# Set up user and group.
+ARG groupid=10001
+ARG userid=10001
 
 WORKDIR /app
+RUN groupadd --gid $groupid app && \
+    useradd -g app --uid $userid --shell /usr/sbin/nologin --create-home app
 
-# Open a shell by default.
-ENTRYPOINT ["/app/conf/run.sh"]
+# Set entrypoint for this image. The entrypoint script takes a service
+# to run as the first argument. See the script for available arguments.
+ENTRYPOINT ["/app/docker/app_entrypoint.sh"]
 CMD ["shell"]
 
 # Create an app user owned var/run section.
@@ -77,14 +79,6 @@ RUN chown app:app . && \
     chown -R app:app /app/docs/ && \
     chown -R app:app /app/ichnaea/ && \
     chown -R app:app /app/conf/
-
-# This volume is only used while building docs and making those
-# available in the git repo, so they can be committed.
-VOLUME /app/docs/build/html
-
-# This volume is only used in local testing of the datamaps rendering
-# functionality.
-VOLUME /app/ichnaea/content/static/tiles
 
 # Define the default web server port.
 EXPOSE 8000
