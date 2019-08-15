@@ -27,6 +27,7 @@ default:
 	@echo "Ichnaea make rules:"
 	@echo ""
 	@echo "  build            - build docker containers"
+	@echo "  setup            - drop and recreate service state"
 	@echo "  run              - run webapp"
 	@echo "  runcelery        - run scheduler and worker"
 	@echo "  runservices      - run service containers (mysql, redis, etc)"
@@ -37,6 +38,7 @@ default:
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
 	@echo "  test             - run unit tests"
+	@echo "  testshell        - open a shell in the test environment"
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
 	@echo "  buildjs          - generate js static assets"
 	@echo "  buildcss         - generate css static assets"
@@ -68,6 +70,10 @@ build: my.env
 	    node app web scheduler
 	touch .docker-build
 
+.PHONY: setup
+setup: my.env
+	${DC} run app shell ./docker/run_setup.sh
+
 .PHONY: shell
 shell: my.env .docker-build
 	${DC} run --rm app shell
@@ -82,11 +88,15 @@ mysql: my.env .docker-build
 
 .PHONY: test
 test: my.env .docker-build
-	${DC} run --rm app shell ./docker/run_tests.sh ${ARGS}
+	${DC} run --rm test shell ./docker/run_tests.sh ${ARGS}
+
+.PHONY: testshell
+testshell: my.env .docker-build
+	${DC} run --rm test shell
 
 .PHONY: docs
 docs: my.env .docker-build
-	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
+	${DC} run --rm --no-deps test shell ./docker/run_build_docs.sh
 
 .PHONY: buildjs
 buildjs: my.env .docker-build

@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 from ssl import PROTOCOL_TLSv1
 
+from alembic import command
 import certifi
 from pymysql.err import DatabaseError
 from sqlalchemy import (
@@ -10,6 +11,7 @@ from sqlalchemy import (
     exc,
     event,
 )
+from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -18,6 +20,7 @@ from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
 from ichnaea.config import (
+    ALEMBIC_CFG,
     DB_LIBRARY,
     DB_DDL_URI,
     DB_RW_URI,
@@ -25,6 +28,7 @@ from ichnaea.config import (
 )
 
 DB_TYPE = {
+    None: DB_DDL_URI,
     'ddl': DB_DDL_URI,
     'ro': DB_RO_URI,
     'rw': DB_RW_URI,
@@ -128,6 +132,8 @@ class Database(object):
     """
 
     def __init__(self, uri, pool=True, transport='default'):
+        self.uri = uri
+
         options = {
             'echo': False,
             'isolation_level': 'REPEATABLE READ',
@@ -187,6 +193,9 @@ class Database(object):
         """Return a session for this database."""
         return self.session_factory()
 
+    def __repr__(self):
+        return self.uri
+
 
 class PingableSession(Session):
     """A custom pingable database session."""
@@ -216,13 +225,86 @@ def check_connection(dbapi_conn, conn_record, conn_proxy):
         # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
         dbapi_conn.ping(reconnect=True)
     except exc.OperationalError as ex:  # pragma: no cover
-        if ex.args[0] in (2003,     # Connection refused
-                          2006,     # MySQL server has gone away
-                          2013,     # Lost connection to MySQL server
-                                    # during query
-                          2055):    # Lost connection to MySQL server at '%s',
-                                    # system error: %d
+        error_codes = [
+            # Connection refused
+            2003,
+            # MySQL server has gone away
+            2006,
+            # Lost connection to MySQL server during query
+            2013,
+            # Lost connection to MySQL server at '%s', system error: %d
+            2055
+        ]
+
+        if ex.args[0] in error_codes:
             # caught by pool, which will retry with a new connection
             raise exc.DisconnectionError()
         else:
             raise
+
+
+def create_db(type_=None, uri=None):
+    """Create a database specified by uri.
+
+    :arg str type_: either None or a valid db connection type
+    :arg str uri: either None or a valid uri
+
+    :raises sqlalchemy.exc.ProgrammingError: if database already exists
+
+    Note: This is mysql-specific.
+
+    """
+    if uri is None:
+        uri = DB_TYPE[type_]
+
+    if not uri:
+        raise Exception("No uri specified.")
+
+    sa_url = make_url(uri)
+    db_to_create = sa_url.database
+    sa_url.database = None
+    engine = create_engine(sa_url)
+    engine.execute(
+        "CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create)
+    )
+
+    db = configure_db(uri=uri)
+    engine = db.engine
+    with engine.connect() as conn:
+        # Then add tables
+        with conn.begin() as trans:
+            # Now stamp the latest alembic version
+            command.stamp(ALEMBIC_CFG, 'base')
+            command.upgrade(ALEMBIC_CFG, 'head')
+            trans.commit()
+
+    db.close()
+
+
+def drop_db(type_=None, uri=None):
+    """Drop database specified in uri.
+
+    Note that the username/password in the specified uri must have permission
+    to create/drop databases.
+
+    :arg str type_: either None or a valid db connection type
+    :arg str uri: either None or a valid uri
+
+    :raises sqlalchemy.exc.InternalError: if database does not exist
+
+    Note: This is mysql-specific.
+
+    """
+    if uri is None:
+        uri = DB_TYPE[type_]
+
+    if not uri:
+        raise Exception("No uri specified.")
+
+    sa_url = make_url(uri)
+    db_to_drop = sa_url.database
+    sa_url.database = None
+    engine = create_engine(sa_url)
+    engine.execute(
+        "DROP DATABASE {}".format(db_to_drop)
+    )

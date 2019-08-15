@@ -11,6 +11,21 @@ services:
     volumes:
       - .:/app
 
+  # Container for running tests in--this includes configuration overrides for
+  # testing.
+  test:
+    image: local/ichnaea_app
+    env_file:
+      - docker/config/app.env
+      - docker/config/test.env
+      - my.env
+    depends_on:
+      - mysql
+      - redis
+    volumes:
+      - .:/app
+    command: ["shell"]
+
   web:
     image: local/ichnaea_app
     env_file:
