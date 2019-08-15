@@ -124,5 +124,5 @@ def main(argv, _db=None, _dump_file=dump_file):
     return exit_code
 
 
-def console_entry():  # pragma: no cover
+if __name__ == "__main__":
     sys.exit(main(sys.argv))

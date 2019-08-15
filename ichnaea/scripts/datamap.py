@@ -421,4 +421,4 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
 
 if __name__ == "__main__":
-    main(sys.argv)
+    sys.exit(main(sys.argv))

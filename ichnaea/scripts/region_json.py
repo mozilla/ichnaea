@@ -285,5 +285,5 @@ def main(argv):  # pragma: no cover
         fd.write(buffer_collection)
 
 
-def console_entry():  # pragma: no cover
-    main(sys.argv)
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
