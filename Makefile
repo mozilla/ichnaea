@@ -33,6 +33,7 @@ default:
 	@echo "  stop             - stop all service containers"
 	@echo ""
 	@echo "  shell            - open a shell in the app container"
+	@echo "  mysql            - open mysql prompt"
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
 	@echo "  test             - run unit tests"
@@ -70,6 +71,14 @@ build: my.env
 .PHONY: shell
 shell: my.env .docker-build
 	${DC} run --rm app shell
+
+.PHONY: mysql
+mysql: my.env .docker-build
+	${DC} up -d mysql
+	@echo "=============================="
+	@echo "Root password is \"location\"."
+	@echo "=============================="
+	${DC} exec mysql mysql --user root --password
 
 .PHONY: test
 test: my.env .docker-build
