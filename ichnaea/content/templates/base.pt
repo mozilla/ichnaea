@@ -86,6 +86,7 @@
             </ul>
 
             <ul class="footer-nav">
+                <li><a href="/terms">Terms of Service</a></li>
                 <li><a href="https://wiki.mozilla.org/CloudServices/Location">
                     Project overview</a>
                 </li>

@@ -16,28 +16,14 @@
 
     <p>
         If you have a question about the Mozilla Location Service,
-        you have a variety of options to contact us. If you want to
-        engage with the larger geolocation community or are comfortable
-        discussing your request in the open, please use either:
-        <ul>
-            <li>
-                <a href="https://lists.mozilla.org/listinfo/dev-geolocation">
-                    Our public mailing list</a> or
-                <a href="http://groups.google.com/group/mozilla.dev.geolocation">
-                    view an online archive of the discussions</a>
-            </li>
-            <li>
-                or join the #geo channel on
-                <a href="https://wiki.mozilla.org/IRC">
-                    Mozilla's IRC network</a>.
-            </li>
-        </ul>
+        post to
+        <a href="http://groups.google.com/group/mozilla.dev.geolocation">
+            our public mailing list</a>.
     </p>
-
     <p>
         If your inquiry about the Mozilla Location Service should stay
         private, you can contact us via email:
-        <i>mls-contact (at) mozilla (dot) com</i>
+        <em>mls-contact (at) mozilla (dot) com</em>
 
         <br />
 
