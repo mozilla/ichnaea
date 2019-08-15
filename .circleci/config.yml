@@ -54,13 +54,13 @@ jobs:
             name: Build Docker images
             working_directory: /ichnaea
             command: |
-                docker build -t mozilla/location .
+                make build
 
         - run:
             name: Run tests
             working_directory: /ichnaea
             command: |
-                ./dev test
+                make test
 
         - run:
             name: Push to Dockerhub
