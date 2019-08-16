@@ -29,7 +29,7 @@ from ichnaea.cache import configure_redis
 from ichnaea.config import (
     ALEMBIC_CFG,
 )
-from ichnaea.db import configure_db, create_db, drop_db
+from ichnaea.db import configure_db, create_db
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import (
     CITY_RADII,

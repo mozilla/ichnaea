@@ -43,7 +43,6 @@ default:
 	@echo "  buildjs          - generate js static assets"
 	@echo "  buildcss         - generate css static assets"
 	@echo ""
-	@echo "  setup            - set up mysql, redis, etc"
 	@echo "  help             - see this text"
 	@echo ""
 	@echo "See https://mozilla.github.io/ichnaea/ for more documentation."
@@ -67,7 +66,7 @@ build: my.env
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
-	    node app web scheduler
+	    node app
 	touch .docker-build
 
 .PHONY: setup
@@ -96,7 +95,7 @@ testshell: my.env .docker-build
 
 .PHONY: docs
 docs: my.env .docker-build
-	${DC} run --rm --no-deps test shell ./docker/run_build_docs.sh
+	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
 
 .PHONY: buildjs
 buildjs: my.env .docker-build

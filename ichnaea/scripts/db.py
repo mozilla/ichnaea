@@ -10,20 +10,17 @@ from ichnaea.db import drop_db, create_db
 def create_database():
     """Create a database."""
     print("Creating database %s...." % DB_DDL_URI)
-
     try:
         create_db(uri=DB_DDL_URI)
     except ProgrammingError:
         print("Database already exists.")
         return 1
-
     print("Done.")
 
 
 def drop_database():
     """Drop an existing database."""
     print("Dropping database %s...." % DB_DDL_URI)
-
     try:
         drop_db(uri=DB_DDL_URI)
     except InternalError:

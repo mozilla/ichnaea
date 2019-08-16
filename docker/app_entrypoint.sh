@@ -29,9 +29,9 @@ case "${SERVICE}" in
         exec ./docker/run_local_map.sh
         ;;
     shell)
-        echo "Opening shell"
         cd ..
         if [ -z "$*" ]; then
+            echo "Opening shell"
             exec /bin/bash
         else
             "$@"
