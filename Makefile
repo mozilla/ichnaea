@@ -88,11 +88,11 @@ mysql: my.env .docker-build
 
 .PHONY: test
 test: my.env .docker-build
-	${DC} run --rm test shell ./docker/run_tests.sh ${ARGS}
+	./bin/test_env.sh
 
 .PHONY: testshell
 testshell: my.env .docker-build
-	${DC} run --rm test shell
+	./bin/test_env.sh --shell
 
 .PHONY: docs
 docs: my.env .docker-build
