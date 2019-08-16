@@ -4,6 +4,8 @@
 Configuration
 =============
 
+.. Note:: 2019-08-16: This needs to be updated.
+
 The application takes a number of different settings and reads them
 from environment variables. There are also a small number of settings
 inside database tables.
