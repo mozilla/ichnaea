@@ -80,10 +80,7 @@ shell: my.env .docker-build
 .PHONY: mysql
 mysql: my.env .docker-build
 	${DC} up -d mysql
-	@echo "=============================="
-	@echo "Root password is \"location\"."
-	@echo "=============================="
-	${DC} exec mysql mysql --user root --password
+	${DC} exec mysql mysql --user root --password=location
 
 .PHONY: test
 test: my.env .docker-build
