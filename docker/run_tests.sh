@@ -2,6 +2,6 @@
 
 # Run tests.
 #
-# Run this in the app container.
+# Run this in the test container built using bin/test_env.sh.
 
-TESTING=true pytest "$@"
+pytest "$@"
