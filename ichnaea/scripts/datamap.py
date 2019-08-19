@@ -27,7 +27,7 @@ from ichnaea.db import (
     configure_db,
     db_worker_session,
 )
-from ichnaea.geocalc import random_points
+from geocalc import random_points
 from ichnaea.log import (
     configure_raven,
     configure_stats,
@@ -420,5 +420,5 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
         parser.print_help()
 
 
-def console_entry():  # pragma: no cover
-    main(sys.argv)
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

@@ -17,9 +17,6 @@ def _dump_nothing(datatype, session, filename,
 
 class TestDump(object):
 
-    def test_compiles(self):
-        assert hasattr(dump, 'console_entry')
-
     def test_main(self, sync_db):
         assert dump.main(
             ['script', '--datatype=blue', '--filename=/tmp/foo.tar.gz',

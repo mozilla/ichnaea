@@ -12,6 +12,7 @@ from sqlalchemy import (
     inspect,
     text,
 )
+from sqlalchemy.exc import ProgrammingError
 import webtest
 
 from ichnaea.api.key import API_CACHE
@@ -28,7 +29,7 @@ from ichnaea.cache import configure_redis
 from ichnaea.config import (
     ALEMBIC_CFG,
 )
-from ichnaea.db import configure_db
+from ichnaea.db import configure_db, create_db
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import (
     CITY_RADII,
@@ -146,8 +147,8 @@ def setup_tables(engine):
 
 
 def cleanup_tables(engine):
-    # reflect and delete all tables, not just those known to
-    # our current code version / models
+    # reflect and delete all tables, not just those known to our current code
+    # version / models
     inspector = inspect(engine)
     with engine.connect() as conn:
         with conn.begin() as trans:
@@ -159,6 +160,13 @@ def cleanup_tables(engine):
 
 
 def setup_database():
+    # Create it if it doesn't exist
+    try:
+        create_db('ddl')
+    except ProgrammingError:
+        pass
+
+    # Clean up the tables and set them up
     db = configure_db('ddl')
     cleanup_tables(db.engine)
     setup_tables(db.engine)

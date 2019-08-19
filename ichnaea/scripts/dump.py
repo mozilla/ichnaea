@@ -15,7 +15,7 @@ from ichnaea.db import (
     configure_db,
     db_worker_session,
 )
-from ichnaea.geocalc import bbox
+from geocalc import bbox
 from ichnaea.log import (
     configure_logging,
     LOGGER,
@@ -124,5 +124,5 @@ def main(argv, _db=None, _dump_file=dump_file):
     return exit_code
 
 
-def console_entry():  # pragma: no cover
+if __name__ == "__main__":
     sys.exit(main(sys.argv))

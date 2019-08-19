@@ -9,8 +9,8 @@ from scipy.cluster import hierarchy
 from scipy.optimize import leastsq
 from sqlalchemy import select
 
+from geocalc import distance
 from ichnaea.api.locate.score import station_score
-from ichnaea.geocalc import distance
 from ichnaea.models import (
     decode_mac,
     encode_mac,

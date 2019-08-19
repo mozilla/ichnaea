@@ -1,9 +1,8 @@
 FROM node:8-slim
 
-# add a non-privileged user for installing and running
-# the application
-RUN groupadd -g 10001 app && \
-    useradd -d /app -g 10001 -G app -M -s /bin/sh -u 10001 app
+# Note: This uses the node user (uid 1000) that comes with the image.
+
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
     bzip2 \
@@ -13,9 +12,9 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /app && mkdir -p /node
-RUN chown -R app:app /app && chown -R app:app /node
+RUN chown -R node:node /app && chown -R node:node /node
 
-USER app
+USER node
 WORKDIR /node
 
 CMD ["bash"]

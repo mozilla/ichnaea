@@ -21,7 +21,7 @@ from ichnaea.api.schema import (
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.source import PositionSource
 from ichnaea.api.rate_limit import rate_limit_exceeded
-from ichnaea.geocalc import distance
+from geocalc import distance
 
 # Magic constant to cache not found.
 LOCATION_NOT_FOUND = '404'

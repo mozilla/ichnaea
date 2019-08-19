@@ -14,7 +14,7 @@ from shapely import prepared
 import simplejson
 from rtree import index
 
-from ichnaea import geocalc
+import geocalc
 from ichnaea import util
 
 REGIONS_FILE = os.path.join(os.path.abspath(

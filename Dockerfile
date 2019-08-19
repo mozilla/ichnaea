@@ -1,31 +1,33 @@
-FROM python:3.6-slim
+FROM python:3.6.9-slim
 
-# add a non-privileged user for installing and running
-# the application
-RUN groupadd -g 10001 app && \
-    useradd -d /app -g 10001 -G app -M -s /bin/sh -u 10001 app
+# Set up user and group.
+ARG groupid=10001
+ARG userid=10001
 
 WORKDIR /app
+RUN groupadd --gid $groupid app && \
+    useradd -g app --uid $userid --shell /usr/sbin/nologin --create-home app
 
-# Open a shell by default.
-ENTRYPOINT ["/app/conf/run.sh"]
+# Set entrypoint for this image. The entrypoint script takes a service
+# to run as the first argument. See the script for available arguments.
+ENTRYPOINT ["/app/docker/app_entrypoint.sh"]
 CMD ["shell"]
 
 # Create an app user owned var/run section.
 RUN mkdir -p /var/run/location/ && chown -R app:app /var/run/location/
 
-# Disable installing doc/man/locale files
+# Disable installing doc/man/locale files.
 RUN echo "\
 path-exclude=/usr/share/doc/*\n\
 path-exclude=/usr/share/man/*\n\
 path-exclude=/usr/share/locale/*\n\
 " > /etc/dpkg/dpkg.cfg.d/apt-no-docs
 
-# Install GNUPG
+# Install GNUPG.
 RUN apt-get update && apt-get -y install gnupg
 
-# Add MySQL apt repo & GPG key
-COPY ./conf/mysql_pubkey.asc /tmp/mysql_pubkey.asc
+# Add MySQL apt repo & GPG key.
+COPY ./docker/mysql_pubkey.asc /tmp/mysql_pubkey.asc
 RUN apt-key add /tmp/mysql_pubkey.asc && \
     echo 'deb http://repo.mysql.com/apt/debian/ buster mysql-5.7' > \
     /etc/apt/sources.list.d/mysql.list
@@ -61,9 +63,13 @@ RUN make -f docker.make build_deps
 COPY ./requirements/*.txt /app/requirements/
 RUN make -f docker.make build_python_deps
 
-# Install the application code.
+# Install geocalc.
 COPY . /app
-RUN make -f docker.make build_ichnaea
+RUN make -f docker.make build_geocalc
+
+ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONPATH /app
 
 # Run a couple checks to see if things got installed correctly.
 RUN make -f docker.make build_check
@@ -71,16 +77,7 @@ RUN make -f docker.make build_check
 # The app user only needs write access to very few places.
 RUN chown app:app . && \
     chown -R app:app /app/docs/ && \
-    chown -R app:app /app/ichnaea/ && \
-    chown -R app:app /app/conf/
-
-# This volume is only used while building docs and making those
-# available in the git repo, so they can be committed.
-VOLUME /app/docs/build/html
-
-# This volume is only used in local testing of the datamaps rendering
-# functionality.
-VOLUME /app/ichnaea/content/static/tiles
+    chown -R app:app /app/ichnaea/
 
 # Define the default web server port.
 EXPOSE 8000

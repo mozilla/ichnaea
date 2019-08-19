@@ -4,6 +4,8 @@
 Development
 ===========
 
+.. Note:: 2019-08-16: This needs to be updated.
+
 .. note:: If you want to install a production version of the code,
           please skip these instructions and follow
           :ref:`the deployment docs <deploy>` instead.

@@ -32,6 +32,7 @@ Table of contents
    :maxdepth: 1
 
    usage
+   local_dev
    api/index
    import_export
    install/index

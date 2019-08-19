@@ -4,6 +4,8 @@
 Deployment
 ==========
 
+.. Note:: 2019-08-16: This needs to be updated.
+
 We deploy ichnaea in an Amazon AWS environment, and there are some
 optional dependencies on specific AWS services like Amazon S3. The
 documentation assumes you are also using a AWS environment, but ichnaea

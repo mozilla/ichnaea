@@ -10,10 +10,7 @@ from pymysql.constants.ER import (
 )
 from sqlalchemy.exc import InternalError as SQLInternalError
 
-from ichnaea.geocalc import (
-    circle_radius,
-    distance,
-)
+from geocalc import circle_radius, distance
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellid,
