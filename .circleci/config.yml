@@ -97,12 +97,12 @@ jobs:
               # push on master or git tag
               if [ "${CIRCLE_BRANCH}" == "master" ] || [ -n "${CIRCLE_TAG}" ]; then
                 echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
-                docker tag "mozilla/location" "mozilla/location:${DOCKER_TAG}"
+                docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
                 retry docker push "mozilla/location:${DOCKER_TAG}"
 
                 # push `latest` on master only
                 if [ "${CIRCLE_BRANCH}" == "master" ]; then
-                  docker tag "mozilla/location" "mozilla/location:latest"
+                  docker tag "local/ichnaea_app" "mozilla/location:latest"
                   retry docker push "mozilla/location:latest"
                 fi
               fi
