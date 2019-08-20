@@ -20,7 +20,7 @@ the service.
 
 Please make sure that you actually need the raw API access to
 perform geolocation lookups.  If you just need to get location data
-from your web application, you can directly use the 
+from your web application, you can directly use the
 `HTML5 API
 <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation>`_.
 
@@ -35,6 +35,9 @@ responsive.
 
 API Access Keys
 ===============
+
+Mozilla is currently evaluating its MLS service and terms and is not currently
+distributing API keys.
 
 You can anonymously submit data to the service without an API key via
 any of the submission APIs.
