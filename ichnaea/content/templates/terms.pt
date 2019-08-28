@@ -96,12 +96,13 @@
             <a href="https://www.mozilla.org/privacy/">Mozilla privacy policy</a>
             for how we receive, handle and share information we collect
             providing MLS. The following data is required for use of our
-            service: Name, Email, Organization (as part of registration). To
-            determine location, end user devices send us a combination of IP
-            address and nearby public Wi-fi networks and cell phone towers,
-            which we use to provide an approximate location. We do not keep
-            this data or track users. Mozilla retains aggregate data of the
-            number of daily requests associated with each API key.
+            service: Name, Email, Organization (as part of registration).
+            Mozilla retains aggregate data of the number of daily requests
+            associated with each API key.
+            MLS’s end user privacy notice is available
+            <a href="/privacy">here</a>.
+            The project’s source code is
+            <a href="https://github.com/mozilla/ichnaea">available on GitHub</a>.
         </li>
         <li>
             <span class="legal-term">Email</span> –
