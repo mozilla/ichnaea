@@ -1,0 +1,205 @@
+<tal:macro xmlns:tal="http://xml.zope.org/namespaces/tal"
+           xmlns:metal="http://xml.zope.org/namespaces/metal"
+           metal:use-macro="view.base_template">
+
+<tal:slot metal:fill-slot="content">
+<section class="terms-of-service" id="main-content">
+
+    <h3>Introduction &amp; Definitions</h3>
+
+    <p class="text-justified">
+        Mozilla Location Service (MLS) is a free and open service developed by
+        Mozilla for the public benefit. This MLS Developer Terms of Service
+        ("<span class="legal-term">Terms</span>") govern your use of the MLS Query
+        API. Key definitions used in these Terms are defined below.
+    </p>
+
+    <dl>
+        <dt>Commercial Project</dt>
+        <dd>
+            Projects using the MLS Query API to further the primary purpose of
+            private monetary gain.
+        </dd>
+        <dt>End Users</dt>
+        <dd>
+            Individuals receiving location through the MLS Query API
+        </dd>
+        <dt>Public Interest Project</dt>
+        <dd>
+            Projects using the MLS Query API to further the public interest
+            such as research, open source software, standards development,
+            education, recreation, social, or non-commercial technology.
+        </dd>
+    </dl>
+
+    <h3>Eligibility &amp; Registration</h3>
+
+    <p class="text-justified">
+        Unless otherwise stated in these Terms, the MLS Query API is available
+        as follows:
+    </p>
+
+    <ol>
+        <li>
+            <span class="legal-term">Commercial Project licenses</span>
+            are capped at a daily usage limit of 100,000 requests (this will
+            not be increased).  API keys expire automatically after three
+            months.
+        </li>
+        <li>
+            <span class="legal-term">Public Interest Project licenses</span>
+            are capped at a daily usage limit of 100,000 requests, which may be
+            increased on request if necessary for the project.
+        </li>
+    </ol>
+
+    <p class="text-justified">
+        Registration is required to access the MLS Query API.  Whether a
+        project meets the eligibility criteria for a license is at Mozilla’s
+        sole discretion.
+    </p>
+
+    <h3>Your Obligations</h3>
+
+    <p class="text-justified">
+        You represent and warrant that:
+    </p>
+
+    <ol>
+        <li>
+            <span class="legal-term">Relationship with Mozilla</span>.
+            You will provide accurate information and updates to Mozilla.
+            Unless you and Mozilla have a written agreement stating otherwise,
+            your project will not imply in any way that it is produced,
+            sponsored or endorsed by Mozilla.
+        </li>
+        <li>
+            <span class="legal-term">Relationship with End-Users</span>.
+            You are solely responsible for your project and obtaining
+            meaningful consent of your End-Users to locate them. You will
+            provide your End-Users with notice of your use of the MLS Query
+            API, as well as any other relevant location data you have or
+            collect in connection with its use.
+        </li>
+    </ol>
+
+    <h3>Privacy Notice &amp; Communications</h3>
+
+    <p class="text-justified">
+        As part of using the MLS Query API, you agree to the following:
+    </p>
+
+    <ol>
+        <li>
+            <span class="legal-term">Data Collection</span> -
+            We adhere to the practices outlined in the
+            <a href="https://www.mozilla.org/privacy/">Mozilla privacy policy</a>
+            for how we receive, handle and share information we collect
+            providing MLS. The following data is required for use of our
+            service: Name, Email, Organization (as part of registration).
+            Mozilla retains aggregate data of the number of daily requests
+            associated with each API key.
+            MLS’s end user privacy notice is available
+            <a href="/privacy">here</a>.
+            The project’s source code is
+            <a href="https://github.com/mozilla/ichnaea">available on GitHub</a>.
+        </li>
+        <li>
+            <span class="legal-term">Email</span> –
+            We may contact you at your registered email address in connection
+            with MLS.
+        </li>
+        <li>
+            <span class="legal-term">Public Reports</span> –
+            We may publicly publish metrics on usage of the MLS Query API and
+            this aggregate data may include your project use. We will not share
+            your project name without your prior consent.
+        </li>
+    </ol>
+
+    <h3>No SLA</h3>
+
+    <p class="text-justified">
+        These Terms are not a service level agreement and Mozilla is not
+        required to maintain any particular level or service or uptime in
+        connection with MLS. The service may experience downtime or become
+        unavailable without notice.
+    </p>
+
+    <h3>Indemnification</h3>
+
+    <p class="text-justified">
+        You agree to defend, indemnify and hold harmless Mozilla, its
+        contractors, contributors, licensors, and partners, and their
+        respective directors, officers, employees and agents ("Indemnified
+        Parties") from and against any and all third party claims and expenses,
+        including attorneys' fees, arising out of or related to your use of the
+        Services (including, but not limited to, from any content uploaded by
+        you).
+
+    <h3>Disclaimer; Limitation of Liability</h3>
+
+    <p class="text-justified text-uppercase-disclaimer">
+        MLS is provided "as is" with all faults. To the extent permitted by
+        law, Mozilla and the indemnified parties hereby disclaim all
+        warranties, whether express or implied, including without limitation
+        warranties that the service is free of defects, merchantable, fit for a
+        particular purpose, and non-infringing.
+    </p>
+
+    <p class="text-justified text-uppercase-disclaimer">
+        You bear the entire risk as to selecting the service for your purposes
+        and as to the quality and performance of the service. This limitation
+        will apply notwithstanding the failure of essential purpose of any
+        remedy. Some jurisdictions do not allow the exclusion or limitation of
+        implied warranties, so this disclaimer may not apply to you.
+    </p>
+
+    <p class="text-justified text-uppercase-disclaimer">
+        Except as required by law, Mozilla and the indemnified parties will not
+        be liable for any indirect, special, incidental, consequential, or
+        exemplary damages arising out of or in any way relating to these Terms
+        or the use of or inability to use the service, including without
+        limitation direct and indirect damages for loss of goodwill, work
+        stoppage, lost profits, loss of data, and computer failure or
+        malfunction, even if advised of the possibility of such damages and
+        regardless of the theory (contract, tort, or otherwise) upon which such
+        claim is based. The collective liability of Mozilla and the indemnified
+        parties under these terms will not exceed $500 (five hundred dollars).
+        Some jurisdictions do not allow the exclusion or limitation of
+        incidental, consequential, or special damages, so this exclusion and
+        limitation may not apply to you.
+    </p>
+
+    <h3>Modifications to these Terms</h3>
+
+    <p class="text-justified">
+        We may update these Terms from time to time. The updated Terms will be
+        posted online. If the changes are substantive, we will announce the
+        update through our usual channels for such announcements such as blog
+        posts, banners, emails, or forums. Your continued use of the service
+        after the effective date of such changes constitutes your acceptance of
+        such changes.
+    </p>
+
+    <h3>Miscellaneous</h3>
+
+    <p class="text-justified">
+        These Terms constitute the entire agreement between you and Mozilla
+        concerning the service and supersede any prior versions of these Terms.
+        These Terms are governed by the laws of the state of California,
+        U.S.A., excluding its conflict of law provisions. All claims and
+        disputes arising out of the Communications or these Terms shall be
+        brought exclusively in the courts of Santa Clara County, California,
+        and you consent to personal jurisdiction in those courts. If any
+        portion of these Terms is held to be invalid or unenforceable, the
+        remaining portions will remain in full force and effect. In the event
+        of a conflict between a translated version of these Terms and the
+        English language version, the English language version shall control.
+        In the event of a conflict between these Terms and relevant additional
+        terms, the additional terms shall control.
+    </p>
+</section>
+</tal:slot>
+
+</tal:macro>

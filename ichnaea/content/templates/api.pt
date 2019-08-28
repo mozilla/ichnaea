@@ -54,31 +54,24 @@
 
     <p class="text-justified">
         In order to use the service API you need to obtain an API key.
-        If you use one of the existing applications, there is a good
-        chance those applications already come with an API key included.
         We require these API keys as one way to prevent abuse of the
         service.
     </p>
 
     <p class="text-justified">
-        Mozilla is currently evaluating its MLS service and terms and is
-        not currently distributing API keys.
-    </p>
-
-<!--
-    <p class="text-justified">
-        If you are developing a new application, please
-        <a href="/contact">contact us</a> to obtain an API key.
-        Please make sure to describe your use-case and intended use of
-        the service. If you merely want to test out the service for an
-        experiment, please use the literal "test" API key.
+        To obtain an API key, please
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSf2JaJm8V1l8TS_OiyjodkpYsagOhM1LNo_SmPDDAVKdmQg8A/viewform">
+            fill out this form</a>. When filling out the form,
+        please make sure to describe your use-case and intended use of
+        the service. Our
+        <a href="/terms">
+            Developer Terms of Service</a> govern the use of MLS API keys.
     </p>
 
     <p class="text-justified">
-        We'll try to get back to you in a manner of days, but depending
+        We'll try to get back to you within a few days, but depending
         on vacation times it might take longer.
     </p>
--->
 </section>
 </tal:slot>
 

@@ -144,6 +144,7 @@ class TestFunctionalContent(object):
         app.get('/privacy', status=200)
         app.get('/robots.txt', status=200)
         app.get('/static/css/images/icons-000000@2x.png', status=200)
+        app.get('/terms', status=200)
         ro_session_tracker(0)
         app.get('/stats/regions', status=200)
         ro_session_tracker(1)

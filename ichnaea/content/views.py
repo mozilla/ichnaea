@@ -289,6 +289,12 @@ class ContentViews(object):
             self._set_cache('stats_regions', data)
         return {'page_title': 'Region Statistics', 'metrics': data}
 
+    @view_config(renderer='templates/terms.pt',
+                 name='terms', http_cache=3600)
+    def terms_of_service(self):
+        return {'page_title': ('Developer Terms of Service:'
+                               ' Mozilla Location Service Query API')}
+
 
 _empty_homepage_response = Response(content_type='text/html', body='''\
 <!DOCTYPE html><html><head>
