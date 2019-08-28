@@ -34,7 +34,7 @@ function make_graph(url, graph_id) {
         opacity: 0.80
     }).appendTo("body");
 
-    placeholder.bind("plothover", function (event, pos, item) {
+    placeholder.on("plothover", function (event, pos, item) {
         if (item) {
             var x = item.datapoint[0],
                 y = item.datapoint[1];
