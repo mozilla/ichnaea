@@ -10,6 +10,6 @@ gunicorn \
 	--error-logfile=- \
 	--access-logfile=- \
 	--log-file=- \
-	--config=python:ichnaea.webapp.settings \
+	--config=python:ichnaea.webapp.gunicorn_settings \
 	--bind 0.0.0.0:"${PORT}" \
 	ichnaea.webapp.app:wsgi_app
