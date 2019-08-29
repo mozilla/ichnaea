@@ -700,6 +700,64 @@ img {
     top: 8px;
 }
 
+/* Developer Terms of Service: Mozilla Location Service Query API  */
+
+/* Number <h3> sections with "1. ", "2. " */
+section.terms-of-service {
+    counter-reset: H3
+}
+section.terms-of-service h3:before {
+    content: counter(H3) ". ";
+    counter-increment: H3;
+}
+
+/* Show definitions on a single line, underline the term, separate term and definition with dash */
+section.terms-of-service dt {
+    display: inline-block;
+    text-decoration: underline;
+}
+
+section.terms-of-service dd:before {
+    content: ' - ';
+}
+
+section.terms-of-service dd {
+    display: inline;
+    margin: 0;
+}
+
+section.terms-of-service dd:after{
+  display: block;
+  content: '';
+  margin-bottom: 1em;
+}
+
+/* Number list items with (a), (b) */
+section.terms-of-service ol {
+    counter-reset: tos-list;
+}
+section.terms-of-service ol > li {
+    list-style: none;
+    position: relative;
+    margin-bottom: 1em;
+}
+section.terms-of-service ol > li:before {
+    counter-increment: tos-list;
+    content: "(" counter(tos-list, lower-alpha) ") ";
+    position: absolute;
+    left: -1.4em;
+}
+
+/* Underline legal terms */
+section.terms-of-service span.legal-term {
+    text-decoration: underline;
+}
+
+/* Show disclaimer in all uppercase */
+section.terms-of-service .text-uppercase-disclaimer {
+    text-transform: uppercase;
+}
+
 /* Mobile Layout: 320px */
 
 @media only screen and (max-width: 760px) {
