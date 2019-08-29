@@ -120,16 +120,18 @@ and made available via a HTTPS frontend (Amazon CloudFront).
     ASSET_URL = https://some_distribution_id.cloudfront.net
 
 
-Web
-~~~
+Mapbox
+~~~~~~
 
-The application contains both the HTTP API and some website content.
+The web site content uses Mapbox to generate tiles. In order to do this,
+it requires a Mapbox API token.
 
-The web functionality by default is limited to the public HTTP API.
-If the map related settings are configured, the website content is
-also being made available.
+You can create an account on their site: https://mapbox.com/
 
-The ``MAP_TOKEN`` specifies a Mapbox access token.
+After you have an account, you can create an API token at:
+https://accounts.mapbox.com/
+
+Set the ``MAP_TOKEN`` configuration value to your API token.
 
 .. code-block:: ini
 
