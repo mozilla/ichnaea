@@ -259,8 +259,8 @@ Sphinx==2.2.0 \
 sphinx-rtd-theme==0.4.3 \
     --hash=sha256:00cf895504a7895ee433807c62094cf1e95f065843bf3acd17037c3e9a2becd4 \
     --hash=sha256:728607e34d60456d736cc7991fd236afb828b21b82f956c5ea75f94c8414040a
-SQLAlchemy==1.1.18 \
-    --hash=sha256:8b0ec71af9291191ba83a91c03d157b19ab3e7119e27da97932a4773a3f664a9
+SQLAlchemy==1.3.8 \
+    --hash=sha256:2f8ff566a4d3a92246d367f2e9cd6ed3edeef670dcd6dda6dfdc9efed88bcd80
 WebTest==2.0.28 \
     --hash=sha256:3b091401977fe1869d8cbc790a1e925dda7a8a4c37edd7b28a46eadb45d57fb9 \
     --hash=sha256:66339d35ba6d2ab5f0fb16b075348643b2717d04a6b1b8db68765011694ad426
