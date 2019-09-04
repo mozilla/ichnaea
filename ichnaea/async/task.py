@@ -9,7 +9,7 @@ from kombu.serialization import (
 )
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.config import TESTING
+from ichnaea.conf import TESTING
 from ichnaea.db import db_worker_session
 
 

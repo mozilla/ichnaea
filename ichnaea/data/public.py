@@ -4,7 +4,7 @@ import os
 import boto3
 from sqlalchemy.sql import text
 
-from ichnaea.config import (
+from ichnaea.conf import (
     ASSET_BUCKET,
 )
 from ichnaea.models import (

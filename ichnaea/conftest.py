@@ -26,7 +26,7 @@ from ichnaea.async.config import (
     shutdown_worker as shutdown_celery,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.config import (
+from ichnaea.conf import (
     ALEMBIC_CFG,
 )
 from ichnaea.db import configure_db, create_db

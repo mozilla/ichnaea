@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 import redis
 from redis.exceptions import RedisError
 
-from ichnaea.config import REDIS_URI
+from ichnaea.conf import REDIS_URI
 
 
 def configure_redis(cache_url=REDIS_URI, _client=None):

@@ -5,7 +5,7 @@ import time
 
 from pyramid.httpexceptions import HTTPServiceUnavailable
 
-from ichnaea.config import (
+from ichnaea.conf import (
     CONTRIBUTE_INFO,
     VERSION_INFO,
 )

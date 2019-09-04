@@ -19,7 +19,7 @@ from sqlalchemy.pool import NullPool, Pool, QueuePool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
-from ichnaea.config import (
+from ichnaea.conf import (
     ALEMBIC_CFG,
     DB_LIBRARY,
     DB_DDL_URI,

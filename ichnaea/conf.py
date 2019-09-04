@@ -1,5 +1,5 @@
 """
-Contains helper functionality for parsing environment variables.
+Application settings and configuration derived from the environment
 """
 from __future__ import absolute_import
 

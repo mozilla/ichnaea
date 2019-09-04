@@ -16,9 +16,6 @@ import boto3
 from simplejson import dumps
 from sqlalchemy import text
 
-from ichnaea.config import (
-    ASSET_BUCKET,
-)
 from ichnaea.models.content import (
     DataMap,
     decode_datamap_grid,
@@ -31,6 +28,9 @@ from geocalc import random_points
 from ichnaea.log import (
     configure_raven,
     configure_stats,
+)
+from ichnaea.conf import (
+    ASSET_BUCKET,
 )
 from ichnaea import util
 

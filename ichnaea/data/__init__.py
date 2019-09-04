@@ -2,12 +2,12 @@
 Contains asynchronous tasks and data pipeline logic.
 """
 
-from ichnaea import config
+from ichnaea import conf
 
 
 def _cell_export_enabled():
-    return bool(config.ASSET_BUCKET)
+    return bool(conf.ASSET_BUCKET)
 
 
 def _web_content_enabled():
-    return bool(config.MAP_TOKEN)
+    return bool(conf.MAP_TOKEN)

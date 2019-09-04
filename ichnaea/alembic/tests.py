@@ -6,8 +6,8 @@ from alembic.script import ScriptDirectory
 from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
-from ichnaea.config import ALEMBIC_CFG
 from ichnaea.conftest import cleanup_tables
+from ichnaea.conf import ALEMBIC_CFG
 
 # make sure all models are imported
 from ichnaea.models import _Model  # NOQA

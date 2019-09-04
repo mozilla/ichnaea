@@ -18,7 +18,7 @@ from pyramid.response import Response
 from pyramid.view import view_config
 import simplejson
 
-from ichnaea.config import (
+from ichnaea.conf import (
     ASSET_BUCKET,
     ASSET_URL,
     MAP_TOKEN,

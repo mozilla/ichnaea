@@ -152,8 +152,8 @@ class TestLBHeartbeat(object):
 class TestSettings(object):
 
     def test_compiles(self):
-        from ichnaea.webapp import settings
-        assert type(settings.workers) == int
+        from ichnaea.webapp import gunicorn_settings
+        assert type(gunicorn_settings.workers) == int
 
 
 class TestVersion(object):

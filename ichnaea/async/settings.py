@@ -3,7 +3,7 @@ Contains :ref:`celery settings <celery:configuration>`.
 """
 
 from ichnaea.async.config import TASK_QUEUES
-from ichnaea.config import (
+from ichnaea.conf import (
     REDIS_URI,
     TESTING,
 )

@@ -3,8 +3,8 @@ import sys
 
 from sqlalchemy.exc import InternalError, ProgrammingError
 
-from ichnaea.config import DB_DDL_URI
 from ichnaea.db import drop_db, create_db
+from ichnaea.conf import DB_DDL_URI
 
 
 def create_database():

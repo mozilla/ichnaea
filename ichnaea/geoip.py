@@ -15,7 +15,7 @@ from geoip2.errors import (
 from maxminddb import InvalidDatabaseError
 from maxminddb.const import MODE_AUTO
 
-from ichnaea.config import GEOIP_PATH
+from ichnaea.conf import GEOIP_PATH
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocode import GEOCODER
 

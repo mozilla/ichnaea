@@ -15,13 +15,13 @@ from raven.transport.http import HTTPTransport
 from raven.transport.threaded import ThreadedHTTPTransport
 from datadog.dogstatsd.base import DogStatsd
 
-from ichnaea.config import (
+from ichnaea.exceptions import BaseClientError
+from ichnaea.conf import (
     RELEASE,
     SENTRY_DSN,
     STATSD_HOST,
     TESTING,
 )
-from ichnaea.exceptions import BaseClientError
 
 LOGGER = logging.getLogger('ichnaea')
 
