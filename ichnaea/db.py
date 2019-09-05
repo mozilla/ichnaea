@@ -1,9 +1,11 @@
 """Database related functionality."""
 
+import os
 from contextlib import contextmanager
 from ssl import PROTOCOL_TLSv1
 
 from alembic import command
+from alembic.config import Config as AlembicConfig
 import certifi
 from pymysql.err import DatabaseError
 from sqlalchemy import (
@@ -19,27 +21,32 @@ from sqlalchemy.pool import NullPool, Pool, QueuePool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
-from ichnaea.conf import (
-    ALEMBIC_CFG,
-    DB_LIBRARY,
-    DB_DDL_URI,
-    DB_RW_URI,
-    DB_RO_URI,
-)
+from ichnaea.conf import settings
+
 
 DB_TYPE = {
-    None: DB_DDL_URI,
-    'ddl': DB_DDL_URI,
-    'ro': DB_RO_URI,
-    'rw': DB_RW_URI,
+    'ddl': settings('db_ddl_uri'),
+    'ro': settings('db_readonly_uri'),
+    'rw': settings('db_readwrite_uri'),
 }
 
 DB_TRANSPORTS = {
-    'default': DB_LIBRARY,
+    'default': settings('db_library'),
     'gevent': 'pymysql',
     'sync': 'mysqlconnector',
     'threaded': 'pymysql',
 }
+
+
+def get_alembic_config():
+    cfg = AlembicConfig()
+
+    script_location = os.path.join(os.path.dirname(__file__), 'alembic')
+    assert os.path.exists(script_location)
+    cfg.set_section_option('alembic', 'script_location', script_location)
+
+    cfg.set_section_option('alembic', 'sqlalchemy.url', settings('db_ddl_uri'))
+    return cfg
 
 
 @compiles(Insert, 'mysql')
@@ -268,14 +275,16 @@ def create_db(type_=None, uri=None):
         "CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create)
     )
 
+    alembic_cfg = get_alembic_config()
+
     db = configure_db(uri=uri)
     engine = db.engine
     with engine.connect() as conn:
         # Then add tables
         with conn.begin() as trans:
             # Now stamp the latest alembic version
-            command.stamp(ALEMBIC_CFG, 'base')
-            command.upgrade(ALEMBIC_CFG, 'head')
+            command.stamp(alembic_cfg, 'base')
+            command.upgrade(alembic_cfg, 'head')
             trans.commit()
 
     db.close()

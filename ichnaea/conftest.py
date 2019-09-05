@@ -26,10 +26,7 @@ from ichnaea.async.config import (
     shutdown_worker as shutdown_celery,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.conf import (
-    ALEMBIC_CFG,
-)
-from ichnaea.db import configure_db, create_db
+from ichnaea.db import configure_db, create_db, get_alembic_config
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import (
     CITY_RADII,
@@ -137,11 +134,12 @@ def _setup_table_contents(conn):
 
 
 def setup_tables(engine):
+    alembic_cfg = get_alembic_config()
     with engine.connect() as conn:
         with conn.begin() as trans:
             # Now stamp the latest alembic version
-            command.stamp(ALEMBIC_CFG, 'base')
-            command.upgrade(ALEMBIC_CFG, 'head')
+            command.stamp(alembic_cfg, 'base')
+            command.upgrade(alembic_cfg, 'head')
             _setup_table_contents(conn)
             trans.commit()
 
@@ -379,7 +377,6 @@ def region_searcher(data_queues, geoip_db,
 def map_config(monkeysession):
     tiles_url = 'http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png'
     monkeysession.setattr('ichnaea.content.views.MAP_TILES_URL', tiles_url)
-    monkeysession.setattr('ichnaea.content.views.MAP_TOKEN', 'pk.123456')
 
 
 @pytest.fixture(scope='session')

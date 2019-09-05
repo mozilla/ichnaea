@@ -16,6 +16,7 @@ import boto3
 from simplejson import dumps
 from sqlalchemy import text
 
+from ichnaea.conf import settings
 from ichnaea.models.content import (
     DataMap,
     decode_datamap_grid,
@@ -28,9 +29,6 @@ from geocalc import random_points
 from ichnaea.log import (
     configure_raven,
     configure_stats,
-)
-from ichnaea.conf import (
-    ASSET_BUCKET,
 )
 from ichnaea import util
 
@@ -391,7 +389,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
         bucketname = _bucketname
         if not _bucketname:  # pragma: no cover
-            bucketname = ASSET_BUCKET
+            bucketname = settings('ASSET_BUCKET')
             if bucketname:
                 bucketname = bucketname.strip('/')
 

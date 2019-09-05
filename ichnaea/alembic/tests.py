@@ -7,7 +7,7 @@ from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
 from ichnaea.conftest import cleanup_tables
-from ichnaea.conf import ALEMBIC_CFG
+from ichnaea.db import get_alembic_config
 
 # make sure all models are imported
 from ichnaea.models import _Model  # NOQA
@@ -79,8 +79,10 @@ class TestMigration(object):
         db_revision = current_db_revision(db)
         assert db_revision is not None
 
+        alembic_cfg = get_alembic_config()
+
         # db revision matches latest alembic revision
-        alembic_script = ScriptDirectory.from_config(ALEMBIC_CFG)
+        alembic_script = ScriptDirectory.from_config(alembic_cfg)
         alembic_head = alembic_script.get_current_head()
         assert db_revision == alembic_head
 
@@ -91,7 +93,7 @@ class TestMigration(object):
         # downgrade back to the beginning
         with db.engine.connect() as conn:
             with conn.begin() as trans:
-                alembic_command.downgrade(ALEMBIC_CFG, 'base')
+                alembic_command.downgrade(alembic_cfg, 'base')
                 trans.commit()
 
         # capture state of a downgraded database

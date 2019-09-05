@@ -8,15 +8,17 @@ from urllib.parse import urlparse
 import redis
 from redis.exceptions import RedisError
 
-from ichnaea.conf import REDIS_URI
+from ichnaea.conf import settings
 
 
-def configure_redis(cache_url=REDIS_URI, _client=None):
+def configure_redis(cache_url=None, _client=None):
     """
     Configure and return a :class:`~ichnaea.cache.RedisClient` instance.
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
+    cache_url = settings('redis_uri') if cache_url is None else cache_url
+
     if _client is not None:
         return _client
 

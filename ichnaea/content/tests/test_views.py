@@ -2,6 +2,7 @@ from calendar import timegm
 from unittest import mock
 
 import boto3
+from everett.manager import config_override
 from pyramid.testing import DummyRequest
 from pyramid import testing
 import pytest
@@ -134,11 +135,11 @@ class TestFunctionalContent(object):
             ('request', ['path:map', 'method:get']),
         ])
 
-    def test_downloads(self, app, monkeypatch):
-        monkeypatch.setattr('ichnaea.content.views.ASSET_BUCKET', 'bucket')
-        monkeypatch.setattr(
-            'ichnaea.content.views.ASSET_URL', 'http://127.0.0.1:9/foo')
-
+    @config_override(
+        ASSET_BUCKET='bucket',
+        ASSET_URL='http://127.0.0.1:9/foo'
+    )
+    def test_downloads(self, app):
         mock_conn = mock.MagicMock(name='conn')
         mock_bucket = mock.MagicMock(name='bucket')
         mock_conn.return_value.Bucket.return_value = mock_bucket

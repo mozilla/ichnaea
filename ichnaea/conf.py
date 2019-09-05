@@ -3,97 +3,115 @@ Application settings and configuration derived from the environment
 """
 from __future__ import absolute_import
 
-import json
 import os
 import os.path
 
-from alembic.config import Config as AlembicConfig
-import simplejson
+from everett.component import ConfigOptions, RequiredConfigMixin
+from everett.manager import ConfigManager, ConfigOSEnv
 
 HERE = os.path.dirname(__file__)
 
-RELEASE = None
-TESTING = 'TESTING' in os.environ
 
-CONTRIBUTE_FILE = os.path.join(HERE, 'contribute.json')
-CONTRIBUTE_INFO = {}
-with open(CONTRIBUTE_FILE, 'r') as fd:
-    CONTRIBUTE_INFO = simplejson.load(fd)
+class AppConfig(RequiredConfigMixin):
+    required_config = ConfigOptions()
+    required_config.add_option(
+        'testing',
+        default='false',
+        parser=bool,
+        doc='Whether or not we are running tests.'
+    )
+
+    required_config.add_option(
+        'asset_bucket',
+        default='',
+        doc='???'
+    )
+    required_config.add_option(
+        'asset_url',
+        default='',
+        doc='???'
+    )
+
+    # Database related settings
+    required_config.add_option(
+        'db_library',
+        default='pymysql',
+        doc='one of "pymysql" or "mysqlconnector"'
+    )
+    required_config.add_option(
+        'db_readonly_uri',
+        doc=(
+            'uri for the readonly database; '
+            'mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME'
+        )
+    )
+    required_config.add_option(
+        'db_readwrite_uri',
+        doc=(
+            'uri for the read-write database; '
+            'mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME'
+        )
+    )
+    required_config.add_option(
+        'db_ddl_uri',
+        doc=(
+            'uri for the ddl database used for migrations; '
+            'mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME'
+        )
+    )
+
+    required_config.add_option(
+        'sentry_dsn',
+        default='',
+        doc='Sentry DSN; leave blank to disable Sentry error reporting'
+    )
+
+    required_config.add_option(
+        'statsd_host',
+        default='',
+        doc='StatsD host; blank to disable StatsD'
+    )
+
+    required_config.add_option(
+        'redis_uri',
+        doc='uri for Redis; redis://HOST:PORT/DB'
+    )
+
+    required_config.add_option(
+        'mapbox_token',
+        default='',
+        doc=(
+            'Mapbox API key; if you do not provide this, then parts of '
+            'the site will not work'
+        )
+    )
+
+    required_config.add_option(
+        'geoip_path',
+        default=os.path.join(HERE, 'tests/data/GeoIP2-City-Test.mmdb'),
+        doc='absolute path to mmdb file for geoip lookups'
+    )
+
+    def __init__(self, config):
+        self.raw_config = config
+        self.config = config.with_options(self)
+
+    def __call__(self, *args, **kwargs):
+        return self.config(*args, **kwargs)
 
 
-VERSION_INFO = {}
-VERSION_FILE = os.path.join(HERE, 'version.json')
-if os.path.exists(VERSION_FILE):
-    with open(VERSION_FILE, "r") as fp:
-        try:
-            VERSION_INFO = json.load(fp)
-        except json.JsonDecodeException:
-            pass
+def build_config_manager():
+    config_manager = ConfigManager(
+        environments=[
+            # Pull configuration from environment variables
+            ConfigOSEnv()
+        ],
+        doc=(
+            "For configuration help, see "
+            "https://mozilla.github.io/ichnaea/"
+        )
+    )
+    return AppConfig(config_manager)
 
-ASSET_BUCKET = os.environ.get('ASSET_BUCKET')
-ASSET_URL = os.environ.get('ASSET_URL')
 
-# One of pymysql or mysqlconnector
-DB_LIBRARY = os.environ.get('DB_LIBRARY', 'pymysql')
-
-DB_HOST = os.environ.get('DB_HOST')
-DB_RO_HOST = os.environ.get('DB_RO_HOST', DB_HOST)
-DB_RW_HOST = os.environ.get('DB_RW_HOST', DB_HOST)
-
-DB_USER = os.environ.get('DB_USER', 'location')
-DB_RO_USER = os.environ.get('DB_RO_USER', DB_USER)
-DB_RW_USER = os.environ.get('DB_RW_USER', DB_USER)
-DB_DDL_USER = os.environ.get('DB_DDL_USER', DB_USER)
-
-DB_PWD = os.environ.get('DB_PWD', 'location')
-DB_RO_PWD = os.environ.get('DB_RO_PWD', DB_PWD)
-DB_RW_PWD = os.environ.get('DB_RW_PWD', DB_PWD)
-DB_DDL_PWD = os.environ.get('DB_DDL_PWD', DB_PWD)
-
-DB_PORT = os.environ.get('DB_PORT', '3306')
-DB_NAME = os.environ.get('DB_NAME', 'location')
-
-DB_RW_URI = os.environ.get('DB_RW_URI')
-DB_RO_URI = os.environ.get('DB_RO_URI')
-DB_DDL_URI = os.environ.get('DB_DDL_URI')
-
-if not DB_RO_URI:
-    DB_RO_URI = ('mysql+%s://%s:%s@%s:%s/%s' % (
-        DB_LIBRARY, DB_RO_USER, DB_RO_PWD, DB_RO_HOST, DB_PORT, DB_NAME))
-
-if not DB_RW_URI:
-    DB_RW_URI = ('mysql+%s://%s:%s@%s:%s/%s' % (
-        DB_LIBRARY, DB_RW_USER, DB_RW_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
-
-if not DB_DDL_URI:
-    DB_DDL_URI = ('mysql+%s://%s:%s@%s:%s/%s' % (
-        DB_LIBRARY, DB_DDL_USER, DB_DDL_PWD, DB_RW_HOST, DB_PORT, DB_NAME))
-
-ALEMBIC_CFG = AlembicConfig()
-ALEMBIC_CFG.set_section_option(
-    'alembic', 'script_location', os.path.join(HERE, 'alembic'))
-ALEMBIC_CFG.set_section_option(
-    'alembic', 'sqlalchemy.url', DB_DDL_URI)
-
-GEOIP_PATH = os.environ.get('GEOIP_PATH')
-if not GEOIP_PATH:
-    GEOIP_PATH = os.path.join(HERE, 'tests/data/GeoIP2-City-Test.mmdb')
-
-MAP_TOKEN = os.environ.get('MAP_TOKEN')
-
-REDIS_HOST = os.environ.get('REDIS_HOST')
-REDIS_PORT = os.environ.get('REDIS_PORT', '6379')
-REDIS_DB = '1' if TESTING else '0'
-REDIS_URI = os.environ.get('REDIS_URI')
-if REDIS_HOST and not REDIS_URI:
-    REDIS_URI = 'redis://%s:%s/%s' % (REDIS_HOST, REDIS_PORT, REDIS_DB)
-
-SENTRY_DSN = os.environ.get('SENTRY_DSN')
-STATSD_HOST = os.environ.get('STATSD_HOST')
-
-if os.path.isfile(VERSION_FILE):
-    with open(VERSION_FILE, 'r') as fd:
-        data = simplejson.load(fd)
-    VERSION_INFO['build'] = data.get('build', None)
-    VERSION_INFO['commit'] = data.get('commit', None)
-    VERSION_INFO['tag'] = RELEASE = data.get('tag', None)
+settings = build_config_manager()

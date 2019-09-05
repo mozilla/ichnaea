@@ -12,7 +12,8 @@ from ichnaea import geoip
 from ichnaea.tests import DATA_DIRECTORY
 
 GEOIP_BAD_FILE = os.path.join(
-    DATA_DIRECTORY, 'GeoIP2-Connection-Type-Test.mmdb')
+    DATA_DIRECTORY, 'GeoIP2-Connection-Type-Test.mmdb'
+)
 GEOIP_TEST_FILE = os.path.join(DATA_DIRECTORY, 'GeoIP2-City-Test.mmdb')
 
 
@@ -26,8 +27,7 @@ class TestGeoIP(object):
 
     @classmethod
     def _open_db(cls, raven, filename=GEOIP_TEST_FILE, mode=MODE_AUTO):
-        return geoip.configure_geoip(
-            filename, mode=mode, raven_client=raven)
+        return geoip.configure_geoip(filename, mode=mode, raven_client=raven)
 
     def test_open(self, geoip_db):
         assert isinstance(geoip_db, geoip.GeoIPWrapper)
@@ -47,7 +47,7 @@ class TestGeoIP(object):
         raven.check(['RuntimeError: Maxmind C extension not installed'])
 
     def test_no_file(self, raven):
-        with self._open_db(raven, '') as db:
+        with self._open_db(raven, filename='') as db:
             assert isinstance(db, geoip.GeoIPNull)
         raven.check(['OSError: No geoip filename specified.'])
 

@@ -3,12 +3,9 @@ Contains :ref:`celery settings <celery:configuration>`.
 """
 
 from ichnaea.async.config import TASK_QUEUES
-from ichnaea.conf import (
-    REDIS_URI,
-    TESTING,
-)
+from ichnaea.conf import settings
 
-if TESTING:
+if settings('testing'):
     # BBB: Celery 4
     # task_always_eager = True
     # task_eager_propagates = True
@@ -16,10 +13,10 @@ if TESTING:
     CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
 
 # BBB: Celery 4
-# broker_url = REDIS_URI
-# result_backend = REDIS_URI
-BROKER_URL = REDIS_URI
-CELERY_RESULT_BACKEND = REDIS_URI
+# broker_url = settings('REDIS_URI')
+# result_backend = settings('REDIS_URI')
+BROKER_URL = settings('redis_uri')
+CELERY_RESULT_BACKEND = settings('redis_uri')
 
 # Based on `Celery / Redis caveats
 # <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
@@ -86,6 +83,4 @@ CELERY_RESULT_SERIALIZER = 'internal_json'
 CELERY_TASK_SERIALIZER = 'internal_json'
 
 # cleanup
-del REDIS_URI
 del TASK_QUEUES
-del TESTING

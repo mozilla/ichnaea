@@ -5,10 +5,7 @@ import time
 
 from pyramid.httpexceptions import HTTPServiceUnavailable
 
-from ichnaea.conf import (
-    CONTRIBUTE_INFO,
-    VERSION_INFO,
-)
+from ichnaea.util import contribute_info, version_info
 from ichnaea.webapp.view import BaseView
 
 
@@ -71,7 +68,7 @@ class ContributeView(BaseView):
         Return a response with a 200 status, including a JSON body
         describing how to contribute to the project.
         """
-        return CONTRIBUTE_INFO
+        return contribute_info()
 
 
 class HeartbeatView(BaseView):
@@ -149,4 +146,4 @@ class VersionView(BaseView):
         Return a response with a 200 status, including a JSON body
         describing the installed software versions.
         """
-        return VERSION_INFO
+        return version_info()

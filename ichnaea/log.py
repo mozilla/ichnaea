@@ -15,13 +15,9 @@ from raven.transport.http import HTTPTransport
 from raven.transport.threaded import ThreadedHTTPTransport
 from datadog.dogstatsd.base import DogStatsd
 
+from ichnaea.conf import settings
 from ichnaea.exceptions import BaseClientError
-from ichnaea.conf import (
-    RELEASE,
-    SENTRY_DSN,
-    STATSD_HOST,
-    TESTING,
-)
+from ichnaea.util import version_info
 
 LOGGER = logging.getLogger('ichnaea')
 
@@ -72,7 +68,7 @@ RAVEN_TRANSPORTS = {
 
 def configure_logging():
     """Configure basic Python logging."""
-    if TESTING:
+    if settings('testing'):
         logging.basicConfig(
             format=LOGGING_FORMAT,
             datefmt=LOGGING_DATEFMT,
@@ -96,9 +92,10 @@ def configure_raven(transport=None, _client=None):  # pragma: no cover
     if not transport:
         raise ValueError('No valid raven transport was configured.')
 
-    dsn = SENTRY_DSN
+    dsn = settings('sentry_dsn')
     klass = DebugRavenClient if not dsn else RavenClient
-    client = klass(dsn=dsn, transport=transport, release=RELEASE)
+    release = version_info()['tag']
+    client = klass(dsn=dsn, transport=transport, release=release)
     return client
 
 
@@ -111,9 +108,9 @@ def configure_stats(_client=None):  # pragma: no cover
     if _client is not None:
         return _client
 
-    statsd_host = STATSD_HOST
+    statsd_host = settings('statsd_host')
     klass = DebugStatsClient if not statsd_host else StatsClient
-    namespace = None if TESTING else 'location'
+    namespace = None if settings('testing') else 'location'
     client = klass(host=statsd_host, port=8125,
                    namespace=namespace, use_ms=True)
     return client
