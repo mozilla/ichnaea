@@ -24,12 +24,12 @@ class AppConfig(RequiredConfigMixin):
     required_config.add_option(
         'asset_bucket',
         default='',
-        doc='???'
+        doc='name of AWS S3 bucket to store map tile image assets in'
     )
     required_config.add_option(
         'asset_url',
         default='',
-        doc='???'
+        doc='Amazon CloudFront url for map tile image assets'
     )
 
     # Database related settings
