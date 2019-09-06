@@ -3,7 +3,7 @@
 import sphinx_rtd_theme
 
 project = u'Ichnaea'
-copyright = u'2013-2017, Mozilla'
+copyright = u'2013-2019, Mozilla'
 
 # The short X.Y version.
 version = '2.0'
@@ -23,6 +23,7 @@ templates_path = ['_templates']
 
 extensions = [
     'sphinx.ext.linkcode',
+    'everett.sphinxext',
 ]
 
 

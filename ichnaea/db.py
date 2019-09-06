@@ -25,6 +25,8 @@ from ichnaea.conf import settings
 
 
 DB_TYPE = {
+    # Default to readonly if db_type isn't specified
+    None: settings('db_readonly_uri'),
     'ddl': settings('db_ddl_uri'),
     'ro': settings('db_readonly_uri'),
     'rw': settings('db_readwrite_uri'),
@@ -44,7 +46,6 @@ def get_alembic_config():
     script_location = os.path.join(os.path.dirname(__file__), 'alembic')
     assert os.path.exists(script_location)
     cfg.set_section_option('alembic', 'script_location', script_location)
-
     cfg.set_section_option('alembic', 'sqlalchemy.url', settings('db_ddl_uri'))
     return cfg
 
