@@ -389,7 +389,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
 
         bucketname = _bucketname
         if not _bucketname:  # pragma: no cover
-            bucketname = settings('ASSET_BUCKET')
+            bucketname = settings('asset_bucket')
             if bucketname:
                 bucketname = bucketname.strip('/')
 
