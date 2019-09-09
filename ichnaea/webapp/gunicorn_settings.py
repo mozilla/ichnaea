@@ -5,7 +5,7 @@ This needs to be specified on the command line via the `-c` argument:
 
 .. code-block:: bash
 
-    bin/gunicorn -c python:ichnaea.webapp.settings \
+    bin/gunicorn -c python:ichnaea.webapp.gunicorn_settings \
         ichnaea.webapp.app:wsgi_app
 
 """

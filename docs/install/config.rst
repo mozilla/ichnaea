@@ -4,8 +4,6 @@
 Configuration
 =============
 
-.. Note:: 2019-08-16: This needs to be updated.
-
 The application takes a number of different settings and reads them
 from environment variables. There are also a small number of settings
 inside database tables.
@@ -14,114 +12,75 @@ inside database tables.
 Environment Variables
 =====================
 
-Required Variables
-------------------
+.. autocomponent:: ichnaea.conf.AppConfig
+   :hide-classname:
+   :case: upper
+
 
 Database
-~~~~~~~~
+--------
 
-The MySQL compatible database is used for storing configuration and
-application data.
+The MySQL compatible database is used for storing configuration and application
+data.
 
-The web role only requires a read-only connection, while the
-worker role need a read-write connection.
+The webapp service requires a read-only connection.
 
-Both of them can be restricted to only DML (data-manipulation) permissions,
-as neither needs DDL (data-definition) rights.
+The celery worker service requires a read-write connection.
+
+Both of them can be restricted to only DML (data-manipulation) permissions, as
+neither needs DDL (data-definition) rights.
 
 DDL changes are only done via the alembic database migration system.
 
-.. code-block:: ini
-
-    DB_HOST = localhost
-
-    DB_RO_USER = location_ro
-    DB_RO_PWD = password
-    DB_RW_USER = location_rw
-    DB_RW_PWD = password
-    DB_DDL_USER = location_admin
-    DB_DDL_PWD = password
-
-The database name is `location` and the port number is the default `3306`.
-
 
 GeoIP
-~~~~~
+-----
 
 The web and worker roles need access to a maxmind GeoIP City database
 in version 2 format. Both GeoLite and commercial databases will work.
 
-.. code-block:: ini
-
-    GEOIP_PATH = /path/to/GeoIP2-City.mmdb
-
 
 Redis
-~~~~~
+-----
 
-The Redis cache is used as a classic cache by the web role, as a backend
-to store rate-limiting counters, as a custom and a worker queuing backend.
+The Redis cache is used as a classic cache by the web role, as a backend to
+store rate-limiting counters, as a custom and a worker queuing backend.
 
-.. code-block:: ini
-
-    REDIS_HOST = localhost
-
-The port number is the default `6379`.
-
-
-Optional Variables
-------------------
 
 Sentry
-~~~~~~
+------
 
-All roles and command line scripts use an optional Sentry server
-to log application exception data.
-
-.. code-block:: ini
-
-    SENTRY_DSN = https://public_key:secret_key@localhost/project_id
+All roles and command line scripts use an optional Sentry server to log
+application exception data. Set this to a Sentry DSN to enable Sentry or ``''``
+to disable it.
 
 
 StatsD
-~~~~~~
+------
 
-All roles and command line scripts use an optional StatsD service
-to log application specific metrics. The StatsD service needs to
-support metric tags.
+All roles and command line scripts use an optional StatsD service to log
+application specific metrics. The StatsD service needs to support metric tags.
 
-The project uses a lot of metrics as further detailed in
-:ref:`the metrics documentation <metrics>`.
+The project uses a lot of metrics as further detailed in :ref:`the metrics
+documentation <metrics>`.
 
-.. code-block:: ini
-
-    STATSD_HOST = localhost
-
-The port number is the default `8125`. All metrics are prefixed with
-a `location` namespace.
+All metrics are prefixed with a `location` namespace.
 
 
-Feature Specfic Variables
--------------------------
+Map tile assets
+---------------
 
-Assets
-~~~~~~
+The application can optionally generate image tiles for a data map and public
+export files available via the downloads section of the website.
 
-The application can optionally generate image tiles for a data map
-and public export files available via the downloads section of the
-website.
+These assets are stored in a static file repository (Amazon S3) and made
+available via a HTTPS frontend (Amazon CloudFront).
 
-These assets are stored in a static file repository (Amazon S3)
-and made available via a HTTPS frontend (Amazon CloudFront).
-
-.. code-block:: ini
-
-    ASSET_BUCKET = amazon_s3_bucket_name
-    ASSET_URL = https://some_distribution_id.cloudfront.net
+Set ``ASSET_BUCKET`` and ``ASSET_URL`` accordingly.
 
 
 Mapbox
-~~~~~~
+------
 
 The web site content uses Mapbox to generate tiles. In order to do this,
 it requires a Mapbox API token.
@@ -132,10 +91,6 @@ After you have an account, you can create an API token at:
 https://accounts.mapbox.com/
 
 Set the ``MAP_TOKEN`` configuration value to your API token.
-
-.. code-block:: ini
-
-    MAP_TOKEN = pk.example_public_access_token
 
 
 Database Configuration
@@ -157,6 +112,7 @@ But to start off, you can add a simple literal `test` API key:
 
     INSERT INTO api_key
     (`valid_key`, `allow_locate`, `allow_region`) VALUES ("test", 1, 1);
+
 
 Fallback
 ~~~~~~~~

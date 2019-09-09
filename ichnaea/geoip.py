@@ -15,7 +15,7 @@ from geoip2.errors import (
 from maxminddb import InvalidDatabaseError
 from maxminddb.const import MODE_AUTO
 
-from ichnaea.config import GEOIP_PATH
+from ichnaea.conf import settings
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocode import GEOCODER
 
@@ -164,7 +164,7 @@ GEOIP_GENC_MAP = {
 }
 
 
-def configure_geoip(filename=GEOIP_PATH, mode=MODE_AUTO,
+def configure_geoip(filename=None, mode=MODE_AUTO,
                     raven_client=None, _client=None):
     """
     Configure and return a :class:`~ichnaea.geoip.GeoIPWrapper` instance.
@@ -177,6 +177,7 @@ def configure_geoip(filename=GEOIP_PATH, mode=MODE_AUTO,
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
+    filename = settings('geoip_path') if filename is None else filename
 
     if _client is not None:
         return _client

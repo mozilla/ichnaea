@@ -264,3 +264,6 @@ SQLAlchemy==1.1.18 \
 WebTest==2.0.28 \
     --hash=sha256:3b091401977fe1869d8cbc790a1e925dda7a8a4c37edd7b28a46eadb45d57fb9 \
     --hash=sha256:66339d35ba6d2ab5f0fb16b075348643b2717d04a6b1b8db68765011694ad426
+everett==1.0.2 \
+    --hash=sha256:66c7991c056fd9b1de54c29e2b5004a30209530faef698d6ecfbf24bfbbdd1fb \
+    --hash=sha256:8a5ee8cdde0ed6b3bbb63249e0e0703d4ad91921107ff198e0868ffce5f7b6bc

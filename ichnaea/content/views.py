@@ -18,11 +18,7 @@ from pyramid.response import Response
 from pyramid.view import view_config
 import simplejson
 
-from ichnaea.config import (
-    ASSET_BUCKET,
-    ASSET_URL,
-    MAP_TOKEN,
-)
+from ichnaea.conf import settings
 from ichnaea.content.stats import (
     global_stats,
     histogram,
@@ -64,13 +60,13 @@ def configure_tiles_url(asset_url):
     return (tiles_src, tiles_url)
 
 
-MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(ASSET_URL)
+MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(settings('asset_url'))
 CSP_POLICY = CSP_POLICY.format(base=CSP_BASE, tiles=MAP_TILES_SRC)
 
 
 def configure_content(config, enable=None):
     if enable is None:
-        enable = MAP_TILES_URL and MAP_TOKEN
+        enable = MAP_TILES_URL and settings('mapbox_token')
 
     if not enable:
         config.add_view(empty_homepage_view,
@@ -113,10 +109,10 @@ def security_headers(event):
 def s3_list_downloads(raven_client):
     files = {'full': [], 'diff1': [], 'diff2': []}
 
-    if not ASSET_BUCKET:  # pragma: no cover
+    if not settings('asset_bucket'):  # pragma: no cover
         return files
 
-    asset_url = ASSET_URL
+    asset_url = settings('asset_url')
     if not asset_url.endswith('/'):  # pragma: no cover
         asset_url = asset_url + '/'
 
@@ -124,7 +120,7 @@ def s3_list_downloads(raven_client):
     full = []
     try:
         s3 = boto3.resource('s3')
-        bucket = s3.Bucket(ASSET_BUCKET)
+        bucket = s3.Bucket(settings('asset_bucket'))
         for obj in bucket.objects.filter(Prefix='export/'):
             name = obj.key.split('/')[-1]
             path = urlparse.urljoin(asset_url, obj.key)
@@ -176,7 +172,9 @@ class ContentViews(object):
 
     @view_config(renderer='templates/homepage.pt', http_cache=3600)
     def homepage_view(self):
-        image_base_url = HOMEPAGE_MAP_IMAGE.format(token=MAP_TOKEN)
+        image_base_url = HOMEPAGE_MAP_IMAGE.format(
+            token=settings('mapbox_token')
+        )
         image_url = MAP_TILES_URL.format(z=0, x=0, y='0@2x')
         return {
             'page_title': 'Overview',
@@ -217,7 +215,7 @@ class ContentViews(object):
         return {
             'page_title': 'Map',
             'map_tiles_url': MAP_TILES_URL,
-            'map_token': MAP_TOKEN,
+            'map_token': settings('mapbox_token'),
         }
 
     @view_config(renderer='json', name='map.json', http_cache=3600)

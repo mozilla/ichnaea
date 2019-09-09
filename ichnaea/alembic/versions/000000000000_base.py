@@ -13,10 +13,7 @@ from alembic import op
 import sqlalchemy as sa
 from sqlalchemy import text
 
-from ichnaea.config import (
-    DB_RO_URI,
-    DB_RW_URI,
-)
+from ichnaea.conf import settings
 
 DBCreds = namedtuple('DBCreds', 'user pwd')
 
@@ -42,8 +39,8 @@ def _add_users(conn):
     # We don't take into account hostname or database restrictions
     # the users / grants, but use global privileges.
     creds = {}
-    creds['rw'] = _db_creds(DB_RW_URI)
-    creds['ro'] = _db_creds(DB_RO_URI)
+    creds['rw'] = _db_creds(settings('db_readwrite_uri'))
+    creds['ro'] = _db_creds(settings('db_readonly_uri'))
 
     stmt = text('SELECT user FROM mysql.user')
     result = conn.execute(stmt)

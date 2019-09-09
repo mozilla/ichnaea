@@ -9,7 +9,7 @@ from kombu.serialization import (
 )
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.config import TESTING
+from ichnaea.conf import settings
 from ichnaea.db import db_worker_session
 
 
@@ -90,7 +90,7 @@ class BaseTask(Task):
                 result = super(BaseTask, self).__call__(*args, **kw)
             except Exception as exc:  # pragma: no cover
                 self.raven_client.captureException()
-                if self._auto_retry and not TESTING:
+                if self._auto_retry and not settings('testing'):
                     raise self.retry(exc=exc)
                 raise
         return result
@@ -104,7 +104,7 @@ class BaseTask(Task):
         de/serialization process to make sure the arguments can indeed
         be serialized into JSON.
         """
-        if TESTING:
+        if settings('testing'):
             # We do the extra check to make sure this was really used from
             # inside tests
 
