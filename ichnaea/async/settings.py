@@ -81,6 +81,3 @@ CELERY_MESSAGE_COMPRESSION = 'gzip'
 CELERY_ACCEPT_CONTENT = ['json', 'internal_json']
 CELERY_RESULT_SERIALIZER = 'internal_json'
 CELERY_TASK_SERIALIZER = 'internal_json'
-
-# cleanup
-del TASK_QUEUES
