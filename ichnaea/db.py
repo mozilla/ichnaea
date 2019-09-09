@@ -25,8 +25,6 @@ from ichnaea.conf import settings
 
 
 DB_TYPE = {
-    # Default to readonly if db_type isn't specified
-    None: settings('db_readonly_uri'),
     'ddl': settings('db_ddl_uri'),
     'ro': settings('db_readonly_uri'),
     'rw': settings('db_readwrite_uri'),
@@ -251,10 +249,9 @@ def check_connection(dbapi_conn, conn_record, conn_proxy):
             raise
 
 
-def create_db(type_=None, uri=None):
+def create_db(uri=None):
     """Create a database specified by uri.
 
-    :arg str type_: either None or a valid db connection type
     :arg str uri: either None or a valid uri
 
     :raises sqlalchemy.exc.ProgrammingError: if database already exists
@@ -263,7 +260,7 @@ def create_db(type_=None, uri=None):
 
     """
     if uri is None:
-        uri = DB_TYPE[type_]
+        uri = DB_TYPE['ddl']
 
     if not uri:
         raise Exception("No uri specified.")
@@ -278,7 +275,7 @@ def create_db(type_=None, uri=None):
 
     alembic_cfg = get_alembic_config()
 
-    db = configure_db(uri=uri)
+    db = configure_db('ddl', uri=uri)
     engine = db.engine
     with engine.connect() as conn:
         # Then add tables
@@ -291,13 +288,12 @@ def create_db(type_=None, uri=None):
     db.close()
 
 
-def drop_db(type_=None, uri=None):
+def drop_db(uri=None):
     """Drop database specified in uri.
 
     Note that the username/password in the specified uri must have permission
     to create/drop databases.
 
-    :arg str type_: either None or a valid db connection type
     :arg str uri: either None or a valid uri
 
     :raises sqlalchemy.exc.InternalError: if database does not exist
@@ -306,7 +302,7 @@ def drop_db(type_=None, uri=None):
 
     """
     if uri is None:
-        uri = DB_TYPE[type_]
+        uri = DB_TYPE['ddl']
 
     if not uri:
         raise Exception("No uri specified.")

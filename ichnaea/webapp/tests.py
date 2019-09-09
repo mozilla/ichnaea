@@ -67,7 +67,7 @@ class TestHeartbeatErrors(object):
     @pytest.fixture(scope='function')
     def broken_app(self, http_session, raven, stats):
         # Create database connections to the discard port.
-        db = configure_db(uri='mysql+pymysql://none:none@127.0.0.1:9/none')
+        db = configure_db('ddl', uri='mysql+pymysql://none:none@127.0.0.1:9/none')
 
         # Create a broken GeoIP database.
         geoip_db = GeoIPNull()

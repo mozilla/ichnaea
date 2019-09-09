@@ -160,7 +160,7 @@ def cleanup_tables(engine):
 def setup_database():
     # Create it if it doesn't exist
     try:
-        create_db('ddl')
+        create_db()
     except ProgrammingError:
         pass
 
