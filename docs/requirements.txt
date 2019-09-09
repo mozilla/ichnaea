@@ -1,0 +1,9 @@
+# NOTE(willkg): Minimal set of dependencies required to make the docs in
+# ReadTheDocs. There will be some duplicates between here and requirements/,
+# but it seems easier to live with that than orchestrating a setup where there
+# are no duplicates.
+#
+# We don't use hashes so that pip install will pick up dependencies and
+# therefore we can specify less. This is just for building docs on ReadTheDocs.
+everett==1.0.2
+sphinx-rtd-theme==0.4.3

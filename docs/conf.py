@@ -1,9 +1,17 @@
 # -*- coding: utf-8 -*-
 
+import os
 import sphinx_rtd_theme
+import sys
 
-project = u'Ichnaea'
-copyright = u'2013-2019, Mozilla'
+
+REPO_DIR = os.path.dirname(os.path.dirname(__file__))
+print(REPO_DIR)
+sys.path.append(REPO_DIR)
+
+
+project = 'Ichnaea'
+copyright = '2013-2019, Mozilla'
 
 # The short X.Y version.
 version = '2.0'
