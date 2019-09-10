@@ -8,7 +8,7 @@
     <p class="text-justified">
         This page lists all the raw data files available for download.
         Please see the
-        <a href="https://mozilla.github.io/ichnaea/import_export.html">
+        <a href="https://ichnaea.readthedocs.io/en/latest/import_export.html">
             file format documentation</a> for the structure of these files.
         The file format was developed in cooperation with the
         <a href="https://opencellid.org">OpenCellID project</a>.

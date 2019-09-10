@@ -45,7 +45,7 @@ default:
 	@echo ""
 	@echo "  help             - see this text"
 	@echo ""
-	@echo "See https://mozilla.github.io/ichnaea/ for more documentation."
+	@echo "See https://ichnaea.readthedocs.io/ for more documentation."
 
 .PHONY: clean
 clean:

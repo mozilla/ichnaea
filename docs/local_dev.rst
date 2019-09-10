@@ -44,14 +44,6 @@ Setup Quickstart
    Instructions for cloning are `on the Ichnaea page in GitHub
    <https://github.com/mozilla/ichnaea>`_.
 
-   Ichnaea publishes documentation at `<https://mozilla.github.io/ichnaea>`_
-   which is a git submodule in the repository.
-
-   After you clone the repository, you need to do this in the repository
-   directory::
-
-       $ git submodule update --init --recursive
-
 3. (*Optional/Advanced*) Set UID and GID for Docker container user.
 
    If you're on Linux or you want to set the UID/GID of the app user that

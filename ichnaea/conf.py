@@ -106,10 +106,7 @@ def build_config_manager():
             # Pull configuration from environment variables
             ConfigOSEnv()
         ],
-        doc=(
-            "For configuration help, see "
-            "https://mozilla.github.io/ichnaea/"
-        )
+        doc="For configuration help, see https://ichnaea.readthedocs.io/"
     )
     return AppConfig(config_manager)
 

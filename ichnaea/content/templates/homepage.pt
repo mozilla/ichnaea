@@ -45,7 +45,7 @@
 
         <li>
             As a developer you can <a href="/api">directly use the service</a>
-            or <a href="https://mozilla.github.io/ichnaea/">
+            or <a href="https://ichnaea.readthedocs.io/">
             contribute to the development of the service</a> itself.
         </li>
     </ul>
