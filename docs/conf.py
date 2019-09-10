@@ -6,7 +6,6 @@ import sys
 
 
 REPO_DIR = os.path.dirname(os.path.dirname(__file__))
-print(REPO_DIR)
 sys.path.append(REPO_DIR)
 
 
