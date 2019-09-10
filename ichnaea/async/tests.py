@@ -1,6 +1,4 @@
 from inspect import getmembers
-import os
-import tempfile
 
 from celery import signals
 

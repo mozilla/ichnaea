@@ -37,6 +37,7 @@ default:
 	@echo "  mysql            - open mysql prompt"
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
+	@echo "  lintfix          - reformat code"
 	@echo "  test             - run unit tests"
 	@echo "  testshell        - open a shell in the test environment"
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
@@ -104,7 +105,11 @@ buildcss: my.env .docker-build
 
 .PHONY: lint
 lint: my.env .docker-build
-	${DC} run --rm --no-deps app shell flake8 ichnaea
+	${DC} run --rm --no-deps app shell ./docker/run_lint.sh
+
+.PHONY: lintfix
+lintfix: my.env .docker-build
+	${DC} run --rm --no-deps app shell ./docker/run_lint.sh --fix
 
 .PHONY: run
 run: my.env .docker-build
