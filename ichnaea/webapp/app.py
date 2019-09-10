@@ -2,10 +2,7 @@
 Holds global web application state and the WSGI handler.
 """
 
-from ichnaea.webapp.config import (
-    main,
-    shutdown_worker,
-)
+from ichnaea.webapp.config import main, shutdown_worker
 
 # Internal module global holding the runtime web app.
 _APP = None

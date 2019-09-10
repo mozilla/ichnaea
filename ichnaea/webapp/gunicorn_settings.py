@@ -12,7 +12,7 @@ This needs to be specified on the command line via the `-c` argument:
 import multiprocessing
 
 # Use our own Gevent worker
-worker_class = 'ichnaea.webapp.worker.LocationGeventWorker'
+worker_class = "ichnaea.webapp.worker.LocationGeventWorker"
 
 # Create one worker process per CPU.
 workers = multiprocessing.cpu_count()
@@ -28,10 +28,10 @@ timeout = 60
 keepalive = 0
 
 # Log errors to stderr
-errorlog = '-'
+errorlog = "-"
 
 # Avoid too much output on the console
-loglevel = 'warning'
+loglevel = "warning"
 
 
 def post_worker_init(worker):  # pragma: no cover
@@ -40,6 +40,7 @@ def post_worker_init(worker):  # pragma: no cover
 
 def worker_exit(server, worker):  # pragma: no cover
     from ichnaea.webapp.app import worker_exit
+
     worker_exit(server, worker)
 
 
