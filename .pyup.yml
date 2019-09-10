@@ -7,3 +7,6 @@ requirements:
   - requirements/constraints.txt:
       update: all
       pin: true
+  - docs/requirements.txt:
+      update: all
+      pin: true

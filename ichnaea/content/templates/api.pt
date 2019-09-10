@@ -36,7 +36,7 @@
         If you are developing a native application or library for a desktop
         operating system or Android, you can in principle use this service
         via its HTTPS API. Please refer to the
-        <a href="https://mozilla.github.io/ichnaea/api/index.html">
+        <a href="https://ichnaea.readthedocs.io/en/latest/api/index.html">
             API documentation</a> for the details.
         On other mobile operating systems, you typically cannot access
         the required Bluetooth, cell and WiFi network information

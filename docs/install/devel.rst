@@ -49,8 +49,6 @@ Now run the following command to get the code:
 .. code-block:: bash
 
     git clone https://github.com/mozilla/ichnaea
-    cd ichnaea
-    git submodule update --init --recursive
 
 For a development environment, you need to use the ``./dev`` helper
 script to download and create all the required docker containers.
