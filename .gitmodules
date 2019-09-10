@@ -1,4 +1,0 @@
-[submodule "docs/build/html"]
-	path = docs/build/html
-	url = https://github.com/mozilla/ichnaea.git
-	branch = gh-pages
