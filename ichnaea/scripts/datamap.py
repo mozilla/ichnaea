@@ -17,19 +17,10 @@ from simplejson import dumps
 from sqlalchemy import text
 
 from ichnaea.conf import settings
-from ichnaea.models.content import (
-    DataMap,
-    decode_datamap_grid,
-)
-from ichnaea.db import (
-    configure_db,
-    db_worker_session,
-)
+from ichnaea.models.content import DataMap, decode_datamap_grid
+from ichnaea.db import configure_db, db_worker_session
 from geocalc import random_points
-from ichnaea.log import (
-    configure_raven,
-    configure_stats,
-)
+from ichnaea.log import configure_raven, configure_stats
 from ichnaea import util
 
 try:
@@ -37,10 +28,10 @@ try:
 except ImportError:  # pragma: no cover
     from scandir import scandir
 
-if sys.platform == 'darwin':  # pragma: no cover
-    ZCAT = 'gzcat'
+if sys.platform == "darwin":  # pragma: no cover
+    ZCAT = "gzcat"
 else:  # pragma: no cover
-    ZCAT = 'zcat'
+    ZCAT = "zcat"
 
 
 def recursive_scandir(top):  # pragma: no cover
@@ -53,28 +44,33 @@ def recursive_scandir(top):  # pragma: no cover
 
 def export_file(filename, tablename, _db=None, _session=None):
     # this is executed in a worker process
-    stmt = text('''\
+    stmt = text(
+        """\
 SELECT
 `grid`, CAST(ROUND(DATEDIFF(CURDATE(), `modified`) / 30) AS UNSIGNED) as `num`
 FROM {tablename}
 WHERE `grid` > :grid
 ORDER BY `grid`
 LIMIT :limit
-'''.format(tablename=tablename).replace('\n', ' '))
+""".format(
+            tablename=tablename
+        ).replace(
+            "\n", " "
+        )
+    )
 
-    db = configure_db('ro', transport='sync', _db=_db)
-    min_grid = b''
+    db = configure_db("ro", transport="sync", _db=_db)
+    min_grid = b""
     limit = 200000
 
     result_rows = 0
-    with util.gzip_open(filename, 'w', compresslevel=2) as fd:
+    with util.gzip_open(filename, "w", compresslevel=2) as fd:
         with db_worker_session(db, commit=False) as session:
             if _session is not None:
                 # testing hook
                 session = _session
             while True:
-                result = session.execute(
-                    stmt.bindparams(limit=limit, grid=min_grid))
+                result = session.execute(stmt.bindparams(limit=limit, grid=min_grid))
                 rows = result.fetchall()
                 result.close()
                 if not rows:
@@ -103,9 +99,8 @@ def export_files(pool, csvdir):  # pragma: no cover
     for shard_id, shard in sorted(DataMap.shards().items()):
         # sorting the shards prefers the north which contains more
         # data points than the south
-        filename = os.path.join(csvdir, 'map_%s.csv.gz' % shard_id)
-        jobs.append(pool.apply_async(export_file,
-                                     (filename, shard.__tablename__)))
+        filename = os.path.join(csvdir, "map_%s.csv.gz" % shard_id)
+        jobs.append(pool.apply_async(export_file, (filename, shard.__tablename__)))
 
     for job in jobs:
         result_rows += job.get()
@@ -115,10 +110,11 @@ def export_files(pool, csvdir):  # pragma: no cover
 
 def encode_file(name, csvdir, quaddir):
     # this is executed in a worker process
-    cmd = '{zcat} {input} | encode -z13 -o {output}'.format(
+    cmd = "{zcat} {input} | encode -z13 -o {output}".format(
         zcat=ZCAT,
         input=os.path.join(csvdir, name),
-        output=os.path.join(quaddir, name.split('.')[0]))
+        output=os.path.join(quaddir, name.split(".")[0]),
+    )
 
     os.system(cmd)
 
@@ -126,10 +122,8 @@ def encode_file(name, csvdir, quaddir):
 def encode_files(pool, csvdir, quaddir):  # pragma: no cover
     jobs = []
     for name in os.listdir(csvdir):
-        if name.startswith('map_') and name.endswith('.csv.gz'):
-            jobs.append(pool.apply_async(
-                encode_file,
-                (name, csvdir, quaddir)))
+        if name.startswith("map_") and name.endswith(".csv.gz"):
+            jobs.append(pool.apply_async(encode_file, (name, csvdir, quaddir)))
 
     for job in jobs:
         job.get()
@@ -138,67 +132,65 @@ def encode_files(pool, csvdir, quaddir):  # pragma: no cover
 
 
 def merge_files(quaddir, shapes):
-    cmd = 'merge -u -o {output} {input}'.format(
-        input=os.path.join(quaddir, 'map*'),
-        output=shapes)
+    cmd = "merge -u -o {output} {input}".format(
+        input=os.path.join(quaddir, "map*"), output=shapes
+    )
 
     os.system(cmd)
 
 
 def render_tiles(shapes, tiles, concurrency, max_zoom):
-    cmd = ("enumerate -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
-           "sh -c 'mkdir -p {output}/$2/$3; render "
-           "-B 12:0.0379:0.874 -c0088FF -t0 "
-           "-O 16:1600:1.5 -G 0.5{extra} $1 $2 $3 $4 | "
-           "pngquant --speed=3 --quality=65-95 32 > "
-           "{output}/$2/$3/$4{suffix}.png' dummy")
+    cmd = (
+        "enumerate -z{zoom} {shapes} | xargs -L1 -P{concurrency} "
+        "sh -c 'mkdir -p {output}/$2/$3; render "
+        "-B 12:0.0379:0.874 -c0088FF -t0 "
+        "-O 16:1600:1.5 -G 0.5{extra} $1 $2 $3 $4 | "
+        "pngquant --speed=3 --quality=65-95 32 > "
+        "{output}/$2/$3/$4{suffix}.png' dummy"
+    )
 
     zoom_0_cmd = cmd.format(
         zoom=0,
         shapes=shapes,
         concurrency=concurrency,
         output=tiles,
-        extra=' -T 512',
-        suffix='@2x')
+        extra=" -T 512",
+        suffix="@2x",
+    )
 
     zoom_all_cmd = cmd.format(
         zoom=max_zoom,
         shapes=shapes,
         concurrency=concurrency,
         output=tiles,
-        extra='',
-        suffix='')
+        extra="",
+        suffix="",
+    )
 
     # Create high-res version for zoom level 0.
     os.system(zoom_0_cmd)
     os.system(zoom_all_cmd)
 
 
-def upload_folder(bucketname, bucket_prefix,
-                  tiles, folder):  # pragma: no cover
+def upload_folder(bucketname, bucket_prefix, tiles, folder):  # pragma: no cover
     # this is executed in a worker process
-    result = {
-        'tile_changed': 0,
-        'tile_deleted': 0,
-        'tile_new': 0,
-        'tile_unchanged': 0,
-    }
+    result = {"tile_changed": 0, "tile_deleted": 0, "tile_new": 0, "tile_unchanged": 0}
 
     # Get all the S3 objects.
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     bucket = s3.Bucket(bucketname)
 
-    key_root = bucket_prefix + folder[len(tiles):].lstrip('/') + '/'
+    key_root = bucket_prefix + folder[len(tiles) :].lstrip("/") + "/"
     objs = {}
     for obj in bucket.objects.filter(Prefix=key_root):
-        objs[obj.key[len(bucket_prefix):]] = obj
+        objs[obj.key[len(bucket_prefix) :]] = obj
 
     # Traverse local file system
     for entry in recursive_scandir(folder):
-        if not entry.is_file() or not entry.name.endswith('.png'):
+        if not entry.is_file() or not entry.name.endswith(".png"):
             continue
 
-        obj_name = entry.path[len(tiles):].lstrip('/')
+        obj_name = entry.path[len(tiles) :].lstrip("/")
         obj = objs.pop(obj_name, None)
         changed = True
 
@@ -208,7 +200,7 @@ def upload_folder(bucketname, bucket_prefix,
                 changed = True
             else:
                 remote_md5 = obj.etag.strip('"')
-                with open(entry.path, 'rb') as fd:
+                with open(entry.path, "rb") as fd:
                     local_md5 = hashlib.md5(fd.read()).hexdigest()
                 if local_md5 == remote_md5:
                     # Do the md5/etags match?
@@ -217,37 +209,36 @@ def upload_folder(bucketname, bucket_prefix,
         if changed:
             if obj is None:
                 obj = bucket.Object(bucket_prefix + obj_name)
-                result['tile_new'] += 1
+                result["tile_new"] += 1
             else:
-                result['tile_changed'] += 1
+                result["tile_changed"] += 1
 
             # Create or update the object.
-            obj.upload_file(entry.path, ExtraArgs={
-                'CacheControl': 'max-age=3600, public',
-                'ContentType': 'image/png',
-            })
+            obj.upload_file(
+                entry.path,
+                ExtraArgs={
+                    "CacheControl": "max-age=3600, public",
+                    "ContentType": "image/png",
+                },
+            )
         else:
-            result['tile_unchanged'] += 1
+            result["tile_unchanged"] += 1
 
     # Delete orphaned objects.
     if objs:
-        result['tile_deleted'] += len(objs)
+        result["tile_deleted"] += len(objs)
         key_values = list(objs.values())
         for i in range(0, len(key_values), 100):
-            batch_keys = key_values[i:i + 100]
+            batch_keys = key_values[i : i + 100]
             bucket.delete_keys(batch_keys)
 
     return result
 
 
-def upload_files(pool, bucketname, tiles, max_zoom,
-                 raven_client, bucket_prefix='tiles/'):  # pragma: no cover
-    result = {
-        'tile_changed': 0,
-        'tile_deleted': 0,
-        'tile_new': 0,
-        'tile_unchanged': 0,
-    }
+def upload_files(
+    pool, bucketname, tiles, max_zoom, raven_client, bucket_prefix="tiles/"
+):  # pragma: no cover
+    result = {"tile_changed": 0, "tile_deleted": 0, "tile_new": 0, "tile_unchanged": 0}
 
     zoom_levels = frozenset([str(i) for i in range(max_zoom + 1)])
     tiny_levels = frozenset([str(i) for i in range(min(10, max_zoom))])
@@ -268,8 +259,9 @@ def upload_files(pool, bucketname, tiles, max_zoom,
 
     jobs = []
     for folder in paths:
-        jobs.append(pool.apply_async(
-            upload_folder, (bucketname, bucket_prefix, tiles, folder)))
+        jobs.append(
+            pool.apply_async(upload_folder, (bucketname, bucket_prefix, tiles, folder))
+        )
 
     for job in jobs:
         try:
@@ -280,22 +272,28 @@ def upload_files(pool, bucketname, tiles, max_zoom,
             raven_client.captureException()
 
     # Update status file
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     bucket = s3.Bucket(bucketname)
 
-    obj = bucket.Object(bucket_prefix + 'data.json')
+    obj = bucket.Object(bucket_prefix + "data.json")
     obj.put(
-        Body=dumps({'updated': util.utcnow().isoformat()}),
-        CacheControl='max-age=3600, public',
-        ContentType='application/json',
+        Body=dumps({"updated": util.utcnow().isoformat()}),
+        CacheControl="max-age=3600, public",
+        ContentType="application/json",
     )
 
     return result
 
 
-def generate(bucketname, raven_client, stats_client,
-             upload=True, concurrency=2, max_zoom=11,
-             output=None):  # pragma: no cover
+def generate(
+    bucketname,
+    raven_client,
+    stats_client,
+    upload=True,
+    concurrency=2,
+    max_zoom=11,
+    output=None,
+):  # pragma: no cover
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)
 
@@ -308,42 +306,42 @@ def generate(bucketname, raven_client, stats_client,
             os.makedirs(basedir)
 
         # Concurrently export datamap table to CSV files.
-        csvdir = os.path.join(basedir, 'csv')
+        csvdir = os.path.join(basedir, "csv")
         if not os.path.isdir(csvdir):
             os.mkdir(csvdir)
 
-        with stats_client.timed('datamaps', tags=['func:export']):
+        with stats_client.timed("datamaps", tags=["func:export"]):
             result_rows = export_files(pool, csvdir)
 
-        stats_client.timing('datamaps', result_rows, tags=['count:csv_rows'])
+        stats_client.timing("datamaps", result_rows, tags=["count:csv_rows"])
 
         # Concurrently create quadtrees out of CSV files.
-        quaddir = os.path.join(basedir, 'quadtrees')
+        quaddir = os.path.join(basedir, "quadtrees")
         if os.path.isdir(quaddir):
             shutil.rmtree(quaddir)
         os.mkdir(quaddir)
 
-        with stats_client.timed('datamaps', tags=['func:encode']):
+        with stats_client.timed("datamaps", tags=["func:encode"]):
             quadtrees = encode_files(pool, csvdir, quaddir)
 
-        stats_client.timing('datamaps', quadtrees, tags=['count:quadtrees'])
+        stats_client.timing("datamaps", quadtrees, tags=["count:quadtrees"])
 
         pool.close()
         pool.join()
 
         # Merge quadtrees and make points unique. This process cannot
         # be made concurrent.
-        shapes = os.path.join(basedir, 'shapes')
+        shapes = os.path.join(basedir, "shapes")
         if os.path.isdir(shapes):
             shutil.rmtree(shapes)
 
-        with stats_client.timed('datamaps', tags=['func:merge']):
+        with stats_client.timed("datamaps", tags=["func:merge"]):
             merge_files(quaddir, shapes)
 
         # Render tiles, using xargs -P to get concurrency.
-        tiles = os.path.abspath(os.path.join(basedir, 'tiles'))
+        tiles = os.path.abspath(os.path.join(basedir, "tiles"))
 
-        with stats_client.timed('datamaps', tags=['func:render']):
+        with stats_client.timed("datamaps", tags=["func:render"]):
             render_tiles(shapes, tiles, concurrency, max_zoom)
 
         if upload:
@@ -351,16 +349,14 @@ def generate(bucketname, raven_client, stats_client,
             # can use more processes compared to the CPU bound tasks.
             pool = billiard.Pool(processes=concurrency * 2)
 
-            with stats_client.timed('datamaps', tags=['func:upload']):
-                result = upload_files(pool, bucketname, tiles, max_zoom,
-                                      raven_client)
+            with stats_client.timed("datamaps", tags=["func:upload"]):
+                result = upload_files(pool, bucketname, tiles, max_zoom, raven_client)
 
             pool.close()
             pool.join()
 
             for metric, value in result.items():
-                stats_client.timing('datamaps', value,
-                                    tags=['count:%s' % metric])
+                stats_client.timing("datamaps", value, tags=["count:%s" % metric])
 
 
 def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
@@ -369,29 +365,27 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
     #   --output=ichnaea/content/static/tiles/
 
     parser = argparse.ArgumentParser(
-        prog=argv[0], description='Generate and upload datamap tiles.')
+        prog=argv[0], description="Generate and upload datamap tiles."
+    )
 
-    parser.add_argument('--create', action='store_true',
-                        help='Create tiles?')
-    parser.add_argument('--upload', action='store_true',
-                        help='Upload tiles to S3?')
-    parser.add_argument('--concurrency', default=2,
-                        help='How many concurrent processes to use?')
-    parser.add_argument('--output',
-                        help='Optional directory for output files.')
+    parser.add_argument("--create", action="store_true", help="Create tiles?")
+    parser.add_argument("--upload", action="store_true", help="Upload tiles to S3?")
+    parser.add_argument(
+        "--concurrency", default=2, help="How many concurrent processes to use?"
+    )
+    parser.add_argument("--output", help="Optional directory for output files.")
 
     args = parser.parse_args(argv[1:])
     if args.create:
-        raven_client = configure_raven(
-            transport='sync', _client=_raven_client)
+        raven_client = configure_raven(transport="sync", _client=_raven_client)
 
         stats_client = configure_stats(_client=_stats_client)
 
         bucketname = _bucketname
         if not _bucketname:  # pragma: no cover
-            bucketname = settings('asset_bucket')
+            bucketname = settings("asset_bucket")
             if bucketname:
-                bucketname = bucketname.strip('/')
+                bucketname = bucketname.strip("/")
 
         upload = False
         if args.upload:
@@ -406,11 +400,15 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
             output = os.path.abspath(args.output)
 
         try:
-            with stats_client.timed('datamaps', tags=['func:main']):
-                generate(bucketname, raven_client, stats_client,
-                         upload=upload,
-                         concurrency=concurrency,
-                         output=output)
+            with stats_client.timed("datamaps", tags=["func:main"]):
+                generate(
+                    bucketname,
+                    raven_client,
+                    stats_client,
+                    upload=upload,
+                    concurrency=concurrency,
+                    output=output,
+                )
         except Exception:  # pragma: no cover
             raven_client.captureException()
             raise

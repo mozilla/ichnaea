@@ -9,9 +9,9 @@ from ichnaea.conf import settings
 
 def create_database():
     """Create a database."""
-    print("Creating database %s...." % settings('db_ddl_uri'))
+    print("Creating database %s...." % settings("db_ddl_uri"))
     try:
-        create_db(uri=settings('db_ddl_uri'))
+        create_db(uri=settings("db_ddl_uri"))
     except ProgrammingError:
         print("Database already exists.")
         return 1
@@ -20,9 +20,9 @@ def create_database():
 
 def drop_database():
     """Drop an existing database."""
-    print("Dropping database %s...." % settings('db_ddl_uri'))
+    print("Dropping database %s...." % settings("db_ddl_uri"))
     try:
-        drop_db(uri=settings('db_ddl_uri'))
+        drop_db(uri=settings("db_ddl_uri"))
     except InternalError:
         print("Database does not exist.")
         return 1
@@ -30,9 +30,7 @@ def drop_database():
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(
-        description='Create and delete databases.'
-    )
+    parser = argparse.ArgumentParser(description="Create and delete databases.")
     subparsers = parser.add_subparsers(dest="cmd")
     subparsers.required = True
     subparsers.add_parser("drop", help="drop existing database")
