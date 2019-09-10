@@ -5,7 +5,7 @@ Contains :ref:`celery settings <celery:configuration>`.
 from ichnaea.async.config import TASK_QUEUES
 from ichnaea.conf import settings
 
-if settings('testing'):
+if settings("testing"):
     # BBB: Celery 4
     # task_always_eager = True
     # task_eager_propagates = True
@@ -15,8 +15,8 @@ if settings('testing'):
 # BBB: Celery 4
 # broker_url = settings('REDIS_URI')
 # result_backend = settings('REDIS_URI')
-BROKER_URL = settings('redis_uri')
-CELERY_RESULT_BACKEND = settings('redis_uri')
+BROKER_URL = settings("redis_uri")
+CELERY_RESULT_BACKEND = settings("redis_uri")
 
 # Based on `Celery / Redis caveats
 # <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
@@ -29,19 +29,19 @@ CELERY_RESULT_BACKEND = settings('redis_uri')
 #     'visibility_timeout': 43200,
 # }
 BROKER_TRANSPORT_OPTIONS = {
-    'fanout_patterns': True,
-    'fanout_prefix': True,
-    'socket_connect_timeout': 60,
-    'socket_keepalive': True,
-    'socket_timeout': 30,
-    'visibility_timeout': 43200,
+    "fanout_patterns": True,
+    "fanout_prefix": True,
+    "socket_connect_timeout": 60,
+    "socket_keepalive": True,
+    "socket_timeout": 30,
+    "visibility_timeout": 43200,
 }
 
 # Name of the default queue.
 
 # BBB: Celery 4
 # task_default_queue = 'celery_default'
-CELERY_DEFAULT_QUEUE = 'celery_default'
+CELERY_DEFAULT_QUEUE = "celery_default"
 
 # Definition of all queues.
 
@@ -55,9 +55,7 @@ CELERY_QUEUES = TASK_QUEUES
 # imports = [
 #     'ichnaea.data.tasks',
 # ]
-CELERY_IMPORTS = [
-    'ichnaea.data.tasks',
-]
+CELERY_IMPORTS = ["ichnaea.data.tasks"]
 
 # Disable task results.
 task_ignore_result = True
@@ -70,7 +68,7 @@ task_ignore_result = True
 # task_compression = 'gzip'
 CELERYD_PREFETCH_MULTIPLIER = 8
 CELERY_DISABLE_RATE_LIMITS = True
-CELERY_MESSAGE_COMPRESSION = 'gzip'
+CELERY_MESSAGE_COMPRESSION = "gzip"
 
 # Internal data format, only accept JSON variants.
 
@@ -78,6 +76,6 @@ CELERY_MESSAGE_COMPRESSION = 'gzip'
 # accept_content = ['json', 'internal_json']
 # result_serializer = 'internal_json'
 # task_serializer = 'internal_json'
-CELERY_ACCEPT_CONTENT = ['json', 'internal_json']
-CELERY_RESULT_SERIALIZER = 'internal_json'
-CELERY_TASK_SERIALIZER = 'internal_json'
+CELERY_ACCEPT_CONTENT = ["json", "internal_json"]
+CELERY_RESULT_SERIALIZER = "internal_json"
+CELERY_TASK_SERIALIZER = "internal_json"
