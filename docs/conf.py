@@ -3,10 +3,16 @@
 import os
 import sphinx_rtd_theme
 import sys
+from unittest import mock
 
 
+# Add repository root so we can import ichnaea things
 REPO_DIR = os.path.dirname(os.path.dirname(__file__))
 sys.path.append(REPO_DIR)
+
+
+# Fake the shapely module so things will import
+sys.modules['shapely'] = mock.MagicMock()
 
 
 project = 'Ichnaea'
