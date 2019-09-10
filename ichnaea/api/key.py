@@ -13,11 +13,19 @@ API_CACHE_TIMEOUT = 300 + randint(-30, 30)
 API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
 
 _API_KEY_COLUMN_NAMES = (
-    'valid_key', 'maxreq',
-    'allow_fallback', 'allow_locate', 'allow_region',
-    'fallback_name', 'fallback_schema', 'fallback_url', 'fallback_ratelimit',
-    'fallback_ratelimit_interval', 'fallback_cache_expire',
-    'store_sample_submit', 'store_sample_locate',
+    "valid_key",
+    "maxreq",
+    "allow_fallback",
+    "allow_locate",
+    "allow_region",
+    "fallback_name",
+    "fallback_schema",
+    "fallback_url",
+    "fallback_ratelimit",
+    "fallback_ratelimit_interval",
+    "fallback_cache_expire",
+    "store_sample_submit",
+    "store_sample_locate",
 )
 
 
@@ -27,9 +35,7 @@ def get_key(session, valid_key):
         columns = ApiKey.__table__.c
         fields = [getattr(columns, f) for f in _API_KEY_COLUMN_NAMES]
         row = (
-            session.execute(
-                select(fields)
-                .where(columns.valid_key == valid_key))
+            session.execute(select(fields).where(columns.valid_key == valid_key))
         ).fetchone()
         if row is not None:
             # Create Key from sqlalchemy.engine.result.RowProxy
@@ -43,8 +49,7 @@ def get_key(session, valid_key):
 def validated_key(text):
     # Check length against DB column length and restrict
     # to a known set of characters.
-    if (text and (3 < len(text) < 41) and
-            VALID_APIKEY_REGEX.match(text)):
+    if text and (3 < len(text) < 41) and VALID_APIKEY_REGEX.match(text):
         return text
     return None
 
@@ -82,11 +87,11 @@ class Key(object):
         """
         Is this API key allowed to use the requested HTTP API?
         """
-        if api_type == 'locate':
+        if api_type == "locate":
             return bool(self.allow_locate)
-        elif api_type == 'region':
+        elif api_type == "region":
             return bool(self.allow_region)
-        elif api_type == 'submit':
+        elif api_type == "submit":
             # Submit are always allowed, even without an API key.
             return True
         return None
@@ -96,11 +101,13 @@ class Key(object):
         Is this API key allowed to use the fallback location provider
         and is its configuration complete?
         """
-        return bool(self.allow_fallback and
-                    self.fallback_name and
-                    self.fallback_url and
-                    self.fallback_ratelimit is not None and
-                    self.fallback_ratelimit_interval)
+        return bool(
+            self.allow_fallback
+            and self.fallback_name
+            and self.fallback_url
+            and self.fallback_ratelimit is not None
+            and self.fallback_ratelimit_interval
+        )
 
     def store_sample(self, api_type):
         """
@@ -110,9 +117,9 @@ class Key(object):
         This allows one to store only some percentage of the incoming
         locate or submit requests for a given API key.
         """
-        if api_type == 'locate':
+        if api_type == "locate":
             sample_rate = self.store_sample_locate
-        elif api_type == 'submit':
+        elif api_type == "submit":
             sample_rate = self.store_sample_submit
         else:
             return False

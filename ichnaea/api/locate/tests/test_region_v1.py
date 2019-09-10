@@ -1,83 +1,71 @@
 from datetime import timedelta
 
-from ichnaea.api.locate.tests.base import (
-    BaseLocateTest,
-    CommonLocateTest,
-)
+from ichnaea.api.locate.tests.base import BaseLocateTest, CommonLocateTest
 from ichnaea.models import Radio
-from ichnaea.tests.factories import (
-    BlueShardFactory,
-    CellShardFactory,
-    WifiShardFactory,
-)
+from ichnaea.tests.factories import BlueShardFactory, CellShardFactory, WifiShardFactory
 from ichnaea import util
 
 
 class RegionBase(BaseLocateTest):
 
-    url = '/v1/country'
+    url = "/v1/country"
     apikey_metrics = False
-    metric_path = 'path:v1.country'
-    metric_type = 'region'
+    metric_path = "path:v1.country"
+    metric_type = "region"
 
     @property
     def ip_response(self):
-        return {
-            'country_code': 'GB',
-            'country_name': 'United Kingdom',
-        }
+        return {"country_code": "GB", "country_name": "United Kingdom"}
 
-    def check_model_response(self, response, model,
-                             region=None, fallback=None, **kw):
-        expected_names = set(['country_code', 'country_name'])
+    def check_model_response(self, response, model, region=None, fallback=None, **kw):
+        expected_names = set(["country_code", "country_name"])
 
         expected = super(RegionBase, self).check_model_response(
-            response, model,
+            response,
+            model,
             region=region,
             fallback=fallback,
             expected_names=expected_names,
-            **kw)
+            **kw,
+        )
 
         data = response.json
-        assert data['country_code'] == expected['region']
+        assert data["country_code"] == expected["region"]
         if fallback is not None:
-            assert data['fallback'] == fallback
+            assert data["fallback"] == fallback
 
 
 class TestView(RegionBase, CommonLocateTest):
-
     def test_geoip(self, app, data_queues, stats):
         res = self._call(app, ip=self.test_ip)
-        self.check_response(data_queues, res, 'ok')
-        assert res.headers['Access-Control-Allow-Origin'] == '*'
-        assert res.headers['Access-Control-Max-Age'] == '2592000'
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        self.check_response(data_queues, res, "ok")
+        assert res.headers["Access-Control-Allow-Origin"] == "*"
+        assert res.headers["Access-Control-Max-Age"] == "2592000"
+        stats.check(
+            counter=[("request", [self.metric_path, "method:post", "status:200"])],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_geoip_miss(self, app, data_queues, stats):
-        res = self._call(app, ip='127.0.0.1', status=404)
-        self.check_response(data_queues, res, 'not_found')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:404']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        res = self._call(app, ip="127.0.0.1", status=404)
+        self.check_response(data_queues, res, "not_found")
+        stats.check(
+            counter=[("request", [self.metric_path, "method:post", "status:404"])],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_incomplete_request(self, app, data_queues):
-        res = self._call(app, body={'wifiAccessPoints': []}, ip=self.test_ip)
-        self.check_response(data_queues, res, 'ok')
+        res = self._call(app, body={"wifiAccessPoints": []}, ip=self.test_ip)
+        self.check_response(data_queues, res, "ok")
 
     def test_blue(self, app, data_queues, session):
         # Use manual mac to ensure we only use one shard.
-        blue1 = BlueShardFactory(mac='000000123456', samples=10)
-        blue2 = BlueShardFactory(mac='000000abcdef', samples=10)
+        blue1 = BlueShardFactory(mac="000000123456", samples=10)
+        blue2 = BlueShardFactory(mac="000000abcdef", samples=10)
         session.flush()
 
         query = self.model_query(blues=[blue1, blue2])
-        res = self._call(app, body=query, ip='127.0.0.1')
+        res = self._call(app, body=query, ip="127.0.0.1")
         self.check_response(data_queues, res, blue1)
 
     def test_cell(self, app, session):
@@ -87,7 +75,7 @@ class TestView(RegionBase, CommonLocateTest):
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
-        self.check_model_response(res, cell, region='GB')
+        self.check_model_response(res, cell, region="GB")
 
     def test_cell_ambiguous(self, app, session):
         # cell with ambiguous mcc to region mapping
@@ -96,7 +84,7 @@ class TestView(RegionBase, CommonLocateTest):
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
-        self.check_model_response(res, cell, region='GB')
+        self.check_model_response(res, cell, region="GB")
 
     def test_cell_geoip_match(self, app, session):
         cell = CellShardFactory(mcc=234)
@@ -104,7 +92,7 @@ class TestView(RegionBase, CommonLocateTest):
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, ip=self.test_ip)
-        self.check_model_response(res, cell, region='GB')
+        self.check_model_response(res, cell, region="GB")
 
     def test_cell_geoip_mismatch(self, app, session):
         # UK GeoIP with ambiguous US mcc
@@ -114,7 +102,7 @@ class TestView(RegionBase, CommonLocateTest):
 
         query = self.model_query(cells=[us_cell])
         res = self._call(app, body=query, ip=self.test_ip)
-        self.check_model_response(res, uk_cell, region='GB', fallback='ipf')
+        self.check_model_response(res, uk_cell, region="GB", fallback="ipf")
 
     def test_cell_over_geoip(self, app, session):
         # UK GeoIP with single DE cell
@@ -123,7 +111,7 @@ class TestView(RegionBase, CommonLocateTest):
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, ip=self.test_ip)
-        self.check_model_response(res, cell, region='DE')
+        self.check_model_response(res, cell, region="DE")
 
     def test_cells_over_geoip(self, app, session):
         # UK GeoIP with multiple US cells
@@ -133,29 +121,31 @@ class TestView(RegionBase, CommonLocateTest):
 
         query = self.model_query(cells=[us_cell1, us_cell2])
         res = self._call(app, body=query, ip=self.test_ip)
-        self.check_model_response(res, us_cell1, region='US')
+        self.check_model_response(res, us_cell1, region="US")
 
     def test_wifi(self, app, data_queues, session):
         # Use manual mac to ensure we only use one shard.
-        wifi1 = WifiShardFactory(mac='000000123456', samples=10)
-        wifi2 = WifiShardFactory(mac='000000abcdef', samples=10)
+        wifi1 = WifiShardFactory(mac="000000123456", samples=10)
+        wifi2 = WifiShardFactory(mac="000000abcdef", samples=10)
         session.flush()
 
         query = self.model_query(wifis=[wifi1, wifi2])
-        res = self._call(app, body=query, ip='127.0.0.1')
+        res = self._call(app, body=query, ip="127.0.0.1")
         self.check_response(data_queues, res, wifi1)
 
     def test_wifi_over_cell(self, app, session):
         now = util.utcnow()
         three_months = now - timedelta(days=90)
         wifi1 = WifiShardFactory(
-            samples=1000, created=three_months, modified=now, region='US')
+            samples=1000, created=three_months, modified=now, region="US"
+        )
         wifi2 = WifiShardFactory(
-            samples=1000, created=three_months, modified=now, region='US')
+            samples=1000, created=three_months, modified=now, region="US"
+        )
         cell = CellShardFactory(radio=Radio.gsm, samples=10)
         session.flush()
 
         query = self.model_query(cells=[cell], wifis=[wifi1, wifi2])
         res = self._call(app, body=query, ip=self.test_ip)
         # wifi says US with a high score, cell and geoip say UK
-        self.check_model_response(res, wifi1, region='US')
+        self.check_model_response(res, wifi1, region="US")

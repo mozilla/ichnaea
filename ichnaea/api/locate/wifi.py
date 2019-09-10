@@ -43,12 +43,17 @@ class WifiPositionMixin(object):
         results = self.result_list()
 
         wifis = query_macs(query, query.wifi, self.raven_client, WifiShard)
-        for cluster in cluster_networks(wifis, query.wifi,
-                                        min_radius=WIFI_MIN_ACCURACY,
-                                        min_signal=MIN_WIFI_SIGNAL,
-                                        max_distance=MAX_WIFI_CLUSTER_METERS):
+        for cluster in cluster_networks(
+            wifis,
+            query.wifi,
+            min_radius=WIFI_MIN_ACCURACY,
+            min_signal=MIN_WIFI_SIGNAL,
+            max_distance=MAX_WIFI_CLUSTER_METERS,
+        ):
             result = aggregate_cluster_position(
-                cluster, self.result_type, 'wifi',
+                cluster,
+                self.result_type,
+                "wifi",
                 max_networks=MAX_WIFIS_IN_CLUSTER,
                 min_accuracy=WIFI_MIN_ACCURACY,
                 max_accuracy=WIFI_MAX_ACCURACY,
@@ -82,10 +87,13 @@ class WifiRegionMixin(object):
         for code, score in regions.items():
             region = GEOCODER.region_for_code(code)
             if region:
-                results.add(self.result_type(
-                    region_code=code,
-                    region_name=region.name,
-                    accuracy=region.radius,
-                    score=score))
+                results.add(
+                    self.result_type(
+                        region_code=code,
+                        region_name=region.name,
+                        accuracy=region.radius,
+                        score=score,
+                    )
+                )
 
         return results

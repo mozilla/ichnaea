@@ -18,10 +18,7 @@ import time
 import colander
 import iso8601
 
-from ichnaea.models.constants import (
-    MIN_TIMESTAMP,
-    MAX_TIMESTAMP,
-)
+from ichnaea.models.constants import MIN_TIMESTAMP, MAX_TIMESTAMP
 
 
 class BoundedFloat(colander.Float):
@@ -32,9 +29,9 @@ class BoundedFloat(colander.Float):
 
     def deserialize(self, schema, cstruct):
         value = super(BoundedFloat, self).deserialize(schema, cstruct)
-        if (value is colander.null or (
-                isinstance(value, float) and
-                (math.isnan(value) or math.isinf(value)))):
+        if value is colander.null or (
+            isinstance(value, float) and (math.isnan(value) or math.isinf(value))
+        ):
             return colander.null
         return value
 
@@ -109,12 +106,12 @@ class RenamingMapping(colander.Mapping):
         result = super(RenamingMapping, self)._impl(node, *args, **kw)
         renamed_result = {}
         for subnode in node.children:
-            subnode_to_name = getattr(
-                subnode, 'to_name', subnode.name) or subnode.name
+            subnode_to_name = getattr(subnode, "to_name", subnode.name) or subnode.name
 
             subnode_value = result.get(subnode.name, subnode.missing)
-            if (subnode_value is colander.drop or
-                    subnode_value is colander.null):  # pragma: no cover
+            if (
+                subnode_value is colander.drop or subnode_value is colander.null
+            ):  # pragma: no cover
                 continue
             else:
                 renamed_result[subnode_to_name] = subnode_value
@@ -129,7 +126,7 @@ class RenamingMappingSchema(colander.MappingSchema):
 
 class OptionalMapping(RenamingMapping):
 
-    unknown = 'ignore'
+    unknown = "ignore"
 
 
 class OptionalMappingSchema(RenamingMappingSchema):

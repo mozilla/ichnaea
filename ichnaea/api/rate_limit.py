@@ -2,8 +2,7 @@
 from redis import RedisError
 
 
-def rate_limit_exceeded(redis_client, key,
-                        maxreq=0, expire=86400, on_error=False):
+def rate_limit_exceeded(redis_client, key, maxreq=0, expire=86400, on_error=False):
     """
     Return `True` if the rate limit is exceeded otherwise `False`.
 

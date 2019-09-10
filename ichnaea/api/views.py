@@ -7,16 +7,8 @@ from ipaddress import ip_address
 from redis import RedisError
 import simplejson as json
 
-from ichnaea.api.exceptions import (
-    DailyLimitExceeded,
-    InvalidAPIKey,
-    ParseError,
-)
-from ichnaea.api.key import (
-    get_key,
-    Key,
-    validated_key,
-)
+from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
+from ichnaea.api.key import get_key, Key, validated_key
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
@@ -39,7 +31,7 @@ class BaseAPIView(BaseView):
 
     def parse_apikey(self):
         try:
-            api_key_text = self.request.GET.get('key', None)
+            api_key_text = self.request.GET.get("key", None)
         except Exception:  # pragma: no cover
             api_key_text = None
         # Validate key and potentially return None
@@ -47,33 +39,29 @@ class BaseAPIView(BaseView):
 
     def log_count(self, valid_key):
         self.stats_client.incr(
-            self.view_type + '.request',
-            tags=['path:' + self.metric_path,
-                  'key:' + valid_key])
+            self.view_type + ".request",
+            tags=["path:" + self.metric_path, "key:" + valid_key],
+        )
 
     def log_ip_and_rate_limited(self, valid_key, maxreq):
         # Log IP
         addr = self.request.client_addr
         if not addr:
             # Use localhost as a marker
-            addr = '127.0.0.1'
+            addr = "127.0.0.1"
         if isinstance(addr, bytes):  # pragma: no cover
-            addr = addr.decode('ascii')
+            addr = addr.decode("ascii")
         try:
             ip = str(ip_address(addr))
         except ValueError:  # pragma: no cover
-            ip = '127.0.0.1'
+            ip = "127.0.0.1"
 
         now = util.utcnow()
-        log_ip_key = 'apiuser:{api_type}:{key}:{date}'.format(
-            api_type=self.view_type,
-            key=valid_key,
-            date=now.date().strftime('%Y-%m-%d'),
+        log_ip_key = "apiuser:{api_type}:{key}:{date}".format(
+            api_type=self.view_type, key=valid_key, date=now.date().strftime("%Y-%m-%d")
         )
-        rate_key = 'apilimit:{key}:{path}:{time}'.format(
-            key=valid_key,
-            path=self.metric_path,
-            time=now.strftime('%Y%m%d')
+        rate_key = "apilimit:{key}:{path}:{time}".format(
+            key=valid_key, path=self.metric_path, time=now.strftime("%Y%m%d")
         )
 
         should_limit = False
@@ -95,25 +83,24 @@ class BaseAPIView(BaseView):
         errors = []
 
         request_content = self.request.body
-        if self.request.headers.get('Content-Encoding') == 'gzip':
+        if self.request.headers.get("Content-Encoding") == "gzip":
             # handle gzip self.request bodies
             try:
                 request_content = util.decode_gzip(self.request.body)
             except GZIPDecodeError as exc:
-                errors.append({'name': None, 'description': repr(exc)})
+                errors.append({"name": None, "description": repr(exc)})
 
         request_data = {}
         try:
-            request_data = json.loads(
-                request_content, encoding=self.request.charset)
+            request_data = json.loads(request_content, encoding=self.request.charset)
         except ValueError as exc:
-            errors.append({'name': None, 'description': repr(exc)})
+            errors.append({"name": None, "description": repr(exc)})
 
         validated_data = {}
         try:
             validated_data = self.schema.deserialize(request_data)
         except colander.Invalid as exc:
-            errors.append({'name': None, 'description': exc.asdict()})
+            errors.append({"name": None, "description": exc.asdict()})
 
         if request_content and errors:
             raise self.prepare_exception(ParseError())
@@ -127,7 +114,7 @@ class BaseAPIView(BaseView):
         skip_check = False
 
         if api_key_text is None:
-            self.log_count('none')
+            self.log_count("none")
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 
@@ -152,7 +139,7 @@ class BaseAPIView(BaseView):
             pass
         else:
             if api_key_text is not None:
-                self.log_count('invalid')
+                self.log_count("invalid")
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 

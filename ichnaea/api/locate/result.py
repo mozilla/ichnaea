@@ -16,9 +16,18 @@ class Result(object):
 
     _repr_fields = ()  # The list of important attributes.
 
-    def __init__(self, accuracy=None, region_code=None, region_name=None,
-                 fallback=None, lat=None, lon=None, source=None, score=0.0,
-                 used_networks=None):
+    def __init__(
+        self,
+        accuracy=None,
+        region_code=None,
+        region_name=None,
+        fallback=None,
+        lat=None,
+        lon=None,
+        source=None,
+        score=0.0,
+        used_networks=None,
+    ):
         self.accuracy = self._round(accuracy)
         self.fallback = fallback
         self.lat = self._round(lat)
@@ -32,10 +41,9 @@ class Result(object):
     def __repr__(self):
         values = []
         for field in self._repr_fields:
-            values.append('%s:%s' % (field, getattr(self, field, '')))
-        return '{klass}<{values}>'.format(
-            klass=self.__class__.__name__,
-            values=', '.join(values),
+            values.append("%s:%s" % (field, getattr(self, field, "")))
+        return "{klass}<{values}>".format(
+            klass=self.__class__.__name__, values=", ".join(values)
         )
 
     def _round(self, value):
@@ -54,28 +62,33 @@ class Result(object):
 class Position(Result):
     """The position returned by a position query."""
 
-    _repr_fields = ('lat', 'lon',
-                    'accuracy', 'score',
-                    'fallback', 'source')
+    _repr_fields = ("lat", "lon", "accuracy", "score", "fallback", "source")
 
     def json(self):
         if self.lat is None or self.lon is None or self.accuracy is None:
-            return {'position': {'source': 'query'}}
+            return {"position": {"source": "query"}}
 
-        return {'position': {
-            'latitude': self.lat,
-            'longitude': self.lon,
-            'accuracy': self.accuracy,
-            'source': 'query',
-        }}
+        return {
+            "position": {
+                "latitude": self.lat,
+                "longitude": self.lon,
+                "accuracy": self.accuracy,
+                "source": "query",
+            }
+        }
 
 
 class Region(Result):
     """The region returned by a region query."""
 
-    _repr_fields = ('region_code', 'region_name',
-                    'accuracy', 'score',
-                    'fallback', 'source')
+    _repr_fields = (
+        "region_code",
+        "region_name",
+        "accuracy",
+        "score",
+        "fallback",
+        "source",
+    )
 
 
 class ResultList(object):
@@ -102,9 +115,10 @@ class ResultList(object):
         return len(self._results)
 
     def __repr__(self):
-        return '%s: %s' % (
+        return "%s: %s" % (
             self.__class__.__name__,
-            ', '.join([repr(res) for res in self]))
+            ", ".join([repr(res) for res in self]),
+        )
 
     def best_cluster(self):
         """Return the best cluster from this collection."""
@@ -132,7 +146,7 @@ class PositionResultList(ResultList):
         if len(self) <= 1:
             return self
 
-        results = sorted(self, key=operator.attrgetter('accuracy'))
+        results = sorted(self, key=operator.attrgetter("accuracy"))
 
         clusters = {}
         for i, result1 in enumerate(results):
@@ -144,16 +158,14 @@ class PositionResultList(ResultList):
                     # only calculate the upper triangle
                     radius2 = result2.accuracy * 1.5
                     max_radius = max(radius1, radius2)
-                    apart = distance(result1.lat, result1.lon,
-                                     result2.lat, result2.lon)
+                    apart = distance(result1.lat, result1.lon, result2.lat, result2.lon)
                     if apart <= max_radius:
                         clusters[i].append(result2)
 
         def sum_score(values):
             # Sort by highest cumulative score,
             # break tie by highest individual score
-            return (sum([v.score for v in values]),
-                    max([v.score for v in values]))
+            return (sum([v.score for v in values]), max([v.score for v in values]))
 
         clusters = sorted(clusters.values(), key=sum_score, reverse=True)
         return clusters[0]
@@ -186,8 +198,7 @@ class PositionResultList(ResultList):
         cluster_score = sum([res.score for res in cluster])
         cluster_accuracy = min([res.data_accuracy for res in cluster])
 
-        if (cluster_score >= 1.0 and
-                cluster_accuracy <= query.expected_accuracy):
+        if cluster_score >= 1.0 and cluster_accuracy <= query.expected_accuracy:
             return True
         return False
 
@@ -210,8 +221,7 @@ class RegionResultList(ResultList):
         def sum_score(values):
             # Sort by highest cumulative score,
             # break tie by region with the largest radius.
-            return (sum([v.score for v in values]),
-                    max([v.accuracy for v in values]))
+            return (sum([v.score for v in values]), max([v.accuracy for v in values]))
 
         clusters = sorted(clusters.values(), key=sum_score, reverse=True)
         return clusters[0]

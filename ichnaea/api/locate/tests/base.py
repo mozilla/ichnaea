@@ -20,18 +20,9 @@ from ichnaea.api.locate.constants import (
     WIFI_MAX_ACCURACY,
 )
 from ichnaea.api.locate.query import Query
-from ichnaea.api.locate.result import (
-    Position,
-    Region,
-)
+from ichnaea.api.locate.result import Position, Region
 from ichnaea.conftest import GEOIP_DATA
-from ichnaea.models import (
-    BlueShard,
-    CellArea,
-    CellShard,
-    WifiShard,
-    Radio,
-)
+from ichnaea.models import BlueShard, CellArea, CellShard, WifiShard, Radio
 from ichnaea.tests.factories import (
     ApiKeyFactory,
     BlueShardFactory,
@@ -46,9 +37,7 @@ _sentinel = object()
 
 
 class DummyModel(object):
-
-    def __init__(self, lat=None, lon=None, radius=None,
-                 code=None, name=None, ip=None):
+    def __init__(self, lat=None, lon=None, radius=None, code=None, name=None, ip=None):
         self.lat = lat
         self.lon = lon
         self.radius = radius
@@ -59,28 +48,24 @@ class DummyModel(object):
 
 def bound_model_accuracy(model, accuracy):
     if isinstance(model, BlueShard):
-        accuracy = min(max(accuracy, BLUE_MIN_ACCURACY),
-                       BLUE_MAX_ACCURACY)
+        accuracy = min(max(accuracy, BLUE_MIN_ACCURACY), BLUE_MAX_ACCURACY)
     elif isinstance(model, CellShard):
-        accuracy = min(max(accuracy, CELL_MIN_ACCURACY),
-                       CELL_MAX_ACCURACY)
+        accuracy = min(max(accuracy, CELL_MIN_ACCURACY), CELL_MAX_ACCURACY)
     elif isinstance(model, CellArea):
-        accuracy = min(max(accuracy, CELLAREA_MIN_ACCURACY),
-                       CELLAREA_MAX_ACCURACY)
+        accuracy = min(max(accuracy, CELLAREA_MIN_ACCURACY), CELLAREA_MAX_ACCURACY)
     elif isinstance(model, WifiShard):
-        accuracy = min(max(accuracy, WIFI_MIN_ACCURACY),
-                       WIFI_MAX_ACCURACY)
+        accuracy = min(max(accuracy, WIFI_MIN_ACCURACY), WIFI_MAX_ACCURACY)
     return accuracy
 
 
 class BaseSourceTest(object):
 
-    api_key = KeyFactory(valid_key='test', allow_fallback=True)
-    api_type = 'locate'
+    api_key = KeyFactory(valid_key="test", allow_fallback=True)
+    api_type = "locate"
     Source = None
 
     def make_query(self, geoip_db, http_session, session, stats, **kw):
-        api_key = kw.pop('api_key', self.api_key)
+        api_key = kw.pop("api_key", self.api_key)
 
         return Query(
             api_key=api_key,
@@ -89,39 +74,45 @@ class BaseSourceTest(object):
             http_session=http_session,
             geoip_db=geoip_db,
             stats_client=stats,
-            **kw)
+            **kw,
+        )
 
-    def model_query(self, geoip_db, http_session, session, stats,
-                    blues=(), cells=(), wifis=(), **kw):
+    def model_query(
+        self, geoip_db, http_session, session, stats, blues=(), cells=(), wifis=(), **kw
+    ):
         query_blue = []
         if blues:
             for blue in blues:
-                query_blue.append({'macAddress': blue.mac})
+                query_blue.append({"macAddress": blue.mac})
 
         query_cell = []
         if cells:
             for cell in cells:
                 cell_query = {
-                    'radioType': cell.radio,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
+                    "radioType": cell.radio,
+                    "mobileCountryCode": cell.mcc,
+                    "mobileNetworkCode": cell.mnc,
+                    "locationAreaCode": cell.lac,
                 }
-                if getattr(cell, 'cid', None) is not None:
-                    cell_query['cellId'] = cell.cid
+                if getattr(cell, "cid", None) is not None:
+                    cell_query["cellId"] = cell.cid
                 query_cell.append(cell_query)
 
         query_wifi = []
         if wifis:
             for wifi in wifis:
-                query_wifi.append({'macAddress': wifi.mac})
+                query_wifi.append({"macAddress": wifi.mac})
 
         return self.make_query(
-            geoip_db, http_session, session, stats,
+            geoip_db,
+            http_session,
+            session,
+            stats,
             blue=query_blue,
             cell=query_cell,
             wifi=query_wifi,
-            **kw)
+            **kw,
+        )
 
     def check_should_search(self, source, query, should, results=None):
         if results is None:
@@ -138,26 +129,26 @@ class BaseSourceTest(object):
         expected = []
         if type_ is Position:
             for model in models:
-                expected.append({
-                    'lat': kw.get('lat', model.lat),
-                    'lon': kw.get('lon', model.lon),
-                    'accuracy': bound_model_accuracy(
-                        model, kw.get('accuracy', model.radius)),
-                })
+                expected.append(
+                    {
+                        "lat": kw.get("lat", model.lat),
+                        "lon": kw.get("lon", model.lon),
+                        "accuracy": bound_model_accuracy(
+                            model, kw.get("accuracy", model.radius)
+                        ),
+                    }
+                )
 
             # don't test ordering of results
-            expected = sorted(expected, key=operator.itemgetter('lat', 'lon'))
-            results = sorted(results, key=operator.attrgetter('lat', 'lon'))
+            expected = sorted(expected, key=operator.itemgetter("lat", "lon"))
+            results = sorted(results, key=operator.attrgetter("lat", "lon"))
 
         elif type_ is Region:
             for model in models:
-                expected.append({
-                    'region_code': model.code,
-                    'region_name': model.name,
-                })
+                expected.append({"region_code": model.code, "region_name": model.name})
             # don't test ordering of results
-            expected = sorted(expected, key=operator.itemgetter('region_code'))
-            results = sorted(results, key=operator.attrgetter('region_code'))
+            expected = sorted(expected, key=operator.itemgetter("region_code"))
+            results = sorted(results, key=operator.attrgetter("region_code"))
 
         for expect, result in zip(expected, results):
             assert type(result) is type_
@@ -172,82 +163,93 @@ class BaseLocateTest(object):
     metric_path = None
     metric_type = None
     not_found = LocationNotFound
-    test_ip = GEOIP_DATA['London']['ip']
+    test_ip = GEOIP_DATA["London"]["ip"]
 
     @property
     def ip_response(self):  # pragma: no cover
         return {}
 
-    def _call(self, app, body=None, api_key=_sentinel, ip=None, status=200,
-              headers=None, method='post_json', **kw):
+    def _call(
+        self,
+        app,
+        body=None,
+        api_key=_sentinel,
+        ip=None,
+        status=200,
+        headers=None,
+        method="post_json",
+        **kw,
+    ):
         if body is None:
             body = {}
         url = self.url
         if api_key:
             if api_key is _sentinel:
-                api_key = 'test'
-            url += '?key=%s' % api_key
+                api_key = "test"
+            url += "?key=%s" % api_key
         extra_environ = {}
         if ip is not None:
-            extra_environ = {'HTTP_X_FORWARDED_FOR': ip}
+            extra_environ = {"HTTP_X_FORWARDED_FOR": ip}
         call = getattr(app, method)
-        if method in ('get', 'delete', 'head', 'options'):
-            return call(url,
-                        extra_environ=extra_environ,
-                        status=status,
-                        headers=headers,
-                        **kw)
+        if method in ("get", "delete", "head", "options"):
+            return call(
+                url, extra_environ=extra_environ, status=status, headers=headers, **kw
+            )
         else:
-            return call(url, body,
-                        content_type='application/json',
-                        extra_environ=extra_environ,
-                        status=status,
-                        headers=headers,
-                        **kw)
+            return call(
+                url,
+                body,
+                content_type="application/json",
+                extra_environ=extra_environ,
+                status=status,
+                headers=headers,
+                **kw,
+            )
 
     def check_queue(self, data_queues, num):
-        assert data_queues['update_incoming'].size() == num
+        assert data_queues["update_incoming"].size() == num
 
     def check_response(self, data_queues, response, status, fallback=None):
-        assert response.content_type == 'application/json'
-        assert response.headers['Access-Control-Allow-Origin'] == '*'
-        assert response.headers['Access-Control-Max-Age'] == '2592000'
-        if status == 'ok':
+        assert response.content_type == "application/json"
+        assert response.headers["Access-Control-Allow-Origin"] == "*"
+        assert response.headers["Access-Control-Max-Age"] == "2592000"
+        if status == "ok":
             body = dict(response.json)
             if fallback:
-                assert body['fallback'] == fallback
-                del body['fallback']
+                assert body["fallback"] == fallback
+                del body["fallback"]
             assert body == self.ip_response
-        elif status == 'invalid_key':
+        elif status == "invalid_key":
             assert response.json == InvalidAPIKey.json_body()
-        elif status == 'not_found':
+        elif status == "not_found":
             assert response.json == self.not_found.json_body()
-        elif status == 'parse_error':
+        elif status == "parse_error":
             assert response.json == ParseError.json_body()
-        elif status == 'limit_exceeded':
+        elif status == "limit_exceeded":
             assert response.json == DailyLimitExceeded.json_body()
-        if status != 'ok':
+        if status != "ok":
             self.check_queue(data_queues, 0)
 
-    def check_model_response(self, response, model,
-                             region=None, fallback=None,
-                             expected_names=(), **kw):
-        expected = {'region': region}
-        for name in ('lat', 'lon', 'accuracy'):
+    def check_model_response(
+        self, response, model, region=None, fallback=None, expected_names=(), **kw
+    ):
+        expected = {"region": region}
+        for name in ("lat", "lon", "accuracy"):
             if name in kw:
                 expected[name] = kw[name]
             else:
                 model_name = name
-                if name == 'accuracy':
+                if name == "accuracy":
                     expected[name] = bound_model_accuracy(
-                        model, getattr(model, 'radius'))
+                        model, getattr(model, "radius")
+                    )
                 else:
                     expected[name] = getattr(model, model_name)
 
         if fallback is not None:
-            expected_names = set(expected_names).union(set(['fallback']))
+            expected_names = set(expected_names).union(set(["fallback"]))
 
-        assert response.content_type == 'application/json'
+        assert response.content_type == "application/json"
         assert set(response.json.keys()) == expected_names
 
         return expected
@@ -255,33 +257,29 @@ class BaseLocateTest(object):
     def model_query(self, blues=(), cells=(), wifis=()):
         query = {}
         if blues:
-            query['bluetoothBeacons'] = []
+            query["bluetoothBeacons"] = []
             for blue in blues:
-                query['bluetoothBeacons'].append({
-                    'macAddress': blue.mac,
-                })
+                query["bluetoothBeacons"].append({"macAddress": blue.mac})
         if cells:
-            query['cellTowers'] = []
+            query["cellTowers"] = []
             for cell in cells:
                 radio_name = cell.radio.name
-                radio_name = 'wcdma' if radio_name == 'umts' else radio_name
+                radio_name = "wcdma" if radio_name == "umts" else radio_name
                 cell_query = {
-                    'radioType': radio_name,
-                    'mobileCountryCode': cell.mcc,
-                    'mobileNetworkCode': cell.mnc,
-                    'locationAreaCode': cell.lac,
+                    "radioType": radio_name,
+                    "mobileCountryCode": cell.mcc,
+                    "mobileNetworkCode": cell.mnc,
+                    "locationAreaCode": cell.lac,
                 }
-                if getattr(cell, 'cid', None) is not None:
-                    cell_query['cellId'] = cell.cid
-                if getattr(cell, 'psc', None) is not None:
-                    cell_query['primaryScramblingCode'] = cell.psc
-                query['cellTowers'].append(cell_query)
+                if getattr(cell, "cid", None) is not None:
+                    cell_query["cellId"] = cell.cid
+                if getattr(cell, "psc", None) is not None:
+                    cell_query["primaryScramblingCode"] = cell.psc
+                query["cellTowers"].append(cell_query)
         if wifis:
-            query['wifiAccessPoints'] = []
+            query["wifiAccessPoints"] = []
             for wifi in wifis:
-                query['wifiAccessPoints'].append({
-                    'macAddress': wifi.mac,
-                })
+                query["wifiAccessPoints"].append({"macAddress": wifi.mac})
         return query
 
 
@@ -289,122 +287,149 @@ class CommonLocateTest(BaseLocateTest):
     # tests for all locate API's incl. region
 
     def test_get(self, app, data_queues, stats):
-        res = self._call(app, ip=self.test_ip, method='get', status=200)
-        self.check_response(data_queues, res, 'ok')
+        res = self._call(app, ip=self.test_ip, method="get", status=200)
+        self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:get', 'status:200']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:get']),
-        ])
+        stats.check(
+            counter=[("request", [self.metric_path, "method:get", "status:200"])],
+            timer=[("request", [self.metric_path, "method:get"])],
+        )
 
     def test_options(self, app):
-        res = self._call(app, method='options', status=200)
-        assert res.headers['Access-Control-Allow-Origin'] == '*'
-        assert res.headers['Access-Control-Max-Age'] == '2592000'
+        res = self._call(app, method="options", status=200)
+        assert res.headers["Access-Control-Allow-Origin"] == "*"
+        assert res.headers["Access-Control-Max-Age"] == "2592000"
 
     def test_unsupported_methods(self, app):
-        self._call(app, method='delete', status=405)
-        self._call(app, method='patch', status=405)
-        self._call(app, method='put', status=405)
+        self._call(app, method="delete", status=405)
+        self._call(app, method="patch", status=405)
+        self._call(app, method="put", status=405)
 
     def test_empty_body(self, app, data_queues, redis):
-        res = self._call(app, '', ip=self.test_ip, method='post', status=200)
-        self.check_response(data_queues, res, 'ok')
+        res = self._call(app, "", ip=self.test_ip, method="post", status=200)
+        self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
         if self.apikey_metrics:
             # ensure that a apiuser hyperloglog entry was added for today
-            today = util.utcnow().date().strftime('%Y-%m-%d')
-            expected = 'apiuser:%s:test:%s' % (self.metric_type, today)
-            assert ([key.decode('ascii') for key in redis.keys(
-                     'apiuser:*')] == [expected])
+            today = util.utcnow().date().strftime("%Y-%m-%d")
+            expected = "apiuser:%s:test:%s" % (self.metric_type, today)
+            assert [key.decode("ascii") for key in redis.keys("apiuser:*")] == [
+                expected
+            ]
             # check that the ttl was set
             ttl = redis.ttl(expected)
             assert 7 * 24 * 3600 < ttl <= 8 * 24 * 3600
 
     def test_empty_json(self, app, data_queues, stats):
         res = self._call(app, ip=self.test_ip, status=200)
-        self.check_response(data_queues, res, 'ok')
+        self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        stats.check(
+            counter=[("request", [self.metric_path, "method:post", "status:200"])],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
         if self.apikey_metrics:
-            stats.check(counter=[
-                (self.metric_type + '.query',
-                    ['key:test', 'region:GB',
-                     'blue:none', 'cell:none', 'wifi:none']),
-                (self.metric_type + '.result',
-                    ['key:test', 'region:GB', 'fallback_allowed:false',
-                     'accuracy:low', 'status:hit', 'source:geoip']),
-                (self.metric_type + '.source',
-                    ['key:test', 'region:GB', 'source:geoip',
-                     'accuracy:low', 'status:hit']),
-            ])
+            stats.check(
+                counter=[
+                    (
+                        self.metric_type + ".query",
+                        [
+                            "key:test",
+                            "region:GB",
+                            "blue:none",
+                            "cell:none",
+                            "wifi:none",
+                        ],
+                    ),
+                    (
+                        self.metric_type + ".result",
+                        [
+                            "key:test",
+                            "region:GB",
+                            "fallback_allowed:false",
+                            "accuracy:low",
+                            "status:hit",
+                            "source:geoip",
+                        ],
+                    ),
+                    (
+                        self.metric_type + ".source",
+                        [
+                            "key:test",
+                            "region:GB",
+                            "source:geoip",
+                            "accuracy:low",
+                            "status:hit",
+                        ],
+                    ),
+                ]
+            )
 
     def test_error_no_json(self, app, data_queues, stats):
-        res = self._call(app, '\xae', method='post', status=400)
-        self.check_response(data_queues, res, 'parse_error')
-        stats.check(counter=[
-            (self.metric_type + '.request',
-                [self.metric_path, 'key:test']),
-        ])
+        res = self._call(app, "\xae", method="post", status=400)
+        self.check_response(data_queues, res, "parse_error")
+        stats.check(
+            counter=[(self.metric_type + ".request", [self.metric_path, "key:test"])]
+        )
 
     def test_error_no_mapping(self, app, data_queues):
         res = self._call(app, [1], status=400)
-        self.check_response(data_queues, res, 'parse_error')
+        self.check_response(data_queues, res, "parse_error")
 
     def test_error_invalid_key(self, app, data_queues):
-        res = self._call(app, {'invalid': 0}, ip=self.test_ip, status=200)
-        self.check_response(data_queues, res, 'ok')
+        res = self._call(app, {"invalid": 0}, ip=self.test_ip, status=200)
+        self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
 
-    def test_no_api_key(self, app, data_queues, redis, stats,
-                        status=400, response='invalid_key'):
+    def test_no_api_key(
+        self, app, data_queues, redis, stats, status=400, response="invalid_key"
+    ):
         res = self._call(app, api_key=None, ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
-        stats.check(counter=[
-            (self.metric_type + '.request',
-                [self.metric_path, 'key:none']),
-        ])
-        assert redis.keys('apiuser:*') == []
+        stats.check(
+            counter=[(self.metric_type + ".request", [self.metric_path, "key:none"])]
+        )
+        assert redis.keys("apiuser:*") == []
 
-    def test_invalid_api_key(self, app, data_queues, redis, stats,
-                             status=400, response='invalid_key'):
-        res = self._call(
-            app, api_key='invalid_key', ip=self.test_ip, status=status)
+    def test_invalid_api_key(
+        self, app, data_queues, redis, stats, status=400, response="invalid_key"
+    ):
+        res = self._call(app, api_key="invalid_key", ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
-        stats.check(counter=[
-            (self.metric_type + '.request',
-                [self.metric_path, 'key:none']),
-        ])
-        assert redis.keys('apiuser:*') == []
+        stats.check(
+            counter=[(self.metric_type + ".request", [self.metric_path, "key:none"])]
+        )
+        assert redis.keys("apiuser:*") == []
 
-    def test_unknown_api_key(self, app, data_queues, redis, stats,
-                             status=400, response='invalid_key',
-                             metric_key='invalid'):
-        res = self._call(
-            app, api_key='abcdefg', ip=self.test_ip, status=status)
+    def test_unknown_api_key(
+        self,
+        app,
+        data_queues,
+        redis,
+        stats,
+        status=400,
+        response="invalid_key",
+        metric_key="invalid",
+    ):
+        res = self._call(app, api_key="abcdefg", ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
-        stats.check(counter=[
-            (self.metric_type + '.request',
-                [self.metric_path, 'key:' + metric_key]),
-        ])
-        assert redis.keys('apiuser:*') == []
+        stats.check(
+            counter=[
+                (self.metric_type + ".request", [self.metric_path, "key:" + metric_key])
+            ]
+        )
+        assert redis.keys("apiuser:*") == []
 
     def test_gzip(self, app, data_queues):
         wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
 
         body = util.encode_gzip(json.dumps(query))
-        headers = {
-            'Content-Encoding': 'gzip',
-        }
-        res = self._call(app, body=body, headers=headers,
-                         method='post', status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
+        headers = {"Content-Encoding": "gzip"}
+        res = self._call(
+            app, body=body, headers=headers, method="post", status=self.not_found.code
+        )
+        self.check_response(data_queues, res, "not_found")
 
 
 class CommonPositionTest(BaseLocateTest):
@@ -415,22 +440,20 @@ class CommonPositionTest(BaseLocateTest):
         session.flush()
 
         # exhaust today's limit
-        dstamp = util.utcnow().strftime('%Y%m%d')
-        path = self.metric_path.split(':')[-1]
-        key = 'apilimit:%s:%s:%s' % (api_key.valid_key, path, dstamp)
+        dstamp = util.utcnow().strftime("%Y%m%d")
+        path = self.metric_path.split(":")[-1]
+        key = "apilimit:%s:%s:%s" % (api_key.valid_key, path, dstamp)
         redis.incr(key, 10)
 
-        res = self._call(
-            app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
-        self.check_response(data_queues, res, 'limit_exceeded')
+        res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
+        self.check_response(data_queues, res, "limit_exceeded")
 
     def test_api_key_blocked(self, app, data_queues, session):
         api_key = ApiKeyFactory(allow_locate=False, allow_region=False)
         session.flush()
 
-        res = self._call(
-            app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
-        self.check_response(data_queues, res, 'invalid_key')
+        res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
+        self.check_response(data_queues, res, "invalid_key")
 
     def test_blue_not_found(self, app, data_queues, stats):
         blues = BlueShardFactory.build_batch(2)
@@ -438,51 +461,105 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(blues=blues)
 
         res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post',
-                         'status:%s' % self.not_found.code]),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            (self.metric_type + '.query',
-                ['key:test', 'region:none',
-                 'geoip:false', 'blue:many', 'cell:none', 'wifi:none']),
-            (self.metric_type + '.result', 'fallback_allowed:false',
-                ['key:test', 'region:none', 'accuracy:high', 'status:miss']),
-            (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:internal',
-                 'accuracy:high', 'status:miss']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        self.check_response(data_queues, res, "not_found")
+        stats.check(
+            counter=[
+                (
+                    "request",
+                    [
+                        self.metric_path,
+                        "method:post",
+                        "status:%s" % self.not_found.code,
+                    ],
+                ),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                (
+                    self.metric_type + ".query",
+                    [
+                        "key:test",
+                        "region:none",
+                        "geoip:false",
+                        "blue:many",
+                        "cell:none",
+                        "wifi:none",
+                    ],
+                ),
+                (
+                    self.metric_type + ".result",
+                    "fallback_allowed:false",
+                    ["key:test", "region:none", "accuracy:high", "status:miss"],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:test",
+                        "region:none",
+                        "source:internal",
+                        "accuracy:high",
+                        "status:miss",
+                    ],
+                ),
+            ],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_cell_not_found(self, app, data_queues, stats):
         cell = CellShardFactory.build()
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post',
-                         'status:%s' % self.not_found.code]),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            (self.metric_type + '.query',
-                ['key:test', 'region:none',
-                 'geoip:false', 'blue:none', 'cell:one', 'wifi:none']),
-            (self.metric_type + '.result',
-                ['key:test', 'region:none', 'fallback_allowed:false',
-                 'accuracy:medium', 'status:miss']),
-            (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:internal',
-                 'accuracy:medium', 'status:miss']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        self.check_response(data_queues, res, "not_found")
+        stats.check(
+            counter=[
+                (
+                    "request",
+                    [
+                        self.metric_path,
+                        "method:post",
+                        "status:%s" % self.not_found.code,
+                    ],
+                ),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                (
+                    self.metric_type + ".query",
+                    [
+                        "key:test",
+                        "region:none",
+                        "geoip:false",
+                        "blue:none",
+                        "cell:one",
+                        "wifi:none",
+                    ],
+                ),
+                (
+                    self.metric_type + ".result",
+                    [
+                        "key:test",
+                        "region:none",
+                        "fallback_allowed:false",
+                        "accuracy:medium",
+                        "status:miss",
+                    ],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:test",
+                        "region:none",
+                        "source:internal",
+                        "accuracy:medium",
+                        "status:miss",
+                    ],
+                ),
+            ],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_cell_invalid_lac(self, app, data_queues):
         cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
+        self.check_response(data_queues, res, "not_found")
 
     def test_cell_lte_radio(self, app, session, stats):
         cell = CellShardFactory(radio=Radio.lte)
@@ -491,10 +568,12 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
-        stats.check(counter=[
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-        ])
+        stats.check(
+            counter=[
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                ("request", [self.metric_path, "method:post", "status:200"]),
+            ]
+        )
 
     def test_cellarea(self, app, session, stats):
         cell = CellAreaFactory()
@@ -502,75 +581,143 @@ class CommonPositionTest(BaseLocateTest):
 
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback='lacf')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            (self.metric_type + '.query',
-                ['key:test', 'region:none',
-                 'geoip:false', 'blue:none', 'cell:none', 'wifi:none']),
-            (self.metric_type + '.result',
-                ['key:test', 'region:none', 'fallback_allowed:false',
-                 'accuracy:low', 'status:hit', 'source:internal']),
-            (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:internal',
-                 'accuracy:low', 'status:hit']),
-        ])
+        self.check_model_response(res, cell, fallback="lacf")
+        stats.check(
+            counter=[
+                ("request", [self.metric_path, "method:post", "status:200"]),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                (
+                    self.metric_type + ".query",
+                    [
+                        "key:test",
+                        "region:none",
+                        "geoip:false",
+                        "blue:none",
+                        "cell:none",
+                        "wifi:none",
+                    ],
+                ),
+                (
+                    self.metric_type + ".result",
+                    [
+                        "key:test",
+                        "region:none",
+                        "fallback_allowed:false",
+                        "accuracy:low",
+                        "status:hit",
+                        "source:internal",
+                    ],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:test",
+                        "region:none",
+                        "source:internal",
+                        "accuracy:low",
+                        "status:hit",
+                    ],
+                ),
+            ]
+        )
 
     def test_cellarea_with_lacf(self, app, session, stats):
         cell = CellAreaFactory()
         session.flush()
 
         query = self.model_query(cells=[cell])
-        query['fallbacks'] = {'lacf': True}
+        query["fallbacks"] = {"lacf": True}
 
         res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback='lacf')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            (self.metric_type + '.query',
-                ['key:test', 'region:none',
-                 'geoip:false', 'blue:none', 'cell:none', 'wifi:none']),
-            (self.metric_type + '.result',
-                ['key:test', 'region:none', 'fallback_allowed:false',
-                 'accuracy:low', 'status:hit', 'source:internal']),
-            (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:internal',
-                 'accuracy:low', 'status:hit']),
-        ])
+        self.check_model_response(res, cell, fallback="lacf")
+        stats.check(
+            counter=[
+                ("request", [self.metric_path, "method:post", "status:200"]),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                (
+                    self.metric_type + ".query",
+                    [
+                        "key:test",
+                        "region:none",
+                        "geoip:false",
+                        "blue:none",
+                        "cell:none",
+                        "wifi:none",
+                    ],
+                ),
+                (
+                    self.metric_type + ".result",
+                    [
+                        "key:test",
+                        "region:none",
+                        "fallback_allowed:false",
+                        "accuracy:low",
+                        "status:hit",
+                        "source:internal",
+                    ],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:test",
+                        "region:none",
+                        "source:internal",
+                        "accuracy:low",
+                        "status:hit",
+                    ],
+                ),
+            ]
+        )
 
     def test_cellarea_without_lacf(self, app, data_queues, session, stats):
         cell = CellAreaFactory()
         session.flush()
 
         query = self.model_query(cells=[cell])
-        query['fallbacks'] = {'lacf': False}
+        query["fallbacks"] = {"lacf": False}
 
         res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post',
-                         'status:%s' % self.not_found.code]),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-        ])
+        self.check_response(data_queues, res, "not_found")
+        stats.check(
+            counter=[
+                (
+                    "request",
+                    [
+                        self.metric_path,
+                        "method:post",
+                        "status:%s" % self.not_found.code,
+                    ],
+                ),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+            ]
+        )
 
     def test_cellarea_with_different_fallback(self, app, session, stats):
         cell = CellAreaFactory()
         session.flush()
 
         query = self.model_query(cells=[cell])
-        query['fallbacks'] = {'ipf': True}
+        query["fallbacks"] = {"ipf": True}
 
         res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback='lacf')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            (self.metric_type + '.result',
-                ['key:test', 'region:none', 'fallback_allowed:false',
-                 'accuracy:low', 'status:hit', 'source:internal']),
-        ])
+        self.check_model_response(res, cell, fallback="lacf")
+        stats.check(
+            counter=[
+                ("request", [self.metric_path, "method:post", "status:200"]),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                (
+                    self.metric_type + ".result",
+                    [
+                        "key:test",
+                        "region:none",
+                        "fallback_allowed:false",
+                        "accuracy:low",
+                        "status:hit",
+                        "source:internal",
+                    ],
+                ),
+            ]
+        )
 
     def test_wifi_not_found(self, app, data_queues, stats):
         wifis = WifiShardFactory.build_batch(2)
@@ -578,38 +725,70 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(wifis=wifis)
 
         res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post',
-                         'status:%s' % self.not_found.code]),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-            (self.metric_type + '.query',
-                ['key:test', 'region:none',
-                 'geoip:false', 'blue:none', 'cell:none', 'wifi:many']),
-            (self.metric_type + '.result', 'fallback_allowed:false',
-                ['key:test', 'region:none', 'accuracy:high', 'status:miss']),
-            (self.metric_type + '.source',
-                ['key:test', 'region:none', 'source:internal',
-                 'accuracy:high', 'status:miss']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        self.check_response(data_queues, res, "not_found")
+        stats.check(
+            counter=[
+                (
+                    "request",
+                    [
+                        self.metric_path,
+                        "method:post",
+                        "status:%s" % self.not_found.code,
+                    ],
+                ),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+                (
+                    self.metric_type + ".query",
+                    [
+                        "key:test",
+                        "region:none",
+                        "geoip:false",
+                        "blue:none",
+                        "cell:none",
+                        "wifi:many",
+                    ],
+                ),
+                (
+                    self.metric_type + ".result",
+                    "fallback_allowed:false",
+                    ["key:test", "region:none", "accuracy:high", "status:miss"],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:test",
+                        "region:none",
+                        "source:internal",
+                        "accuracy:high",
+                        "status:miss",
+                    ],
+                ),
+            ],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_ip_fallback_disabled(self, app, data_queues, stats):
-        res = self._call(app, body={
-            'fallbacks': {
-                'ipf': 0,
-            }},
+        res = self._call(
+            app,
+            body={"fallbacks": {"ipf": 0}},
             ip=self.test_ip,
-            status=self.not_found.code)
-        self.check_response(data_queues, res, 'not_found')
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post',
-                         'status:%s' % self.not_found.code]),
-            (self.metric_type + '.request', [self.metric_path, 'key:test']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+            status=self.not_found.code,
+        )
+        self.check_response(data_queues, res, "not_found")
+        stats.check(
+            counter=[
+                (
+                    "request",
+                    [
+                        self.metric_path,
+                        "method:post",
+                        "status:%s" % self.not_found.code,
+                    ],
+                ),
+                (self.metric_type + ".request", [self.metric_path, "key:test"]),
+            ],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_fallback(self, app, session, stats):
         # this tests a cell + wifi based query which gets a cell based
@@ -617,85 +796,118 @@ class CommonPositionTest(BaseLocateTest):
         # better wifi based result
         cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        ApiKeyFactory(valid_key='fall', allow_fallback=True)
+        ApiKeyFactory(valid_key="fall", allow_fallback=True)
         session.flush()
 
         with requests_mock.Mocker() as mock:
-            response_result = {
-                'location': {
-                    'lat': 1.0,
-                    'lng': 1.0,
-                },
-                'accuracy': 100,
-            }
-            mock.register_uri(
-                'POST', requests_mock.ANY, json=response_result)
+            response_result = {"location": {"lat": 1.0, "lng": 1.0}, "accuracy": 100}
+            mock.register_uri("POST", requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, api_key='fall', body=query)
+            res = self._call(app, api_key="fall", body=query)
 
             send_json = mock.request_history[0].json()
-            assert len(send_json['cellTowers']) == 2
-            assert len(send_json['wifiAccessPoints']) == 3
-            assert send_json['cellTowers'][0]['radioType'] == 'wcdma'
+            assert len(send_json["cellTowers"]) == 2
+            assert len(send_json["wifiAccessPoints"]) == 3
+            assert send_json["cellTowers"][0]["radioType"] == "wcdma"
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:fall']),
-            (self.metric_type + '.query',
-                ['key:fall', 'region:none',
-                 'geoip:false', 'blue:none', 'cell:many', 'wifi:many']),
-            (self.metric_type + '.result',
-                ['key:fall', 'region:none', 'fallback_allowed:true',
-                 'accuracy:high', 'status:hit', 'source:fallback']),
-            (self.metric_type + '.source',
-                ['key:fall', 'region:none', 'source:internal',
-                 'accuracy:high', 'status:miss']),
-            (self.metric_type + '.source',
-                ['key:fall', 'region:none', 'source:fallback',
-                 'accuracy:high', 'status:hit']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        stats.check(
+            counter=[
+                ("request", [self.metric_path, "method:post", "status:200"]),
+                (self.metric_type + ".request", [self.metric_path, "key:fall"]),
+                (
+                    self.metric_type + ".query",
+                    [
+                        "key:fall",
+                        "region:none",
+                        "geoip:false",
+                        "blue:none",
+                        "cell:many",
+                        "wifi:many",
+                    ],
+                ),
+                (
+                    self.metric_type + ".result",
+                    [
+                        "key:fall",
+                        "region:none",
+                        "fallback_allowed:true",
+                        "accuracy:high",
+                        "status:hit",
+                        "source:fallback",
+                    ],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:fall",
+                        "region:none",
+                        "source:internal",
+                        "accuracy:high",
+                        "status:miss",
+                    ],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:fall",
+                        "region:none",
+                        "source:fallback",
+                        "accuracy:high",
+                        "status:hit",
+                    ],
+                ),
+            ],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_fallback_used_with_geoip(self, app, session, stats):
         cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
-        ApiKeyFactory(valid_key='fall', allow_fallback=True)
+        ApiKeyFactory(valid_key="fall", allow_fallback=True)
         session.flush()
 
         with requests_mock.Mocker() as mock:
-            response_result = {
-                'location': {
-                    'lat': 1.0,
-                    'lng': 1.0,
-                },
-                'accuracy': 100.0,
-            }
-            mock.register_uri(
-                'POST', requests_mock.ANY, json=response_result)
+            response_result = {"location": {"lat": 1.0, "lng": 1.0}, "accuracy": 100.0}
+            mock.register_uri("POST", requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, api_key='fall', body=query, ip=self.test_ip)
+            res = self._call(app, api_key="fall", body=query, ip=self.test_ip)
 
             send_json = mock.request_history[0].json()
-            assert len(send_json['cellTowers']) == 2
-            assert len(send_json['wifiAccessPoints']) == 3
+            assert len(send_json["cellTowers"]) == 2
+            assert len(send_json["wifiAccessPoints"]) == 3
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        stats.check(counter=[
-            ('request', [self.metric_path, 'method:post', 'status:200']),
-            (self.metric_type + '.request', [self.metric_path, 'key:fall']),
-            (self.metric_type + '.result',
-                ['key:fall', 'region:GB', 'fallback_allowed:true',
-                 'accuracy:high', 'status:hit', 'source:fallback']),
-            (self.metric_type + '.source',
-                ['key:fall', 'region:GB', 'source:fallback',
-                 'accuracy:high', 'status:hit']),
-        ], timer=[
-            ('request', [self.metric_path, 'method:post']),
-        ])
+        stats.check(
+            counter=[
+                ("request", [self.metric_path, "method:post", "status:200"]),
+                (self.metric_type + ".request", [self.metric_path, "key:fall"]),
+                (
+                    self.metric_type + ".result",
+                    [
+                        "key:fall",
+                        "region:GB",
+                        "fallback_allowed:true",
+                        "accuracy:high",
+                        "status:hit",
+                        "source:fallback",
+                    ],
+                ),
+                (
+                    self.metric_type + ".source",
+                    [
+                        "key:fall",
+                        "region:GB",
+                        "source:fallback",
+                        "accuracy:high",
+                        "status:hit",
+                    ],
+                ),
+            ],
+            timer=[("request", [self.metric_path, "method:post"])],
+        )
 
     def test_store_sample(self, app, data_queues, session):
         api_key = ApiKeyFactory(store_sample_locate=0)
@@ -703,7 +915,6 @@ class CommonPositionTest(BaseLocateTest):
         session.flush()
 
         query = self.model_query(cells=[cell])
-        res = self._call(app, body=query,
-                         api_key=api_key.valid_key, status=200)
+        res = self._call(app, body=query, api_key=api_key.valid_key, status=200)
         self.check_model_response(res, cell)
         self.check_queue(data_queues, 0)

@@ -1,24 +1,18 @@
 from ichnaea.api.locate.constants import DataSource
 from ichnaea.api.locate.query import Query
-from ichnaea.api.locate.result import (
-    PositionResultList,
-    RegionResultList,
-)
-from ichnaea.api.locate.source import (
-    PositionSource,
-    RegionSource,
-)
+from ichnaea.api.locate.result import PositionResultList, RegionResultList
+from ichnaea.api.locate.source import PositionSource, RegionSource
 from ichnaea.tests.factories import KeyFactory
 
 
 class SourceTest(object):
-
     def _make_query(self, geoip_db, stats, **kw):
         return Query(
-            api_key=KeyFactory(valid_key='test'),
+            api_key=KeyFactory(valid_key="test"),
             geoip_db=geoip_db,
             stats_client=stats,
-            **kw)
+            **kw,
+        )
 
     def test_init(self, geoip_db, raven, redis, source, stats):
         assert source.geoip_db == geoip_db
@@ -33,9 +27,8 @@ class SourceTest(object):
 
 
 class TestPositionSource(SourceTest):
-
     class Source(PositionSource):
-        fallback_field = 'fallback'
+        fallback_field = "fallback"
         source = DataSource.fallback
 
         def search(self, query):
@@ -49,9 +42,8 @@ class TestPositionSource(SourceTest):
 
 
 class TestRegionSource(SourceTest):
-
     class Source(RegionSource):
-        fallback_field = 'ipf'
+        fallback_field = "ipf"
         source = DataSource.geoip
 
         def search(self, query):
