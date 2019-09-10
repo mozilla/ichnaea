@@ -4,16 +4,8 @@ from datetime import date, timedelta
 
 import genc
 
-from ichnaea.content.stats import (
-    global_stats,
-    histogram,
-    regions,
-    transliterate,
-)
-from ichnaea.models.content import (
-    Stat,
-    StatKey,
-)
+from ichnaea.content.stats import global_stats, histogram, regions, transliterate
+from ichnaea.models.content import Stat, StatKey
 from ichnaea.tests.factories import RegionStatFactory
 from ichnaea import util
 
@@ -23,7 +15,6 @@ def unixtime(value):
 
 
 class TestStats(object):
-
     def test_global_stats(self, session):
         day = util.utcnow().date() - timedelta(1)
         stats = [
@@ -38,11 +29,14 @@ class TestStats(object):
         session.commit()
 
         result = global_stats(session)
-        assert (result == {
-            'blue': '2.20', 'unique_blue': '1.10',
-            'cell': '6.10', 'unique_cell': '3.28',
-            'wifi': '3.21', 'unique_wifi': '2.00',
-        })
+        assert result == {
+            "blue": "2.20",
+            "unique_blue": "1.10",
+            "cell": "6.10",
+            "unique_cell": "3.28",
+            "wifi": "3.21",
+            "unique_wifi": "2.00",
+        }
 
     def test_global_stats_missing_today(self, session):
         day = util.utcnow().date() - timedelta(1)
@@ -57,11 +51,14 @@ class TestStats(object):
         session.commit()
 
         result = global_stats(session)
-        assert (result == {
-            'blue': '0.00', 'unique_blue': '0.00',
-            'cell': '6.00', 'unique_cell': '4.00',
-            'wifi': '3.00', 'unique_wifi': '0.00',
-        })
+        assert result == {
+            "blue": "0.00",
+            "unique_blue": "0.00",
+            "cell": "6.00",
+            "unique_cell": "4.00",
+            "wifi": "3.00",
+            "unique_wifi": "0.00",
+        }
 
     def test_histogram(self, session):
         today = util.utcnow().date()
@@ -96,45 +93,62 @@ class TestStats(object):
         assert result == [[[unixtime(first_of_month), 9]]]
 
     def test_regions(self, session):
-        RegionStatFactory(region='DE', gsm=2, wcdma=1, wifi=4)
-        RegionStatFactory(region='GB', wifi=1, blue=1)
-        RegionStatFactory(region='TW', wcdma=1)
-        RegionStatFactory(region='US', gsm=3, blue=2)
+        RegionStatFactory(region="DE", gsm=2, wcdma=1, wifi=4)
+        RegionStatFactory(region="GB", wifi=1, blue=1)
+        RegionStatFactory(region="TW", wcdma=1)
+        RegionStatFactory(region="US", gsm=3, blue=2)
         session.flush()
 
         result = regions(session)
-        expected = set(['DE', 'GB', 'TW', 'US'])
-        assert set([r['code'] for r in result]) == expected
+        expected = set(["DE", "GB", "TW", "US"])
+        assert set([r["code"] for r in result]) == expected
 
         region_results = {}
         for r in result:
-            code = r['code']
+            code = r["code"]
             region_results[code] = r
-            del region_results[code]['code']
+            del region_results[code]["code"]
 
         # ensure we use GENC names
-        assert region_results['TW']['name'] == 'Taiwan'
+        assert region_results["TW"]["name"] == "Taiwan"
 
         # strip out names to make assertion statements shorter
         for code in region_results:
-            del region_results[code]['name']
+            del region_results[code]["name"]
 
-        assert (region_results['DE'] ==
-                {'gsm': 2, 'wcdma': 1, 'lte': 0, 'cell': 3,
-                 'blue': 0, 'wifi': 4, 'order': 'germany'})
-        assert (region_results['GB'] ==
-                {'gsm': 0, 'wcdma': 0, 'lte': 0, 'cell': 0,
-                 'blue': 1, 'wifi': 1, 'order': 'united kin'})
-        assert (region_results['US'] ==
-                {'gsm': 3, 'wcdma': 0, 'lte': 0, 'cell': 3,
-                 'blue': 2, 'wifi': 0, 'order': 'united sta'})
+        assert region_results["DE"] == {
+            "gsm": 2,
+            "wcdma": 1,
+            "lte": 0,
+            "cell": 3,
+            "blue": 0,
+            "wifi": 4,
+            "order": "germany",
+        }
+        assert region_results["GB"] == {
+            "gsm": 0,
+            "wcdma": 0,
+            "lte": 0,
+            "cell": 0,
+            "blue": 1,
+            "wifi": 1,
+            "order": "united kin",
+        }
+        assert region_results["US"] == {
+            "gsm": 3,
+            "wcdma": 0,
+            "lte": 0,
+            "cell": 3,
+            "blue": 2,
+            "wifi": 0,
+            "order": "united sta",
+        }
 
 
 class TestTransliterate(object):
-
     def test_ascii(self):
         for record in genc.REGIONS:
-            assert record.name != ''
+            assert record.name != ""
             trans = transliterate(record.name)
             non_ascii = [c for c in trans if ord(c) > 127]
             assert non_ascii == []
