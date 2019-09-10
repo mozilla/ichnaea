@@ -1,29 +1,13 @@
-from base64 import (
-    b16decode,
-    b16encode,
-    b64decode,
-    b64encode
-)
+from base64 import b16decode, b16encode, b64decode, b64encode
 
 import colander
-from sqlalchemy import (
-    BINARY,
-    Column,
-    Index,
-    PrimaryKeyConstraint,
-)
+from sqlalchemy import BINARY, Column, Index, PrimaryKeyConstraint
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
-from ichnaea.models.constants import (
-    INVALID_MAC_REGEX,
-    VALID_MAC_REGEX,
-)
+from ichnaea.models.constants import INVALID_MAC_REGEX, VALID_MAC_REGEX
 from ichnaea.models.schema import ValidatorNode
-from ichnaea.models.station import (
-    StationMixin,
-    ValidStationSchema,
-)
+from ichnaea.models.station import StationMixin, ValidStationSchema
 
 
 def channel_frequency(channel, frequency):
@@ -33,7 +17,7 @@ def channel_frequency(channel, frequency):
     """
     new_channel = channel
     new_frequency = frequency
-    if (frequency is None and channel is not None):
+    if frequency is None and channel is not None:
         if 0 < channel < 14:
             # 2.4 GHz band
             new_frequency = (channel * 5) + 2407
@@ -45,7 +29,7 @@ def channel_frequency(channel, frequency):
         elif 185 < channel < 200:
             # 4.9 GHz band
             new_frequency = (channel * 5) + 4000
-    elif (frequency is not None and channel is None):
+    elif frequency is not None and channel is None:
         if 2411 < frequency < 2473:
             # 2.4 GHz band
             new_channel = (frequency - 2407) // 5
@@ -68,9 +52,9 @@ def decode_mac(value, codec=None):
 
     If ``codec='base64'``, decode the value from a base64 sequence first.
     """
-    if codec == 'base64':
+    if codec == "base64":
         value = b64decode(value)
-    return b16encode(value).decode('ascii').lower()
+    return b16encode(value).decode("ascii").lower()
 
 
 def encode_mac(value, codec=None):
@@ -81,7 +65,7 @@ def encode_mac(value, codec=None):
     If ``codec='base64'``, return the value as a base64 encoded sequence.
     """
     value = b16decode(value.upper())
-    if codec == 'base64':
+    if codec == "base64":
         value = b64encode(value)
     return value
 
@@ -95,13 +79,13 @@ class MacColumn(TypeDecorator):
         if value and len(value) == 6:
             return value
         if not (value and len(value) == 12):
-            raise ValueError('Invalid MAC: %r' % value)
-        return b16decode(value.upper().encode('ascii'))
+            raise ValueError("Invalid MAC: %r" % value)
+        return b16decode(value.upper().encode("ascii"))
 
     def process_result_value(self, value, dialect):
         if value is None:  # pragma: no cover
             return value
-        return b16encode(value).decode('ascii').lower()
+        return b16encode(value).decode("ascii").lower()
 
 
 class MacNode(ValidatorNode):
@@ -110,21 +94,21 @@ class MacNode(ValidatorNode):
 
     def preparer(self, cstruct):
         # Remove ':' '-' ',' from a wifi BSSID
-        if cstruct and (':' in cstruct or '-' in cstruct or '.' in cstruct):
-            cstruct = (cstruct.replace(':', '')
-                              .replace('-', '')
-                              .replace('.', ''))
+        if cstruct and (":" in cstruct or "-" in cstruct or "." in cstruct):
+            cstruct = cstruct.replace(":", "").replace("-", "").replace(".", "")
         return cstruct and cstruct.lower() or colander.null
 
     def validator(self, node, cstruct):
         super(MacNode, self).validator(node, cstruct)
 
-        valid = (len(cstruct) == 12 and
-                 INVALID_MAC_REGEX.match(cstruct) and
-                 VALID_MAC_REGEX.match(cstruct))
+        valid = (
+            len(cstruct) == 12
+            and INVALID_MAC_REGEX.match(cstruct)
+            and VALID_MAC_REGEX.match(cstruct)
+        )
 
         if not valid:
-            raise colander.Invalid(node, 'Invalid mac address.')
+            raise colander.Invalid(node, "Invalid mac address.")
 
 
 class ValidMacStationSchema(ValidStationSchema):
@@ -145,13 +129,13 @@ class MacStationMixin(StationMixin):
     @declared_attr
     def __table_args__(cls):  # NOQA
         _indices = (
-            PrimaryKeyConstraint('mac'),
-            Index('%s_region_idx' % cls.__tablename__, 'region'),
-            Index('%s_created_idx' % cls.__tablename__, 'created'),
-            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
-            Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
+            PrimaryKeyConstraint("mac"),
+            Index("%s_region_idx" % cls.__tablename__, "region"),
+            Index("%s_created_idx" % cls.__tablename__, "created"),
+            Index("%s_modified_idx" % cls.__tablename__, "modified"),
+            Index("%s_latlon_idx" % cls.__tablename__, "lat", "lon"),
         )
-        return _indices + (cls._settings, )
+        return _indices + (cls._settings,)
 
     @classmethod
     def create(cls, _raise_invalid=False, **kw):
@@ -163,7 +147,7 @@ class MacStationMixin(StationMixin):
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
         if validated is None:  # pragma: no cover
             return None
-        shard = cls.shard_model(validated['mac'])
+        shard = cls.shard_model(validated["mac"])
         return shard(**validated)
 
     @classmethod
@@ -209,16 +193,17 @@ class MacStationMixin(StationMixin):
     @classmethod
     def export_header(cls):
         return (
-            'mac,'
-            'lat,lon,max_lat,min_lat,max_lon,min_lon,'
-            'radius,region,samples,source,weight,'
-            'created,modified,last_seen,'
-            'block_first,block_last,block_count'
+            "mac,"
+            "lat,lon,max_lat,min_lat,max_lon,min_lon,"
+            "radius,region,samples,source,weight,"
+            "created,modified,last_seen,"
+            "block_first,block_last,block_count"
         )
 
     @classmethod
     def export_stmt(cls):
-        stmt = '''SELECT
+        stmt = (
+            """SELECT
 `mac` AS `export_key`,
 CONCAT_WS(",",
     LOWER(HEX(`mac`)),
@@ -244,5 +229,7 @@ FROM %s
 WHERE `mac` > :export_key
 ORDER BY `mac`
 LIMIT :limit
-''' % cls.__tablename__
-        return stmt.replace('\n', ' ')
+"""
+            % cls.__tablename__
+        )
+        return stmt.replace("\n", " ")

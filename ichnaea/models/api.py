@@ -1,12 +1,5 @@
-from sqlalchemy import (
-    Boolean,
-    Column,
-    String,
-)
-from sqlalchemy.dialects.mysql import (
-    INTEGER as Integer,
-    TINYINT as TinyInteger,
-)
+from sqlalchemy import Boolean, Column, String
+from sqlalchemy.dialects.mysql import INTEGER as Integer, TINYINT as TinyInteger
 
 from ichnaea.models.base import _Model
 
@@ -37,7 +30,7 @@ class ApiKey(_Model):
     of seconds for which entries are allowed to be cached.
     """
 
-    __tablename__ = 'api_key'
+    __tablename__ = "api_key"
 
     valid_key = Column(String(40), primary_key=True)  # UUID API key.
     maxreq = Column(Integer)  # Maximum number of requests per day.

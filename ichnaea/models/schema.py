@@ -15,7 +15,8 @@ class DateFromString(colander.Date):
         if type(cstruct) == date:
             return cstruct
         return super(DateFromString, self).deserialize(
-            schema, cstruct)  # pragma: no cover
+            schema, cstruct
+        )  # pragma: no cover
 
 
 class DateTimeFromString(colander.DateTime):
@@ -64,8 +65,7 @@ class ReportSourceNode(DefaultNode):
         if type(cstruct) is ReportSource:
             return True
 
-        raise colander.Invalid(  # pragma: no cover
-            node, 'Invalid station source')
+        raise colander.Invalid(node, "Invalid station source")  # pragma: no cover
 
 
 class ReportSourceType(colander.Integer):
@@ -84,6 +84,5 @@ class ReportSourceType(colander.Integer):
             else:
                 cstruct = ReportSource(cstruct)
         except (KeyError, ValueError):
-            raise colander.Invalid(node, (
-                '%r is not a valid station source' % cstruct))
+            raise colander.Invalid(node, ("%r is not a valid station source" % cstruct))
         return cstruct

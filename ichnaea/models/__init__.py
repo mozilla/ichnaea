@@ -8,9 +8,7 @@ from ichnaea.models.base import _Model
 from ichnaea.models.constants import Radio  # NOQA
 from ichnaea.models.constants import ReportSource  # NOQA
 from ichnaea.models.api import ApiKey  # NOQA
-from ichnaea.models.blue import (  # NOQA
-    BlueShard,
-)
+from ichnaea.models.blue import BlueShard  # NOQA
 from ichnaea.models.cell import (  # NOQA
     area_id,
     CellArea,
@@ -20,9 +18,7 @@ from ichnaea.models.cell import (  # NOQA
     encode_cellarea,
     encode_cellid,
 )
-from ichnaea.models.config import (  # NOQA
-    ExportConfig,
-)
+from ichnaea.models.config import ExportConfig  # NOQA
 from ichnaea.models.content import (  # NOQA
     DataMap,
     RegionStat,
@@ -30,10 +26,7 @@ from ichnaea.models.content import (  # NOQA
     StatCounter,
     StatKey,
 )
-from ichnaea.models.mac import (  # NOQA
-    decode_mac,
-    encode_mac,
-)
+from ichnaea.models.mac import decode_mac, encode_mac  # NOQA
 from ichnaea.models.observation import (  # NOQA
     BlueObservation,
     BlueReport,
@@ -43,11 +36,7 @@ from ichnaea.models.observation import (  # NOQA
     WifiObservation,
     WifiReport,
 )
-from ichnaea.models.station import (  # NOQA
-    station_blocked,
-)
-from ichnaea.models.wifi import (  # NOQA
-    WifiShard,
-)
+from ichnaea.models.station import station_blocked  # NOQA
+from ichnaea.models.wifi import WifiShard  # NOQA
 
-__all__ = (_Model, )
+__all__ = (_Model,)
