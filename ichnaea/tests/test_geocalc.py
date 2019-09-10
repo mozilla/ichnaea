@@ -14,7 +14,6 @@ from ichnaea import constants
 
 
 class TestBbox(object):
-
     def test_null(self):
         lat, lon = (1.0, 1.0)
         lat1, lon1, lat2, lon2 = bbox(lat, lon, 0.0)
@@ -25,17 +24,22 @@ class TestBbox(object):
 
     def test_extremes(self):
         lat, lon = (-90.0, -181.0)
-        assert (bbox(lat, lon, 0.0) ==
-                (constants.MIN_LAT, constants.MIN_LAT,
-                 constants.MIN_LON, constants.MIN_LON))
+        assert bbox(lat, lon, 0.0) == (
+            constants.MIN_LAT,
+            constants.MIN_LAT,
+            constants.MIN_LON,
+            constants.MIN_LON,
+        )
         lat, lon = (90.0, 181.0)
-        assert (bbox(lat, lon, 0.0) ==
-                (constants.MAX_LAT, constants.MAX_LAT,
-                 constants.MAX_LON, constants.MAX_LON))
+        assert bbox(lat, lon, 0.0) == (
+            constants.MAX_LAT,
+            constants.MAX_LAT,
+            constants.MAX_LON,
+            constants.MAX_LON,
+        )
 
 
 class TestDestination(object):
-
     def test_antipodal(self):
         lat, lon = destination(90.0, 0.0, 180.0, 20003931.4586)
         assert round(lat, 7) == -90.0
@@ -95,13 +99,15 @@ class TestDistance(object):
         assert round(self.dist(0.0, 0.0, 0.5, 179.7), 4) == 19950277.9698
 
     def test_closeby(self):
-        assert round(self.dist(
-            44.0337065, -79.4908184, 44.0349396, -79.4908184), 4) == 137.0133
+        assert (
+            round(self.dist(44.0337065, -79.4908184, 44.0349396, -79.4908184), 4)
+            == 137.0133
+        )
 
     def test_non_float(self):
         assert round(self.dist(1.0, 1.0, 1, 1.1), 4) == 11130.265
         with pytest.raises(TypeError):
-            self.dist(None, '0.1', 1, 1.1)
+            self.dist(None, "0.1", 1, 1.1)
 
     def test_out_of_bounds(self):
         assert round(self.dist(-100.0, -186.0, 0.0, 0.0), 4) == 11112616.8752
@@ -117,8 +123,10 @@ class TestHaversineDistance(object):
         assert round(self.dist(0.0, 0.0, 0.5, 179.7), 4) == 19950277.9698
 
     def test_closeby(self):
-        assert round(self.dist(
-            44.0337065, -79.4908184, 44.0349396, -79.4908184), 4) == 137.1147
+        assert (
+            round(self.dist(44.0337065, -79.4908184, 44.0349396, -79.4908184), 4)
+            == 137.1147
+        )
 
     def test_out_of_bounds(self):
         assert round(self.dist(-100.0, -186.0, 0.0, 0.0), 4) == 8901760.1724
@@ -135,15 +143,16 @@ class TestVincentyDistance(object):
             self.dist(0.0, 0.0, 0.5, 179.7)
 
     def test_closeby(self):
-        assert round(self.dist(
-            44.0337065, -79.4908184, 44.0349396, -79.4908184), 4) == 137.0133
+        assert (
+            round(self.dist(44.0337065, -79.4908184, 44.0349396, -79.4908184), 4)
+            == 137.0133
+        )
 
     def test_out_of_bounds(self):
         assert round(self.dist(-100.0, -186.0, 0.0, 0.0), 4) == 11112616.8752
 
 
 class TestLatitudeAdd(object):
-
     def test_returns_min_lat(self):
         assert latitude_add(-85.0, 0.0, -1000000) == constants.MIN_LAT
 
@@ -155,7 +164,6 @@ class TestLatitudeAdd(object):
 
 
 class TestLongitudeAdd(object):
-
     def test_returns_min_lon(self):
         assert longitude_add(0.0, -179.0, -1000000) == constants.MIN_LON
 
@@ -167,7 +175,6 @@ class TestLongitudeAdd(object):
 
 
 class TestRandomPoints(object):
-
     def test_null(self):
         points = random_points(0, 0, 11)
         assert type(points) is list
