@@ -13,16 +13,17 @@ from ichnaea.db import get_alembic_config
 from ichnaea.models import _Model  # NOQA
 
 _compare_attrs = {
-    sqltypes._Binary: ('length', ),
+    sqltypes._Binary: ("length",),
     sqltypes.Date: (),
-    sqltypes.DateTime: ('fsp', 'timezone'),
-    sqltypes.Integer: ('display_width', 'unsigned', 'zerofill'),
-    sqltypes.String: ('binary', 'charset', 'collation', 'length', 'unicode'),
+    sqltypes.DateTime: ("fsp", "timezone"),
+    sqltypes.Integer: ("display_width", "unsigned", "zerofill"),
+    sqltypes.String: ("binary", "charset", "collation", "length", "unicode"),
 }
 
 
-def db_compare_type(context, inspected_column,
-                    metadata_column, inspected_type, metadata_type):
+def db_compare_type(
+    context, inspected_column, metadata_column, inspected_type, metadata_type
+):
     # return True if the types are different, False if not, or None
     # to allow the default implementation to compare these types
     expected = metadata_column.type
@@ -35,8 +36,9 @@ def db_compare_type(context, inspected_column,
         if type(expected) != type(migrated):  # pragma: no cover
             return True
         for attr in compare_attrs:
-            if (getattr(expected, attr, None) !=
-                    getattr(migrated, attr, None)):  # pragma: no cover
+            if getattr(expected, attr, None) != getattr(
+                migrated, attr, None
+            ):  # pragma: no cover
                 return True
         return False
 
@@ -44,16 +46,13 @@ def db_compare_type(context, inspected_column,
     comparator = _type_comparators.get(type_affinity, None)
     if comparator is not None:
         return comparator(expected, migrated)
-    raise AssertionError('Unsupported DB type comparison.')  # pragma: no cover
+    raise AssertionError("Unsupported DB type comparison.")  # pragma: no cover
 
 
 def compare_schema(engine, metadata):
     # compare the db schema from a migrated database to
     # one created fresh from the model definitions
-    opts = {
-        'compare_type': db_compare_type,
-        'compare_server_default': True,
-    }
+    opts = {"compare_type": db_compare_type, "compare_server_default": True}
     with engine.connect() as conn:
         context = MigrationContext.configure(connection=conn, opts=opts)
         diff = compare_metadata(context, metadata)
@@ -62,13 +61,12 @@ def compare_schema(engine, metadata):
 
 def current_db_revision(db):
     with db.engine.connect() as conn:
-        result = conn.execute('select version_num from alembic_version')
+        result = conn.execute("select version_num from alembic_version")
         alembic_rev = result.first()
     return None if alembic_rev is None else alembic_rev[0]
 
 
 class TestMigration(object):
-
     def test_migration(self, clean_db):
         # To create a new base.sql, run mysqldump.
         # $ docker-compose exec mysql bash
@@ -93,7 +91,7 @@ class TestMigration(object):
         # downgrade back to the beginning
         with db.engine.connect() as conn:
             with conn.begin() as trans:
-                alembic_command.downgrade(alembic_cfg, 'base')
+                alembic_command.downgrade(alembic_cfg, "base")
                 trans.commit()
 
         # capture state of a downgraded database
