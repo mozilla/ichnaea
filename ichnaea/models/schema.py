@@ -14,9 +14,7 @@ class DateFromString(colander.Date):
     def deserialize(self, schema, cstruct):
         if type(cstruct) == date:
             return cstruct
-        return super(DateFromString, self).deserialize(
-            schema, cstruct
-        )
+        return super(DateFromString, self).deserialize(schema, cstruct)
 
 
 class DateTimeFromString(colander.DateTime):

@@ -36,9 +36,7 @@ def db_compare_type(
         if type(expected) != type(migrated):
             return True
         for attr in compare_attrs:
-            if getattr(expected, attr, None) != getattr(
-                migrated, attr, None
-            ):
+            if getattr(expected, attr, None) != getattr(migrated, attr, None):
                 return True
         return False
 

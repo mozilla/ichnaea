@@ -14,9 +14,7 @@ class BaseInternalSource(object):
     source = DataSource.internal
 
     def should_search(self, query, results):
-        if not super(BaseInternalSource, self).should_search(
-            query, results
-        ):
+        if not super(BaseInternalSource, self).should_search(query, results):
             return False
         if not (
             self.should_search_blue(query, results)

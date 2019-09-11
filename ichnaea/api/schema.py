@@ -109,9 +109,7 @@ class RenamingMapping(colander.Mapping):
             subnode_to_name = getattr(subnode, "to_name", subnode.name) or subnode.name
 
             subnode_value = result.get(subnode.name, subnode.missing)
-            if (
-                subnode_value is colander.drop or subnode_value is colander.null
-            ):
+            if subnode_value is colander.drop or subnode_value is colander.null:
                 continue
             else:
                 renamed_result[subnode_to_name] = subnode_value
