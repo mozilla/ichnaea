@@ -57,6 +57,12 @@ jobs:
                 make build
 
         - run:
+            name: Run linting
+            working_directory: /ichnaea
+            command: |
+                make lint
+
+        - run:
             name: Run tests
             working_directory: /ichnaea
             command: |
