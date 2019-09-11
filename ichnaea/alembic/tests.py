@@ -10,7 +10,7 @@ from ichnaea.conftest import cleanup_tables
 from ichnaea.db import get_alembic_config
 
 # make sure all models are imported
-from ichnaea.models import _Model  # NOQA
+from ichnaea.models import _Model  # noqa
 
 _compare_attrs = {
     sqltypes._Binary: ("length",),

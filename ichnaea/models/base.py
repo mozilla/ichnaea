@@ -15,7 +15,7 @@ class BaseModel(object):
     _settings = MYSQL_SETTINGS
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):
         return cls._indices + (cls._settings,)
 
 

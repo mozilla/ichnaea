@@ -159,7 +159,7 @@ def setup_database():
 @pytest.fixture(scope="session")
 def database():
     # Make sure all models are imported.
-    from ichnaea import models  # NOQA
+    from ichnaea import models  # noqa
 
     # Setup clean database tables.
     setup_database()

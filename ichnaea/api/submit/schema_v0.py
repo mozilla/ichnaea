@@ -104,15 +104,15 @@ class ReportV0Schema(BaseReportV0Schema):
     )
 
     @colander.instantiate(to_name="bluetoothBeacons", missing=())
-    class blue(OptionalSequenceSchema):  # NOQA
+    class blue(OptionalSequenceSchema):
         sequence_item = BlueV0Schema()
 
     @colander.instantiate(to_name="cellTowers", missing=())
-    class cell(OptionalSequenceSchema):  # NOQA
+    class cell(OptionalSequenceSchema):
         sequence_item = CellV0Schema()
 
     @colander.instantiate(to_name="wifiAccessPoints", missing=())
-    class wifi(OptionalSequenceSchema):  # NOQA
+    class wifi(OptionalSequenceSchema):
         sequence_item = WifiV0Schema()
 
     def deserialize(self, data):
@@ -150,7 +150,7 @@ class ReportV0Schema(BaseReportV0Schema):
 
 class SubmitV0Schema(OptionalMappingSchema):
     @colander.instantiate()
-    class items(OptionalSequenceSchema):  # NOQA
+    class items(OptionalSequenceSchema):
 
         report = ReportV0Schema()
 

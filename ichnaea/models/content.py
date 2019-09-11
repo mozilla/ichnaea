@@ -97,7 +97,7 @@ class DataMap(object):
     modified = Column(Date)
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):  # noqa
         _indices = (
             PrimaryKeyConstraint("grid"),
             Index("%s_created_idx" % cls.__tablename__, "created"),

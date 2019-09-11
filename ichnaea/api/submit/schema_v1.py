@@ -28,7 +28,7 @@ class ReportV1Schema(PositionSchema, ReportSchema):
     )
 
     @colander.instantiate(missing=())
-    class cellTowers(OptionalSequenceSchema):  # NOQA
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(CellTowerSchema):
 
@@ -50,7 +50,7 @@ class ReportV1Schema(PositionSchema, ReportSchema):
 
 class SubmitV1Schema(OptionalMappingSchema):
     @colander.instantiate()
-    class items(OptionalSequenceSchema):  # NOQA
+    class items(OptionalSequenceSchema):
         report = ReportV1Schema()
 
 

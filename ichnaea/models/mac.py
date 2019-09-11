@@ -127,7 +127,7 @@ class MacStationMixin(StationMixin):
     mac = Column(MacColumn(6))
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):
         _indices = (
             PrimaryKeyConstraint("mac"),
             Index("%s_region_idx" % cls.__tablename__, "region"),

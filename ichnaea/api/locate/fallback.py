@@ -53,7 +53,7 @@ class ExternalResult(namedtuple("ExternalResult", "lat lon accuracy fallback")):
 
 class IchnaeaV1ResultSchema(RenamingMappingSchema):
     @colander.instantiate()
-    class location(RenamingMappingSchema):  # NOQA
+    class location(RenamingMappingSchema):
 
         lat = colander.SchemaNode(BoundedFloat())
         lng = colander.SchemaNode(BoundedFloat(), to_name="lon")
@@ -79,12 +79,12 @@ ICHNAEA_V1_RESULT_SCHEMA = IchnaeaV1ResultSchema()
 
 class IchnaeaV1OutboundSchema(OptionalMappingSchema):
     @colander.instantiate()
-    class fallbacks(RenamingMappingSchema):  # NOQA
+    class fallbacks(RenamingMappingSchema):
 
         lacf = colander.SchemaNode(colander.Boolean(), missing=True)
 
     @colander.instantiate(missing=colander.drop)
-    class bluetoothBeacons(OptionalSequenceSchema):  # NOQA
+    class bluetoothBeacons(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -94,7 +94,7 @@ class IchnaeaV1OutboundSchema(OptionalMappingSchema):
             signalStrength = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop)
-    class cellTowers(OptionalSequenceSchema):  # NOQA
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -109,7 +109,7 @@ class IchnaeaV1OutboundSchema(OptionalMappingSchema):
             timingAdvance = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop)
-    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
+    class wifiAccessPoints(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -129,7 +129,7 @@ class GoogleMapsV1OutboundSchema(OptionalMappingSchema):
     considerIp = colander.SchemaNode(colander.Boolean(), missing=False)
 
     @colander.instantiate(missing=colander.drop)
-    class cellTowers(OptionalSequenceSchema):  # NOQA
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -143,7 +143,7 @@ class GoogleMapsV1OutboundSchema(OptionalMappingSchema):
             timingAdvance = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop)
-    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
+    class wifiAccessPoints(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -205,12 +205,12 @@ class UnwiredlabsV1OutboundSchema(RenamingMappingSchema):
     token = colander.SchemaNode(colander.String(), missing=None)
 
     @colander.instantiate()
-    class fallbacks(RenamingMappingSchema):  # NOQA
+    class fallbacks(RenamingMappingSchema):
 
         lacf = colander.SchemaNode(colander.Boolean(), missing=True)
 
     @colander.instantiate(missing=colander.drop, to_name="cells")
-    class cellTowers(OptionalSequenceSchema):  # NOQA
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -225,7 +225,7 @@ class UnwiredlabsV1OutboundSchema(RenamingMappingSchema):
             asu = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop, to_name="wifi")
-    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
+    class wifiAccessPoints(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 

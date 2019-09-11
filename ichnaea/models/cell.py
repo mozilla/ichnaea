@@ -471,7 +471,7 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
     last_seen = Column(Date)
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):
         prefix = cls.__tablename__
         _indices = (
             PrimaryKeyConstraint("areaid"),
@@ -541,7 +541,7 @@ class CellShard(StationMixin):
     psc = Column(SmallInteger)
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):
         _indices = (
             PrimaryKeyConstraint("cellid"),
             UniqueConstraint(

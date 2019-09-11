@@ -21,7 +21,7 @@ class CellTowersV2Schema(OptionalSequenceSchema):
 
 class SubmitV2Schema(OptionalMappingSchema):
     @colander.instantiate()
-    class items(OptionalSequenceSchema):  # NOQA
+    class items(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(ReportSchema):
 

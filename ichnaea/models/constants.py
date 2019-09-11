@@ -8,7 +8,7 @@ import re
 
 import mobile_codes
 
-from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
+from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # noqa
 
 
 class Radio(IntEnum):
