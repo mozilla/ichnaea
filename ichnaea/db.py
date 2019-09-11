@@ -8,12 +8,12 @@ from alembic import command
 from alembic.config import Config as AlembicConfig
 import certifi
 from pymysql.err import DatabaseError
-from sqlalchemy import create_engine, exc, event
+from sqlalchemy import create_engine, exc
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
-from sqlalchemy.pool import NullPool, Pool, QueuePool
+from sqlalchemy.pool import NullPool, QueuePool
 from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
@@ -142,6 +142,7 @@ class Database(object):
             options.update(
                 {
                     "poolclass": QueuePool,
+                    "pool_pre_ping": True,
                     "pool_recycle": 3600,
                     "pool_size": 10,
                     "pool_timeout": 10,
@@ -180,15 +181,6 @@ class Database(object):
     def close(self):
         self.engine.pool.dispose()
 
-    def ping(self):
-        """
-        Check database connectivity.
-        On success returns `True`, otherwise `False`.
-        """
-        with db_worker_session(self, commit=False) as session:
-            success = session.ping()
-        return success
-
     def session(self):
         """Return a session for this database."""
         return self.session_factory()
@@ -211,36 +203,6 @@ class PingableSession(Session):
         except exc.OperationalError:
             return False
         return True
-
-
-@event.listens_for(Pool, "checkout")
-def check_connection(dbapi_conn, conn_record, conn_proxy):
-    """
-    Listener for pool checkout events that pings every connection before
-    using it. Implements the `pessimistic disconnect handling strategy
-    <https://docs.sqlalchemy.org/en/latest/core/pooling.html#disconnect-handling-pessimistic>`_.
-    """
-    try:
-        # dbapi_con.ping() ends up calling mysql_ping()
-        # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
-        dbapi_conn.ping(reconnect=True)
-    except exc.OperationalError as ex:
-        error_codes = [
-            # Connection refused
-            2003,
-            # MySQL server has gone away
-            2006,
-            # Lost connection to MySQL server during query
-            2013,
-            # Lost connection to MySQL server at '%s', system error: %d
-            2055,
-        ]
-
-        if ex.args[0] in error_codes:
-            # caught by pool, which will retry with a new connection
-            raise exc.DisconnectionError()
-        else:
-            raise
 
 
 def create_db(uri=None):

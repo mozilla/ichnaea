@@ -15,9 +15,6 @@ class TestDatabase(object):
         assert sync_db.engine.name == "mysql"
         assert sync_db.engine.dialect.driver == "mysqlconnector"
 
-    def test_ping(self, db):
-        assert db.ping()
-
     def test_table_creation(self, session):
         result = session.execute("select * from cell_gsm;")
         assert result.first() is None
