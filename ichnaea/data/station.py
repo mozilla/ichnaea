@@ -421,7 +421,7 @@ class StationUpdater(object):
     def add_area_update(self, updated_areas, key):
         pass
 
-    def queue_area_updates(self, pipe, updated_areas):  # pragma: no cover
+    def queue_area_updates(self, pipe, updated_areas):
         pass
 
     def stat_count(self, type_, action, count):
@@ -571,7 +571,7 @@ class StationUpdater(object):
                 ):
                     success = False
                     time.sleep(self._retry_wait * (i ** 2 + 1))
-                else:  # pragma: no cover
+                else:
                     raise
 
             if success:
@@ -584,7 +584,7 @@ class StationUpdater(object):
 
                 self.emit_stats(pipe, stats_counter)
 
-            if self.data_queue.ready():  # pragma: no cover
+            if self.data_queue.ready():
                 self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
 
 

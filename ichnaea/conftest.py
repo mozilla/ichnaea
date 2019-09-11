@@ -100,7 +100,7 @@ def package():
     yield None
 
     # Print memory leaks.
-    if gc.garbage:  # pragma: no cover
+    if gc.garbage:
         print("Uncollectable objects found:")
         for obj in gc.garbage:
             print(obj)
@@ -252,7 +252,7 @@ def session_tracker(session):
     db_events = []
 
     def scoped_conn_event_handler(calls):
-        def conn_event_handler(**kw):  # pragma: no cover
+        def conn_event_handler(**kw):
             calls.append((kw["statement"], kw["parameters"]))
 
         return conn_event_handler

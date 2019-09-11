@@ -35,7 +35,7 @@ class BaseLocateView(BaseAPIView):
         searcher = getattr(self.request.registry, self.searcher)
         return searcher.search(query)
 
-    def prepare_response(self, response_data):  # pragma: no cover
+    def prepare_response(self, response_data):
         return response_data
 
     def view(self, api_key):

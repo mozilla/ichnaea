@@ -491,7 +491,7 @@ class GeoIPWrapper(Reader):
         location = record.location
         if not (
             location.latitude and location.longitude and region.iso_code
-        ):  # pragma: no cover
+        ):
             return None
 
         code = GEOIP_GENC_MAP.get(region.iso_code, region.iso_code).upper()

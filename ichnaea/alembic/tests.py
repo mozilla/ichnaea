@@ -33,12 +33,12 @@ def db_compare_type(
     type_affinity = migrated._type_affinity
     compare_attrs = _compare_attrs.get(type_affinity, None)
     if compare_attrs is not None:
-        if type(expected) != type(migrated):  # pragma: no cover
+        if type(expected) != type(migrated):
             return True
         for attr in compare_attrs:
             if getattr(expected, attr, None) != getattr(
                 migrated, attr, None
-            ):  # pragma: no cover
+            ):
                 return True
         return False
 
@@ -46,7 +46,7 @@ def db_compare_type(
     comparator = _type_comparators.get(type_affinity, None)
     if comparator is not None:
         return comparator(expected, migrated)
-    raise AssertionError("Unsupported DB type comparison.")  # pragma: no cover
+    raise AssertionError("Unsupported DB type comparison.")
 
 
 def compare_schema(engine, metadata):

@@ -96,7 +96,7 @@ class HeartbeatView(BaseView):
         for name, check in services.items():
             try:
                 service_result = check(self.request)
-            except Exception:  # pragma: no cover
+            except Exception:
                 result[name] = {"up": None, "time": -1}
                 failed = True
             else:
@@ -129,7 +129,7 @@ class LBHeartbeatView(BaseView):
         """Return a response with a 200 or 503 status."""
         try:
             return {"status": "OK"}
-        except Exception:  # pragma: no cover
+        except Exception:
             raise self.prepare_exception(HTTPServiceUnavailable())
 
 

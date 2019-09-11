@@ -83,7 +83,7 @@ class MacColumn(TypeDecorator):
         return b16decode(value.upper().encode("ascii"))
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return value
         return b16encode(value).decode("ascii").lower()
 
@@ -145,7 +145,7 @@ class MacStationMixin(StationMixin):
         otherwise returns None.
         """
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
+        if validated is None:
             return None
         shard = cls.shard_model(validated["mac"])
         return shard(**validated)

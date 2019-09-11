@@ -176,7 +176,7 @@ def query_cells(query, lookups, model, raven_client):
     # Given a location query and a list of lookup instances, query the
     # database and return a list of model objects.
     cellids = [lookup.cellid for lookup in lookups]
-    if not cellids:  # pragma: no cover
+    if not cellids:
         return []
 
     # load all fields used in score calculation and those we
@@ -223,7 +223,7 @@ def query_cells(query, lookups, model, raven_client):
 
 def query_areas(query, lookups, model, raven_client):
     areaids = [lookup.areaid for lookup in lookups]
-    if not areaids:  # pragma: no cover
+    if not areaids:
         return []
 
     # load all fields used in score calculation and those we

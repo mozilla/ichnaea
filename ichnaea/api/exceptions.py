@@ -35,7 +35,7 @@ class JSONException(HTTPException):
         return "<%s>: %s" % (self.__class__.__name__, self.code)
 
     @classmethod
-    def json_body(cls):  # pragma: no cover
+    def json_body(cls):
         """A JSON representation of this response."""
         return {}
 

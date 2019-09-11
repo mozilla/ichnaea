@@ -16,7 +16,7 @@ class BaseInternalSource(object):
     def should_search(self, query, results):
         if not super(BaseInternalSource, self).should_search(
             query, results
-        ):  # pragma: no cover
+        ):
             return False
         if not (
             self.should_search_blue(query, results)
@@ -85,7 +85,7 @@ class InternalPositionSource(
 
         try:
             self.data_queues["update_incoming"].enqueue(data)
-        except Exception:  # pragma: no cover
+        except Exception:
             self.raven_client.captureException()
 
     def search(self, query):

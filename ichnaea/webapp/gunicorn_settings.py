@@ -34,11 +34,11 @@ errorlog = "-"
 loglevel = "warning"
 
 
-def post_worker_init(worker):  # pragma: no cover
+def post_worker_init(worker):
     worker.wsgi(None, None)
 
 
-def worker_exit(server, worker):  # pragma: no cover
+def worker_exit(server, worker):
     from ichnaea.webapp.app import worker_exit
 
     worker_exit(server, worker)

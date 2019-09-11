@@ -72,7 +72,7 @@ class ValidationMixin(object):
         try:
             validated = cls._valid_schema.deserialize(entry, **kw)
         except colander.Invalid:
-            if _raise_invalid:  # pragma: no cover
+            if _raise_invalid:
                 raise
             validated = None
         return validated
@@ -91,6 +91,6 @@ class CreationMixin(ValidationMixin):
         arguments passed schema validation, otherwise returns None.
         """
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
+        if validated is None:
             return None
         return cls(**validated)

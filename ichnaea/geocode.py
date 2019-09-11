@@ -100,7 +100,7 @@ class Geocoder(object):
             self._tree.insert(*envelope)
         self._valid_regions = frozenset(self._shapes.keys())
 
-    def close(self):  # pragma: no cover
+    def close(self):
         """
         Close the Geocoder and its handles on ctypes pointers.
         """
@@ -291,7 +291,7 @@ class Geocoder(object):
 
 
 @atexit.register
-def geocode_exit():  # pragma: no cover
+def geocode_exit():
     GEOCODER.close()
 
 

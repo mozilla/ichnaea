@@ -69,7 +69,7 @@ class TestSearcher(SearcherTest):
             def should_search(self, query, results):
                 return False
 
-            def search(self, query):  # pragma: no cover
+            def search(self, query):
                 raise Exception("The searcher should not reach this point.")
 
         class TestSearcher(RegionSearcher):

@@ -25,16 +25,16 @@ from ichnaea import util
 
 try:
     from os import scandir
-except ImportError:  # pragma: no cover
+except ImportError:
     from scandir import scandir
 
-if sys.platform == "darwin":  # pragma: no cover
+if sys.platform == "darwin":
     ZCAT = "gzcat"
-else:  # pragma: no cover
+else:
     ZCAT = "zcat"
 
 
-def recursive_scandir(top):  # pragma: no cover
+def recursive_scandir(top):
     for entry in scandir(top):
         yield entry
         if entry.is_dir():
@@ -93,7 +93,7 @@ LIMIT :limit
     return result_rows
 
 
-def export_files(pool, csvdir):  # pragma: no cover
+def export_files(pool, csvdir):
     jobs = []
     result_rows = 0
     for shard_id, shard in sorted(DataMap.shards().items()):
@@ -119,7 +119,7 @@ def encode_file(name, csvdir, quaddir):
     os.system(cmd)
 
 
-def encode_files(pool, csvdir, quaddir):  # pragma: no cover
+def encode_files(pool, csvdir, quaddir):
     jobs = []
     for name in os.listdir(csvdir):
         if name.startswith("map_") and name.endswith(".csv.gz"):
@@ -172,7 +172,7 @@ def render_tiles(shapes, tiles, concurrency, max_zoom):
     os.system(zoom_all_cmd)
 
 
-def upload_folder(bucketname, bucket_prefix, tiles, folder):  # pragma: no cover
+def upload_folder(bucketname, bucket_prefix, tiles, folder):
     # this is executed in a worker process
     result = {"tile_changed": 0, "tile_deleted": 0, "tile_new": 0, "tile_unchanged": 0}
 
@@ -237,7 +237,7 @@ def upload_folder(bucketname, bucket_prefix, tiles, folder):  # pragma: no cover
 
 def upload_files(
     pool, bucketname, tiles, max_zoom, raven_client, bucket_prefix="tiles/"
-):  # pragma: no cover
+):
     result = {"tile_changed": 0, "tile_deleted": 0, "tile_new": 0, "tile_unchanged": 0}
 
     zoom_levels = frozenset([str(i) for i in range(max_zoom + 1)])
@@ -293,7 +293,7 @@ def generate(
     concurrency=2,
     max_zoom=11,
     output=None,
-):  # pragma: no cover
+):
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)
 
@@ -382,7 +382,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
         stats_client = configure_stats(_client=_stats_client)
 
         bucketname = _bucketname
-        if not _bucketname:  # pragma: no cover
+        if not _bucketname:
             bucketname = settings("asset_bucket")
             if bucketname:
                 bucketname = bucketname.strip("/")
@@ -409,10 +409,10 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
                     concurrency=concurrency,
                     output=output,
                 )
-        except Exception:  # pragma: no cover
+        except Exception:
             raven_client.captureException()
             raise
-    else:  # pragma: no cover
+    else:
         parser.print_help()
 
 

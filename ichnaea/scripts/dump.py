@@ -84,17 +84,17 @@ def main(argv, _db=None, _dump_file=dump_file):
     )
 
     args = parser.parse_args(argv[1:])
-    if not args.filename:  # pragma: no cover
+    if not args.filename:
         parser.print_help()
         return 1
 
     filename = os.path.abspath(os.path.expanduser(args.filename))
-    if os.path.isfile(filename):  # pragma: no cover
+    if os.path.isfile(filename):
         print("File already exists.")
         return 1
 
     datatype = args.datatype
-    if datatype not in ("blue", "cell", "wifi"):  # pragma: no cover
+    if datatype not in ("blue", "cell", "wifi"):
         print("Unknown data type.")
         return 1
 

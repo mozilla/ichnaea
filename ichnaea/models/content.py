@@ -84,7 +84,7 @@ class DataMapGridColumn(TypeDecorator):
         return encode_datamap_grid(lat, lon)
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return value
         return decode_datamap_grid(value)
 

@@ -113,7 +113,7 @@ def main(
     config.registry.skip_logging = frozenset(config.registry.skip_logging)
 
     # Should we try to initialize and establish the outbound connections?
-    if ping_connections:  # pragma: no cover
+    if ping_connections:
         registry.db.ping()
         registry.redis_client.ping()
 

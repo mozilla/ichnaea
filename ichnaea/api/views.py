@@ -32,7 +32,7 @@ class BaseAPIView(BaseView):
     def parse_apikey(self):
         try:
             api_key_text = self.request.GET.get("key", None)
-        except Exception:  # pragma: no cover
+        except Exception:
             api_key_text = None
         # Validate key and potentially return None
         return validated_key(api_key_text)
@@ -49,11 +49,11 @@ class BaseAPIView(BaseView):
         if not addr:
             # Use localhost as a marker
             addr = "127.0.0.1"
-        if isinstance(addr, bytes):  # pragma: no cover
+        if isinstance(addr, bytes):
             addr = addr.decode("ascii")
         try:
             ip = str(ip_address(addr))
-        except ValueError:  # pragma: no cover
+        except ValueError:
             ip = "127.0.0.1"
 
         now = util.utcnow()
@@ -74,7 +74,7 @@ class BaseAPIView(BaseView):
                 _, _, count, _ = pipe.execute()
                 if maxreq and count > maxreq:
                     should_limit = True
-        except RedisError:  # pragma: no cover
+        except RedisError:
             self.raven_client.captureException()
 
         return should_limit

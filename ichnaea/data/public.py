@@ -94,12 +94,12 @@ class CellExport(object):
         self.task = task
 
     def __call__(self, hourly=True, _bucket=None):
-        if _bucket is None:  # pragma: no cover
+        if _bucket is None:
             bucket = settings("asset_bucket")
         else:
             bucket = _bucket
 
-        if not bucket:  # pragma: no cover
+        if not bucket:
             return
 
         now = util.utcnow()

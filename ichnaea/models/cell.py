@@ -315,7 +315,7 @@ class CellAreaColumn(TypeDecorator):
         return CELLAREA_STRUCT.pack(int(radio), mcc, mnc, lac)
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return None
         radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
         return (Radio(radio), mcc, mnc, lac)
@@ -337,7 +337,7 @@ class CellIdColumn(TypeDecorator):
         return CELLID_STRUCT.pack(int(radio), mcc, mnc, lac, cid)
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return None
         radio, mcc, mnc, lac, cid = CELLID_STRUCT.unpack(value)
         return (Radio(radio), mcc, mnc, lac, cid)
@@ -598,7 +598,7 @@ class CellShard(StationMixin):
         otherwise returns None.
         """
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
+        if validated is None:
             return None
         shard = cls.shard_model(validated["radio"])
         return shard(**validated)

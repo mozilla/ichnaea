@@ -145,7 +145,7 @@ def aggregate_mac_position(networks, minimum_accuracy):
         func, initial, args=networks, full_output=True
     )
 
-    if ier not in (1, 2, 3, 4):  # pragma: no cover
+    if ier not in (1, 2, 3, 4):
         # No solution found, use initial estimate.
         lat, lon = initial
 
@@ -192,7 +192,7 @@ def aggregate_cluster_position(
 
 def query_macs(query, lookups, raven_client, db_model):
     macs = [lookup.mac for lookup in lookups]
-    if not macs:  # pragma: no cover
+    if not macs:
         return []
 
     # load all fields used in score calculation and those we

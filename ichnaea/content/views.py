@@ -111,11 +111,11 @@ def security_headers(event):
 def s3_list_downloads(raven_client):
     files = {"full": [], "diff1": [], "diff2": []}
 
-    if not settings("asset_bucket"):  # pragma: no cover
+    if not settings("asset_bucket"):
         return files
 
     asset_url = settings("asset_url")
-    if not asset_url.endswith("/"):  # pragma: no cover
+    if not asset_url.endswith("/"):
         asset_url = asset_url + "/"
 
     diff = []
@@ -133,7 +133,7 @@ def s3_list_downloads(raven_client):
                 diff.append(file)
             elif "full-" in name:
                 full.append(file)
-    except (Boto3Error, BotoCoreError):  # pragma: no cover
+    except (Boto3Error, BotoCoreError):
         raven_client.captureException()
         return files
 

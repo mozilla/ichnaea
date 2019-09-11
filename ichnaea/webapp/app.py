@@ -8,7 +8,7 @@ from ichnaea.webapp.config import main, shutdown_worker
 _APP = None
 
 
-def wsgi_app(environ, start_response):  # pragma: no cover
+def wsgi_app(environ, start_response):
     """
     Actual WSGI application endpoint, used on the command line via:
 
@@ -32,5 +32,5 @@ def wsgi_app(environ, start_response):  # pragma: no cover
     return _APP(environ, start_response)
 
 
-def worker_exit(server, worker):  # pragma: no cover
+def worker_exit(server, worker):
     shutdown_worker(_APP)

@@ -80,7 +80,7 @@ class IncomingQueue(object):
                 if queue.ready():
                     export_task.delay(config.name, queue_key)
 
-        if data_queue.ready():  # pragma: no cover
+        if data_queue.ready():
             self.task.apply_countdown()
 
 
@@ -114,7 +114,7 @@ class ReportExporter(object):
 
     def __call__(self):
         queue_items = self.queue.dequeue()
-        if not queue_items:  # pragma: no cover
+        if not queue_items:
             return
 
         success = False
@@ -222,7 +222,7 @@ class S3Exporter(ReportExporter):
             self.task.stats_client.incr(
                 "data.export.upload", tags=self.stats_tags + ["status:success"]
             )
-        except Exception:  # pragma: no cover
+        except Exception:
             self.task.stats_client.incr(
                 "data.export.upload", tags=self.stats_tags + ["status:failure"]
             )
@@ -304,7 +304,7 @@ class InternalTransform(object):
         if value:
             if key_map[1] is None:
                 report.update(value)
-            else:  # pragma: no cover
+            else:
                 report[key_map[1]] = value
         return value
 

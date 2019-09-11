@@ -25,7 +25,7 @@ def init_beat_process(signal, sender, **kw):
 
 
 @worker_process_init.connect
-def init_worker_process(signal, sender, **kw):  # pragma: no cover
+def init_worker_process(signal, sender, **kw):
     """
     Called automatically when `celery worker` is started. This is executed
     inside each forked worker process.
@@ -38,7 +38,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
 
 
 @worker_process_shutdown.connect
-def shutdown_worker_process(signal, sender, **kw):  # pragma: no cover
+def shutdown_worker_process(signal, sender, **kw):
     """
     Called automatically when `celery worker` is stopped. This is executed
     inside each forked worker process.

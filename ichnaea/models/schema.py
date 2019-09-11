@@ -16,7 +16,7 @@ class DateFromString(colander.Date):
             return cstruct
         return super(DateFromString, self).deserialize(
             schema, cstruct
-        )  # pragma: no cover
+        )
 
 
 class DateTimeFromString(colander.DateTime):
@@ -65,7 +65,7 @@ class ReportSourceNode(DefaultNode):
         if type(cstruct) is ReportSource:
             return True
 
-        raise colander.Invalid(node, "Invalid station source")  # pragma: no cover
+        raise colander.Invalid(node, "Invalid station source")
 
 
 class ReportSourceType(colander.Integer):
@@ -73,7 +73,7 @@ class ReportSourceType(colander.Integer):
     A ReportSourceType will return a ReportSource IntEnum object.
     """
 
-    def deserialize(self, node, cstruct):  # pragma: no cover
+    def deserialize(self, node, cstruct):
         if cstruct is colander.null:
             return None
         if isinstance(cstruct, ReportSource):

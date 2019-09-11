@@ -15,7 +15,7 @@ from ichnaea.exceptions import GZIPDecodeError
 
 
 @contextmanager
-def gzip_open(filename, mode, compresslevel=6):  # pragma: no cover
+def gzip_open(filename, mode, compresslevel=6):
     """Open a gzip file.
 
     :param mode: Either `r` or `w` for read or write access.

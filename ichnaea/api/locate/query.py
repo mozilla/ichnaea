@@ -17,7 +17,7 @@ from ichnaea.api.locate.schema import (
 
 try:
     from collections import OrderedDict
-except ImportError:  # pragma: no cover
+except ImportError:
     from ordereddict import OrderedDict
 
 METRIC_MAPPING = {0: "none", 1: "one", 2: "many"}
@@ -106,7 +106,7 @@ class Query(object):
         if not values:
             values = {}
         valid = FallbackLookup.create(**values)
-        if valid is None:  # pragma: no cover
+        if valid is None:
             valid = FallbackLookup.create()
         self._fallback = valid
 
@@ -137,7 +137,7 @@ class Query(object):
     def ip(self, value):
         if not value:
             value = None
-        elif isinstance(value, bytes):  # pragma: no cover
+        elif isinstance(value, bytes):
             value = value.decode("ascii", "ignore")
         try:
             valid = str(ip_address(value))

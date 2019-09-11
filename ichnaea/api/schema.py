@@ -83,7 +83,7 @@ class UnixTimeFromString(colander.String):
             try:
                 dt = iso8601.parse_date(value)
                 timestamp = int(calendar.timegm(dt.timetuple()) * 1000)
-            except (iso8601.ParseError, TypeError):  # pragma: no cover
+            except (iso8601.ParseError, TypeError):
                 pass
         if timestamp <= MIN_TIMESTAMP or timestamp >= MAX_TIMESTAMP:
             # Only allow dates between 2001 and 2286.
@@ -111,7 +111,7 @@ class RenamingMapping(colander.Mapping):
             subnode_value = result.get(subnode.name, subnode.missing)
             if (
                 subnode_value is colander.drop or subnode_value is colander.null
-            ):  # pragma: no cover
+            ):
                 continue
             else:
                 renamed_result[subnode_to_name] = subnode_value

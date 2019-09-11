@@ -27,11 +27,11 @@ def configure_redis(cache_url=None, _client=None):
     host = netloc[0]
     if len(netloc) > 1:
         port = int(netloc[1])
-    else:  # pragma: no cover
+    else:
         port = 6379
     if len(url.path) > 1:
         db = int(url.path[1:])
-    else:  # pragma: no cover
+    else:
         db = 0
     pool = redis.ConnectionPool(
         max_connections=20,

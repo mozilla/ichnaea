@@ -81,7 +81,7 @@ class BaseTask(Task):
         with self.stats_client.timed("task", tags=["task:" + self.shortname()]):
             try:
                 result = super(BaseTask, self).__call__(*args, **kw)
-            except Exception as exc:  # pragma: no cover
+            except Exception as exc:
                 self.raven_client.captureException()
                 if self._auto_retry and not settings("testing"):
                     raise self.retry(exc=exc)
@@ -135,12 +135,12 @@ class BaseTask(Task):
         return redis_pipeline(self.redis_client, execute=execute)
 
     @property
-    def geoip_db(self):  # pragma: no cover
+    def geoip_db(self):
         """Exposes a :class:`~ichnaea.geoip.GeoIPWrapper`."""
         return self.app.geoip_db
 
     @property
-    def raven_client(self):  # pragma: no cover
+    def raven_client(self):
         """Exposes a :class:`~raven.Client`."""
         return self.app.raven_client
 

@@ -49,11 +49,11 @@ def configure_logging():
     """Configure basic Python logging."""
     if settings("testing"):
         logging.basicConfig(format=LOGGING_FORMAT, datefmt=LOGGING_DATEFMT)
-    else:  # pragma: no cover
+    else:
         dictConfig(LOGGING_CONFIG)
 
 
-def configure_raven(transport=None, _client=None):  # pragma: no cover
+def configure_raven(transport=None, _client=None):
     """
     Configure and return a :class:`raven.Client` instance.
 
@@ -75,7 +75,7 @@ def configure_raven(transport=None, _client=None):  # pragma: no cover
     return client
 
 
-def configure_stats(_client=None):  # pragma: no cover
+def configure_stats(_client=None):
     """
     Configure and return a :class:`~ichnaea.log.StatsClient` instance.
 
@@ -99,10 +99,10 @@ def log_tween_factory(handler, registry):
             # shortcut handling for static assets
             try:
                 return handler(request)
-            except HTTPException:  # pragma: no cover
+            except HTTPException:
                 # don't capture exceptions for normal responses
                 raise
-            except Exception:  # pragma: no cover
+            except Exception:
                 registry.raven_client.captureException()
                 raise
 
@@ -138,7 +138,7 @@ def log_tween_factory(handler, registry):
             timer_send()
             if isinstance(exc, HTTPException):
                 status = exc.status_code
-            else:  # pragma: no cover
+            else:
                 status = 500
             counter_send(status)
             registry.raven_client.captureException()
@@ -195,7 +195,7 @@ class StatsClient(DogStatsd):
     """A statsd client."""
 
     def close(self):
-        if self.socket:  # pragma: no cover
+        if self.socket:
             self.socket.close()
             self.socket = None
 
@@ -242,7 +242,7 @@ class DebugStatsClient(StatsClient):
                 data["counter"].append((name, value, tags))
             elif suffix == "h":
                 data["histogram"].append((name, value, tags))
-            elif suffix == "m":  # pragma: no cover
+            elif suffix == "m":
                 data["meter"].append((name, value, tags))
             elif suffix == "s":
                 data["set"].append((name, value, tags))
@@ -283,9 +283,9 @@ class DebugStatsClient(StatsClient):
                             value = None
                     elif len(pred) == 4:
                         (name, match, value, tags) = pred
-                    else:  # pragma: no cover
+                    else:
                         raise TypeError("wanted 2, 3 or 4 tuple, got %s" % type(pred))
-                else:  # pragma: no cover
+                else:
                     raise TypeError("wanted str or tuple, got %s" % type(pred))
                 msgs = self._find_messages(msg_type, name, value, tags)
                 if isinstance(match, int):

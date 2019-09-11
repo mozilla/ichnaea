@@ -166,7 +166,7 @@ class BaseLocateTest(object):
     test_ip = GEOIP_DATA["London"]["ip"]
 
     @property
-    def ip_response(self):  # pragma: no cover
+    def ip_response(self):
         return {}
 
     def _call(

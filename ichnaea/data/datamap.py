@@ -83,7 +83,7 @@ class DataMapUpdater(object):
         with self.task.db_session() as session:
             self._update_shards(session, grids)
 
-        if queue.ready():  # pragma: no cover
+        if queue.ready():
             self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
 
         return len(grids)

@@ -27,7 +27,7 @@ class CellAreaUpdater(object):
             for areaid in set(areaids):
                 self.update_area(session, areaid)
 
-        if self.queue.ready():  # pragma: no cover
+        if self.queue.ready():
             self.task.apply_countdown()
 
     def region(self, ctr_lat, ctr_lon, mcc, cells):

@@ -111,7 +111,7 @@ class ReportSchema(OptionalMappingSchema):
 
     def deserialize(self, data):
         data = super(ReportSchema, self).deserialize(data)
-        if data is colander.drop or data is colander.null:  # pragma: no cover
+        if data is colander.drop or data is colander.null:
             return colander.drop
 
         if not (

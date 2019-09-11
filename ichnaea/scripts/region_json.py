@@ -240,7 +240,7 @@ def guess_code(props):
     return code
 
 
-def simplify(features):  # pragma: no cover
+def simplify(features):
     regions = defaultdict(list)
     for feature in features:
         code = guess_code(feature["properties"])
@@ -272,7 +272,7 @@ def simplify(features):  # pragma: no cover
     return regions
 
 
-def to_geojson(regions):  # pragma: no cover
+def to_geojson(regions):
     features = []
     features_buffered = []
 
@@ -342,7 +342,7 @@ def to_geojson(regions):  # pragma: no cover
     return (_to_collection(features), _to_collection(features_buffered))
 
 
-def main(argv):  # pragma: no cover
+def main(argv):
     parser = argparse.ArgumentParser(
         prog=argv[0], description="Create region GeoJSON files."
     )

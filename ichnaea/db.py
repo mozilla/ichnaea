@@ -99,7 +99,7 @@ def db_worker_session(database, commit=True):
         yield session
         if commit:
             session.commit()
-    except Exception:  # pragma: no cover
+    except Exception:
         session.rollback()
         raise
     finally:
@@ -119,7 +119,7 @@ def db_tween_factory(handler, registry):
                 # always rollback/close the read-only session
                 try:
                     session.rollback()
-                except DatabaseError:  # pragma: no cover
+                except DatabaseError:
                     registry.raven_client.captureException()
                 finally:
                     session.close()
@@ -224,7 +224,7 @@ def check_connection(dbapi_conn, conn_record, conn_proxy):
         # dbapi_con.ping() ends up calling mysql_ping()
         # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
         dbapi_conn.ping(reconnect=True)
-    except exc.OperationalError as ex:  # pragma: no cover
+    except exc.OperationalError as ex:
         error_codes = [
             # Connection refused
             2003,
