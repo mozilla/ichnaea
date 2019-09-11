@@ -20,32 +20,32 @@ def gzip_open(filename, mode, compresslevel=6):  # pragma: no cover
 
     :param mode: Either `r` or `w` for read or write access.
     """
-    with open(filename, mode + 'b') as fd:
-        with gzip.open(fd, mode=mode + 't',
-                       compresslevel=compresslevel,
-                       encoding='utf-8') as gzip_file:
+    with open(filename, mode + "b") as fd:
+        with gzip.open(
+            fd, mode=mode + "t", compresslevel=compresslevel, encoding="utf-8"
+        ) as gzip_file:
             yield gzip_file
 
 
-def encode_gzip(data, compresslevel=6, encoding='utf-8'):
+def encode_gzip(data, compresslevel=6, encoding="utf-8"):
     """Encode the passed in data with gzip."""
     if encoding and isinstance(data, str):
         data = data.encode(encoding)
     out = BytesIO()
-    with gzip.GzipFile(None, 'wb',
-                       compresslevel=compresslevel, fileobj=out) as gzip_file:
+    with gzip.GzipFile(
+        None, "wb", compresslevel=compresslevel, fileobj=out
+    ) as gzip_file:
         gzip_file.write(data)
     return out.getvalue()
 
 
-def decode_gzip(data, encoding='utf-8'):
+def decode_gzip(data, encoding="utf-8"):
     """Decode the bytes data and return a Unicode string.
 
     :raises: :exc:`~ichnaea.exceptions.GZIPDecodeError`
     """
     try:
-        with gzip.GzipFile(None, mode='rb',
-                           fileobj=BytesIO(data)) as gzip_file:
+        with gzip.GzipFile(None, mode="rb", fileobj=BytesIO(data)) as gzip_file:
             out = gzip_file.read()
         if encoding:
             return out.decode(encoding)
@@ -70,28 +70,26 @@ def utcnow():
 
 def version_info():
     """Return version.json information."""
-    version_file = os.path.join(os.path.dirname(__file__), 'version.json')
+    version_file = os.path.join(os.path.dirname(__file__), "version.json")
     info = {}
     if os.path.exists(version_file):
-        with open(version_file, 'r') as fp:
+        with open(version_file, "r") as fp:
             try:
                 info = json.load(fp)
             except json.JsonDecodeException:
                 pass
 
-    info['build'] = info.get('build', None)
-    info['commit'] = info.get('commit', None)
-    info['tag'] = info.get('tag', None)
+    info["build"] = info.get("build", None)
+    info["commit"] = info.get("commit", None)
+    info["tag"] = info.get("tag", None)
     return info
 
 
 def contribute_info():
     """Return contribute.json information."""
-    contribute_file = os.path.join(
-        os.path.dirname(__file__), 'contribute.json'
-    )
+    contribute_file = os.path.join(os.path.dirname(__file__), "contribute.json")
     if os.path.exists(contribute_file):
-        with open(contribute_file, 'r') as fp:
+        with open(contribute_file, "r") as fp:
             try:
                 return json.load(fp)
             except json.JsonDecodeException:

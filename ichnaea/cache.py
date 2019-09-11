@@ -17,13 +17,13 @@ def configure_redis(cache_url=None, _client=None):
 
     :param _client: Test-only hook to provide a pre-configured client.
     """
-    cache_url = settings('redis_uri') if cache_url is None else cache_url
+    cache_url = settings("redis_uri") if cache_url is None else cache_url
 
     if _client is not None:
         return _client
 
     url = urlparse(cache_url)
-    netloc = url.netloc.split(':')
+    netloc = url.netloc.split(":")
     host = netloc[0]
     if len(netloc) > 1:
         port = int(netloc[1])
@@ -66,12 +66,12 @@ class RedisClient(redis.StrictRedis):
     # whenever the contents/structure of the cache changes. This allows
     # for easy `cache-busting'.
     cache_keys = {
-        'downloads': b'cache:downloads:3',
-        'stats': b'cache:stats:4',
-        'stats_regions': b'cache:stats_regions:4',
-        'stats_blue_json': b'cache:stats_blue_json:2',
-        'stats_cell_json': b'cache:stats_cell_json:3',
-        'stats_wifi_json': b'cache:stats_wifi_json:2',
+        "downloads": b"cache:downloads:3",
+        "stats": b"cache:stats:4",
+        "stats_regions": b"cache:stats_regions:4",
+        "stats_blue_json": b"cache:stats_blue_json:2",
+        "stats_cell_json": b"cache:stats_cell_json:3",
+        "stats_wifi_json": b"cache:stats_wifi_json:2",
     }
 
     def close(self):
@@ -82,7 +82,7 @@ class RedisClient(redis.StrictRedis):
         Ping the Redis server. On success return `True`, otherwise `False`.
         """
         try:
-            self.execute_command('PING')
+            self.execute_command("PING")
         except RedisError:
             return False
         return True

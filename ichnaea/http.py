@@ -23,9 +23,7 @@ def configure_http_session(size=20, max_retries=1, _session=None):
         return _session
 
     adapter = HTTPAdapter(
-        pool_connections=size,
-        pool_maxsize=size,
-        max_retries=max_retries,
+        pool_connections=size, pool_maxsize=size, max_retries=max_retries
     )
     session = Session()
     session.mount("http://", adapter)
