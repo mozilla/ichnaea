@@ -33,7 +33,7 @@ from ichnaea.models import (
 from ichnaea.models.content import encode_datamap_grid
 from ichnaea import util
 
-WHITESPACE = re.compile("\s", flags=re.UNICODE)
+WHITESPACE = re.compile(r"\s", flags=re.UNICODE)
 
 
 class IncomingQueue(object):

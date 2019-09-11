@@ -80,10 +80,10 @@ We use a `documentation-only multi-cast address
 as a test mac address and ignore data submissions with it.
 """
 
-INVALID_MAC_REGEX = re.compile("(?!(0{12}|f{12}|%s))" % WIFI_TEST_MAC)
-VALID_MAC_REGEX = re.compile("([0-9a-fA-F]{12})")
+INVALID_MAC_REGEX = re.compile(r"(?!(0{12}|f{12}|%s))" % WIFI_TEST_MAC)
+VALID_MAC_REGEX = re.compile(r"([0-9a-fA-F]{12})")
 
-VALID_APIKEY_REGEX = re.compile("^[-0-9a-z]+$", re.IGNORECASE | re.UNICODE)
+VALID_APIKEY_REGEX = re.compile(r"^[-0-9a-z]+$", re.IGNORECASE | re.UNICODE)
 
 MIN_WIFI_CHANNEL = 1  # Minimum accepted WiFi channel.
 MAX_WIFI_CHANNEL = 199  # Maximum accepted WiFi channel.
