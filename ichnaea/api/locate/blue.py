@@ -43,12 +43,17 @@ class BluePositionMixin(object):
         results = self.result_list()
 
         blues = query_macs(query, query.blue, self.raven_client, BlueShard)
-        for cluster in cluster_networks(blues, query.blue,
-                                        min_radius=BLUE_MIN_ACCURACY,
-                                        min_signal=MIN_BLUE_SIGNAL,
-                                        max_distance=MAX_BLUE_CLUSTER_METERS):
+        for cluster in cluster_networks(
+            blues,
+            query.blue,
+            min_radius=BLUE_MIN_ACCURACY,
+            min_signal=MIN_BLUE_SIGNAL,
+            max_distance=MAX_BLUE_CLUSTER_METERS,
+        ):
             result = aggregate_cluster_position(
-                cluster, self.result_type, 'blue',
+                cluster,
+                self.result_type,
+                "blue",
                 max_networks=MAX_BLUES_IN_CLUSTER,
                 min_accuracy=BLUE_MIN_ACCURACY,
                 max_accuracy=BLUE_MAX_ACCURACY,
@@ -82,10 +87,13 @@ class BlueRegionMixin(object):
         for code, score in regions.items():
             region = GEOCODER.region_for_code(code)
             if region:
-                results.add(self.result_type(
-                    region_code=code,
-                    region_name=region.name,
-                    accuracy=region.radius,
-                    score=score))
+                results.add(
+                    self.result_type(
+                        region_code=code,
+                        region_name=region.name,
+                        accuracy=region.radius,
+                        score=score,
+                    )
+                )
 
         return results

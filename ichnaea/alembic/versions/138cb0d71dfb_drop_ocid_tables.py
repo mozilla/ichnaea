@@ -11,22 +11,26 @@ from alembic import op
 import sqlalchemy as sa
 
 
-log = logging.getLogger('alembic.migration')
-revision = '138cb0d71dfb'
-down_revision = '5797389a3842'
+log = logging.getLogger("alembic.migration")
+revision = "138cb0d71dfb"
+down_revision = "5797389a3842"
 
 
 def upgrade():
-    for table in ('cell_area_ocid', 'cell_gsm_ocid',
-                  'cell_lte_ocid', 'cell_wcdma_ocid'):
-        log.info('Drop %s table.' % table)
-        stmt = 'DROP TABLE %s' % table
+    for table in (
+        "cell_area_ocid",
+        "cell_gsm_ocid",
+        "cell_lte_ocid",
+        "cell_wcdma_ocid",
+    ):
+        log.info("Drop %s table." % table)
+        stmt = "DROP TABLE %s" % table
         op.execute(sa.text(stmt))
 
 
 def downgrade():
-    log.info('Recreate cell_area_ocid table.')
-    stmt = '''\
+    log.info("Recreate cell_area_ocid table.")
+    stmt = """\
 CREATE TABLE `cell_area_ocid` (
   `lat` double DEFAULT NULL,
   `lon` double DEFAULT NULL,
@@ -49,11 +53,11 @@ CREATE TABLE `cell_area_ocid` (
   KEY `cell_area_ocid_created_idx` (`created`),
   KEY `cell_area_ocid_modified_idx` (`modified`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
-'''
+"""
     op.execute(sa.text(stmt))
 
-    log.info('Recreate cell_gsm_ocid table.')
-    stmt = '''\
+    log.info("Recreate cell_gsm_ocid table.")
+    stmt = """\
 CREATE TABLE `cell_gsm_ocid` (
   `max_lat` double DEFAULT NULL,
   `min_lat` double DEFAULT NULL,
@@ -86,11 +90,11 @@ CREATE TABLE `cell_gsm_ocid` (
   KEY `cell_gsm_ocid_modified_idx` (`modified`),
   KEY `cell_gsm_ocid_created_idx` (`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
-'''
+"""
     op.execute(sa.text(stmt))
 
-    log.info('Recreate cell_lte_ocid table.')
-    stmt = '''\
+    log.info("Recreate cell_lte_ocid table.")
+    stmt = """\
 CREATE TABLE `cell_lte_ocid` (
   `max_lat` double DEFAULT NULL,
   `min_lat` double DEFAULT NULL,
@@ -123,11 +127,11 @@ CREATE TABLE `cell_lte_ocid` (
   KEY `cell_lte_ocid_modified_idx` (`modified`),
   KEY `cell_lte_ocid_created_idx` (`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
-'''
+"""
     op.execute(sa.text(stmt))
 
-    log.info('Recreate cell_wcdma_ocid table.')
-    stmt = '''\
+    log.info("Recreate cell_wcdma_ocid table.")
+    stmt = """\
 CREATE TABLE `cell_wcdma_ocid` (
   `max_lat` double DEFAULT NULL,
   `min_lat` double DEFAULT NULL,
@@ -160,5 +164,5 @@ CREATE TABLE `cell_wcdma_ocid` (
   KEY `cell_wcdma_ocid_region_idx` (`region`),
   KEY `cell_wcdma_ocid_created_idx` (`created`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
-'''
+"""
     op.execute(sa.text(stmt))

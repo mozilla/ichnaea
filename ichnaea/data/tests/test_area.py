@@ -1,18 +1,8 @@
 from datetime import timedelta
 
-from ichnaea.data.tasks import (
-    update_cellarea,
-)
-from ichnaea.models import (
-    area_id,
-    encode_cellarea,
-    CellArea,
-    Radio,
-)
-from ichnaea.tests.factories import (
-    CellAreaFactory,
-    CellShardFactory,
-)
+from ichnaea.data.tasks import update_cellarea
+from ichnaea.models import area_id, encode_cellarea, CellArea, Radio
+from ichnaea.tests.factories import CellAreaFactory, CellShardFactory
 from ichnaea import util
 
 
@@ -24,7 +14,7 @@ class TestArea(object):
     task = update_cellarea
 
     def area_queue(self, celery):
-        return celery.data_queues['update_cellarea']
+        return celery.data_queues["update_cellarea"]
 
     def test_empty(self, celery, session):
         self.task.delay().get()
@@ -33,8 +23,7 @@ class TestArea(object):
         cell = self.cell_factory()
         session.flush()
 
-        areaid = encode_cellarea(
-            cell.radio, cell.mcc, cell.mnc, cell.lac)
+        areaid = encode_cellarea(cell.radio, cell.mcc, cell.mnc, cell.lac)
         self.area_queue(celery).enqueue([areaid])
         self.task.delay().get()
 
@@ -42,7 +31,7 @@ class TestArea(object):
         assert area.lat == cell.lat
         assert area.lon == cell.lon
         assert area.radius == 0
-        assert area.region == 'GB'
+        assert area.region == "GB"
         assert area.avg_cell_radius == cell.radius
         assert area.num_cells == 1
         assert area.last_seen == cell.last_seen
@@ -60,13 +49,28 @@ class TestArea(object):
         today = util.utcnow().date()
         yesterday = today - timedelta(days=1)
         area = self.area_factory(
-            num_cells=2, radius=500, avg_cell_radius=100, last_seen=yesterday)
+            num_cells=2, radius=500, avg_cell_radius=100, last_seen=yesterday
+        )
         cell = self.cell_factory(
-            lat=area.lat, lon=area.lon, radius=200, last_seen=today,
-            radio=area.radio, mcc=area.mcc, mnc=area.mnc, lac=area.lac)
+            lat=area.lat,
+            lon=area.lon,
+            radius=200,
+            last_seen=today,
+            radio=area.radio,
+            mcc=area.mcc,
+            mnc=area.mnc,
+            lac=area.lac,
+        )
         self.cell_factory(
-            lat=area.lat, lon=area.lon, radius=300, last_seen=yesterday,
-            radio=area.radio, mcc=area.mcc, mnc=area.mnc, lac=area.lac)
+            lat=area.lat,
+            lon=area.lon,
+            radius=300,
+            last_seen=yesterday,
+            radio=area.radio,
+            mcc=area.mcc,
+            mnc=area.mnc,
+            lac=area.lac,
+        )
         session.commit()
 
         areaid = encode_cellarea(*area.areaid)
@@ -77,20 +81,24 @@ class TestArea(object):
         assert area.lat == cell.lat
         assert area.lon == cell.lon
         assert area.radius == 0
-        assert area.region == 'GB'
+        assert area.region == "GB"
         assert area.avg_cell_radius == 250
         assert area.num_cells == 2
         assert area.last_seen == today
 
     def test_update_incomplete_cell(self, celery, session):
         area = self.area_factory(radius=500)
-        area_key = {'radio': area.radio, 'mcc': area.mcc,
-                    'mnc': area.mnc, 'lac': area.lac}
-        cell = self.cell_factory(lat=area.lat + 0.0002,
-                                 lon=area.lon, **area_key)
+        area_key = {
+            "radio": area.radio,
+            "mcc": area.mcc,
+            "mnc": area.mnc,
+            "lac": area.lac,
+        }
+        cell = self.cell_factory(lat=area.lat + 0.0002, lon=area.lon, **area_key)
         self.cell_factory(lat=None, lon=None, **area_key)
-        self.cell_factory(lat=area.lat, lon=area.lon,
-                          max_lat=None, min_lon=None, **area_key)
+        self.cell_factory(
+            lat=area.lat, lon=area.lon, max_lat=None, min_lon=None, **area_key
+        )
         session.commit()
 
         areaid = encode_cellarea(*area.areaid)
@@ -104,48 +112,104 @@ class TestArea(object):
 
     def test_region(self, celery, session):
         cell = self.cell_factory(
-            radio=Radio.gsm, mcc=425, mnc=1, lac=1, cid=1,
-            lat=32.2, lon=35.0, radius=10000, region='XW')
+            radio=Radio.gsm,
+            mcc=425,
+            mnc=1,
+            lac=1,
+            cid=1,
+            lat=32.2,
+            lon=35.0,
+            radius=10000,
+            region="XW",
+        )
         self.cell_factory(
-            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
-            lat=32.2, lon=34.9, radius=10000, region='IL')
+            radio=cell.radio,
+            mcc=cell.mcc,
+            mnc=cell.mnc,
+            lac=cell.lac,
+            cid=2,
+            lat=32.2,
+            lon=34.9,
+            radius=10000,
+            region="IL",
+        )
         session.flush()
 
         self.area_queue(celery).enqueue([area_id(cell)])
         self.task.delay().get()
 
         area = session.query(self.area_model).one()
-        assert area.region == 'IL'
+        assert area.region == "IL"
 
     def test_region_outside(self, celery, session):
         cell = self.cell_factory(
-            radio=Radio.gsm, mcc=310, mnc=1, lac=1, cid=1,
-            lat=18.33, lon=-64.9, radius=10000, region='PR')
+            radio=Radio.gsm,
+            mcc=310,
+            mnc=1,
+            lac=1,
+            cid=1,
+            lat=18.33,
+            lon=-64.9,
+            radius=10000,
+            region="PR",
+        )
         self.cell_factory(
-            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
-            lat=18.34, lon=-64.9, radius=10000, region='PR')
+            radio=cell.radio,
+            mcc=cell.mcc,
+            mnc=cell.mnc,
+            lac=cell.lac,
+            cid=2,
+            lat=18.34,
+            lon=-64.9,
+            radius=10000,
+            region="PR",
+        )
         self.cell_factory(
-            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=3,
-            lat=35.8, lon=-83.1, radius=10000, region='US')
+            radio=cell.radio,
+            mcc=cell.mcc,
+            mnc=cell.mnc,
+            lac=cell.lac,
+            cid=3,
+            lat=35.8,
+            lon=-83.1,
+            radius=10000,
+            region="US",
+        )
         session.flush()
 
         self.area_queue(celery).enqueue([area_id(cell)])
         self.task.delay().get()
 
         area = session.query(self.area_model).one()
-        assert area.region == 'PR'
+        assert area.region == "PR"
 
     def test_region_outside_tie(self, celery, session):
         cell = self.cell_factory(
-            radio=Radio.gsm, mcc=310, mnc=1, lac=1, cid=1,
-            lat=18.33, lon=-64.9, radius=10000, region='PR')
+            radio=Radio.gsm,
+            mcc=310,
+            mnc=1,
+            lac=1,
+            cid=1,
+            lat=18.33,
+            lon=-64.9,
+            radius=10000,
+            region="PR",
+        )
         self.cell_factory(
-            radio=cell.radio, mcc=cell.mcc, mnc=cell.mnc, lac=cell.lac, cid=2,
-            lat=18.34, lon=-64.9, radius=10000, region='PR')
+            radio=cell.radio,
+            mcc=cell.mcc,
+            mnc=cell.mnc,
+            lac=cell.lac,
+            cid=2,
+            lat=18.34,
+            lon=-64.9,
+            radius=10000,
+            region="PR",
+        )
         session.flush()
 
         self.area_queue(celery).enqueue([area_id(cell)])
         self.task.delay().get()
 
         area = session.query(self.area_model).one()
-        assert area.region == 'PR'
+        assert area.region == "PR"

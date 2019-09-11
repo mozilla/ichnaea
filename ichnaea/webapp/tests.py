@@ -7,9 +7,16 @@ from ichnaea.geoip import GeoIPNull
 from ichnaea.webapp.config import main
 
 
-def _make_app(_db=None, _http_session=None, _geoip_db=None,
-              _raven_client=None, _redis_client=None, _stats_client=None,
-              _position_searcher=None, _region_searcher=None):
+def _make_app(
+    _db=None,
+    _http_session=None,
+    _geoip_db=None,
+    _raven_client=None,
+    _redis_client=None,
+    _stats_client=None,
+    _position_searcher=None,
+    _region_searcher=None,
+):
     wsgiapp = main(
         _db=_db,
         _geoip_db=_geoip_db,
@@ -24,10 +31,10 @@ def _make_app(_db=None, _http_session=None, _geoip_db=None,
 
 
 class TestApp(object):
-
     def test_compiles(self):
         from ichnaea.webapp import app
-        assert hasattr(app, 'wsgi_app')
+
+        assert hasattr(app, "wsgi_app")
 
     def test_db_hooks(self, app, db):
         # Check that our _db hooks are passed through.
@@ -35,45 +42,42 @@ class TestApp(object):
 
 
 class TestContribute(object):
-
     def test_ok(self, app):
-        response = app.get('/contribute.json', status=200)
-        assert response.content_type == 'application/json'
+        response = app.get("/contribute.json", status=200)
+        assert response.content_type == "application/json"
         data = response.json
-        assert 'repository' in data.keys()
-        assert 'license' in data['repository']
-        assert data['repository']['license'] == 'Apache 2.0'
+        assert "repository" in data.keys()
+        assert "license" in data["repository"]
+        assert data["repository"]["license"] == "Apache 2.0"
 
 
 class TestHeartbeat(object):
-
     def test_ok(self, app):
-        response = app.get('/__heartbeat__', status=200)
-        assert response.content_type == 'application/json'
+        response = app.get("/__heartbeat__", status=200)
+        assert response.content_type == "application/json"
         data = response.json
-        timed_services = set(['database', 'geoip', 'redis'])
+        timed_services = set(["database", "geoip", "redis"])
         assert set(data.keys()) == timed_services
 
         for name in timed_services:
-            assert data[name]['up']
-            assert isinstance(data[name]['time'], int)
-            assert data[name]['time'] >= 0
+            assert data[name]["up"]
+            assert isinstance(data[name]["time"], int)
+            assert data[name]["time"] >= 0
 
-        assert 1 < data['geoip']['age_in_days'] < 1000
+        assert 1 < data["geoip"]["age_in_days"] < 1000
 
 
 class TestHeartbeatErrors(object):
-
-    @pytest.fixture(scope='function')
+    @pytest.fixture(scope="function")
     def broken_app(self, http_session, raven, stats):
         # Create database connections to the discard port.
-        db = configure_db('ddl', uri='mysql+pymysql://none:none@127.0.0.1:9/none')
+        db = configure_db("ddl", uri="mysql+pymysql://none:none@127.0.0.1:9/none")
 
         # Create a broken GeoIP database.
         geoip_db = GeoIPNull()
 
         # Create a broken Redis client.
-        redis_client = configure_redis('redis://127.0.0.1:9/15')
+        redis_client = configure_redis("redis://127.0.0.1:9/15")
 
         app = _make_app(
             _db=db,
@@ -90,85 +94,84 @@ class TestHeartbeatErrors(object):
         redis_client.close()
 
     def test_database(self, broken_app):
-        res = broken_app.get('/__heartbeat__', status=503)
-        assert res.content_type == 'application/json'
-        assert res.json['database'] == {'up': False, 'time': 0}
-        assert res.headers['Access-Control-Allow-Origin'] == '*'
-        assert res.headers['Access-Control-Max-Age'] == '2592000'
+        res = broken_app.get("/__heartbeat__", status=503)
+        assert res.content_type == "application/json"
+        assert res.json["database"] == {"up": False, "time": 0}
+        assert res.headers["Access-Control-Allow-Origin"] == "*"
+        assert res.headers["Access-Control-Max-Age"] == "2592000"
 
     def test_geoip(self, broken_app):
-        res = broken_app.get('/__heartbeat__', status=503)
-        assert res.content_type == 'application/json'
-        assert res.json['geoip'] == \
-            {'up': False, 'time': 0, 'age_in_days': -1}
+        res = broken_app.get("/__heartbeat__", status=503)
+        assert res.content_type == "application/json"
+        assert res.json["geoip"] == {"up": False, "time": 0, "age_in_days": -1}
 
     def test_redis(self, broken_app):
-        res = broken_app.get('/__heartbeat__', status=503)
-        assert res.content_type == 'application/json'
-        assert res.json['redis'] == {'up': False, 'time': 0}
+        res = broken_app.get("/__heartbeat__", status=503)
+        assert res.content_type == "application/json"
+        assert res.json["redis"] == {"up": False, "time": 0}
 
     def test_lbheartbeat(self, broken_app):
-        res = broken_app.get('/__lbheartbeat__', status=200)
-        assert res.content_type == 'application/json'
-        assert res.json['status'] == 'OK'
+        res = broken_app.get("/__lbheartbeat__", status=200)
+        assert res.content_type == "application/json"
+        assert res.json["status"] == "OK"
 
 
 class TestLBHeartbeat(object):
-
     def test_get(self, app):
-        res = app.get('/__lbheartbeat__', status=200)
-        assert res.content_type == 'application/json'
-        assert res.json['status'] == 'OK'
-        assert res.headers['Access-Control-Allow-Origin'] == '*'
-        assert res.headers['Access-Control-Max-Age'] == '2592000'
+        res = app.get("/__lbheartbeat__", status=200)
+        assert res.content_type == "application/json"
+        assert res.json["status"] == "OK"
+        assert res.headers["Access-Control-Allow-Origin"] == "*"
+        assert res.headers["Access-Control-Max-Age"] == "2592000"
 
     def test_head(self, app):
-        res = app.head('/__lbheartbeat__', status=200)
-        assert res.content_type == 'application/json'
-        assert res.body == b''
+        res = app.head("/__lbheartbeat__", status=200)
+        assert res.content_type == "application/json"
+        assert res.body == b""
 
     def test_post(self, app):
-        res = app.post('/__lbheartbeat__', status=200)
-        assert res.content_type == 'application/json'
-        assert res.json['status'] == 'OK'
+        res = app.post("/__lbheartbeat__", status=200)
+        assert res.content_type == "application/json"
+        assert res.json["status"] == "OK"
 
     def test_options(self, app):
         res = app.options(
-            '/__lbheartbeat__', status=200, headers={
-                'Access-Control-Request-Method': 'POST',
-                'Origin': 'localhost.local',
-            })
-        assert res.headers['Access-Control-Allow-Origin'] == '*'
-        assert res.headers['Access-Control-Max-Age'] == '2592000'
+            "/__lbheartbeat__",
+            status=200,
+            headers={
+                "Access-Control-Request-Method": "POST",
+                "Origin": "localhost.local",
+            },
+        )
+        assert res.headers["Access-Control-Allow-Origin"] == "*"
+        assert res.headers["Access-Control-Max-Age"] == "2592000"
         assert res.content_length is None
         assert res.content_type is None
 
     def test_unsupported_methods(self, app):
-        app.delete('/__lbheartbeat__', status=405)
-        app.patch('/__lbheartbeat__', status=405)
-        app.put('/__lbheartbeat__', status=405)
+        app.delete("/__lbheartbeat__", status=405)
+        app.patch("/__lbheartbeat__", status=405)
+        app.put("/__lbheartbeat__", status=405)
 
 
 class TestSettings(object):
-
     def test_compiles(self):
         from ichnaea.webapp import gunicorn_settings
+
         assert type(gunicorn_settings.workers) == int
 
 
 class TestVersion(object):
-
     def test_ok(self, app):
-        response = app.get('/__version__', status=200)
-        assert response.content_type == 'application/json'
+        response = app.get("/__version__", status=200)
+        assert response.content_type == "application/json"
         data = response.json
-        assert (set(data.keys()) ==
-                set(['build', 'commit', 'source', 'tag', 'version']))
-        assert data['source'] == 'https://github.com/mozilla/ichnaea'
+        assert set(data.keys()) == set(["build", "commit", "source", "tag", "version"])
+        assert data["source"] == "https://github.com/mozilla/ichnaea"
 
 
 class TestWorker(object):
-
     def test_compiles(self):
         from ichnaea.webapp import worker
-        assert hasattr(worker, 'LocationGeventWorker')
+
+        assert hasattr(worker, "LocationGeventWorker")

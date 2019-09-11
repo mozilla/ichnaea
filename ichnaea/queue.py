@@ -20,8 +20,7 @@ class DataQueue(object):
     queue_ttl = 86400  # Maximum TTL value for the Redis list.
     queue_max_age = 3600  # Maximum age that data can sit in the queue.
 
-    def __init__(self, key, redis_client,
-                 batch=0, compress=False, json=True):
+    def __init__(self, key, redis_client, batch=0, compress=False, json=True):
         self.key = key
         self.redis_client = redis_client
         self.batch = batch
@@ -46,18 +45,16 @@ class DataQueue(object):
             result = pipe.execute()[0]
 
             if self.compress:
-                result = [util.decode_gzip(item, encoding=None)
-                          for item in result]
+                result = [util.decode_gzip(item, encoding=None) for item in result]
             if self.json:
                 # simplejson.loads returns Unicode strings
-                result = [simplejson.loads(item, encoding='utf-8')
-                          for item in result]
+                result = [simplejson.loads(item, encoding="utf-8") for item in result]
 
         return result
 
     def _push(self, pipe, items, batch):
         for i in range(0, len(items), batch):
-            pipe.rpush(self.key, *items[i:i + batch])
+            pipe.rpush(self.key, *items[i : i + batch])
 
         # expire key after it was created by rpush
         pipe.expire(self.key, self.queue_ttl)
@@ -77,8 +74,10 @@ class DataQueue(object):
 
         if self.json:
             # simplejson.dumps returns Unicode strings
-            items = [simplejson.dumps(item, encoding='utf-8').encode('utf-8')
-                     for item in items]
+            items = [
+                simplejson.dumps(item, encoding="utf-8").encode("utf-8")
+                for item in items
+            ]
 
         if self.compress:
             items = [util.encode_gzip(item, encoding=None) for item in items]

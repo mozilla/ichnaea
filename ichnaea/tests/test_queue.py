@@ -4,32 +4,30 @@ from ichnaea.queue import DataQueue
 
 
 class TestDataQueue(object):
-
     def _make_queue(self, redis, batch=0, compress=False, json=True):
-        return DataQueue(uuid4().hex, redis,
-                         batch=batch, compress=compress, json=json)
+        return DataQueue(uuid4().hex, redis, batch=batch, compress=compress, json=json)
 
     def test_objects(self, redis):
         queue = self._make_queue(redis)
-        items = [{'a': 1}, 'b', 2]
+        items = [{"a": 1}, "b", 2]
         queue.enqueue(items)
         assert queue.dequeue() == items
 
     def test_binary(self, redis):
         queue = self._make_queue(redis, json=False)
-        items = [b'\x00ab', b'123']
+        items = [b"\x00ab", b"123"]
         queue.enqueue(items)
         assert queue.dequeue() == items
 
     def test_compress(self, redis):
         queue = self._make_queue(redis, compress=True)
-        items = [{'a': 1}, 'b', 2]
+        items = [{"a": 1}, "b", 2]
         queue.enqueue(items)
         assert queue.dequeue() == items
 
     def test_compress_binary(self, redis):
         queue = self._make_queue(redis, compress=True, json=False)
-        items = [b'\x00ab', b'123']
+        items = [b"\x00ab", b"123"]
         queue.enqueue(items)
         assert queue.dequeue() == items
 
@@ -53,14 +51,14 @@ class TestDataQueue(object):
     def test_ready(self, redis):
         queue = self._make_queue(redis, batch=4)
         assert not queue.ready()
-        queue.enqueue(['a', 'b', 'c'])
+        queue.enqueue(["a", "b", "c"])
         assert not queue.ready()
-        queue.enqueue(['d'])
+        queue.enqueue(["d"])
         assert queue.ready()
 
     def test_ready_ttl(self, redis):
         queue = self._make_queue(redis, batch=4)
-        queue.enqueue(['a', 'b', 'c'])
+        queue.enqueue(["a", "b", "c"])
         assert not queue.ready()
         redis.expire(queue.key, 70000)
         assert queue.ready()
@@ -68,7 +66,7 @@ class TestDataQueue(object):
     def test_size(self, redis):
         queue = self._make_queue(redis)
         assert queue.size() == 0
-        queue.enqueue(['a', 'b'])
+        queue.enqueue(["a", "b"])
         assert queue.size() == 2
         queue.dequeue()
         assert queue.size() == 0

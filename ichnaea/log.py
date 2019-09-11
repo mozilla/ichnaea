@@ -4,11 +4,7 @@ import logging
 from logging.config import dictConfig
 import time
 
-from pyramid.httpexceptions import (
-    HTTPException,
-    HTTPClientError,
-    HTTPRedirection,
-)
+from pyramid.httpexceptions import HTTPException, HTTPClientError, HTTPRedirection
 from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
 from raven.transport.http import HTTPTransport
@@ -19,65 +15,45 @@ from ichnaea.conf import settings
 from ichnaea.exceptions import BaseClientError
 from ichnaea.util import version_info
 
-LOGGER = logging.getLogger('ichnaea')
+LOGGER = logging.getLogger("ichnaea")
 
-LOGGING_FORMAT = '%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s'
-LOGGING_DATEFMT = '%Y-%m-%d %H:%M:%S'
+LOGGING_FORMAT = "%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s"
+LOGGING_DATEFMT = "%Y-%m-%d %H:%M:%S"
 LOGGING_CONFIG = dict(
     version=1,
-    formatters={
-        'generic': {
-            'format': LOGGING_FORMAT,
-            'datefmt': LOGGING_DATEFMT,
-        },
-    },
+    formatters={"generic": {"format": LOGGING_FORMAT, "datefmt": LOGGING_DATEFMT}},
     handlers={
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'generic',
-            'level': logging.DEBUG,
-            'stream': 'ext://sys.stderr',
-        },
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "generic",
+            "level": logging.DEBUG,
+            "stream": "ext://sys.stderr",
+        }
     },
-    root={
-        'handlers': ['console'],
-        'level': logging.WARN,
-    },
+    root={"handlers": ["console"], "level": logging.WARN},
     loggers=dict(
-        alembic={
-            'level': logging.INFO,
-            'qualname': 'alembic',
-        },
-        ichnaea={
-            'level': logging.INFO,
-            'qualname': 'ichnaea',
-        },
-        sqlalchemny={
-            'level': logging.WARN,
-            'qualname': 'sqlalchemy.engine',
-        },
+        alembic={"level": logging.INFO, "qualname": "alembic"},
+        ichnaea={"level": logging.INFO, "qualname": "ichnaea"},
+        sqlalchemny={"level": logging.WARN, "qualname": "sqlalchemy.engine"},
     ),
 )
 
 RAVEN_TRANSPORTS = {
-    'gevent': GeventedHTTPTransport,
-    'sync': HTTPTransport,
-    'threaded': ThreadedHTTPTransport,
+    "gevent": GeventedHTTPTransport,
+    "sync": HTTPTransport,
+    "threaded": ThreadedHTTPTransport,
 }
 
 
 def configure_logging():
     """Configure basic Python logging."""
-    if settings('testing'):
-        logging.basicConfig(
-            format=LOGGING_FORMAT,
-            datefmt=LOGGING_DATEFMT,
-        )
-    else:  # pragma: no cover
+    if settings("testing"):
+        logging.basicConfig(format=LOGGING_FORMAT, datefmt=LOGGING_DATEFMT)
+    else:
         dictConfig(LOGGING_CONFIG)
 
 
-def configure_raven(transport=None, _client=None):  # pragma: no cover
+def configure_raven(transport=None, _client=None):
     """
     Configure and return a :class:`raven.Client` instance.
 
@@ -90,16 +66,16 @@ def configure_raven(transport=None, _client=None):  # pragma: no cover
 
     transport = RAVEN_TRANSPORTS.get(transport)
     if not transport:
-        raise ValueError('No valid raven transport was configured.')
+        raise ValueError("No valid raven transport was configured.")
 
-    dsn = settings('sentry_dsn')
+    dsn = settings("sentry_dsn")
     klass = DebugRavenClient if not dsn else RavenClient
-    release = version_info()['tag']
+    release = version_info()["tag"]
     client = klass(dsn=dsn, transport=transport, release=release)
     return client
 
 
-def configure_stats(_client=None):  # pragma: no cover
+def configure_stats(_client=None):
     """
     Configure and return a :class:`~ichnaea.log.StatsClient` instance.
 
@@ -108,11 +84,10 @@ def configure_stats(_client=None):  # pragma: no cover
     if _client is not None:
         return _client
 
-    statsd_host = settings('statsd_host')
+    statsd_host = settings("statsd_host")
     klass = DebugStatsClient if not statsd_host else StatsClient
-    namespace = None if settings('testing') else 'location'
-    client = klass(host=statsd_host, port=8125,
-                   namespace=namespace, use_ms=True)
+    namespace = None if settings("testing") else "location"
+    client = klass(host=statsd_host, port=8125, namespace=namespace, use_ms=True)
     return client
 
 
@@ -120,15 +95,14 @@ def log_tween_factory(handler, registry):
     """A logging tween, doing automatic statsd and raven collection."""
 
     def log_tween(request):
-        if (request.path in registry.skip_logging or
-                request.path.startswith('/static')):
+        if request.path in registry.skip_logging or request.path.startswith("/static"):
             # shortcut handling for static assets
             try:
                 return handler(request)
-            except HTTPException:  # pragma: no cover
+            except HTTPException:
                 # don't capture exceptions for normal responses
                 raise
-            except Exception:  # pragma: no cover
+            except Exception:
                 registry.raven_client.captureException()
                 raise
 
@@ -136,18 +110,16 @@ def log_tween_factory(handler, registry):
         start = time.time()
         statsd_tags = [
             # Convert a URI to a statsd acceptable metric name
-            'path:%s' % request.path.replace(
-                '/', '.').lstrip('.').replace('@', '-'),
-            'method:%s' % request.method.lower(),
+            "path:%s" % request.path.replace("/", ".").lstrip(".").replace("@", "-"),
+            "method:%s" % request.method.lower(),
         ]
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            stats_client.timing('request', duration, tags=statsd_tags)
+            stats_client.timing("request", duration, tags=statsd_tags)
 
         def counter_send(status_code):
-            stats_client.incr('request',
-                              tags=statsd_tags + ['status:%s' % status_code])
+            stats_client.incr("request", tags=statsd_tags + ["status:%s" % status_code])
 
         try:
             response = handler(request)
@@ -166,7 +138,7 @@ def log_tween_factory(handler, registry):
             timer_send()
             if isinstance(exc, HTTPException):
                 status = exc.status_code
-            else:  # pragma: no cover
+            else:
                 status = 500
             counter_send(status)
             registry.raven_client.captureException()
@@ -204,15 +176,14 @@ class DebugRavenClient(RavenClient):
         The names are matched via startswith against the captured exception
         messages.
         """
-        messages = [msg['message'] for msg in self.msgs]
+        messages = [msg["message"] for msg in self.msgs]
         matched_msgs = []
         for exp in expected:
             count = 1
             name = exp
             if isinstance(exp, tuple):
                 name, count = exp
-            matches = [msg for msg in self.msgs
-                       if msg['message'].startswith(name)]
+            matches = [msg for msg in self.msgs if msg["message"].startswith(name)]
             matched_msgs.extend(matches)
             assert len(matches) == count, messages
 
@@ -224,7 +195,7 @@ class StatsClient(DogStatsd):
     """A statsd client."""
 
     def close(self):
-        if self.socket:  # pragma: no cover
+        if self.socket:
             self.socket.close()
             self.socket = None
 
@@ -247,34 +218,34 @@ class DebugStatsClient(StatsClient):
 
     def _find_messages(self, msg_type, msg_name, msg_value=None, msg_tags=()):
         data = {
-            'counter': [],
-            'timer': [],
-            'gauge': [],
-            'histogram': [],
-            'meter': [],
-            'set': [],
+            "counter": [],
+            "timer": [],
+            "gauge": [],
+            "histogram": [],
+            "meter": [],
+            "set": [],
         }
         for msg in self.msgs:
             tags = ()
-            if '|#' in msg:
-                parts = msg.split('|#')
-                tags = parts[-1].split(',')
+            if "|#" in msg:
+                parts = msg.split("|#")
+                tags = parts[-1].split(",")
                 msg = parts[0]
-            suffix = msg.split('|')[-1]
-            name, value = msg.split('|')[0].split(':')
+            suffix = msg.split("|")[-1]
+            name, value = msg.split("|")[0].split(":")
             value = int(value)
-            if suffix == 'g':
-                data['gauge'].append((name, value, tags))
-            elif suffix == 'ms':
-                data['timer'].append((name, value, tags))
-            elif suffix.startswith('c'):
-                data['counter'].append((name, value, tags))
-            elif suffix == 'h':
-                data['histogram'].append((name, value, tags))
-            elif suffix == 'm':  # pragma: no cover
-                data['meter'].append((name, value, tags))
-            elif suffix == 's':
-                data['set'].append((name, value, tags))
+            if suffix == "g":
+                data["gauge"].append((name, value, tags))
+            elif suffix == "ms":
+                data["timer"].append((name, value, tags))
+            elif suffix.startswith("c"):
+                data["counter"].append((name, value, tags))
+            elif suffix == "h":
+                data["histogram"].append((name, value, tags))
+            elif suffix == "m":
+                data["meter"].append((name, value, tags))
+            elif suffix == "s":
+                data["set"].append((name, value, tags))
 
         result = []
         for msg in data.get(msg_type):
@@ -312,12 +283,10 @@ class DebugStatsClient(StatsClient):
                             value = None
                     elif len(pred) == 4:
                         (name, match, value, tags) = pred
-                    else:  # pragma: no cover
-                        raise TypeError('wanted 2, 3 or 4 tuple, got %s'
-                                        % type(pred))
-                else:  # pragma: no cover
-                    raise TypeError('wanted str or tuple, got %s'
-                                    % type(pred))
+                    else:
+                        raise TypeError("wanted 2, 3 or 4 tuple, got %s" % type(pred))
+                else:
+                    raise TypeError("wanted str or tuple, got %s" % type(pred))
                 msgs = self._find_messages(msg_type, name, value, tags)
                 if isinstance(match, int):
                     assert match == len(msgs)

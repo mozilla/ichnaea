@@ -13,13 +13,7 @@ from ichnaea.api.locate.constants import (
     CELLAREA_MIN_ACCURACY,
     WIFI_MIN_ACCURACY,
 )
-from ichnaea.conftest import (
-    GB_LAT,
-    GB_LON,
-    GB_MCC,
-    GB_MNC,
-    SESSION,
-)
+from ichnaea.conftest import GB_LAT, GB_LON, GB_MCC, GB_MNC, SESSION
 from ichnaea.models import (
     ApiKey,
     BlueObservation,
@@ -38,53 +32,48 @@ from ichnaea import util
 
 
 class BaseMemoryFactory(Factory):
-
     class Meta:
         strategy = factory.CREATE_STRATEGY
 
     @classmethod
     def _create(cls, constructor, *args, **kwargs):
         """Create an instance of the model."""
-        if ismethod(constructor) and '_raise_invalid' not in kwargs:
-            kwargs['_raise_invalid'] = True
+        if ismethod(constructor) and "_raise_invalid" not in kwargs:
+            kwargs["_raise_invalid"] = True
         return constructor(*args, **kwargs)
 
 
 class BaseSQLFactory(SQLAlchemyModelFactory):
-
     class Meta:
         strategy = factory.CREATE_STRATEGY
 
     @classmethod
     def _create(cls, constructor, session=None, *args, **kwargs):
         """Create an instance of the model, and save it to the database."""
-        if ismethod(constructor) and '_raise_invalid' not in kwargs:
-            kwargs['_raise_invalid'] = True
+        if ismethod(constructor) and "_raise_invalid" not in kwargs:
+            kwargs["_raise_invalid"] = True
         obj = constructor(*args, **kwargs)
         if session is None:
-            session = SESSION['default']
+            session = SESSION["default"]
         session.add(obj)
         return obj
 
 
 class FuzzyUUID(fuzzy.BaseFuzzyAttribute):
-
     def fuzz(self):
         return uuid.uuid4().hex
 
 
 class FuzzyMacKey(fuzzy.BaseFuzzyAttribute):
-
     def fuzz(self):
         num = factory.random.randgen.randint(100000, 999999)
-        return 'a82066{num:06d}'.format(num=num)
+        return "a82066{num:06d}".format(num=num)
 
 
 class FuzzyMac(fuzzy.BaseFuzzyAttribute):
-
     def fuzz(self):
         num = factory.random.randgen.randint(10000000, 99999999)
-        return 'a820{num:08d}'.format(num=num)
+        return "a820{num:08d}".format(num=num)
 
 
 class ApiKeyFactory(BaseSQLFactory):
@@ -99,9 +88,9 @@ class ApiKeyFactory(BaseSQLFactory):
     allow_locate = True
     allow_region = True
 
-    fallback_name = 'fall'
+    fallback_name = "fall"
     fallback_schema = None
-    fallback_url = 'http://127.0.0.1:9/?api'
+    fallback_url = "http://127.0.0.1:9/?api"
     fallback_ratelimit = 10
     fallback_ratelimit_interval = 60
     fallback_cache_expire = 60
@@ -122,9 +111,9 @@ class KeyFactory(BaseMemoryFactory):
     allow_locate = True
     allow_region = True
 
-    fallback_name = 'fall'
+    fallback_name = "fall"
     fallback_schema = None
-    fallback_url = 'http://127.0.0.1:9/?api'
+    fallback_url = "http://127.0.0.1:9/?api"
     fallback_ratelimit = 10
     fallback_ratelimit_interval = 60
     fallback_cache_expire = 60
@@ -134,7 +123,6 @@ class KeyFactory(BaseMemoryFactory):
 
 
 class BboxFactory(Factory):
-
     @factory.lazy_attribute
     def min_lat(self):
         return self.lat
@@ -153,7 +141,6 @@ class BboxFactory(Factory):
 
 
 class BlueShardFactory(BaseSQLFactory):
-
     class Meta:
         model = BlueShard.create
 
@@ -161,7 +148,7 @@ class BlueShardFactory(BaseSQLFactory):
     lat = GB_LAT
     lon = GB_LON
     radius = BLUE_MIN_ACCURACY / 2.0
-    region = 'GB'
+    region = "GB"
     samples = 1
     source = ReportSource.gnss
     weight = 1.0
@@ -171,7 +158,6 @@ class BlueShardFactory(BaseSQLFactory):
 
 
 class BlueObservationFactory(BaseMemoryFactory):
-
     class Meta:
         model = BlueObservation.create
 
@@ -211,7 +197,7 @@ class CellPositionFactory(CellKeyFactory, CellAreaPositionFactory):
 class BaseCellShardFactory(CellPositionFactory, BboxFactory):
 
     radius = CELL_MIN_ACCURACY / 2.0
-    region = 'GB'
+    region = "GB"
     samples = 1
     source = ReportSource.gnss
     weight = 1.0
@@ -221,18 +207,16 @@ class BaseCellShardFactory(CellPositionFactory, BboxFactory):
 
 
 class CellShardFactory(BaseCellShardFactory, BaseSQLFactory):
-
     class Meta:
         model = CellShard.create
 
 
 class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
-
     class Meta:
         model = CellArea.create
 
     radius = CELLAREA_MIN_ACCURACY / 2.0
-    region = 'GB'
+    region = "GB"
     avg_cell_radius = CELL_MIN_ACCURACY / 2.0
     num_cells = 1
     created = util.utcnow()
@@ -241,7 +225,6 @@ class CellAreaFactory(CellAreaPositionFactory, BboxFactory, BaseSQLFactory):
 
 
 class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
-
     class Meta:
         model = CellObservation.create
 
@@ -259,23 +242,21 @@ class CellObservationFactory(CellPositionFactory, BaseMemoryFactory):
 
 
 class ExportConfigFactory(BaseSQLFactory):
-
     class Meta:
         model = ExportConfig
 
     name = FuzzyUUID()
     batch = 100
-    schema = 'dummy'
+    schema = "dummy"
     url = None
     skip_keys = frozenset()
 
 
 class RegionStatFactory(BaseSQLFactory):
-
     class Meta:
         model = RegionStat
 
-    region = 'GB'
+    region = "GB"
     gsm = 0
     wcdma = 0
     lte = 0
@@ -283,7 +264,6 @@ class RegionStatFactory(BaseSQLFactory):
 
 
 class WifiShardFactory(BaseSQLFactory):
-
     class Meta:
         model = WifiShard.create
 
@@ -291,7 +271,7 @@ class WifiShardFactory(BaseSQLFactory):
     lat = GB_LAT
     lon = GB_LON
     radius = WIFI_MIN_ACCURACY / 2.0
-    region = 'GB'
+    region = "GB"
     samples = 1
     source = ReportSource.gnss
     weight = 1.0
@@ -301,7 +281,6 @@ class WifiShardFactory(BaseSQLFactory):
 
 
 class WifiObservationFactory(BaseMemoryFactory):
-
     class Meta:
         model = WifiObservation.create
 

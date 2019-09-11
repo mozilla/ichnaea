@@ -2,18 +2,8 @@ import base64
 import struct
 
 from enum import IntEnum
-from sqlalchemy import (
-    BINARY,
-    Column,
-    Date,
-    Index,
-    PrimaryKeyConstraint,
-    String,
-)
-from sqlalchemy.dialects.mysql import (
-    BIGINT as BigInteger,
-    INTEGER as Integer,
-)
+from sqlalchemy import BINARY, Column, Date, Index, PrimaryKeyConstraint, String
+from sqlalchemy.dialects.mysql import BIGINT as BigInteger, INTEGER as Integer
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
@@ -21,7 +11,7 @@ from ichnaea.models.base import _Model
 from ichnaea.models.sa_types import TinyIntEnum
 
 DATAMAP_GRID_SCALE = 1000
-DATAMAP_GRID_STRUCT = struct.Struct('!II')
+DATAMAP_GRID_STRUCT = struct.Struct("!II")
 """
 A compact representation of a lat/lon grid as a byte sequence.
 
@@ -55,7 +45,7 @@ def decode_datamap_grid(value, scale=False, codec=None):
 
     If ``codec='base64'``, decode the value from a base64 sequence first.
     """
-    if codec == 'base64':
+    if codec == "base64":
         value = base64.b64decode(value)
     lat, lon = DATAMAP_GRID_STRUCT.unpack(value)
     lat, lon = (lat - 90000, lon - 180000)
@@ -75,7 +65,7 @@ def encode_datamap_grid(lat, lon, scale=False, codec=None):
     if scale:
         lat, lon = DataMap.scale(lat, lon)
     value = DATAMAP_GRID_STRUCT.pack(lat + 90000, lon + 180000)
-    if codec == 'base64':
+    if codec == "base64":
         value = base64.b64encode(value)
     return value
 
@@ -88,13 +78,13 @@ class DataMapGridColumn(TypeDecorator):
     def process_bind_param(self, value, dialect):
         if isinstance(value, bytes):
             if len(value) != 8:
-                raise ValueError('Invalid grid length: %r' % value)
+                raise ValueError("Invalid grid length: %r" % value)
             return value
         lat, lon = value
         return encode_datamap_grid(lat, lon)
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return value
         return decode_datamap_grid(value)
 
@@ -107,13 +97,13 @@ class DataMap(object):
     modified = Column(Date)
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):  # noqa
         _indices = (
-            PrimaryKeyConstraint('grid'),
-            Index('%s_created_idx' % cls.__tablename__, 'created'),
-            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
+            PrimaryKeyConstraint("grid"),
+            Index("%s_created_idx" % cls.__tablename__, "created"),
+            Index("%s_modified_idx" % cls.__tablename__, "modified"),
         )
-        return _indices + (cls._settings, )
+        return _indices + (cls._settings,)
 
     @classmethod
     def shard_id(cls, lat, lon):
@@ -129,14 +119,14 @@ class DataMap(object):
             return None
         if lat < 36000:
             if lon < 5000:
-                return 'sw'
+                return "sw"
             else:
-                return 'se'
+                return "se"
         else:
             if lon < 5000:
-                return 'nw'
+                return "nw"
             else:
-                return 'ne'
+                return "ne"
 
     @classmethod
     def shard_model(cls, lat, lon):
@@ -163,47 +153,45 @@ class DataMap(object):
 class DataMapNE(DataMap, _Model):
     """DataMap north-east shard."""
 
-    __tablename__ = 'datamap_ne'
+    __tablename__ = "datamap_ne"
 
 
-DATAMAP_SHARDS['ne'] = DataMapNE
+DATAMAP_SHARDS["ne"] = DataMapNE
 
 
 class DataMapNW(DataMap, _Model):
     """DataMap north-west shard."""
 
-    __tablename__ = 'datamap_nw'
+    __tablename__ = "datamap_nw"
 
 
-DATAMAP_SHARDS['nw'] = DataMapNW
+DATAMAP_SHARDS["nw"] = DataMapNW
 
 
 class DataMapSE(DataMap, _Model):
     """DataMap south-east shard."""
 
-    __tablename__ = 'datamap_se'
+    __tablename__ = "datamap_se"
 
 
-DATAMAP_SHARDS['se'] = DataMapSE
+DATAMAP_SHARDS["se"] = DataMapSE
 
 
 class DataMapSW(DataMap, _Model):
     """DataMap south-west shard."""
 
-    __tablename__ = 'datamap_sw'
+    __tablename__ = "datamap_sw"
 
 
-DATAMAP_SHARDS['sw'] = DataMapSW
+DATAMAP_SHARDS["sw"] = DataMapSW
 
 
 class RegionStat(_Model):
     """RegionStat model."""
 
-    __tablename__ = 'region_stat'
+    __tablename__ = "region_stat"
 
-    _indices = (
-        PrimaryKeyConstraint('region'),
-    )
+    _indices = (PrimaryKeyConstraint("region"),)
 
     region = Column(String(2))
     gsm = Column(Integer(unsigned=True))
@@ -214,16 +202,15 @@ class RegionStat(_Model):
 
 
 class StatCounter(object):
-
     def __init__(self, stat_key, day):
         self.stat_key = stat_key
         self.day = day
         self.redis_key = self._key(stat_key, day)
 
     def _key(self, stat_key, day):
-        return 'statcounter_{key}_{date}'.format(
-            key=stat_key.name,
-            date=day.strftime('%Y%m%d'))
+        return "statcounter_{key}_{date}".format(
+            key=stat_key.name, date=day.strftime("%Y%m%d")
+        )
 
     def get(self, redis_client):
         return int(redis_client.get(self.redis_key) or 0)
@@ -241,11 +228,9 @@ class StatCounter(object):
 class Stat(_Model):
     """Stat model."""
 
-    __tablename__ = 'stat'
+    __tablename__ = "stat"
 
-    _indices = (
-        PrimaryKeyConstraint('key', 'time'),
-    )
+    _indices = (PrimaryKeyConstraint("key", "time"),)
 
     key = Column(TinyIntEnum(StatKey))
     time = Column(Date)

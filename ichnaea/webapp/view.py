@@ -5,15 +5,7 @@ Common webapp related base views.
 from pyramid.httpexceptions import HTTPMethodNotAllowed
 from pyramid.response import Response
 
-HTTP_METHODS = frozenset([
-    'DELETE',
-    'GET',
-    'HEAD',
-    'OPTIONS',
-    'PATCH',
-    'POST',
-    'PUT',
-])
+HTTP_METHODS = frozenset(["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"])
 
 
 class BaseView(object):
@@ -23,10 +15,10 @@ class BaseView(object):
     """
 
     _cors_headers = None
-    cors_max_age = 86400 * 30   # Cache preflight requests for 30 days.
-    cors_origin = '*'  # Allowed CORS origins.
-    methods = ('GET', 'HEAD', 'POST')  # Supported HTTP methods.
-    renderer = 'json'  # The name of the renderer to use.
+    cors_max_age = 86400 * 30  # Cache preflight requests for 30 days.
+    cors_origin = "*"  # Allowed CORS origins.
+    methods = ("GET", "HEAD", "POST")  # Supported HTTP methods.
+    renderer = "json"  # The name of the renderer to use.
     route = None  # The url path for this view, e.g. `/hello`.
 
     @classmethod
@@ -39,38 +31,29 @@ class BaseView(object):
         :type config: :class:`pyramid.config.Configurator`
         """
         path = cls.route
-        name = path.lstrip('/').replace('/', '_')
+        name = path.lstrip("/").replace("/", "_")
         config.add_route(name, path)
 
         http_methods = cls.methods
         config.add_view(
-            cls,
-            route_name=name,
-            renderer=cls.renderer,
-            request_method=http_methods,
+            cls, route_name=name, renderer=cls.renderer, request_method=http_methods
         )
         unsupported_methods = HTTP_METHODS - set(http_methods)
 
         if cls.cors_origin:
-            unsupported_methods = unsupported_methods - set(['OPTIONS'])
+            unsupported_methods = unsupported_methods - set(["OPTIONS"])
 
             config.add_view(
-                cls,
-                attr='options',
-                route_name=name,
-                request_method='OPTIONS',
+                cls, attr="options", route_name=name, request_method="OPTIONS"
             )
-            cls._cors_headers = {
-                'Access-Control-Allow-Origin': cls.cors_origin,
-            }
+            cls._cors_headers = {"Access-Control-Allow-Origin": cls.cors_origin}
             if cls.cors_max_age:
-                cls._cors_headers[
-                    'Access-Control-Max-Age'] = str(cls.cors_max_age)
+                cls._cors_headers["Access-Control-Max-Age"] = str(cls.cors_max_age)
 
         if unsupported_methods:
             config.add_view(
                 cls,
-                attr='unsupported',
+                attr="unsupported",
                 route_name=name,
                 request_method=tuple(unsupported_methods),
             )

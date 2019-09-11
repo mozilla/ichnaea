@@ -17,14 +17,10 @@ from ichnaea.api.locate.schema import (
 
 try:
     from collections import OrderedDict
-except ImportError:  # pragma: no cover
+except ImportError:
     from ordereddict import OrderedDict
 
-METRIC_MAPPING = {
-    0: 'none',
-    1: 'one',
-    2: 'many',
-}
+METRIC_MAPPING = {0: "none", 1: "one", 2: "many"}
 
 
 class Query(object):
@@ -34,9 +30,20 @@ class Query(object):
     _ip = None
     _region = None
 
-    def __init__(self, fallback=None, ip=None, blue=None, cell=None, wifi=None,
-                 api_key=None, api_type=None, session=None,
-                 http_session=None, geoip_db=None, stats_client=None):
+    def __init__(
+        self,
+        fallback=None,
+        ip=None,
+        blue=None,
+        cell=None,
+        wifi=None,
+        api_key=None,
+        api_type=None,
+        session=None,
+        http_session=None,
+        geoip_db=None,
+        stats_client=None,
+    ):
         """
         A class representing a concrete query.
 
@@ -82,8 +89,8 @@ class Query(object):
         self.cell = cell
         self.wifi = wifi
         self.api_key = api_key
-        if api_type not in (None, 'region', 'locate'):
-            raise ValueError('Invalid api_type.')
+        if api_type not in (None, "region", "locate"):
+            raise ValueError("Invalid api_type.")
         self.api_type = api_type
 
     @property
@@ -99,7 +106,7 @@ class Query(object):
         if not values:
             values = {}
         valid = FallbackLookup.create(**values)
-        if valid is None:  # pragma: no cover
+        if valid is None:
             valid = FallbackLookup.create()
         self._fallback = valid
 
@@ -130,8 +137,8 @@ class Query(object):
     def ip(self, value):
         if not value:
             value = None
-        elif isinstance(value, bytes):  # pragma: no cover
-            value = value.decode('ascii', 'ignore')
+        elif isinstance(value, bytes):
+            value = value.decode("ascii", "ignore")
         try:
             valid = str(ip_address(value))
         except ValueError:
@@ -143,7 +150,7 @@ class Query(object):
             if self.geoip_db:
                 geoip = self.geoip_db.lookup(valid)
                 if geoip:
-                    region = geoip.get('region_code')
+                    region = geoip.get("region_code")
             self._geoip = geoip
             self._region = region
 
@@ -283,7 +290,7 @@ class Query(object):
     def expected_accuracy(self):
         accuracies = [DataAccuracy.none]
 
-        if self.api_type == 'region':
+        if self.api_type == "region":
             if self.blue or self.cell or self.wifi:
                 accuracies.append(DataAccuracy.low)
         else:
@@ -292,8 +299,7 @@ class Query(object):
             if self.blue or self.wifi:
                 accuracies.append(DataAccuracy.high)
 
-        if ((self.cell_area and self.fallback.lacf) or
-                (self.ip and self.fallback.ipf)):
+        if (self.cell_area and self.fallback.lacf) or (self.ip and self.fallback.ipf):
             accuracies.append(DataAccuracy.low)
 
         # return the best possible (smallest) accuracy
@@ -303,26 +309,26 @@ class Query(object):
         """Returns a JSON representation of this query."""
         result = {}
         if self.blue:
-            result['bluetoothBeacons'] = [blue.json() for blue in self.blue]
+            result["bluetoothBeacons"] = [blue.json() for blue in self.blue]
         if self.cell:
-            result['cellTowers'] = [cell.json() for cell in self.cell]
+            result["cellTowers"] = [cell.json() for cell in self.cell]
         if self.wifi:
-            result['wifiAccessPoints'] = [wifi.json() for wifi in self.wifi]
+            result["wifiAccessPoints"] = [wifi.json() for wifi in self.wifi]
         if self.fallback:
-            result['fallbacks'] = self.fallback.json()
+            result["fallbacks"] = self.fallback.json()
         return result
 
     def networks(self):
         """Returns networks seen in the validated query."""
-        result = {'area': set(), 'blue': set(), 'cell': set(), 'wifi': set()}
+        result = {"area": set(), "blue": set(), "cell": set(), "wifi": set()}
         if self.cell_area:
-            result['area'] = set([c.areaid for c in self.cell_area])
+            result["area"] = set([c.areaid for c in self.cell_area])
         if self.blue:
-            result['blue'] = set([b.mac for b in self.blue])
+            result["blue"] = set([b.mac for b in self.blue])
         if self.cell:
-            result['cell'] = set([c.cellid for c in self.cell])
+            result["cell"] = set([c.cellid for c in self.cell])
         if self.wifi:
-            result['wifi'] = set([w.mac for w in self.wifi])
+            result["wifi"] = set([w.mac for w in self.wifi])
         return result
 
     def collect_metrics(self):
@@ -330,18 +336,15 @@ class Query(object):
         allowed = bool(self.api_key and self.api_key.valid_key)
         # don't report stats if there is no data at all in the query
         possible_result = bool(self.expected_accuracy != DataAccuracy.none)
-        return (allowed and possible_result)
+        return allowed and possible_result
 
     def _emit_region_stat(self, metric, extra_tags):
         region = self.region
         if not region:
-            region = 'none'
+            region = "none"
 
-        metric = '%s.%s' % (self.api_type, metric)
-        tags = [
-            'key:%s' % self.api_key.valid_key,
-            'region:%s' % region,
-        ]
+        metric = "%s.%s" % (self.api_type, metric)
+        tags = ["key:%s" % self.api_key.valid_key, "region:%s" % region]
         self.stats_client.incr(metric, tags=tags + extra_tags)
 
     def emit_query_stats(self):
@@ -355,23 +358,21 @@ class Query(object):
         tags = []
 
         if not self.ip:
-            tags.append('geoip:false')
+            tags.append("geoip:false")
 
-        for name, length in (('blue', blues),
-                             ('cell', cells),
-                             ('wifi', wifis)):
+        for name, length in (("blue", blues), ("cell", cells), ("wifi", wifis)):
             num = METRIC_MAPPING[min(length, 2)]
-            tags.append('{name}:{num}'.format(name=name, num=num))
-        self._emit_region_stat('query', tags)
+            tags.append("{name}:{num}".format(name=name, num=num))
+        self._emit_region_stat("query", tags)
 
     def emit_result_stats(self, result):
         """Emit stats about how well the result satisfied the query."""
         if not self.collect_metrics():
             return
 
-        allow_fallback = str(bool(self.api_key and
-                                  self.api_key.can_fallback() or
-                                  False)).lower()
+        allow_fallback = str(
+            bool(self.api_key and self.api_key.can_fallback() or False)
+        ).lower()
 
         if result is None:
             data_accuracy = DataAccuracy.none
@@ -380,19 +381,19 @@ class Query(object):
             data_accuracy = result.data_accuracy
             source = result.source
 
-        status = 'miss'
+        status = "miss"
         if data_accuracy <= self.expected_accuracy:
             # equal or better / smaller accuracy
-            status = 'hit'
+            status = "hit"
 
         tags = [
-            'fallback_allowed:%s' % allow_fallback,
-            'accuracy:%s' % self.expected_accuracy.name,
-            'status:%s' % status,
+            "fallback_allowed:%s" % allow_fallback,
+            "accuracy:%s" % self.expected_accuracy.name,
+            "status:%s" % status,
         ]
-        if status == 'hit' and source:
-            tags.append('source:%s' % source.name)
-        self._emit_region_stat('result', tags)
+        if status == "hit" and source:
+            tags.append("source:%s" % source.name)
+        self._emit_region_stat("result", tags)
 
     def emit_source_stats(self, source, results):
         """Emit stats about how well the source satisfied the query."""
@@ -400,16 +401,16 @@ class Query(object):
             return
 
         # If any one of the results was good enough, consider it a hit.
-        status = 'miss'
+        status = "miss"
         for result in results:
             if result.data_accuracy <= self.expected_accuracy:
                 # equal or better / smaller accuracy
-                status = 'hit'
+                status = "hit"
                 break
 
         tags = [
-            'source:%s' % source.name,
-            'accuracy:%s' % self.expected_accuracy.name,
-            'status:%s' % status,
+            "source:%s" % source.name,
+            "accuracy:%s" % self.expected_accuracy.name,
+            "status:%s" % status,
         ]
-        self._emit_region_stat('source', tags)
+        self._emit_region_stat("source", tags)

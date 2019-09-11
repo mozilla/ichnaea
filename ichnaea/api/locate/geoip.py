@@ -1,19 +1,15 @@
 """Implementation of a GeoIP based search source."""
 
 from ichnaea.api.locate.constants import DataSource
-from ichnaea.api.locate.source import (
-    PositionSource,
-    RegionSource,
-    Source,
-)
+from ichnaea.api.locate.source import PositionSource, RegionSource, Source
 
 
 class GeoIPSource(Source):
     """A GeoIPSource returns search results based on a GeoIP database."""
 
-    fallback_field = 'ipf'
+    fallback_field = "ipf"
     source = DataSource.geoip
-    geoip_accuracy_field = 'radius'
+    geoip_accuracy_field = "radius"
 
     def should_search(self, query, results):
         should = super(GeoIPSource, self).should_search(query, results)
@@ -32,15 +28,17 @@ class GeoIPSource(Source):
             if query.geoip_only:
                 # Don't set a fallback if only IP data was provided.
                 fallback = None
-            results.add(self.result_type(
-                lat=geoip['latitude'],
-                lon=geoip['longitude'],
-                accuracy=geoip[self.geoip_accuracy_field],
-                fallback=fallback,
-                region_code=geoip['region_code'],
-                region_name=geoip['region_name'],
-                score=geoip['score'],
-            ))
+            results.add(
+                self.result_type(
+                    lat=geoip["latitude"],
+                    lon=geoip["longitude"],
+                    accuracy=geoip[self.geoip_accuracy_field],
+                    fallback=fallback,
+                    region_code=geoip["region_code"],
+                    region_name=geoip["region_name"],
+                    score=geoip["score"],
+                )
+            )
 
         query.emit_source_stats(self.source, results)
         return results
@@ -53,4 +51,4 @@ class GeoIPPositionSource(GeoIPSource, PositionSource):
 class GeoIPRegionSource(GeoIPSource, RegionSource):
     """A GeoIPSource returning region results."""
 
-    geoip_accuracy_field = 'region_radius'
+    geoip_accuracy_field = "region_radius"

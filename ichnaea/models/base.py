@@ -3,15 +3,9 @@ Model and schema related common classes.
 """
 
 import colander
-from sqlalchemy.ext.declarative import (
-    declared_attr,
-    declarative_base,
-)
+from sqlalchemy.ext.declarative import declared_attr, declarative_base
 
-MYSQL_SETTINGS = {
-    'mysql_engine': 'InnoDB',
-    'mysql_charset': 'utf8',
-}
+MYSQL_SETTINGS = {"mysql_engine": "InnoDB", "mysql_charset": "utf8"}
 
 
 class BaseModel(object):
@@ -21,8 +15,8 @@ class BaseModel(object):
     _settings = MYSQL_SETTINGS
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
-        return cls._indices + (cls._settings, )
+    def __table_args__(cls):
+        return cls._indices + (cls._settings,)
 
 
 _Model = declarative_base(cls=BaseModel)
@@ -58,7 +52,7 @@ class HashableDict(object):
         """
         value = ()
         for field in self._fields:
-            value += (getattr(self, field, None), )
+            value += (getattr(self, field, None),)
         return hash(value)
 
 
@@ -78,7 +72,7 @@ class ValidationMixin(object):
         try:
             validated = cls._valid_schema.deserialize(entry, **kw)
         except colander.Invalid:
-            if _raise_invalid:  # pragma: no cover
+            if _raise_invalid:
                 raise
             validated = None
         return validated
@@ -97,6 +91,6 @@ class CreationMixin(ValidationMixin):
         arguments passed schema validation, otherwise returns None.
         """
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
+        if validated is None:
             return None
         return cls(**validated)

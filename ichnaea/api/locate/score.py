@@ -30,8 +30,7 @@ def score(obj, now, score_created, score_samples):
     if obj.last_seen is not None:
         last_seen = max(last_seen, obj.last_seen)
 
-    collected_over = max(
-        (last_seen - score_created(obj)).days, 1)
+    collected_over = max((last_seen - score_created(obj)).days, 1)
     collection_weight = min(collected_over / 10.0, 1.0)
 
     return age_weight * collection_weight * score_samples(obj)

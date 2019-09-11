@@ -4,7 +4,6 @@ from ichnaea.api.locate.constants import DataAccuracy
 
 
 class TestDataAccuracy(object):
-
     def test_compare(self):
         assert DataAccuracy.high < DataAccuracy.medium
         assert DataAccuracy.high < DataAccuracy.low
@@ -12,10 +11,10 @@ class TestDataAccuracy(object):
         assert DataAccuracy.medium != DataAccuracy.high
         assert DataAccuracy.low == DataAccuracy.low
         assert DataAccuracy.low < DataAccuracy.none
-        assert not DataAccuracy.none == 'ab'
+        assert not DataAccuracy.none == "ab"
 
     def test_compare_number(self):
-        assert DataAccuracy.none == float('inf')
+        assert DataAccuracy.none == float("inf")
         assert DataAccuracy.low > 50000
         assert DataAccuracy.low > 50000.0
         assert DataAccuracy.medium == 50000
@@ -29,7 +28,7 @@ class TestDataAccuracy(object):
         with pytest.raises(TypeError):
             DataAccuracy.low < object()
         with pytest.raises(TypeError):
-            DataAccuracy.low >= 'ab'
+            DataAccuracy.low >= "ab"
         with pytest.raises(TypeError):
             DataAccuracy.low > DataAccuracy
 
@@ -43,7 +42,7 @@ class TestDataAccuracy(object):
         with pytest.raises(TypeError):
             DataAccuracy.from_number(None)
         with pytest.raises(ValueError):
-            DataAccuracy.from_number('ab')
+            DataAccuracy.from_number("ab")
 
     def test_hash(self):
         accuracies = {

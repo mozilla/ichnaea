@@ -3,11 +3,7 @@ Holds global celery application state and startup / shutdown handlers.
 """
 from celery import Celery
 from celery.app import app_or_default
-from celery.signals import (
-    beat_init,
-    worker_process_init,
-    worker_process_shutdown,
-)
+from celery.signals import beat_init, worker_process_init, worker_process_shutdown
 
 from ichnaea.async.config import (
     configure_celery,
@@ -29,7 +25,7 @@ def init_beat_process(signal, sender, **kw):
 
 
 @worker_process_init.connect
-def init_worker_process(signal, sender, **kw):  # pragma: no cover
+def init_worker_process(signal, sender, **kw):
     """
     Called automatically when `celery worker` is started. This is executed
     inside each forked worker process.
@@ -42,7 +38,7 @@ def init_worker_process(signal, sender, **kw):  # pragma: no cover
 
 
 @worker_process_shutdown.connect
-def shutdown_worker_process(signal, sender, **kw):  # pragma: no cover
+def shutdown_worker_process(signal, sender, **kw):
     """
     Called automatically when `celery worker` is stopped. This is executed
     inside each forked worker process.
@@ -53,6 +49,6 @@ def shutdown_worker_process(signal, sender, **kw):  # pragma: no cover
     shutdown_worker(celery_app)
 
 
-celery_app = Celery('ichnaea.async.app')
+celery_app = Celery("ichnaea.async.app")
 
 configure_celery(celery_app)

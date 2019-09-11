@@ -2,8 +2,7 @@
 from redis import RedisError
 
 
-def rate_limit_exceeded(redis_client, key,
-                        maxreq=0, expire=86400, on_error=False):
+def rate_limit_exceeded(redis_client, key, maxreq=0, expire=86400, on_error=False):
     """
     Return `True` if the rate limit is exceeded otherwise `False`.
 
@@ -21,7 +20,7 @@ def rate_limit_exceeded(redis_client, key,
                 pipe.expire(key, expire)
                 count, expire = pipe.execute()
                 return count > maxreq
-        except RedisError:  # pragma: no cover
+        except RedisError:
             # If we cannot connect to Redis, return error value.
             return on_error
     return False

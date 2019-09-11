@@ -1,9 +1,5 @@
 import colander
-from sqlalchemy import (
-    Column,
-    Date,
-    String,
-)
+from sqlalchemy import Column, Date, String
 from sqlalchemy.dialects.mysql import (
     DOUBLE as Double,
     INTEGER as Integer,
@@ -13,10 +9,7 @@ from sqlalchemy.dialects.mysql import (
 from ichnaea.models.base import CreationMixin
 from ichnaea.models import constants
 from ichnaea.models.constants import TEMPORARY_BLOCKLIST_DURATION
-from ichnaea.models.sa_types import (
-    TinyIntEnum,
-    TZDateTime as DateTime,
-)
+from ichnaea.models.sa_types import TinyIntEnum, TZDateTime as DateTime
 from ichnaea.models.schema import (
     DateFromString,
     DateTimeFromString,
@@ -33,20 +26,24 @@ class ValidBboxSchema(colander.MappingSchema, ValidatorNode):
     max_lat = colander.SchemaNode(
         colander.Float(),
         missing=None,
-        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT),
+    )
     min_lat = colander.SchemaNode(
         colander.Float(),
         missing=None,
-        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT),
+    )
 
     max_lon = colander.SchemaNode(
         colander.Float(),
         missing=None,
-        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON),
+    )
     min_lon = colander.SchemaNode(
         colander.Float(),
         missing=None,
-        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON),
+    )
 
 
 class BboxMixin(object):
@@ -65,11 +62,13 @@ class ValidPositionSchema(colander.MappingSchema, ValidatorNode):
     lat = colander.SchemaNode(
         colander.Float(),
         missing=None,
-        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT))
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT),
+    )
     lon = colander.SchemaNode(
         colander.Float(),
         missing=None,
-        validator=colander.Range(constants.MIN_LON, constants.MAX_LON))
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON),
+    )
 
 
 class PositionMixin(object):
@@ -93,9 +92,7 @@ class TimeTrackingMixin(object):
     modified = Column(DateTime)
 
 
-class ValidStationSchema(ValidBboxSchema,
-                         ValidPositionSchema,
-                         ValidTimeTrackingSchema):
+class ValidStationSchema(ValidBboxSchema, ValidPositionSchema, ValidTimeTrackingSchema):
     """A schema which validates the fields in a station."""
 
     radius = colander.SchemaNode(colander.Integer(), missing=None)
@@ -110,10 +107,7 @@ class ValidStationSchema(ValidBboxSchema,
     block_count = colander.SchemaNode(colander.Integer(), missing=None)
 
 
-class StationMixin(BboxMixin,
-                   PositionMixin,
-                   TimeTrackingMixin,
-                   CreationMixin):
+class StationMixin(BboxMixin, PositionMixin, TimeTrackingMixin, CreationMixin):
     """A model mix-in with common station columns."""
 
     radius = Column(Integer(unsigned=True))
@@ -140,7 +134,7 @@ def station_blocked(obj, today=None):
         if bool(age < TEMPORARY_BLOCKLIST_DURATION):
             return True
 
-    if (obj.created and obj.block_count):
+    if obj.created and obj.block_count:
         # Allow the station to be blocked once for each 30 day
         # period of the time it has been known to us.
         age = abs((obj.created.date() - today).days)

@@ -1,15 +1,11 @@
-from ichnaea.models.mac import (
-    channel_frequency,
-    decode_mac,
-    encode_mac,
-)
+from ichnaea.models.mac import channel_frequency, decode_mac, encode_mac
 
 
 class TestChannelFrequency(object):
-
     def compare(self, channel, frequency, channel_expect, frequency_expect):
         new_channel, new_frequency = channel_frequency(
-            channel=channel, frequency=frequency)
+            channel=channel, frequency=frequency
+        )
         assert new_channel == channel_expect
         assert new_frequency == frequency_expect
 
@@ -47,19 +43,18 @@ class TestChannelFrequency(object):
 
 
 class TestMacCodec(object):
-
     def test_decode(self):
-        assert decode_mac(b'\xab\xcd\xed\x124V') == 'abcded123456'
-        assert decode_mac(b'q83tEjRW', codec='base64') == 'abcded123456'
+        assert decode_mac(b"\xab\xcd\xed\x124V") == "abcded123456"
+        assert decode_mac(b"q83tEjRW", codec="base64") == "abcded123456"
 
     def test_encode(self):
-        assert encode_mac('abcded123456') == b'\xab\xcd\xed\x124V'
-        assert encode_mac('abcded123456', codec='base64') == b'q83tEjRW'
+        assert encode_mac("abcded123456") == b"\xab\xcd\xed\x124V"
+        assert encode_mac("abcded123456", codec="base64") == b"q83tEjRW"
 
     def test_max(self):
-        assert encode_mac('ffffffffffff') == b'\xff\xff\xff\xff\xff\xff'
-        assert encode_mac('ffffffffffff', codec='base64') == b'////////'
+        assert encode_mac("ffffffffffff") == b"\xff\xff\xff\xff\xff\xff"
+        assert encode_mac("ffffffffffff", codec="base64") == b"////////"
 
     def test_min(self):
-        assert encode_mac('000000000000') == b'\x00\x00\x00\x00\x00\x00'
-        assert encode_mac('000000000000', codec='base64') == b'AAAAAAAA'
+        assert encode_mac("000000000000") == b"\x00\x00\x00\x00\x00\x00"
+        assert encode_mac("000000000000", codec="base64") == b"AAAAAAAA"

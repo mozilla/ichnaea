@@ -8,11 +8,7 @@ from alembic import command
 from alembic.config import Config as AlembicConfig
 import certifi
 from pymysql.err import DatabaseError
-from sqlalchemy import (
-    create_engine,
-    exc,
-    event,
-)
+from sqlalchemy import create_engine, exc, event
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
@@ -25,43 +21,43 @@ from ichnaea.conf import settings
 
 
 DB_TYPE = {
-    'ddl': settings('db_ddl_uri'),
-    'ro': settings('db_readonly_uri'),
-    'rw': settings('db_readwrite_uri'),
+    "ddl": settings("db_ddl_uri"),
+    "ro": settings("db_readonly_uri"),
+    "rw": settings("db_readwrite_uri"),
 }
 
 DB_TRANSPORTS = {
-    'default': settings('db_library'),
-    'gevent': 'pymysql',
-    'sync': 'mysqlconnector',
-    'threaded': 'pymysql',
+    "default": settings("db_library"),
+    "gevent": "pymysql",
+    "sync": "mysqlconnector",
+    "threaded": "pymysql",
 }
 
 
 def get_alembic_config():
     cfg = AlembicConfig()
 
-    script_location = os.path.join(os.path.dirname(__file__), 'alembic')
+    script_location = os.path.join(os.path.dirname(__file__), "alembic")
     assert os.path.exists(script_location)
-    cfg.set_section_option('alembic', 'script_location', script_location)
-    cfg.set_section_option('alembic', 'sqlalchemy.url', settings('db_ddl_uri'))
+    cfg.set_section_option("alembic", "script_location", script_location)
+    cfg.set_section_option("alembic", "sqlalchemy.url", settings("db_ddl_uri"))
     return cfg
 
 
-@compiles(Insert, 'mysql')
+@compiles(Insert, "mysql")
 def on_duplicate(insert, compiler, **kw):
     """Custom MySQL insert on_duplicate support."""
     stmt = compiler.visit_insert(insert, **kw)
-    my_var = insert.dialect_kwargs.get('mysql_on_duplicate', None)
+    my_var = insert.dialect_kwargs.get("mysql_on_duplicate", None)
     if my_var:
-        stmt += ' ON DUPLICATE KEY UPDATE %s' % my_var
+        stmt += " ON DUPLICATE KEY UPDATE %s" % my_var
     return stmt
 
 
-Insert.argument_for('mysql', 'on_duplicate', None)
+Insert.argument_for("mysql", "on_duplicate", None)
 
 
-def configure_db(type_=None, uri=None, transport='default', _db=None):
+def configure_db(type_=None, uri=None, transport="default", _db=None):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -72,7 +68,7 @@ def configure_db(type_=None, uri=None, transport='default', _db=None):
     pool = True
     if uri is None:
         uri = DB_TYPE[type_]
-        if type_ == 'ddl':
+        if type_ == "ddl":
             pool = False
     return Database(uri, pool=pool, transport=transport)
 
@@ -81,9 +77,10 @@ def configure_db(type_=None, uri=None, transport='default', _db=None):
 # pyramid_tm to provide lazy session creation, session closure and
 # automatic rollback in case of errors
 
+
 def db_session(request):
     """Attach a database session to the request."""
-    session = getattr(request, '_db_session', None)
+    session = getattr(request, "_db_session", None)
     if session is None:
         request._db_session = session = request.registry.db.session()
     return session
@@ -102,7 +99,7 @@ def db_worker_session(database, commit=True):
         yield session
         if commit:
             session.commit()
-    except Exception:  # pragma: no cover
+    except Exception:
         session.rollback()
         raise
     finally:
@@ -117,12 +114,12 @@ def db_tween_factory(handler, registry):
         try:
             response = handler(request)
         finally:
-            session = getattr(request, '_db_session', None)
+            session = getattr(request, "_db_session", None)
             if session is not None:
                 # always rollback/close the read-only session
                 try:
                     session.rollback()
-                except DatabaseError:  # pragma: no cover
+                except DatabaseError:
                     registry.raven_client.captureException()
                 finally:
                     session.close()
@@ -137,51 +134,48 @@ class Database(object):
     :param uri: A database connection string.
     """
 
-    def __init__(self, uri, pool=True, transport='default'):
+    def __init__(self, uri, pool=True, transport="default"):
         self.uri = uri
 
-        options = {
-            'echo': False,
-            'isolation_level': 'REPEATABLE READ',
-        }
+        options = {"echo": False, "isolation_level": "REPEATABLE READ"}
         if pool:
-            options.update({
-                'poolclass': QueuePool,
-                'pool_recycle': 3600,
-                'pool_size': 10,
-                'pool_timeout': 10,
-                'max_overflow': 10,
-            })
+            options.update(
+                {
+                    "poolclass": QueuePool,
+                    "pool_recycle": 3600,
+                    "pool_size": 10,
+                    "pool_timeout": 10,
+                    "max_overflow": 10,
+                }
+            )
         else:
-            options.update({
-                'poolclass': NullPool,
-            })
-        options['connect_args'] = {'charset': 'utf8'}
-        options['execution_options'] = {'autocommit': False}
+            options.update({"poolclass": NullPool})
+        options["connect_args"] = {"charset": "utf8"}
+        options["execution_options"] = {"autocommit": False}
 
-        if transport != 'default':
+        if transport != "default":
             # Possibly adjust DB library
             new_transport = DB_TRANSPORTS[transport]
-            db_type, rest = uri.split('+')
-            old_transport, rest = rest.split(':', 1)
-            uri = db_type + '+' + new_transport + ':' + rest
+            db_type, rest = uri.split("+")
+            old_transport, rest = rest.split(":", 1)
+            uri = db_type + "+" + new_transport + ":" + rest
 
-        if DB_TRANSPORTS[transport] == 'mysqlconnector':
-            options['connect_args']['use_pure'] = True
+        if DB_TRANSPORTS[transport] == "mysqlconnector":
+            options["connect_args"]["use_pure"] = True
             # TODO: Update the TLS protocol version as we update MySQL
             # AWS MySQL 5.6 supports TLS v1.0, not v1.1 or v1.2
             # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_MySQL.html#MySQL.Concepts.SSLSupport
             # The MySQL 5.7 Docker image supports TLS v1.0 and v1.1, not v1.2
             # https://github.com/docker-library/mysql/issues/567
-            options['connect_args']['ssl_version'] = PROTOCOL_TLSv1
+            options["connect_args"]["ssl_version"] = PROTOCOL_TLSv1
             # Needed for SSL
-            options['connect_args']['ssl_ca'] = certifi.where()
+            options["connect_args"]["ssl_ca"] = certifi.where()
 
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(
-            bind=self.engine, class_=PingableSession,
-            autocommit=False, autoflush=False)
+            bind=self.engine, class_=PingableSession, autocommit=False, autoflush=False
+        )
 
     def close(self):
         self.engine.pool.dispose()
@@ -219,7 +213,7 @@ class PingableSession(Session):
         return True
 
 
-@event.listens_for(Pool, 'checkout')
+@event.listens_for(Pool, "checkout")
 def check_connection(dbapi_conn, conn_record, conn_proxy):
     """
     Listener for pool checkout events that pings every connection before
@@ -230,7 +224,7 @@ def check_connection(dbapi_conn, conn_record, conn_proxy):
         # dbapi_con.ping() ends up calling mysql_ping()
         # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
         dbapi_conn.ping(reconnect=True)
-    except exc.OperationalError as ex:  # pragma: no cover
+    except exc.OperationalError as ex:
         error_codes = [
             # Connection refused
             2003,
@@ -239,7 +233,7 @@ def check_connection(dbapi_conn, conn_record, conn_proxy):
             # Lost connection to MySQL server during query
             2013,
             # Lost connection to MySQL server at '%s', system error: %d
-            2055
+            2055,
         ]
 
         if ex.args[0] in error_codes:
@@ -260,7 +254,7 @@ def create_db(uri=None):
 
     """
     if uri is None:
-        uri = DB_TYPE['ddl']
+        uri = DB_TYPE["ddl"]
 
     if not uri:
         raise Exception("No uri specified.")
@@ -269,20 +263,18 @@ def create_db(uri=None):
     db_to_create = sa_url.database
     sa_url.database = None
     engine = create_engine(sa_url)
-    engine.execute(
-        "CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create)
-    )
+    engine.execute("CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create))
 
     alembic_cfg = get_alembic_config()
 
-    db = configure_db('ddl', uri=uri)
+    db = configure_db("ddl", uri=uri)
     engine = db.engine
     with engine.connect() as conn:
         # Then add tables
         with conn.begin() as trans:
             # Now stamp the latest alembic version
-            command.stamp(alembic_cfg, 'base')
-            command.upgrade(alembic_cfg, 'head')
+            command.stamp(alembic_cfg, "base")
+            command.upgrade(alembic_cfg, "head")
             trans.commit()
 
     db.close()
@@ -302,7 +294,7 @@ def drop_db(uri=None):
 
     """
     if uri is None:
-        uri = DB_TYPE['ddl']
+        uri = DB_TYPE["ddl"]
 
     if not uri:
         raise Exception("No uri specified.")
@@ -311,6 +303,4 @@ def drop_db(uri=None):
     db_to_drop = sa_url.database
     sa_url.database = None
     engine = create_engine(sa_url)
-    engine.execute(
-        "DROP DATABASE {}".format(db_to_drop)
-    )
+    engine.execute("DROP DATABASE {}".format(db_to_drop))

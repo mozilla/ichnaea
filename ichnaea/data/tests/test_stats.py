@@ -1,28 +1,13 @@
 from datetime import timedelta
 
 from ichnaea.cache import redis_pipeline
-from ichnaea.data.tasks import (
-    cleanup_stat,
-    update_statcounter,
-    update_statregion,
-)
-from ichnaea.models import (
-    Radio,
-    RegionStat,
-    Stat,
-    StatCounter,
-    StatKey,
-)
-from ichnaea.tests.factories import (
-    BlueShardFactory,
-    CellAreaFactory,
-    WifiShardFactory,
-)
+from ichnaea.data.tasks import cleanup_stat, update_statcounter, update_statregion
+from ichnaea.models import Radio, RegionStat, Stat, StatCounter, StatKey
+from ichnaea.tests.factories import BlueShardFactory, CellAreaFactory, WifiShardFactory
 from ichnaea import util
 
 
 class TestStatCounter(object):
-
     @property
     def today(self):
         return util.utcnow().date()
@@ -41,9 +26,9 @@ class TestStatCounter(object):
             stat_counter.incr(pipe, value)
 
     def check_stat(self, session, stat_key, time, value):
-        stat = (session.query(Stat)
-                       .filter(Stat.key == stat_key)
-                       .filter(Stat.time == time)).first()
+        stat = (
+            session.query(Stat).filter(Stat.key == stat_key).filter(Stat.time == time)
+        ).first()
         assert stat.value == value
 
     def test_first_run(self, celery, redis, session):
@@ -114,7 +99,6 @@ class TestStatCounter(object):
 
 
 class TestStatCleaner(object):
-
     @property
     def today(self):
         return util.utcnow().date()
@@ -127,16 +111,18 @@ class TestStatCleaner(object):
         assert session.query(Stat).count() == 0
 
     def test_cleanup(self, celery, session):
-        session.add_all([
-            self._one(StatKey.cell, self.today),
-            self._one(StatKey.cell, self.today - timedelta(days=366 * 2)),
-            self._one(StatKey.wifi, self.today),
-            self._one(StatKey.wifi, self.today - timedelta(days=366 * 2)),
-            self._one(StatKey.blue, self.today),
-            self._one(StatKey.blue, self.today - timedelta(days=366 * 2)),
-            self._one(StatKey.unique_blue, self.today),
-            self._one(StatKey.unique_blue, self.today - timedelta(days=366)),
-        ])
+        session.add_all(
+            [
+                self._one(StatKey.cell, self.today),
+                self._one(StatKey.cell, self.today - timedelta(days=366 * 2)),
+                self._one(StatKey.wifi, self.today),
+                self._one(StatKey.wifi, self.today - timedelta(days=366 * 2)),
+                self._one(StatKey.blue, self.today),
+                self._one(StatKey.blue, self.today - timedelta(days=366 * 2)),
+                self._one(StatKey.unique_blue, self.today),
+                self._one(StatKey.unique_blue, self.today - timedelta(days=366)),
+            ]
+        )
         session.flush()
 
         cleanup_stat.delay().get()
@@ -144,7 +130,6 @@ class TestStatCleaner(object):
 
 
 class TestStatRegion(object):
-
     def test_empty(self, celery, session):
         update_statregion.delay().get()
         stats = session.query(RegionStat).all()
@@ -153,19 +138,19 @@ class TestStatRegion(object):
     def test_update(self, celery, session):
         area = CellAreaFactory(radio=Radio.gsm, num_cells=1)
         area.region = None
-        BlueShardFactory.create_batch(2, region='CA')
-        BlueShardFactory.create_batch(3, region='GB')
-        CellAreaFactory(radio=Radio.gsm, region='DE', num_cells=1)
-        CellAreaFactory(radio=Radio.gsm, region='DE', num_cells=2)
-        CellAreaFactory(radio=Radio.gsm, region='CA', num_cells=2)
-        CellAreaFactory(radio=Radio.wcdma, region='DE', num_cells=3)
-        CellAreaFactory(radio=Radio.lte, region='CA', num_cells=4)
-        WifiShardFactory.create_batch(5, region='DE')
-        WifiShardFactory.create_batch(6, region='US')
+        BlueShardFactory.create_batch(2, region="CA")
+        BlueShardFactory.create_batch(3, region="GB")
+        CellAreaFactory(radio=Radio.gsm, region="DE", num_cells=1)
+        CellAreaFactory(radio=Radio.gsm, region="DE", num_cells=2)
+        CellAreaFactory(radio=Radio.gsm, region="CA", num_cells=2)
+        CellAreaFactory(radio=Radio.wcdma, region="DE", num_cells=3)
+        CellAreaFactory(radio=Radio.lte, region="CA", num_cells=4)
+        WifiShardFactory.create_batch(5, region="DE")
+        WifiShardFactory.create_batch(6, region="US")
         wifi = WifiShardFactory()
         wifi.region = None
-        session.add(RegionStat(region='US', blue=1, wifi=2))
-        session.add(RegionStat(region='TW', wifi=1))
+        session.add(RegionStat(region="US", blue=1, wifi=2))
+        session.add(RegionStat(region="TW", wifi=1))
         session.flush()
 
         update_statregion.delay().get()
@@ -174,11 +159,11 @@ class TestStatRegion(object):
 
         for stat in stats:
             values = (stat.gsm, stat.wcdma, stat.lte, stat.blue, stat.wifi)
-            if stat.region == 'DE':
+            if stat.region == "DE":
                 assert values == (3, 3, 0, 0, 5)
-            elif stat.region == 'CA':
+            elif stat.region == "CA":
                 assert values == (2, 0, 4, 2, 0)
-            elif stat.region == 'GB':
+            elif stat.region == "GB":
                 assert values == (0, 0, 0, 3, 0)
-            elif stat.region == 'US':
+            elif stat.region == "US":
                 assert values == (0, 0, 0, 0, 6)

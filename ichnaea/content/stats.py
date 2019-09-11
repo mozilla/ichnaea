@@ -5,16 +5,10 @@ from operator import itemgetter
 import genc
 from sqlalchemy import func, select
 
-from ichnaea.models.content import (
-    RegionStat,
-    Stat,
-    StatKey,
-)
+from ichnaea.models.content import RegionStat, Stat, StatKey
 from ichnaea import util
 
-transliterate_mapping = {
-    231: 'c', 244: 'o', 8217: "'",
-}
+transliterate_mapping = {231: "c", 244: "o", 8217: "'"}
 
 
 def transliterate(string):
@@ -30,7 +24,7 @@ def transliterate(string):
         else:
             result.append(char)
 
-    return ''.join(result)
+    return "".join(result)
 
 
 def global_stats(session):
@@ -77,7 +71,7 @@ def global_stats(session):
 
     for k, v in result.items():
         # show as millions
-        result[k] = '%.2f' % ((v // 10000) / 100.0)
+        result[k] = "%.2f" % ((v // 10000) / 100.0)
 
     return result
 
@@ -106,8 +100,16 @@ def histogram(session, stat_key, days=365):
 def regions(session):
     columns = RegionStat.__table__.c
     rows = session.execute(
-        select([columns.region, columns.gsm, columns.wcdma, columns.lte,
-                columns.blue, columns.wifi])
+        select(
+            [
+                columns.region,
+                columns.gsm,
+                columns.wcdma,
+                columns.lte,
+                columns.blue,
+                columns.wifi,
+            ]
+        )
     ).fetchall()
 
     regions = {}
@@ -119,14 +121,14 @@ def regions(session):
         lte = int(row.lte or 0)
         cell = sum((gsm, wcdma, lte))
         regions[code] = {
-            'code': code,
-            'name': name,
-            'order': transliterate(name[:10]).lower(),
-            'gsm': gsm,
-            'wcdma': wcdma,
-            'lte': lte,
-            'cell': cell,
-            'blue': int(row.blue or 0),
-            'wifi': int(row.wifi or 0),
+            "code": code,
+            "name": name,
+            "order": transliterate(name[:10]).lower(),
+            "gsm": gsm,
+            "wcdma": wcdma,
+            "lte": lte,
+            "cell": cell,
+            "blue": int(row.blue or 0),
+            "wifi": int(row.wifi or 0),
         }
-    return sorted(regions.values(), key=itemgetter('cell'), reverse=True)
+    return sorted(regions.values(), key=itemgetter("cell"), reverse=True)

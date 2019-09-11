@@ -24,23 +24,22 @@ from ichnaea.api.rate_limit import rate_limit_exceeded
 from geocalc import distance
 
 # Magic constant to cache not found.
-LOCATION_NOT_FOUND = '404'
+LOCATION_NOT_FOUND = "404"
 
 # Supported fallback schemata
-COMBAIN_V1_SCHEMA = 'combain/v1'
-ICHNAEA_V1_SCHEMA = 'ichnaea/v1'
-GOOGLEMAPS_V1_SCHEMA = 'googlemaps/v1'
-UNWIREDLABS_V1_SCHEMA = 'unwiredlabs/v1'
+COMBAIN_V1_SCHEMA = "combain/v1"
+ICHNAEA_V1_SCHEMA = "ichnaea/v1"
+GOOGLEMAPS_V1_SCHEMA = "googlemaps/v1"
+UNWIREDLABS_V1_SCHEMA = "unwiredlabs/v1"
 # Default fallback schema, if schema is None/NULL
 DEFAULT_SCHEMA = ICHNAEA_V1_SCHEMA
 
 
-class ExternalResult(namedtuple('ExternalResult',
-                                'lat lon accuracy fallback')):
+class ExternalResult(namedtuple("ExternalResult", "lat lon accuracy fallback")):
     __slots__ = ()
 
     def not_found(self):
-        for field in ('lat', 'lon', 'accuracy'):
+        for field in ("lat", "lon", "accuracy"):
             if getattr(self, field, None) is None:
                 return True
         return False
@@ -53,26 +52,25 @@ class ExternalResult(namedtuple('ExternalResult',
 
 
 class IchnaeaV1ResultSchema(RenamingMappingSchema):
-
     @colander.instantiate()
-    class location(RenamingMappingSchema):  # NOQA
+    class location(RenamingMappingSchema):
 
         lat = colander.SchemaNode(BoundedFloat())
-        lng = colander.SchemaNode(BoundedFloat(), to_name='lon')
+        lng = colander.SchemaNode(BoundedFloat(), to_name="lon")
 
     accuracy = colander.SchemaNode(colander.Float())
     fallback = OptionalNode(colander.String(), missing=None)
 
     def deserialize(self, data):
         data = super(IchnaeaV1ResultSchema, self).deserialize(data)
-        fallback = data.get('fallback', None)
-        if fallback != 'lacf':
+        fallback = data.get("fallback", None)
+        if fallback != "lacf":
             fallback = None
         return {
-            'accuracy': data['accuracy'],
-            'fallback': fallback,
-            'lat': data['location']['lat'],
-            'lon': data['location']['lon'],
+            "accuracy": data["accuracy"],
+            "fallback": fallback,
+            "lat": data["location"]["lat"],
+            "lon": data["location"]["lon"],
         }
 
 
@@ -80,15 +78,13 @@ ICHNAEA_V1_RESULT_SCHEMA = IchnaeaV1ResultSchema()
 
 
 class IchnaeaV1OutboundSchema(OptionalMappingSchema):
-
     @colander.instantiate()
-    class fallbacks(RenamingMappingSchema):  # NOQA
+    class fallbacks(RenamingMappingSchema):
 
         lacf = colander.SchemaNode(colander.Boolean(), missing=True)
 
     @colander.instantiate(missing=colander.drop)
-    class bluetoothBeacons(OptionalSequenceSchema):  # NOQA
-
+    class bluetoothBeacons(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -98,8 +94,7 @@ class IchnaeaV1OutboundSchema(OptionalMappingSchema):
             signalStrength = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop)
-    class cellTowers(OptionalSequenceSchema):  # NOQA
-
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -114,8 +109,7 @@ class IchnaeaV1OutboundSchema(OptionalMappingSchema):
             timingAdvance = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop)
-    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
-
+    class wifiAccessPoints(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -135,8 +129,7 @@ class GoogleMapsV1OutboundSchema(OptionalMappingSchema):
     considerIp = colander.SchemaNode(colander.Boolean(), missing=False)
 
     @colander.instantiate(missing=colander.drop)
-    class cellTowers(OptionalSequenceSchema):  # NOQA
-
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -150,8 +143,7 @@ class GoogleMapsV1OutboundSchema(OptionalMappingSchema):
             timingAdvance = OptionalNode(colander.Integer())
 
     @colander.instantiate(missing=colander.drop)
-    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
-
+    class wifiAccessPoints(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
@@ -179,34 +171,29 @@ class UnwiredlabsV1ResultSchema(RenamingMappingSchema):
 
         # The API always returns 200 Ok responses, but uses the
         # status/message fields to indicate failures.
-        status = data.get('status', None)
-        if status != 'ok':
-            message = data.get('message', None)
-            if message == 'No matches found':
+        status = data.get("status", None)
+        if status != "ok":
+            message = data.get("message", None)
+            if message == "No matches found":
                 # Fabricate a not found
-                return {
-                    'accuracy': None,
-                    'fallback': None,
-                    'lat': None,
-                    'lon': None,
-                }
+                return {"accuracy": None, "fallback": None, "lat": None, "lon": None}
 
-            raise colander.Invalid('Error response, message: %s' % message)
+            raise colander.Invalid("Error response, message: %s" % message)
 
         # Check required fields for status==ok responses
-        for field in ('lat', 'lon', 'accuracy'):
+        for field in ("lat", "lon", "accuracy"):
             if data.get(field, None) is None:
-                raise colander.Invalid('Missing required field: %s' % field)
+                raise colander.Invalid("Missing required field: %s" % field)
 
-        fallback = data.get('fallback', None)
-        if fallback != 'lacf':
+        fallback = data.get("fallback", None)
+        if fallback != "lacf":
             fallback = None
 
         return {
-            'accuracy': data['accuracy'],
-            'fallback': fallback,
-            'lat': data['lat'],
-            'lon': data['lon'],
+            "accuracy": data["accuracy"],
+            "fallback": fallback,
+            "lat": data["lat"],
+            "lon": data["lon"],
         }
 
 
@@ -218,37 +205,34 @@ class UnwiredlabsV1OutboundSchema(RenamingMappingSchema):
     token = colander.SchemaNode(colander.String(), missing=None)
 
     @colander.instantiate()
-    class fallbacks(RenamingMappingSchema):  # NOQA
+    class fallbacks(RenamingMappingSchema):
 
         lacf = colander.SchemaNode(colander.Boolean(), missing=True)
 
-    @colander.instantiate(missing=colander.drop, to_name='cells')
-    class cellTowers(OptionalSequenceSchema):  # NOQA
-
+    @colander.instantiate(missing=colander.drop, to_name="cells")
+    class cellTowers(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            radioType = OptionalNode(colander.String(), to_name='radio')
-            locationAreaCode = OptionalNode(colander.Integer(), to_name='lac')
-            cellId = OptionalNode(colander.Integer(), to_name='cid')
-            mobileCountryCode = OptionalNode(colander.Integer(), to_name='mcc')
-            mobileNetworkCode = OptionalNode(colander.Integer(), to_name='mnc')
-            signalStrength = OptionalNode(colander.Integer(), to_name='signal')
-            timingAdvance = OptionalNode(colander.Integer(), to_name='tA')
-            primaryScramblingCode = OptionalNode(
-                colander.Integer(), to_name='psc')
+            radioType = OptionalNode(colander.String(), to_name="radio")
+            locationAreaCode = OptionalNode(colander.Integer(), to_name="lac")
+            cellId = OptionalNode(colander.Integer(), to_name="cid")
+            mobileCountryCode = OptionalNode(colander.Integer(), to_name="mcc")
+            mobileNetworkCode = OptionalNode(colander.Integer(), to_name="mnc")
+            signalStrength = OptionalNode(colander.Integer(), to_name="signal")
+            timingAdvance = OptionalNode(colander.Integer(), to_name="tA")
+            primaryScramblingCode = OptionalNode(colander.Integer(), to_name="psc")
             asu = OptionalNode(colander.Integer())
 
-    @colander.instantiate(missing=colander.drop, to_name='wifi')
-    class wifiAccessPoints(OptionalSequenceSchema):  # NOQA
-
+    @colander.instantiate(missing=colander.drop, to_name="wifi")
+    class wifiAccessPoints(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(OptionalMappingSchema):
 
-            macAddress = OptionalNode(colander.String(), to_name='bssid')
+            macAddress = OptionalNode(colander.String(), to_name="bssid")
             channel = OptionalNode(colander.Integer())
             frequency = OptionalNode(colander.Integer())
-            signalStrength = OptionalNode(colander.Integer(), to_name='signal')
+            signalStrength = OptionalNode(colander.Integer(), to_name="signal")
             signalToNoiseRatio = OptionalNode(colander.Integer())
 
 
@@ -266,41 +250,39 @@ class FallbackCache(object):
     # we cache contents changes.
     cache_keys = {
         COMBAIN_V1_SCHEMA: {
-            'fallback_blue': b'cache:fallback:combain:v1:1:blue:',
-            'fallback_cell': b'cache:fallback:combain:v1:1:cell:',
-            'fallback_wifi': b'cache:fallback:combain:v1:1:wifi:',
+            "fallback_blue": b"cache:fallback:combain:v1:1:blue:",
+            "fallback_cell": b"cache:fallback:combain:v1:1:cell:",
+            "fallback_wifi": b"cache:fallback:combain:v1:1:wifi:",
         },
         GOOGLEMAPS_V1_SCHEMA: {
-            'fallback_blue': b'cache:fallback:googlemaps:v1:1:blue:',
-            'fallback_cell': b'cache:fallback:googlemaps:v1:1:cell:',
-            'fallback_wifi': b'cache:fallback:googlemaps:v1:1:wifi:',
+            "fallback_blue": b"cache:fallback:googlemaps:v1:1:blue:",
+            "fallback_cell": b"cache:fallback:googlemaps:v1:1:cell:",
+            "fallback_wifi": b"cache:fallback:googlemaps:v1:1:wifi:",
         },
         ICHNAEA_V1_SCHEMA: {
-            'fallback_blue': b'cache:fallback:ichnaea:v1:1:blue:',
-            'fallback_cell': b'cache:fallback:ichnaea:v1:1:cell:',
-            'fallback_wifi': b'cache:fallback:ichnaea:v1:1:wifi:',
+            "fallback_blue": b"cache:fallback:ichnaea:v1:1:blue:",
+            "fallback_cell": b"cache:fallback:ichnaea:v1:1:cell:",
+            "fallback_wifi": b"cache:fallback:ichnaea:v1:1:wifi:",
         },
         UNWIREDLABS_V1_SCHEMA: {
-            'fallback_blue': b'cache:fallback:unwiredlabs:v1:1:blue:',
-            'fallback_cell': b'cache:fallback:unwiredlabs:v1:1:cell:',
-            'fallback_wifi': b'cache:fallback:unwiredlabs:v1:1:wifi:',
-        }
+            "fallback_blue": b"cache:fallback:unwiredlabs:v1:1:blue:",
+            "fallback_cell": b"cache:fallback:unwiredlabs:v1:1:cell:",
+            "fallback_wifi": b"cache:fallback:unwiredlabs:v1:1:wifi:",
+        },
     }
 
-    def __init__(self, raven_client, redis_client, stats_client,
-                 schema=DEFAULT_SCHEMA):
+    def __init__(self, raven_client, redis_client, stats_client, schema=DEFAULT_SCHEMA):
         self.raven_client = raven_client
         self.redis_client = redis_client
         self.stats_client = stats_client
         self.schema = DEFAULT_SCHEMA
-        self.cache_key_blue = self.cache_keys[schema]['fallback_blue']
-        self.cache_key_cell = self.cache_keys[schema]['fallback_cell']
-        self.cache_key_wifi = self.cache_keys[schema]['fallback_wifi']
+        self.cache_key_blue = self.cache_keys[schema]["fallback_blue"]
+        self.cache_key_cell = self.cache_keys[schema]["fallback_cell"]
+        self.cache_key_wifi = self.cache_keys[schema]["fallback_wifi"]
 
     def _stat_count(self, fallback_name, status):
-        tags = ['fallback_name:%s' % fallback_name,
-                'status:%s' % status]
-        self.stats_client.incr('locate.fallback.cache', tags=tags)
+        tags = ["fallback_name:%s" % fallback_name, "status:%s" % status]
+        self.stats_client.incr("locate.fallback.cache", tags=tags)
 
     def _should_cache(self, query):
         """
@@ -318,13 +300,21 @@ class FallbackCache(object):
         Queries with multiple cells or mixed blue, cell and wifi networks
         won't get cached.
         """
-        return (query.api_key.fallback_cache_expire and
-                ((not query.blue and not query.wifi and
-                  len(query.cell) == 1) or
-                 (not query.blue and not query.cell and
-                  query.wifi and len(query.wifi) < 20) or
-                 (not query.cell and not query.wifi and
-                  query.blue and len(query.blue) < 20)))
+        return query.api_key.fallback_cache_expire and (
+            (not query.blue and not query.wifi and len(query.cell) == 1)
+            or (
+                not query.blue
+                and not query.cell
+                and query.wifi
+                and len(query.wifi) < 20
+            )
+            or (
+                not query.cell
+                and not query.wifi
+                and query.blue
+                and len(query.blue) < 20
+            )
+        )
 
     def _cache_keys(self, query):
         # Dependent on should_cache conditions.
@@ -365,7 +355,7 @@ class FallbackCache(object):
         fallback_name = query.api_key.fallback_name
 
         if not self._should_cache(query):
-            self._stat_count(fallback_name, 'bypassed')
+            self._stat_count(fallback_name, "bypassed")
             return None
 
         cache_keys = self._cache_keys(query)
@@ -385,31 +375,32 @@ class FallbackCache(object):
                 else:
                     value = ExternalResult(**value)
                     # ~100x100m clusters
-                    clustered_results[(round(value.lat, 3),
-                                       round(value.lat, 3),
-                                       value.fallback)].append(value)
+                    clustered_results[
+                        (round(value.lat, 3), round(value.lat, 3), value.fallback)
+                    ].append(value)
         except (simplejson.JSONDecodeError, RedisError):
             self.raven_client.captureException()
-            self._stat_count(fallback_name, 'failure')
+            self._stat_count(fallback_name, "failure")
             return None
 
         if not clustered_results:
-            self._stat_count(fallback_name, 'miss')
+            self._stat_count(fallback_name, "miss")
             return None
 
         if list(clustered_results.keys()) == [not_found_cluster]:
             # the only match was for not found results
-            self._stat_count(fallback_name, 'hit')
+            self._stat_count(fallback_name, "hit")
             return clustered_results[not_found_cluster][0]
 
         if len(clustered_results) == 1:
             # all the cached values agree with each other
-            self._stat_count(fallback_name, 'hit')
+            self._stat_count(fallback_name, "hit")
             results = list(clustered_results.values())[0]
 
             circles = numpy.array(
                 [(res.lat, res.lon, res.accuracy) for res in results],
-                dtype=numpy.double)
+                dtype=numpy.double,
+            )
             points, accuracies = numpy.hsplit(circles, [2])
 
             lat, lon = points.mean(axis=0)
@@ -422,14 +413,11 @@ class FallbackCache(object):
                 radius = max(radius, p_dist)
 
             return ExternalResult(
-                lat=lat,
-                lon=lon,
-                accuracy=float(radius),
-                fallback=results[0].fallback,
+                lat=lat, lon=lon, accuracy=float(radius), fallback=results[0].fallback
             )
 
         # inconsistent results
-        self._stat_count(fallback_name, 'inconsistent')
+        self._stat_count(fallback_name, "inconsistent")
         return None
 
     def set(self, query, result, expire=3600):
@@ -474,9 +462,9 @@ def _add_fallback_ipf_false(payload):
     # Make shallow copies of payload parts, to avoid mutating argument,
     # but avoid full deepcopy of the potentially large network parts.
     new_payload = payload.copy()
-    new_fallbacks = new_payload['fallbacks'].copy()
-    new_fallbacks['ipf'] = False
-    new_payload['fallbacks'] = new_fallbacks
+    new_fallbacks = new_payload["fallbacks"].copy()
+    new_fallbacks["ipf"] = False
+    new_payload["fallbacks"] = new_fallbacks
     return new_payload
 
 
@@ -484,7 +472,7 @@ def _external_call_ichnaea_v1(query, payload):
     new_payload = _add_fallback_ipf_false(payload)
     return query.http_session.post(
         query.api_key.fallback_url,
-        headers={'User-Agent': 'ichnaea'},
+        headers={"User-Agent": "ichnaea"},
         json=new_payload,
         timeout=5.0,
     )
@@ -494,7 +482,7 @@ def _external_call_combain_v1(query, payload):
     new_payload = _add_fallback_ipf_false(payload)
     return query.http_session.post(
         query.api_key.fallback_url,
-        headers={'User-Agent': 'ichnaea'},
+        headers={"User-Agent": "ichnaea"},
         json=new_payload,
         timeout=5.0,
     )
@@ -505,7 +493,7 @@ def _external_call_googlemaps_v1(query, payload):
     # a new top-level considerIp: false
     return query.http_session.post(
         query.api_key.fallback_url,
-        headers={'User-Agent': 'ichnaea'},
+        headers={"User-Agent": "ichnaea"},
         json=payload,
         timeout=5.0,
     )
@@ -515,14 +503,11 @@ def _external_call_unwiredlabs_v1(query, payload):
     new_payload = _add_fallback_ipf_false(payload)
 
     # Parse the token from the URL and put it into the body.
-    url, token = query.api_key.fallback_url.split('#')
-    new_payload['token'] = token
+    url, token = query.api_key.fallback_url.split("#")
+    new_payload["token"] = token
 
     return query.http_session.post(
-        url,
-        headers={'User-Agent': 'ichnaea'},
-        json=new_payload,
-        timeout=5.0,
+        url, headers={"User-Agent": "ichnaea"}, json=new_payload, timeout=5.0
     )
 
 
@@ -567,25 +552,22 @@ class FallbackPositionSource(PositionSource):
         self.caches = {}
         for schema in self.schemas:
             self.caches[schema] = FallbackCache(
-                self.raven_client,
-                self.redis_client,
-                self.stats_client,
-                schema=schema,
+                self.raven_client, self.redis_client, self.stats_client, schema=schema
             )
 
     def _stat_count(self, stat, tags):
-        self.stats_client.incr('locate.fallback.' + stat, tags=tags)
+        self.stats_client.incr("locate.fallback." + stat, tags=tags)
 
     def _stat_timed(self, stat, tags):
-        return self.stats_client.timed('locate.fallback.' + stat, tags=tags)
+        return self.stats_client.timed("locate.fallback." + stat, tags=tags)
 
     def _ratelimit_key(self, name, interval):
         now = int(time.time())
-        return 'fallback_ratelimit:%s:%s' % (name, now // interval)
+        return "fallback_ratelimit:%s:%s" % (name, now // interval)
 
     def _ratelimit_reached(self, query):
         api_key = query.api_key
-        name = api_key.fallback_name or ''
+        name = api_key.fallback_name or ""
         limit = api_key.fallback_ratelimit or 0
         interval = api_key.fallback_ratelimit_interval or 1
         ratelimit_key = self._ratelimit_key(name, interval)
@@ -606,22 +588,21 @@ class FallbackPositionSource(PositionSource):
 
         try:
             outbound = outbound_schema.deserialize(query.json())
-        except colander.Invalid:  # pragma: no cover
+        except colander.Invalid:
             self.raven_client.captureException()
 
-        if not outbound:  # pragma: no cover
+        if not outbound:
             return None
 
         try:
-            fallback_tag = 'fallback_name:%s' % (
-                query.api_key.fallback_name or 'none')
+            fallback_tag = "fallback_name:%s" % (query.api_key.fallback_name or "none")
 
-            with self._stat_timed('lookup', tags=[fallback_tag]):
+            with self._stat_timed("lookup", tags=[fallback_tag]):
                 response = outbound_call(query, outbound)
 
             self._stat_count(
-                'lookup', tags=[fallback_tag,
-                                'status:' + str(response.status_code)])
+                "lookup", tags=[fallback_tag, "status:" + str(response.status_code)]
+            )
 
             if response.status_code == 404:
                 # don't log exceptions for normal not found responses
@@ -635,11 +616,10 @@ class FallbackPositionSource(PositionSource):
             try:
                 body = response.json()
                 validated = result_schema.deserialize(body)
-            except (colander.Invalid,
-                    simplejson.JSONDecodeError):  # pragma: no cover
+            except (colander.Invalid, simplejson.JSONDecodeError):
                 self.raven_client.captureException()
 
-            if not validated:  # pragma: no cover
+            if not validated:
                 return None
 
             return ExternalResult(**validated)
@@ -649,9 +629,9 @@ class FallbackPositionSource(PositionSource):
 
     def should_search(self, query, results):
         return (
-            query.api_key.can_fallback() and
-            (bool(query.blue) or bool(query.cell) or bool(query.wifi)) and
-            not results.satisfies(query)
+            query.api_key.can_fallback()
+            and (bool(query.blue) or bool(query.cell) or bool(query.wifi))
+            and not results.satisfies(query)
         )
 
     def search(self, query):
@@ -673,17 +653,20 @@ class FallbackPositionSource(PositionSource):
             result_data = self._make_external_call(query, fallback_schema)
             if result_data is not None:
                 # we got a new possibly not_found answer
-                cache.set(query, result_data,
-                          expire=query.api_key.fallback_cache_expire or 1)
+                cache.set(
+                    query, result_data, expire=query.api_key.fallback_cache_expire or 1
+                )
 
         if result_data is not None and not result_data.not_found():
-            results.add(self.result_type(
-                lat=result_data.lat,
-                lon=result_data.lon,
-                accuracy=result_data.accuracy,
-                score=result_data.score,
-                fallback=result_data.fallback,
-            ))
+            results.add(
+                self.result_type(
+                    lat=result_data.lat,
+                    lon=result_data.lon,
+                    accuracy=result_data.accuracy,
+                    score=result_data.score,
+                    fallback=result_data.fallback,
+                )
+            )
 
         query.emit_source_stats(self.source, results)
         return results

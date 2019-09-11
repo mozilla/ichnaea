@@ -83,7 +83,7 @@ class DataAccuracy(Enum):
     high = 500.0  # High accuracy, probably Bluetooth or WiFi based.
     medium = 50000.0  # Medium accuracy, probably cell based.
     low = EARTH_CIRCUMFERENCE  # Low accuracy, large cell, cell area or GeoIP.
-    none = float('inf')  # No accuracy at all.
+    none = float("inf")  # No accuracy at all.
 
     @classmethod
     def from_number(cls, num):

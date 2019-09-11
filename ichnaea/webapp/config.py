@@ -12,25 +12,25 @@ from ichnaea.api.locate.searcher import (
 )
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
-from ichnaea.db import (
-    configure_db,
-    db_session,
-)
+from ichnaea.db import configure_db, db_session
 from ichnaea.geoip import configure_geoip
 from ichnaea.http import configure_http_session
-from ichnaea.log import (
-    configure_logging,
-    configure_raven,
-    configure_stats,
-)
+from ichnaea.log import configure_logging, configure_raven, configure_stats
 from ichnaea.queue import DataQueue
 from ichnaea.webapp.monitor import configure_monitor
 
 
-def main(ping_connections=False,
-         _db=None, _geoip_db=None, _http_session=None,
-         _raven_client=None, _redis_client=None, _stats_client=None,
-         _position_searcher=None, _region_searcher=None):
+def main(
+    ping_connections=False,
+    _db=None,
+    _geoip_db=None,
+    _http_session=None,
+    _raven_client=None,
+    _redis_client=None,
+    _stats_client=None,
+    _position_searcher=None,
+    _region_searcher=None,
+):
     """
     Configure the web app stored in :data:`ichnaea.webapp.app._APP`.
 
@@ -56,7 +56,7 @@ def main(ping_connections=False,
     config = Configurator()
 
     # add support for pt templates
-    config.include('pyramid_chameleon')
+    config.include("pyramid_chameleon")
 
     # add a config setting to skip logging for some views
     config.registry.skip_logging = set()
@@ -68,48 +68,52 @@ def main(ping_connections=False,
     # configure outside connections
     registry = config.registry
 
-    registry.db = configure_db('ro', _db=_db)
+    registry.db = configure_db("ro", _db=_db)
 
     registry.raven_client = raven_client = configure_raven(
-        transport='gevent', _client=_raven_client)
+        transport="gevent", _client=_raven_client
+    )
 
-    registry.redis_client = redis_client = configure_redis(
-        _client=_redis_client)
+    registry.redis_client = redis_client = configure_redis(_client=_redis_client)
 
-    registry.stats_client = stats_client = configure_stats(
-        _client=_stats_client)
+    registry.stats_client = stats_client = configure_stats(_client=_stats_client)
 
     registry.http_session = configure_http_session(_session=_http_session)
 
     registry.geoip_db = geoip_db = configure_geoip(
-        raven_client=raven_client, _client=_geoip_db)
+        raven_client=raven_client, _client=_geoip_db
+    )
 
     # Needs to be the exact same as the *_incoming entries in async.config.
     registry.data_queues = data_queues = {
-        'update_incoming': DataQueue('update_incoming', redis_client,
-                                     batch=100, compress=True),
+        "update_incoming": DataQueue(
+            "update_incoming", redis_client, batch=100, compress=True
+        )
     }
 
-    for name, func, default in (('position_searcher',
-                                 configure_position_searcher,
-                                 _position_searcher),
-                                ('region_searcher',
-                                 configure_region_searcher,
-                                 _region_searcher)):
-        searcher = func(geoip_db=geoip_db, raven_client=raven_client,
-                        redis_client=redis_client, stats_client=stats_client,
-                        data_queues=data_queues, _searcher=default)
+    for name, func, default in (
+        ("position_searcher", configure_position_searcher, _position_searcher),
+        ("region_searcher", configure_region_searcher, _region_searcher),
+    ):
+        searcher = func(
+            geoip_db=geoip_db,
+            raven_client=raven_client,
+            redis_client=redis_client,
+            stats_client=stats_client,
+            data_queues=data_queues,
+            _searcher=default,
+        )
         setattr(registry, name, searcher)
 
-    config.add_tween('ichnaea.db.db_tween_factory', under=EXCVIEW)
-    config.add_tween('ichnaea.log.log_tween_factory', under=EXCVIEW)
+    config.add_tween("ichnaea.db.db_tween_factory", under=EXCVIEW)
+    config.add_tween("ichnaea.log.log_tween_factory", under=EXCVIEW)
     config.add_request_method(db_session, property=True)
 
     # freeze skip logging set
     config.registry.skip_logging = frozenset(config.registry.skip_logging)
 
     # Should we try to initialize and establish the outbound connections?
-    if ping_connections:  # pragma: no cover
+    if ping_connections:
         registry.db.ping()
         registry.redis_client.ping()
 
@@ -117,7 +121,7 @@ def main(ping_connections=False,
 
 
 def shutdown_worker(app):
-    registry = getattr(app, 'registry', None)
+    registry = getattr(app, "registry", None)
     if registry is not None:
         registry.db.close()
         del registry.db

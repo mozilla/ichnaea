@@ -8,7 +8,7 @@ import re
 
 import mobile_codes
 
-from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # NOQA
+from ichnaea.constants import MAX_LAT, MIN_LAT, MAX_LON, MIN_LON  # noqa
 
 
 class Radio(IntEnum):
@@ -73,17 +73,17 @@ CELL_MAX_OBSERVATION_ACCURACY = 1000.0  # Maximum cell observation accuracy.
 WIFI_MAX_OBSERVATION_ACCURACY = 200.0  # Maximum WiFi observation accuracy.
 MAX_OBSERVATION_SPEED = 50.0  # Maximum observation speed.
 
-WIFI_TEST_MAC = '01005e901000'
+WIFI_TEST_MAC = "01005e901000"
 """
 We use a `documentation-only multi-cast address
 <http://tools.ietf.org/html/rfc7042#section-2.1.1>`_
 as a test mac address and ignore data submissions with it.
 """
 
-INVALID_MAC_REGEX = re.compile('(?!(0{12}|f{12}|%s))' % WIFI_TEST_MAC)
-VALID_MAC_REGEX = re.compile('([0-9a-fA-F]{12})')
+INVALID_MAC_REGEX = re.compile(r"(?!(0{12}|f{12}|%s))" % WIFI_TEST_MAC)
+VALID_MAC_REGEX = re.compile(r"([0-9a-fA-F]{12})")
 
-VALID_APIKEY_REGEX = re.compile('^[-0-9a-z]+$', re.IGNORECASE | re.UNICODE)
+VALID_APIKEY_REGEX = re.compile(r"^[-0-9a-z]+$", re.IGNORECASE | re.UNICODE)
 
 MIN_WIFI_CHANNEL = 1  # Minimum accepted WiFi channel.
 MAX_WIFI_CHANNEL = 199  # Maximum accepted WiFi channel.
@@ -103,17 +103,17 @@ MAX_BLUE_SIGNAL = 0  # Maximum accepted Bluetooth signal strength value.
 MIN_MCC = 1  # Minimum accepted network code.
 MAX_MCC = 999  # Maximum accepted network code.
 
-ALL_VALID_MCCS = (
-    [int(record.mcc)
-     for record in mobile_codes._countries()
-     if isinstance(record.mcc, str)] +
-    [int(code)
-     for record in mobile_codes._countries()
-     if isinstance(record.mcc, (tuple, list))
-     for code in record.mcc]
-)  # All valid mobile country codes.
-ALL_VALID_MCCS = set(
-    [mcc for mcc in ALL_VALID_MCCS if MIN_MCC <= mcc <= MAX_MCC])
+ALL_VALID_MCCS = [
+    int(record.mcc)
+    for record in mobile_codes._countries()
+    if isinstance(record.mcc, str)
+] + [
+    int(code)
+    for record in mobile_codes._countries()
+    if isinstance(record.mcc, (tuple, list))
+    for code in record.mcc
+]  # All valid mobile country codes.
+ALL_VALID_MCCS = set([mcc for mcc in ALL_VALID_MCCS if MIN_MCC <= mcc <= MAX_MCC])
 # exclude Tuvalu, as it isn't in our shapefile
 ALL_VALID_MCCS = frozenset(ALL_VALID_MCCS - set([553]))
 
@@ -144,7 +144,7 @@ MAX_CELL_ASU = {
     Radio.gsm: 31,
     Radio.wcdma: 91,
     Radio.lte: 97,
-}    # Maximum arbitrary strength unit per radio type.
+}  # Maximum arbitrary strength unit per radio type.
 
 MIN_CELL_SIGNAL = {
     Radio.gsm: -113,

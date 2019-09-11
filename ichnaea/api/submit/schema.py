@@ -20,8 +20,8 @@ from ichnaea.api.schema import (
     UnixTimeFromInteger,
 )
 
-RADIO_STRINGS = ['gsm', 'cdma', 'umts', 'wcdma', 'lte']
-SOURCE_STRINGS = ['fixed', 'gnss', 'fused', 'query']
+RADIO_STRINGS = ["gsm", "cdma", "umts", "wcdma", "lte"]
+SOURCE_STRINGS = ["fixed", "gnss", "fused", "query"]
 
 
 class BluetoothBeaconSchema(OptionalMappingSchema):
@@ -34,7 +34,7 @@ class BluetoothBeaconSchema(OptionalMappingSchema):
 
     def deserialize(self, data):
         data = super(BluetoothBeaconSchema, self).deserialize(data)
-        if 'macAddress' not in data:
+        if "macAddress" not in data:
             return colander.drop
         return data
 
@@ -73,7 +73,7 @@ class WifiAccessPointSchema(OptionalMappingSchema):
 
     def deserialize(self, data):
         data = super(WifiAccessPointSchema, self).deserialize(data)
-        if 'macAddress' not in data:
+        if "macAddress" not in data:
             return colander.drop
         return data
 
@@ -111,24 +111,24 @@ class ReportSchema(OptionalMappingSchema):
 
     def deserialize(self, data):
         data = super(ReportSchema, self).deserialize(data)
-        if (data is colander.drop or
-                data is colander.null):  # pragma: no cover
+        if data is colander.drop or data is colander.null:
             return colander.drop
 
-        if not (data.get('bluetoothBeacons') or
-                data.get('cellTowers') or
-                data.get('wifiAccessPoints')):
+        if not (
+            data.get("bluetoothBeacons")
+            or data.get("cellTowers")
+            or data.get("wifiAccessPoints")
+        ):
             return colander.drop
 
-        top_radio = data.get('radioType', None)
-        for cell in data.get('cellTowers', ()):
-            if top_radio and ('radioType' not in cell or
-                              not cell['radioType']):
-                cell['radioType'] = top_radio
-            if cell.get('radioType') == 'umts':
-                cell['radioType'] = 'wcdma'
+        top_radio = data.get("radioType", None)
+        for cell in data.get("cellTowers", ()):
+            if top_radio and ("radioType" not in cell or not cell["radioType"]):
+                cell["radioType"] = top_radio
+            if cell.get("radioType") == "umts":
+                cell["radioType"] = "wcdma"
 
-        if 'radioType' in data:
-            del data['radioType']
+        if "radioType" in data:
+            del data["radioType"]
 
         return data

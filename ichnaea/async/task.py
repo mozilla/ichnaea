@@ -3,10 +3,7 @@ Contains a Celery base task.
 """
 
 from celery import Task
-from kombu.serialization import (
-    dumps as kombu_dumps,
-    loads as kombu_loads,
-)
+from kombu.serialization import dumps as kombu_dumps, loads as kombu_loads
 
 from ichnaea.cache import redis_pipeline
 from ichnaea.conf import settings
@@ -41,9 +38,9 @@ class BaseTask(Task):
         short = cls._shortname
         if short is None:
             # strip off ichnaea prefix and tasks module
-            segments = cls.name.split('.')
-            segments = [s for s in segments if s not in ('ichnaea', 'tasks')]
-            short = '.'.join(segments)
+            segments = cls.name.split(".")
+            segments = [s for s in segments if s not in ("ichnaea", "tasks")]
+            short = ".".join(segments)
         return short
 
     @classmethod
@@ -53,17 +50,14 @@ class BaseTask(Task):
         the optional shard_model to create multiple schedule entries.
         """
         if cls._shard_model is None:
-            return {cls.shortname(): {
-                'task': cls.name,
-                'schedule': cls._schedule,
-            }}
+            return {cls.shortname(): {"task": cls.name, "schedule": cls._schedule}}
 
         result = {}
         for shard_id in cls._shard_model.shards().keys():
-            result[cls.shortname() + '_' + shard_id] = {
-                'task': cls.name,
-                'schedule': cls._schedule,
-                'kwargs': {'shard_id': shard_id},
+            result[cls.shortname() + "_" + shard_id] = {
+                "task": cls.name,
+                "schedule": cls._schedule,
+                "kwargs": {"shard_id": shard_id},
             }
         return result
 
@@ -84,13 +78,12 @@ class BaseTask(Task):
         Execute the task, capture a statsd timer for the task duration and
         automatically report exceptions into Sentry.
         """
-        with self.stats_client.timed('task',
-                                     tags=['task:' + self.shortname()]):
+        with self.stats_client.timed("task", tags=["task:" + self.shortname()]):
             try:
                 result = super(BaseTask, self).__call__(*args, **kw)
-            except Exception as exc:  # pragma: no cover
+            except Exception as exc:
                 self.raven_client.captureException()
-                if self._auto_retry and not settings('testing'):
+                if self._auto_retry and not settings("testing"):
                     raise self.retry(exc=exc)
                 raise
         return result
@@ -104,7 +97,7 @@ class BaseTask(Task):
         de/serialization process to make sure the arguments can indeed
         be serialized into JSON.
         """
-        if settings('testing'):
+        if settings("testing"):
             # We do the extra check to make sure this was really used from
             # inside tests
 
@@ -142,12 +135,12 @@ class BaseTask(Task):
         return redis_pipeline(self.redis_client, execute=execute)
 
     @property
-    def geoip_db(self):  # pragma: no cover
+    def geoip_db(self):
         """Exposes a :class:`~ichnaea.geoip.GeoIPWrapper`."""
         return self.app.geoip_db
 
     @property
-    def raven_client(self):  # pragma: no cover
+    def raven_client(self):
         """Exposes a :class:`~raven.Client`."""
         return self.app.raven_client
 

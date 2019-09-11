@@ -9,15 +9,10 @@ from ichnaea.api.schema import (
     OptionalMappingSchema,
     OptionalSequenceSchema,
 )
-from ichnaea.api.submit.schema import (
-    CellTowerSchema,
-    PositionSchema,
-    ReportSchema,
-)
+from ichnaea.api.submit.schema import CellTowerSchema, PositionSchema, ReportSchema
 
 
 class CellTowersV2Schema(OptionalSequenceSchema):
-
     @colander.instantiate()
     class SequenceItem(CellTowerSchema):
 
@@ -25,10 +20,8 @@ class CellTowersV2Schema(OptionalSequenceSchema):
 
 
 class SubmitV2Schema(OptionalMappingSchema):
-
     @colander.instantiate()
-    class items(OptionalSequenceSchema):  # NOQA
-
+    class items(OptionalSequenceSchema):
         @colander.instantiate()
         class SequenceItem(ReportSchema):
 

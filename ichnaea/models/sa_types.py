@@ -3,13 +3,8 @@ import time
 
 from enum import IntEnum
 import pytz
-from sqlalchemy import (
-    String,
-)
-from sqlalchemy.dialects.mysql import (
-    DATETIME as DateTime,
-    TINYINT as TinyInteger,
-)
+from sqlalchemy import String
+from sqlalchemy.dialects.mysql import DATETIME as DateTime, TINYINT as TinyInteger
 from sqlalchemy.types import TypeDecorator
 
 
@@ -23,14 +18,14 @@ class SetColumn(TypeDecorator):
 
     def process_bind_param(self, value, dialect):
         if value is not None:
-            value = ','.join([v for v in frozenset(value)])
+            value = ",".join([v for v in frozenset(value)])
         return value
 
     def process_result_value(self, value, dialect):
-        if value == '':
+        if value == "":
             value = frozenset()
         elif value is not None:
-            value = frozenset(value.split(','))
+            value = frozenset(value.split(","))
         return value
 
 

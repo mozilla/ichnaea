@@ -15,7 +15,7 @@ class LocationGeventWorker(GeventWorker):
       inactivity of the worker as a whole.
     """
 
-    def handle_request(self, *args):  # pragma: no cover
+    def handle_request(self, *args):
         """
         Apply the configured 'timeout' value to each individual request.
         Note that self.timeout is set to half the configured timeout by

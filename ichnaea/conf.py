@@ -15,81 +15,72 @@ HERE = os.path.dirname(__file__)
 class AppConfig(RequiredConfigMixin):
     required_config = ConfigOptions()
     required_config.add_option(
-        'testing',
-        default='false',
+        "testing",
+        default="false",
         parser=bool,
-        doc='Whether or not we are running tests.'
+        doc="Whether or not we are running tests.",
     )
 
     required_config.add_option(
-        'asset_bucket',
-        default='',
-        doc='name of AWS S3 bucket to store map tile image assets in'
+        "asset_bucket",
+        default="",
+        doc="name of AWS S3 bucket to store map tile image assets in",
     )
     required_config.add_option(
-        'asset_url',
-        default='',
-        doc='Amazon CloudFront url for map tile image assets'
+        "asset_url", default="", doc="Amazon CloudFront url for map tile image assets"
     )
 
     # Database related settings
     required_config.add_option(
-        'db_library',
-        default='pymysql',
-        doc='one of "pymysql" or "mysqlconnector"'
+        "db_library", default="pymysql", doc='one of "pymysql" or "mysqlconnector"'
     )
     required_config.add_option(
-        'db_readonly_uri',
+        "db_readonly_uri",
         doc=(
-            'uri for the readonly database; '
-            'mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME'
-        )
+            "uri for the readonly database; "
+            "mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME"
+        ),
     )
     required_config.add_option(
-        'db_readwrite_uri',
+        "db_readwrite_uri",
         doc=(
-            'uri for the read-write database; '
-            'mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME'
-        )
+            "uri for the read-write database; "
+            "mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME"
+        ),
     )
     required_config.add_option(
-        'db_ddl_uri',
+        "db_ddl_uri",
         doc=(
-            'uri for the ddl database used for migrations; '
-            'mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME'
-        )
+            "uri for the ddl database used for migrations; "
+            "mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME"
+        ),
     )
 
     required_config.add_option(
-        'sentry_dsn',
-        default='',
-        doc='Sentry DSN; leave blank to disable Sentry error reporting'
+        "sentry_dsn",
+        default="",
+        doc="Sentry DSN; leave blank to disable Sentry error reporting",
     )
 
     required_config.add_option(
-        'statsd_host',
-        default='',
-        doc='StatsD host; blank to disable StatsD'
+        "statsd_host", default="", doc="StatsD host; blank to disable StatsD"
     )
 
-    required_config.add_option(
-        'redis_uri',
-        doc='uri for Redis; redis://HOST:PORT/DB'
-    )
+    required_config.add_option("redis_uri", doc="uri for Redis; redis://HOST:PORT/DB")
 
     required_config.add_option(
-        'mapbox_token',
-        default='',
+        "mapbox_token",
+        default="",
         doc=(
-            'Mapbox API key; if you do not provide this, then parts of '
-            'the site will not work'
-        )
+            "Mapbox API key; if you do not provide this, then parts of "
+            "the site will not work"
+        ),
     )
 
     required_config.add_option(
-        'geoip_path',
-        default=os.path.join(HERE, 'tests/data/GeoIP2-City-Test.mmdb'),
-        doc='absolute path to mmdb file for geoip lookups'
+        "geoip_path",
+        default=os.path.join(HERE, "tests/data/GeoIP2-City-Test.mmdb"),
+        doc="absolute path to mmdb file for geoip lookups",
     )
 
     def __init__(self, config):
@@ -106,7 +97,7 @@ def build_config_manager():
             # Pull configuration from environment variables
             ConfigOSEnv()
         ],
-        doc="For configuration help, see https://ichnaea.readthedocs.io/"
+        doc="For configuration help, see https://ichnaea.readthedocs.io/",
     )
     return AppConfig(config_manager)
 

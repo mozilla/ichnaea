@@ -2,15 +2,11 @@ from datetime import timedelta
 
 from sqlalchemy import delete, select
 
-from ichnaea.models.content import (
-    DataMap,
-    encode_datamap_grid,
-)
+from ichnaea.models.content import DataMap, encode_datamap_grid
 from ichnaea import util
 
 
 class DataMapCleaner(object):
-
     def __init__(self, task, shard_id=None):
         self.task = task
         self.shard_id = shard_id
@@ -21,10 +17,7 @@ class DataMapCleaner(object):
         one_year = today - timedelta(days=365)
 
         table = self.shard.__table__
-        result = session.execute(
-            delete(table)
-            .where(table.c.modified < one_year)
-        )
+        result = session.execute(delete(table).where(table.c.modified < one_year))
         return result
 
     def __call__(self):
@@ -35,7 +28,6 @@ class DataMapCleaner(object):
 
 
 class DataMapUpdater(object):
-
     def __init__(self, task, shard_id=None):
         self.task = task
         self.shard_id = shard_id
@@ -46,8 +38,9 @@ class DataMapUpdater(object):
         today = util.utcnow().date()
 
         rows = session.execute(
-            select([self.shard_table.c.grid, self.shard_table.c.modified])
-            .where(self.shard_table.c.grid.in_(grids))
+            select([self.shard_table.c.grid, self.shard_table.c.modified]).where(
+                self.shard_table.c.grid.in_(grids)
+            )
         ).fetchall()
 
         outdated = set()
@@ -65,16 +58,14 @@ class DataMapUpdater(object):
             if grid in skip:
                 continue
             elif grid in outdated:
-                update_values.append(
-                    {'grid': grid, 'modified': today})
+                update_values.append({"grid": grid, "modified": today})
             else:
-                new_values.append(
-                    {'grid': grid, 'created': today, 'modified': today})
+                new_values.append({"grid": grid, "created": today, "modified": today})
 
         if new_values:
             # do a batch insert of new grids
             stmt = self.shard.__table__.insert(
-                mysql_on_duplicate='modified = modified'  # no-op
+                mysql_on_duplicate="modified = modified"  # no-op
             )
             session.execute(stmt.values(new_values))
 
@@ -83,7 +74,7 @@ class DataMapUpdater(object):
             session.bulk_update_mappings(self.shard, update_values)
 
     def __call__(self):
-        queue = self.task.app.data_queues['update_datamap_' + self.shard_id]
+        queue = self.task.app.data_queues["update_datamap_" + self.shard_id]
         grids = queue.dequeue()
         grids = list(set(grids))
         if not grids or not self.shard:
@@ -92,7 +83,7 @@ class DataMapUpdater(object):
         with self.task.db_session() as session:
             self._update_shards(session, grids)
 
-        if queue.ready():  # pragma: no cover
-            self.task.apply_countdown(kwargs={'shard_id': self.shard_id})
+        if queue.ready():
+            self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
 
         return len(grids)

@@ -200,28 +200,16 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
 )
-from sqlalchemy.dialects.mysql import (
-    INTEGER as Integer,
-    SMALLINT as SmallInteger,
-)
+from sqlalchemy.dialects.mysql import INTEGER as Integer, SMALLINT as SmallInteger
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.types import TypeDecorator
 
 from ichnaea.geocode import GEOCODER
-from ichnaea.models.base import (
-    _Model,
-    CreationMixin,
-)
+from ichnaea.models.base import _Model, CreationMixin
 from ichnaea.models import constants
 from ichnaea.models.constants import Radio
-from ichnaea.models.sa_types import (
-    TinyIntEnum,
-)
-from ichnaea.models.schema import (
-    DateFromString,
-    DefaultNode,
-    ValidatorNode,
-)
+from ichnaea.models.sa_types import TinyIntEnum
+from ichnaea.models.schema import DateFromString, DefaultNode, ValidatorNode
 from ichnaea.models.station import (
     PositionMixin,
     StationMixin,
@@ -231,7 +219,7 @@ from ichnaea.models.station import (
     ValidTimeTrackingSchema,
 )
 
-CELLAREA_STRUCT = struct.Struct('!bHHH')
+CELLAREA_STRUCT = struct.Struct("!bHHH")
 """
 A compact representation of a full cell area id as a byte sequence.
 
@@ -239,7 +227,7 @@ Consists of a single byte for the radio type and three 16 bit unsigned
 integers for the mcc, mnc and lac parts.
 """
 
-CELLID_STRUCT = struct.Struct('!bHHHI')
+CELLID_STRUCT = struct.Struct("!bHHHI")
 """
 A compact representation of a full cell id as a byte sequence.
 
@@ -258,7 +246,7 @@ def decode_cellarea(value, codec=None):
 
     If ``codec='base64'``, decode the value from a base64 sequence first.
     """
-    if codec == 'base64':
+    if codec == "base64":
         value = base64.b64decode(value)
     radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
     return (Radio(radio), mcc, mnc, lac)
@@ -271,7 +259,7 @@ def decode_cellid(value, codec=None):
 
     If ``codec='base64'``, decode the value from a base64 sequence first.
     """
-    if codec == 'base64':
+    if codec == "base64":
         value = base64.b64decode(value)
     radio, mcc, mnc, lac, cid = CELLID_STRUCT.unpack(value)
     return (Radio(radio), mcc, mnc, lac, cid)
@@ -287,7 +275,7 @@ def encode_cellarea(radio, mcc, mnc, lac, codec=None):
     if isinstance(radio, Radio):
         radio = int(radio)
     value = CELLAREA_STRUCT.pack(radio, mcc, mnc, lac)
-    if codec == 'base64':
+    if codec == "base64":
         value = base64.b64encode(value)
     return value
 
@@ -302,7 +290,7 @@ def encode_cellid(radio, mcc, mnc, lac, cid, codec=None):
     if isinstance(radio, Radio):
         radio = int(radio)
     value = CELLID_STRUCT.pack(radio, mcc, mnc, lac, cid)
-    if codec == 'base64':
+    if codec == "base64":
         value = base64.b64encode(value)
     return value
 
@@ -320,14 +308,14 @@ class CellAreaColumn(TypeDecorator):
         if value is None or isinstance(value, bytes):
             return value
 
-        if (isinstance(value, tuple) and len(value) != 4):
-            raise ValueError('Invalid Cell Area ID: %r' % value)
+        if isinstance(value, tuple) and len(value) != 4:
+            raise ValueError("Invalid Cell Area ID: %r" % value)
 
         radio, mcc, mnc, lac = value
         return CELLAREA_STRUCT.pack(int(radio), mcc, mnc, lac)
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return None
         radio, mcc, mnc, lac = CELLAREA_STRUCT.unpack(value)
         return (Radio(radio), mcc, mnc, lac)
@@ -342,14 +330,14 @@ class CellIdColumn(TypeDecorator):
         if value is None or isinstance(value, bytes):
             return value
 
-        if (isinstance(value, tuple) and len(value) != 5):
-            raise ValueError('Invalid Cell ID: %r' % value)
+        if isinstance(value, tuple) and len(value) != 5:
+            raise ValueError("Invalid Cell ID: %r" % value)
 
         radio, mcc, mnc, lac, cid = value
         return CELLID_STRUCT.pack(int(radio), mcc, mnc, lac, cid)
 
     def process_result_value(self, value, dialect):
-        if value is None:  # pragma: no cover
+        if value is None:
             return None
         radio, mcc, mnc, lac, cid = CELLID_STRUCT.unpack(value)
         return (Radio(radio), mcc, mnc, lac, cid)
@@ -359,19 +347,19 @@ class RadioType(colander.Integer):
     """A RadioType will return a Radio IntEnum object."""
 
     def deserialize(self, node, cstruct):
-        if ((isinstance(cstruct, Radio) and cstruct is not Radio['cdma']) or
-                cstruct is colander.null):
+        if (
+            isinstance(cstruct, Radio) and cstruct is not Radio["cdma"]
+        ) or cstruct is colander.null:
             return cstruct
         error = False
         try:
             cstruct = Radio[cstruct]
-            if cstruct is Radio['cdma']:
+            if cstruct is Radio["cdma"]:
                 error = True
         except KeyError:
             error = True
         if error:
-            raise colander.Invalid(node, (
-                '%r is not a valid radio type' % cstruct))
+            raise colander.Invalid(node, ("%r is not a valid radio type" % cstruct))
         return cstruct
 
 
@@ -383,17 +371,19 @@ class ValidCellAreaKeySchema(colander.MappingSchema, ValidatorNode):
     lac = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(constants.MIN_LAC, constants.MAX_LAC))
+        validator=colander.Range(constants.MIN_LAC, constants.MAX_LAC),
+    )
 
     def validator(self, node, cstruct):
         super(ValidCellAreaKeySchema, self).validator(node, cstruct)
 
-        if cstruct['mcc'] not in constants.ALL_VALID_MCCS:
-            raise colander.Invalid(node, (
-                'Check against the list of all known valid mccs'))
+        if cstruct["mcc"] not in constants.ALL_VALID_MCCS:
+            raise colander.Invalid(
+                node, ("Check against the list of all known valid mccs")
+            )
 
-        if not (constants.MIN_MNC <= cstruct['mnc'] <= constants.MAX_MNC):
-            raise colander.Invalid(node, ('MNC out of valid range.'))
+        if not (constants.MIN_MNC <= cstruct["mnc"] <= constants.MAX_MNC):
+            raise colander.Invalid(node, ("MNC out of valid range."))
 
 
 class ValidCellKeySchema(ValidCellAreaKeySchema):
@@ -401,53 +391,63 @@ class ValidCellKeySchema(ValidCellAreaKeySchema):
     cid = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(constants.MIN_CID, constants.MAX_CID))
+        validator=colander.Range(constants.MIN_CID, constants.MAX_CID),
+    )
     psc = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(constants.MIN_PSC, constants.MAX_PSC))
+        validator=colander.Range(constants.MIN_PSC, constants.MAX_PSC),
+    )
 
     def __init__(self, *args, **kw):
         super(ValidCellKeySchema, self).__init__(*args, **kw)
-        self.radio_node = self.get('radio')
+        self.radio_node = self.get("radio")
 
     def deserialize(self, data):
         if data:
             # shallow copy
             data = dict(data)
             # deserialize and validate radio field early
-            data['radio'] = self.radio_node.deserialize(
-                data.get('radio', colander.null))
+            data["radio"] = self.radio_node.deserialize(
+                data.get("radio", colander.null)
+            )
 
             # If the cell id > 65535 then it must be a WCDMA tower
-            if (data['radio'] is Radio['gsm'] and
-                    data.get('cid') is not None and
-                    data.get('cid', 0) > constants.MAX_CID_GSM):
-                data['radio'] = Radio['wcdma']
+            if (
+                data["radio"] is Radio["gsm"]
+                and data.get("cid") is not None
+                and data.get("cid", 0) > constants.MAX_CID_GSM
+            ):
+                data["radio"] = Radio["wcdma"]
 
-            if (data['radio'] is Radio['lte'] and
-                    data.get('psc') is not None and
-                    data.get('psc', 0) > constants.MAX_PSC_LTE):
-                data['psc'] = None
+            if (
+                data["radio"] is Radio["lte"]
+                and data.get("psc") is not None
+                and data.get("psc", 0) > constants.MAX_PSC_LTE
+            ):
+                data["psc"] = None
 
         return super(ValidCellKeySchema, self).deserialize(data)
 
     def validator(self, node, cstruct):
         super(ValidCellKeySchema, self).validator(node, cstruct)
 
-        if ((cstruct.get('lac') is None or cstruct.get('cid') is None) and
-                cstruct.get('psc') is None):
-            raise colander.Invalid(node, ('Must have (LAC and CID) or PSC.'))
+        if (cstruct.get("lac") is None or cstruct.get("cid") is None) and cstruct.get(
+            "psc"
+        ) is None:
+            raise colander.Invalid(node, ("Must have (LAC and CID) or PSC."))
 
 
-class ValidCellAreaSchema(ValidCellAreaKeySchema,
-                          ValidPositionSchema,
-                          ValidTimeTrackingSchema):
+class ValidCellAreaSchema(
+    ValidCellAreaKeySchema, ValidPositionSchema, ValidTimeTrackingSchema
+):
 
     # areaid is a derived value
     radius = colander.SchemaNode(
-        colander.Integer(), missing=None,
-        validator=colander.Range(0, constants.CELLAREA_MAX_RADIUS))
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(0, constants.CELLAREA_MAX_RADIUS),
+    )
     region = colander.SchemaNode(colander.String(), missing=None)
     avg_cell_radius = colander.SchemaNode(colander.Integer(), missing=None)
     num_cells = colander.SchemaNode(colander.Integer(), missing=None)
@@ -471,36 +471,41 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
     last_seen = Column(Date)
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):
         prefix = cls.__tablename__
         _indices = (
-            PrimaryKeyConstraint('areaid'),
-            UniqueConstraint('radio', 'mcc', 'mnc', 'lac',
-                             name='%s_areaid_unique' % prefix),
-            Index('%s_region_radio_idx' % prefix, 'region', 'radio'),
-            Index('%s_created_idx' % prefix, 'created'),
-            Index('%s_modified_idx' % prefix, 'modified'),
-            Index('%s_latlon_idx' % prefix, 'lat', 'lon'),
+            PrimaryKeyConstraint("areaid"),
+            UniqueConstraint(
+                "radio", "mcc", "mnc", "lac", name="%s_areaid_unique" % prefix
+            ),
+            Index("%s_region_radio_idx" % prefix, "region", "radio"),
+            Index("%s_created_idx" % prefix, "created"),
+            Index("%s_modified_idx" % prefix, "modified"),
+            Index("%s_latlon_idx" % prefix, "lat", "lon"),
         )
-        return _indices + (cls._settings, )
+        return _indices + (cls._settings,)
 
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
         validated = super(CellAreaMixin, cls).validate(
-            entry, _raise_invalid=_raise_invalid, **kw)
-        if validated is not None and 'areaid' not in validated:
-            validated['areaid'] = (
-                validated['radio'],
-                validated['mcc'],
-                validated['mnc'],
-                validated['lac'],
+            entry, _raise_invalid=_raise_invalid, **kw
+        )
+        if validated is not None and "areaid" not in validated:
+            validated["areaid"] = (
+                validated["radio"],
+                validated["mcc"],
+                validated["mnc"],
+                validated["lac"],
             )
 
-            if (('region' not in validated or not validated['region']) and
-                    validated['lat'] is not None and
-                    validated['lon'] is not None):
-                validated['region'] = GEOCODER.region_for_cell(
-                    validated['lat'], validated['lon'], validated['mcc'])
+            if (
+                ("region" not in validated or not validated["region"])
+                and validated["lat"] is not None
+                and validated["lon"] is not None
+            ):
+                validated["region"] = GEOCODER.region_for_cell(
+                    validated["lat"], validated["lon"], validated["mcc"]
+                )
 
         return validated
 
@@ -508,15 +513,17 @@ class CellAreaMixin(PositionMixin, TimeTrackingMixin, CreationMixin):
 class CellArea(CellAreaMixin, _Model):
     """CellArea model."""
 
-    __tablename__ = 'cell_area'
+    __tablename__ = "cell_area"
 
 
 class ValidCellShardSchema(ValidCellKeySchema, ValidStationSchema):
 
     # adds a range validator
     radius = colander.SchemaNode(
-        colander.Integer(), missing=None,
-        validator=colander.Range(0, constants.CELL_MAX_RADIUS))
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(0, constants.CELL_MAX_RADIUS),
+    )
 
 
 class CellShard(StationMixin):
@@ -534,17 +541,23 @@ class CellShard(StationMixin):
     psc = Column(SmallInteger)
 
     @declared_attr
-    def __table_args__(cls):  # NOQA
+    def __table_args__(cls):
         _indices = (
-            PrimaryKeyConstraint('cellid'),
-            UniqueConstraint('radio', 'mcc', 'mnc', 'lac', 'cid',
-                             name='%s_cellid_unique' % cls.__tablename__),
-            Index('%s_region_idx' % cls.__tablename__, 'region'),
-            Index('%s_created_idx' % cls.__tablename__, 'created'),
-            Index('%s_modified_idx' % cls.__tablename__, 'modified'),
-            Index('%s_latlon_idx' % cls.__tablename__, 'lat', 'lon'),
+            PrimaryKeyConstraint("cellid"),
+            UniqueConstraint(
+                "radio",
+                "mcc",
+                "mnc",
+                "lac",
+                "cid",
+                name="%s_cellid_unique" % cls.__tablename__,
+            ),
+            Index("%s_region_idx" % cls.__tablename__, "region"),
+            Index("%s_created_idx" % cls.__tablename__, "created"),
+            Index("%s_modified_idx" % cls.__tablename__, "modified"),
+            Index("%s_latlon_idx" % cls.__tablename__, "lat", "lon"),
         )
-        return _indices + (cls._settings, )
+        return _indices + (cls._settings,)
 
     @property
     def unique_key(self):
@@ -553,23 +566,27 @@ class CellShard(StationMixin):
     @classmethod
     def validate(cls, entry, _raise_invalid=False, **kw):
         validated = super(CellShard, cls).validate(
-            entry, _raise_invalid=_raise_invalid, **kw)
+            entry, _raise_invalid=_raise_invalid, **kw
+        )
 
         if validated is not None:
-            if 'cellid' not in validated:
-                validated['cellid'] = (
-                    validated['radio'],
-                    validated['mcc'],
-                    validated['mnc'],
-                    validated['lac'],
-                    validated['cid'],
+            if "cellid" not in validated:
+                validated["cellid"] = (
+                    validated["radio"],
+                    validated["mcc"],
+                    validated["mnc"],
+                    validated["lac"],
+                    validated["cid"],
                 )
 
-            if (('region' not in validated or not validated['region']) and
-                    validated['lat'] is not None and
-                    validated['lon'] is not None):
-                validated['region'] = GEOCODER.region_for_cell(
-                    validated['lat'], validated['lon'], validated['mcc'])
+            if (
+                ("region" not in validated or not validated["region"])
+                and validated["lat"] is not None
+                and validated["lon"] is not None
+            ):
+                validated["region"] = GEOCODER.region_for_cell(
+                    validated["lat"], validated["lon"], validated["mcc"]
+                )
 
         return validated
 
@@ -581,9 +598,9 @@ class CellShard(StationMixin):
         otherwise returns None.
         """
         validated = cls.validate(kw, _raise_invalid=_raise_invalid)
-        if validated is None:  # pragma: no cover
+        if validated is None:
             return None
-        shard = cls.shard_model(validated['radio'])
+        shard = cls.shard_model(validated["radio"])
         return shard(**validated)
 
     @classmethod
@@ -619,16 +636,17 @@ class CellShard(StationMixin):
     @classmethod
     def export_header(cls):
         return (
-            'radio,mcc,mnc,lac,cid,psc,'
-            'lat,lon,max_lat,min_lat,max_lon,min_lon,'
-            'radius,region,samples,source,weight,'
-            'created,modified,last_seen,'
-            'block_first,block_last,block_count'
+            "radio,mcc,mnc,lac,cid,psc,"
+            "lat,lon,max_lat,min_lat,max_lon,min_lon,"
+            "radius,region,samples,source,weight,"
+            "created,modified,last_seen,"
+            "block_first,block_last,block_count"
         )
 
     @classmethod
     def export_stmt(cls):
-        stmt = '''SELECT
+        stmt = (
+            """SELECT
 `cellid` AS `export_key`,
 CONCAT_WS(",",
     CASE radio
@@ -664,14 +682,16 @@ FROM %s
 WHERE `cellid` > :export_key
 ORDER BY `cellid`
 LIMIT :limit
-''' % cls.__tablename__
-        return stmt.replace('\n', ' ')
+"""
+            % cls.__tablename__
+        )
+        return stmt.replace("\n", " ")
 
 
 class CellShardGsm(CellShard, _Model):
     """Shard for GSM cells."""
 
-    __tablename__ = 'cell_gsm'
+    __tablename__ = "cell_gsm"
 
 
 CELL_SHARDS[Radio.gsm.name] = CellShardGsm
@@ -680,7 +700,7 @@ CELL_SHARDS[Radio.gsm.name] = CellShardGsm
 class CellShardWcdma(CellShard, _Model):
     """Shard for WCDMA cells."""
 
-    __tablename__ = 'cell_wcdma'
+    __tablename__ = "cell_wcdma"
 
 
 CELL_SHARDS[Radio.wcdma.name] = CellShardWcdma
@@ -689,7 +709,7 @@ CELL_SHARDS[Radio.wcdma.name] = CellShardWcdma
 class CellShardLte(CellShard, _Model):
     """Shard for LTE cells."""
 
-    __tablename__ = 'cell_lte'
+    __tablename__ = "cell_lte"
 
 
 CELL_SHARDS[Radio.lte.name] = CellShardLte

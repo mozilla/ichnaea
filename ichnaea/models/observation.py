@@ -4,28 +4,13 @@ import operator
 import colander
 
 from ichnaea.geocode import GEOCODER
-from ichnaea.models import (
-    Radio,
-    ReportSource,
-)
-from ichnaea.models.base import (
-    CreationMixin,
-    ValidationMixin,
-)
+from ichnaea.models import Radio, ReportSource
+from ichnaea.models.base import CreationMixin, ValidationMixin
 from ichnaea.models.blue import BlueShard
-from ichnaea.models.cell import (
-    CellShard,
-    encode_cellid,
-    ValidCellKeySchema,
-)
+from ichnaea.models.cell import CellShard, encode_cellid, ValidCellKeySchema
 from ichnaea.models import constants
-from ichnaea.models.base import (
-    HashableDict,
-)
-from ichnaea.models.mac import (
-    channel_frequency,
-    MacNode,
-)
+from ichnaea.models.base import HashableDict
+from ichnaea.models.mac import channel_frequency, MacNode
 from ichnaea.models.schema import (
     DefaultNode,
     ReportSourceNode,
@@ -45,8 +30,7 @@ class BaseReport(HashableDict, CreationMixin, ValidationMixin):
         for field, better_than in self._comparators:
             old_value = getattr(self, field, None)
             new_value = getattr(other, field, None)
-            if (None not in (old_value, new_value) and
-                    better_than(old_value, new_value)):
+            if None not in (old_value, new_value) and better_than(old_value, new_value):
                 return True
         return False
 
@@ -56,9 +40,12 @@ class BaseObservation(object):
 
     @classmethod
     def _from_json_value(cls, dct):
-        if 'source' in dct and dct['source'] is not None and \
-           not type(dct['source']) == ReportSource:
-            dct['source'] = ReportSource(dct['source'])
+        if (
+            "source" in dct
+            and dct["source"] is not None
+            and not type(dct["source"]) == ReportSource
+        ):
+            dct["source"] = ReportSource(dct["source"])
         return cls(**dct)
 
     @classmethod
@@ -71,7 +58,7 @@ class BaseObservation(object):
         for field in self._fields:
             value = getattr(self, field, None)
             if value is not None:
-                if field == 'source' and type(value) == ReportSource:
+                if field == "source" and type(value) == ReportSource:
                     dct[field] = int(value)
                 else:
                     dct[field] = value
@@ -85,43 +72,62 @@ class ValidReportSchema(colander.MappingSchema, ValidatorNode):
     """A schema which validates the fields present in a report."""
 
     lat = colander.SchemaNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_LAT, constants.MAX_LAT))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LAT, constants.MAX_LAT),
+    )
     lon = colander.SchemaNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_LON, constants.MAX_LON))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_LON, constants.MAX_LON),
+    )
     accuracy = DefaultNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_ACCURACY, constants.MAX_ACCURACY))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_ACCURACY, constants.MAX_ACCURACY),
+    )
     altitude = DefaultNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_ALTITUDE, constants.MAX_ALTITUDE))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_ALTITUDE, constants.MAX_ALTITUDE),
+    )
     altitude_accuracy = DefaultNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_ALTITUDE_ACCURACY, constants.MAX_ALTITUDE_ACCURACY))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(
+            constants.MIN_ALTITUDE_ACCURACY, constants.MAX_ALTITUDE_ACCURACY
+        ),
+    )
     heading = DefaultNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_HEADING, constants.MAX_HEADING))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_HEADING, constants.MAX_HEADING),
+    )
     pressure = DefaultNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_PRESSURE, constants.MAX_PRESSURE))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_PRESSURE, constants.MAX_PRESSURE),
+    )
     source = ReportSourceNode(ReportSourceType(), missing=None)
     speed = DefaultNode(
-        colander.Float(), missing=None, validator=colander.Range(
-            constants.MIN_SPEED, constants.MAX_SPEED))
+        colander.Float(),
+        missing=None,
+        validator=colander.Range(constants.MIN_SPEED, constants.MAX_SPEED),
+    )
     timestamp = DefaultNode(
-        colander.Integer(), missing=None, validator=colander.Range(
-            constants.MIN_TIMESTAMP, constants.MAX_TIMESTAMP))
+        colander.Integer(),
+        missing=None,
+        validator=colander.Range(constants.MIN_TIMESTAMP, constants.MAX_TIMESTAMP),
+    )
 
     def validator(self, node, cstruct):
         super(ValidReportSchema, self).validator(node, cstruct)
-        for field in ('lat', 'lon'):
-            if (cstruct[field] is None or
-                    cstruct[field] is colander.null):
-                raise colander.Invalid(node, 'Report %s is required.' % field)
+        for field in ("lat", "lon"):
+            if cstruct[field] is None or cstruct[field] is colander.null:
+                raise colander.Invalid(node, "Report %s is required." % field)
 
-        if not GEOCODER.any_region(cstruct['lat'], cstruct['lon']):
-            raise colander.Invalid(node, 'Lat/lon must be inside a region.')
+        if not GEOCODER.any_region(cstruct["lat"], cstruct["lon"]):
+            raise colander.Invalid(node, "Lat/lon must be inside a region.")
 
 
 class Report(BaseReport):
@@ -130,16 +136,16 @@ class Report(BaseReport):
     _max_observation_accuracy = constants.MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidReportSchema()
     _fields = (
-        'lat',
-        'lon',
-        'accuracy',
-        'altitude',
-        'altitude_accuracy',
-        'heading',
-        'pressure',
-        'speed',
-        'source',
-        'timestamp',
+        "lat",
+        "lon",
+        "accuracy",
+        "altitude",
+        "altitude_accuracy",
+        "heading",
+        "pressure",
+        "speed",
+        "source",
+        "timestamp",
     )
 
     @classmethod
@@ -194,14 +200,14 @@ class ValidBlueReportSchema(colander.MappingSchema, ValidatorNode):
     age = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_AGE, constants.MAX_AGE))
+        validator=colander.Range(constants.MIN_AGE, constants.MAX_AGE),
+    )
 
     signal = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_BLUE_SIGNAL, constants.MAX_BLUE_SIGNAL))
+        validator=colander.Range(constants.MIN_BLUE_SIGNAL, constants.MAX_BLUE_SIGNAL),
+    )
 
 
 class BlueReport(BaseReport):
@@ -209,15 +215,8 @@ class BlueReport(BaseReport):
 
     _max_observation_accuracy = constants.BLUE_MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidBlueReportSchema()
-    _fields = (
-        'mac',
-        'age',
-        'signal',
-    )
-    _comparators = (
-        ('signal', operator.gt),
-        ('age', operator.lt),
-    )
+    _fields = ("mac", "age", "signal")
+    _comparators = (("signal", operator.gt), ("age", operator.lt))
 
     @property
     def unique_key(self):
@@ -254,25 +253,31 @@ class ValidCellReportSchema(ValidCellKeySchema):
     age = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_AGE, constants.MAX_AGE))
+        validator=colander.Range(constants.MIN_AGE, constants.MAX_AGE),
+    )
 
     asu = DefaultNode(
         colander.Integer(),
-        missing=None, validator=colander.Range(
-            min(constants.MIN_CELL_ASU.values()),
-            max(constants.MAX_CELL_ASU.values())))
+        missing=None,
+        validator=colander.Range(
+            min(constants.MIN_CELL_ASU.values()), max(constants.MAX_CELL_ASU.values())
+        ),
+    )
 
     signal = DefaultNode(
         colander.Integer(),
-        missing=None, validator=colander.Range(
+        missing=None,
+        validator=colander.Range(
             min(constants.MIN_CELL_SIGNAL.values()),
-            max(constants.MAX_CELL_SIGNAL.values())))
+            max(constants.MAX_CELL_SIGNAL.values()),
+        ),
+    )
 
     ta = DefaultNode(
         colander.Integer(),
-        missing=None, validator=colander.Range(
-            constants.MIN_CELL_TA, constants.MAX_CELL_TA))
+        missing=None,
+        validator=colander.Range(constants.MIN_CELL_TA, constants.MAX_CELL_TA),
+    )
 
     def _signal_from_asu(self, radio, value):
         if radio is Radio.gsm:
@@ -285,56 +290,63 @@ class ValidCellReportSchema(ValidCellKeySchema):
     def deserialize(self, data):
         if data:
             # Sometimes the asu and signal fields are swapped
-            if (data.get('asu') is not None and
-                    data.get('asu', 0) < -5 and
-                    (data.get('signal') is None or
-                     data.get('signal', 0) >= 0)):
+            if (
+                data.get("asu") is not None
+                and data.get("asu", 0) < -5
+                and (data.get("signal") is None or data.get("signal", 0) >= 0)
+            ):
                 # shallow copy
                 data = dict(data)
-                data['signal'] = data['asu']
-                data['asu'] = None
+                data["signal"] = data["asu"]
+                data["asu"] = None
 
         data = super(ValidCellReportSchema, self).deserialize(data)
 
-        if isinstance(data.get('radio'), Radio):
-            radio = data['radio']
+        if isinstance(data.get("radio"), Radio):
+            radio = data["radio"]
 
             # Radio type specific checks for ASU field
-            if data.get('asu') is not None:
-                if not (constants.MIN_CELL_ASU[radio] <=
-                        data['asu'] <=
-                        constants.MAX_CELL_ASU[radio]):
+            if data.get("asu") is not None:
+                if not (
+                    constants.MIN_CELL_ASU[radio]
+                    <= data["asu"]
+                    <= constants.MAX_CELL_ASU[radio]
+                ):
                     data = dict(data)
-                    data['asu'] = None
+                    data["asu"] = None
 
             # Radio type specific checks for signal field
-            if data.get('signal') is not None:
-                if not (constants.MIN_CELL_SIGNAL[radio] <=
-                        data['signal'] <=
-                        constants.MAX_CELL_SIGNAL[radio]):
+            if data.get("signal") is not None:
+                if not (
+                    constants.MIN_CELL_SIGNAL[radio]
+                    <= data["signal"]
+                    <= constants.MAX_CELL_SIGNAL[radio]
+                ):
                     data = dict(data)
-                    data['signal'] = None
+                    data["signal"] = None
 
             # Radio type specific checks for TA field
-            if data.get('ta') is not None and radio is Radio.wcdma:
+            if data.get("ta") is not None and radio is Radio.wcdma:
                 data = dict(data)
-                data['ta'] = None
+                data["ta"] = None
 
             # Calculate signal from ASU field
-            if data.get('asu') is not None and data.get('signal') is None:
-                if (constants.MIN_CELL_ASU[radio] <= data['asu'] <=
-                        constants.MAX_CELL_ASU[radio]):
+            if data.get("asu") is not None and data.get("signal") is None:
+                if (
+                    constants.MIN_CELL_ASU[radio]
+                    <= data["asu"]
+                    <= constants.MAX_CELL_ASU[radio]
+                ):
                     data = dict(data)
-                    data['signal'] = self._signal_from_asu(radio, data['asu'])
+                    data["signal"] = self._signal_from_asu(radio, data["asu"])
 
         return data
 
     def validator(self, node, cstruct):
         super(ValidCellReportSchema, self).validator(node, cstruct)
-        for field in ('radio', 'mcc', 'mnc', 'lac', 'cid'):
-            if (cstruct[field] is None or
-                    cstruct[field] is colander.null):
-                raise colander.Invalid(node, 'Cell %s is required.' % field)
+        for field in ("radio", "mcc", "mnc", "lac", "cid"):
+            if cstruct[field] is None or cstruct[field] is colander.null:
+                raise colander.Invalid(node, "Cell %s is required." % field)
 
 
 class CellReport(BaseReport):
@@ -342,23 +354,12 @@ class CellReport(BaseReport):
 
     _max_observation_accuracy = constants.CELL_MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidCellReportSchema()
-    _fields = (
-        'radio',
-        'mcc',
-        'mnc',
-        'lac',
-        'cid',
-        'psc',
-        'age',
-        'asu',
-        'signal',
-        'ta',
-    )
+    _fields = ("radio", "mcc", "mnc", "lac", "cid", "psc", "age", "asu", "signal", "ta")
     _comparators = (
-        ('ta', operator.lt),
-        ('signal', operator.gt),
-        ('asu', operator.gt),
-        ('age', operator.lt),
+        ("ta", operator.lt),
+        ("signal", operator.gt),
+        ("asu", operator.gt),
+        ("age", operator.lt),
     )
 
     @property
@@ -375,8 +376,7 @@ class CellReport(BaseReport):
 
     @property
     def cellid(self):
-        return encode_cellid(
-            self.radio, self.mcc, self.mnc, self.lac, self.cid)
+        return encode_cellid(self.radio, self.mcc, self.mnc, self.lac, self.cid)
 
 
 class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
@@ -386,11 +386,13 @@ class ValidCellObservationSchema(ValidCellReportSchema, ValidReportSchema):
         super(ValidCellObservationSchema, self).validator(node, cstruct)
 
         in_region = GEOCODER.in_region_mcc(
-            cstruct['lat'], cstruct['lon'], cstruct['mcc'])
+            cstruct["lat"], cstruct["lon"], cstruct["mcc"]
+        )
 
         if not in_region:
-            raise colander.Invalid(node, (
-                'Lat/lon must be inside one of the regions for the MCC'))
+            raise colander.Invalid(
+                node, ("Lat/lon must be inside one of the regions for the MCC")
+            )
 
 
 class CellObservation(CellReport, Report, BaseObservation):
@@ -401,15 +403,18 @@ class CellObservation(CellReport, Report, BaseObservation):
 
     @classmethod
     def _from_json_value(cls, dct):
-        if 'radio' in dct and dct['radio'] is not None and \
-           not type(dct['radio']) == Radio:
-            dct['radio'] = Radio(dct['radio'])
+        if (
+            "radio" in dct
+            and dct["radio"] is not None
+            and not type(dct["radio"]) == Radio
+        ):
+            dct["radio"] = Radio(dct["radio"])
         return super(CellObservation, cls)._from_json_value(dct)
 
     def _to_json_value(self):
         dct = super(CellObservation, self)._to_json_value()
-        if 'radio' in dct and type(dct['radio']) == Radio:
-            dct['radio'] = int(dct['radio'])
+        if "radio" in dct and type(dct["radio"]) == Radio:
+            dct["radio"] = int(dct["radio"])
         return dct
 
     @property
@@ -441,44 +446,50 @@ class ValidWifiReportSchema(colander.MappingSchema, ValidatorNode):
     age = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_AGE, constants.MAX_AGE))
+        validator=colander.Range(constants.MIN_AGE, constants.MAX_AGE),
+    )
 
     channel = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
-            constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL))
+            constants.MIN_WIFI_CHANNEL, constants.MAX_WIFI_CHANNEL
+        ),
+    )
 
     frequency = DefaultNode(
         colander.Integer(),
         missing=None,
         validator=colander.Range(
-            constants.MIN_WIFI_FREQUENCY, constants.MAX_WIFI_FREQUENCY))
+            constants.MIN_WIFI_FREQUENCY, constants.MAX_WIFI_FREQUENCY
+        ),
+    )
 
     signal = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL))
+        validator=colander.Range(constants.MIN_WIFI_SIGNAL, constants.MAX_WIFI_SIGNAL),
+    )
 
     snr = DefaultNode(
         colander.Integer(),
         missing=None,
-        validator=colander.Range(
-            constants.MIN_WIFI_SNR, constants.MAX_WIFI_SNR))
+        validator=colander.Range(constants.MIN_WIFI_SNR, constants.MAX_WIFI_SNR),
+    )
 
     def deserialize(self, data):
         data = super(ValidWifiReportSchema, self).deserialize(data)
-        if (data and data is not colander.drop and data is not colander.null):
-            channel = data.get('channel')
-            frequency = data.get('frequency')
-            if ((frequency is None and channel is not None) or
-                    (frequency is not None and channel is None)):
+        if data and data is not colander.drop and data is not colander.null:
+            channel = data.get("channel")
+            frequency = data.get("frequency")
+            if (frequency is None and channel is not None) or (
+                frequency is not None and channel is None
+            ):
                 # shallow copy
                 data = dict(data)
-                data['channel'], data['frequency'] = channel_frequency(
-                    channel, frequency)
+                data["channel"], data["frequency"] = channel_frequency(
+                    channel, frequency
+                )
 
         return data
 
@@ -488,19 +499,8 @@ class WifiReport(BaseReport):
 
     _max_observation_accuracy = constants.WIFI_MAX_OBSERVATION_ACCURACY
     _valid_schema = ValidWifiReportSchema()
-    _fields = (
-        'mac',
-        'age',
-        'channel',
-        'frequency',
-        'signal',
-        'snr',
-    )
-    _comparators = (
-        ('signal', operator.gt),
-        ('snr', operator.gt),
-        ('age', operator.lt),
-    )
+    _fields = ("mac", "age", "channel", "frequency", "signal", "snr")
+    _comparators = (("signal", operator.gt), ("snr", operator.gt), ("age", operator.lt))
 
     @property
     def unique_key(self):

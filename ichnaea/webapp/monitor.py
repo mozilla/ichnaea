@@ -13,8 +13,8 @@ def _check_timed(ping_function):
     with Timer() as timer:
         success = ping_function()
     if not success:
-        return {'up': False, 'time': 0}
-    return {'up': True, 'time': timer.ms}
+        return {"up": False, "time": 0}
+    return {"up": True, "time": timer.ms}
 
 
 def check_database(request):
@@ -24,7 +24,7 @@ def check_database(request):
 def check_geoip(request):
     geoip_db = request.registry.geoip_db
     result = _check_timed(geoip_db.ping)
-    result['age_in_days'] = geoip_db.age
+    result["age_in_days"] = geoip_db.age
     return result
 
 
@@ -41,7 +41,6 @@ def configure_monitor(config):
 
 
 class Timer(object):
-
     def __init__(self):
         self.start = None
         self.ms = None
@@ -61,7 +60,7 @@ class ContributeView(BaseView):
     A view returning information about how to contribute to the project.
     """
 
-    route = '/contribute.json'
+    route = "/contribute.json"
 
     def __call__(self):
         """
@@ -79,7 +78,7 @@ class HeartbeatView(BaseView):
     The view actively checks the database, geoip and redis connections.
     """
 
-    route = '/__heartbeat__'
+    route = "/__heartbeat__"
 
     def __call__(self):
         """
@@ -88,26 +87,26 @@ class HeartbeatView(BaseView):
         most outbound connections.
         """
         services = {
-            'database': check_database,
-            'geoip': check_geoip,
-            'redis': check_redis,
+            "database": check_database,
+            "geoip": check_geoip,
+            "redis": check_redis,
         }
         failed = False
         result = {}
         for name, check in services.items():
             try:
                 service_result = check(self.request)
-            except Exception:  # pragma: no cover
-                result[name] = {'up': None, 'time': -1}
+            except Exception:
+                result[name] = {"up": None, "time": -1}
                 failed = True
             else:
                 result[name] = service_result
-                if not service_result['up']:
+                if not service_result["up"]:
                     failed = True
 
         if failed:
             response = self.prepare_exception(HTTPServiceUnavailable())
-            response.content_type = 'application/json'
+            response.content_type = "application/json"
             response.json = result
             return response
 
@@ -124,13 +123,13 @@ class LBHeartbeatView(BaseView):
     This view is typically used in load balancer health checks.
     """
 
-    route = '/__lbheartbeat__'
+    route = "/__lbheartbeat__"
 
     def __call__(self):
         """Return a response with a 200 or 503 status."""
         try:
-            return {'status': 'OK'}
-        except Exception:  # pragma: no cover
+            return {"status": "OK"}
+        except Exception:
             raise self.prepare_exception(HTTPServiceUnavailable())
 
 
@@ -139,7 +138,7 @@ class VersionView(BaseView):
     A view which returns information about the running software version.
     """
 
-    route = '/__version__'
+    route = "/__version__"
 
     def __call__(self):
         """
