@@ -8,11 +8,7 @@ from sqlalchemy import text
 from geocalc import destination
 from ichnaea.db import configure_db
 from ichnaea.data.station import CellUpdater
-from ichnaea.data.tasks import (
-    update_blue,
-    update_cell,
-    update_wifi,
-)
+from ichnaea.data.tasks import update_blue, update_cell, update_wifi
 from ichnaea.models import (
     decode_cellid,
     encode_cellarea,
@@ -25,11 +21,7 @@ from ichnaea.models import (
     StatKey,
     WifiShard,
 )
-from ichnaea.models.constants import (
-    BLUE_MAX_RADIUS,
-    CELL_MAX_RADIUS,
-    WIFI_MAX_RADIUS,
-)
+from ichnaea.models.constants import BLUE_MAX_RADIUS, CELL_MAX_RADIUS, WIFI_MAX_RADIUS
 from ichnaea.tests.factories import (
     BlueObservationFactory,
     BlueShardFactory,
@@ -54,8 +46,9 @@ class BaseStationTest(object):
     def _queue_and_update(self, celery, obs, task):
         sharded_obs = defaultdict(list)
         for ob in obs:
-            sharded_obs[self.shard_model.shard_id(
-                getattr(ob, self.unique_key))].append(ob)
+            sharded_obs[self.shard_model.shard_id(getattr(ob, self.unique_key))].append(
+                ob
+            )
 
         for shard_id, values in sharded_obs.items():
             queue = celery.data_queues[self.queue_prefix + shard_id]
@@ -66,14 +59,14 @@ class BaseStationTest(object):
 class TestDatabaseErrors(BaseStationTest):
     # this is a standalone class to ensure DB isolation
 
-    queue_prefix = 'update_cell_'
+    queue_prefix = "update_cell_"
     shard_model = CellShard
-    unique_key = 'cellid'
+    unique_key = "cellid"
 
-    @pytest.fixture(scope='function')
+    @pytest.fixture(scope="function")
     def session2(self, database):
         # Create a second independent database session.
-        db = configure_db('ro')
+        db = configure_db("ro")
         session = db.session()
         try:
             yield session
@@ -85,12 +78,14 @@ class TestDatabaseErrors(BaseStationTest):
     def queue_and_update(self, celery, obs):
         return self._queue_and_update(celery, obs, update_cell)
 
-    def test_lock_timeout(self, celery, redis,
-                          session, session2, stats, restore_db):
+    def test_lock_timeout(self, celery, redis, session, session2, stats, restore_db):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
-            radio=obs.radio, mcc=obs.mcc, mnc=obs.mnc,
-            lac=obs.lac, cid=obs.cid,
+            radio=obs.radio,
+            mcc=obs.mcc,
+            mnc=obs.mnc,
+            lac=obs.lac,
+            cid=obs.cid,
             samples=10,
         )
         session2.add(cell)
@@ -100,8 +95,7 @@ class TestDatabaseErrors(BaseStationTest):
         orig_wait = CellUpdater._retry_wait
         num = [0]
 
-        def mock_area(self, updated_areas, key,
-                      num=num, session2=session2):
+        def mock_area(self, updated_areas, key, num=num, session2=session2):
             orig_add_area(self, updated_areas, key)
             num[0] += 1
             if num[0] == 2:
@@ -109,8 +103,8 @@ class TestDatabaseErrors(BaseStationTest):
 
         try:
             CellUpdater._retry_wait = 0.0001
-            session.execute('set session innodb_lock_wait_timeout = 1')
-            with mock.patch.object(CellUpdater, 'add_area_update', mock_area):
+            session.execute("set session innodb_lock_wait_timeout = 1")
+            with mock.patch.object(CellUpdater, "add_area_update", mock_area):
                 self.queue_and_update(celery, [obs])
 
             # the inner task logic was called exactly twice
@@ -124,13 +118,12 @@ class TestDatabaseErrors(BaseStationTest):
             self.check_statcounter(redis, StatKey.cell, 1)
             self.check_statcounter(redis, StatKey.unique_cell, 1)
             stats.check(
-                counter=[('data.observation.insert', 1, ['type:cell'])],
-                timer=[('task', 1, ['task:data.update_cell'])],
+                counter=[("data.observation.insert", 1, ["type:cell"])],
+                timer=[("task", 1, ["task:data.update_cell"])],
             )
         finally:
             CellUpdater._retry_wait = orig_wait
-            session.execute(text(
-                'drop table %s;' % cell.__tablename__))
+            session.execute(text("drop table %s;" % cell.__tablename__))
 
 
 class StationTest(BaseStationTest):
@@ -177,20 +170,24 @@ class StationTest(BaseStationTest):
         obs.append(self.obs_factory.build(source=source))
 
         lat, lon = self.displace(obs[0].lat, obs[0].lon, 0.0, distance)
-        obs.append(self.obs_factory(
-            lat=lat, lon=lon, source=source, **self.key(obs[0])))
+        obs.append(
+            self.obs_factory(lat=lat, lon=lon, source=source, **self.key(obs[0]))
+        )
 
         lat, lon = self.displace(obs[0].lat, obs[0].lon, 180.0, distance)
-        obs.append(self.obs_factory(
-            lat=lat, lon=lon, source=source, **self.key(obs[0])))
+        obs.append(
+            self.obs_factory(lat=lat, lon=lon, source=source, **self.key(obs[0]))
+        )
 
         return obs
 
     def get_station(self, session, model):
         shard = self.shard_model.shard_model(getattr(model, self.unique_key))
-        return (session.query(shard)
-                       .filter(getattr(shard, self.unique_key) ==
-                               getattr(model, self.unique_key))).first()
+        return (
+            session.query(shard).filter(
+                getattr(shard, self.unique_key) == getattr(model, self.unique_key)
+            )
+        ).first()
 
     def check_areas(self, celery, obs):
         pass
@@ -225,7 +222,7 @@ class StationTest(BaseStationTest):
             block_first=self.ten_days.date(),
             block_last=self.today,
             block_count=1,
-            **self.key(observations[0])
+            **self.key(observations[0]),
         )
         session.commit()
         self.queue_and_update(celery, observations)
@@ -247,13 +244,17 @@ class StationTest(BaseStationTest):
         for source in (ReportSource.gnss, ReportSource.query):
             obs = self.obs_factory.build(source=source)
             obs1 = self.obs_factory(
-                lat=obs.lat + 0.0001, source=source, **self.key(obs))
+                lat=obs.lat + 0.0001, source=source, **self.key(obs)
+            )
             obs2 = self.obs_factory(
-                lat=obs.lat - 0.0003, source=source, **self.key(obs))
+                lat=obs.lat - 0.0003, source=source, **self.key(obs)
+            )
             obs3 = self.obs_factory(
-                lon=obs.lon + 0.0002, source=source, **self.key(obs))
+                lon=obs.lon + 0.0002, source=source, **self.key(obs)
+            )
             obs4 = self.obs_factory(
-                lon=obs.lon - 0.0004, source=source, **self.key(obs))
+                lon=obs.lon - 0.0004, source=source, **self.key(obs)
+            )
             self.queue_and_update(celery, [obs, obs1, obs2, obs3, obs4])
 
             self.check_areas(celery, [obs])
@@ -265,17 +266,19 @@ class StationTest(BaseStationTest):
             assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
             assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
             assert station.radius == 38
-            assert station.region == 'GB'
+            assert station.region == "GB"
             assert station.samples == 5
             assert station.source == source
             assert round(station.weight, 2) == 5.0
             self.check_blocked(station, None)
             self.check_dates(station, self.today, self.today, self.today)
 
-        stats.check(counter=[
-            ('data.observation.insert', 2, [self.type_tag]),
-            ('data.station.new', 2, [self.type_tag]),
-        ])
+        stats.check(
+            counter=[
+                ("data.observation.insert", 2, [self.type_tag]),
+                ("data.station.new", 2, [self.type_tag]),
+            ]
+        )
 
     def test_new_block(self, celery, session):
         for source in (ReportSource.gnss, ReportSource.query):
@@ -293,12 +296,24 @@ class StationTest(BaseStationTest):
         for source in (ReportSource.gnss, ReportSource.query):
             obs = self.make_obs(source=source)
             self.station_factory(
-                block_first=self.past.date(), block_last=self.past.date(),
-                block_count=1, created=self.past, modified=self.past,
-                last_seen=None, lat=None, lon=None,
-                max_lat=None, min_lat=None, max_lon=None, min_lon=None,
-                radius=None, region=None, source=None, samples=None,
-                weight=None, **self.key(obs[0])
+                block_first=self.past.date(),
+                block_last=self.past.date(),
+                block_count=1,
+                created=self.past,
+                modified=self.past,
+                last_seen=None,
+                lat=None,
+                lon=None,
+                max_lat=None,
+                min_lat=None,
+                max_lon=None,
+                min_lon=None,
+                radius=None,
+                region=None,
+                source=None,
+                samples=None,
+                weight=None,
+                **self.key(obs[0]),
             )
             session.commit()
             self.queue_and_update(celery, obs)
@@ -313,7 +328,7 @@ class StationTest(BaseStationTest):
             assert station.max_lon == obs.lon
             assert station.min_lon == obs.lon
             assert station.radius == 0
-            assert station.region == 'GB'
+            assert station.region == "GB"
             assert station.source == source
             assert station.samples == 3
             assert station.weight == 3.0
@@ -324,12 +339,24 @@ class StationTest(BaseStationTest):
         for source in (ReportSource.gnss, ReportSource.query):
             obs = self.make_obs(source=source, distance=1.0)
             self.station_factory(
-                block_first=self.past.date(), block_last=self.past.date(),
-                block_count=1, created=self.past, modified=self.past,
-                last_seen=None, lat=None, lon=None,
-                max_lat=None, min_lat=None, max_lon=None, min_lon=None,
-                radius=None, region=None, source=None, samples=None,
-                weight=None, **self.key(obs[0])
+                block_first=self.past.date(),
+                block_last=self.past.date(),
+                block_count=1,
+                created=self.past,
+                modified=self.past,
+                last_seen=None,
+                lat=None,
+                lon=None,
+                max_lat=None,
+                min_lat=None,
+                max_lon=None,
+                min_lon=None,
+                radius=None,
+                region=None,
+                source=None,
+                samples=None,
+                weight=None,
+                **self.key(obs[0]),
             )
             session.commit()
             self.queue_and_update(celery, obs)
@@ -344,12 +371,15 @@ class StationTest(BaseStationTest):
     def test_confirm(self, celery, session):
         obs1 = self.obs_factory.build(source=ReportSource.query)
         self.station_factory(
-            created=self.now, modified=self.now, last_seen=self.today,
-            **self.key(obs1))
+            created=self.now, modified=self.now, last_seen=self.today, **self.key(obs1)
+        )
         obs2 = self.obs_factory.build(source=ReportSource.query)
         self.station_factory(
-            created=self.ten_days, modified=self.ten_days,
-            last_seen=self.ten_days.date(), **self.key(obs2))
+            created=self.ten_days,
+            modified=self.ten_days,
+            last_seen=self.ten_days.date(),
+            **self.key(obs2),
+        )
         session.commit()
         self.queue_and_update(celery, [obs1, obs2])
 
@@ -359,16 +389,21 @@ class StationTest(BaseStationTest):
 
         station = self.get_station(session, obs2)
         self.check_dates(
-            station, self.ten_days.date(), self.ten_days.date(), self.today)
+            station, self.ten_days.date(), self.ten_days.date(), self.today
+        )
 
     def test_block_half_consistent_obs(self, celery, session):
         for obs_source in (ReportSource.gnss, ReportSource.query):
             for station_source in (ReportSource.gnss, ReportSource.query):
                 obs = self.make_obs(source=obs_source, distance=0.5)
                 self.station_factory(
-                    lat=obs[0].lat, lon=obs[0].lon,
-                    created=self.past, modified=self.past,
-                    source=station_source, **self.key(obs[0]))
+                    lat=obs[0].lat,
+                    lon=obs[0].lon,
+                    created=self.past,
+                    modified=self.past,
+                    source=station_source,
+                    **self.key(obs[0]),
+                )
                 session.commit()
                 self.queue_and_update(celery, obs)
 
@@ -385,15 +420,20 @@ class StationTest(BaseStationTest):
                 obs = self.make_obs(source=obs_source)
                 lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
                 self.station_factory(
-                    lat=lat, lon=lon, created=self.past, modified=self.past,
-                    source=station_source, **self.key(obs[0]))
+                    lat=lat,
+                    lon=lon,
+                    created=self.past,
+                    modified=self.past,
+                    source=station_source,
+                    **self.key(obs[0]),
+                )
                 session.commit()
                 self.queue_and_update(celery, obs)
 
                 obs = obs[0]
                 self.check_areas(celery, [obs])
                 station = self.get_station(session, obs)
-                assert station.region == 'GB'
+                assert station.region == "GB"
                 self.check_blocked(station, self.today, self.today, 1)
                 self.check_dates(station, self.past.date(), self.today)
                 self.check_no_position(station)
@@ -403,16 +443,19 @@ class StationTest(BaseStationTest):
             for station_source in (ReportSource.gnss, ReportSource.query):
                 obs = self.make_obs(source=obs_source, distance=1.0)
                 self.station_factory(
-                    created=self.ten_days, modified=self.ten_days,
+                    created=self.ten_days,
+                    modified=self.ten_days,
                     last_seen=self.ten_days.date(),
-                    source=station_source, **self.key(obs[0]))
+                    source=station_source,
+                    **self.key(obs[0]),
+                )
                 session.commit()
                 self.queue_and_update(celery, obs)
 
                 obs = obs[0]
                 self.check_areas(celery, [obs])
                 station = self.get_station(session, obs)
-                assert station.region == 'GB'
+                assert station.region == "GB"
                 self.check_blocked(station, self.today, self.today, 1)
                 self.check_dates(station, self.ten_days.date(), self.today)
                 self.check_no_position(station)
@@ -422,16 +465,19 @@ class StationTest(BaseStationTest):
             for station_source in (ReportSource.gnss, ReportSource.query):
                 obs = self.make_obs(source=obs_source, distance=1.0)
                 self.station_factory(
-                    created=self.one_year, modified=self.one_year,
+                    created=self.one_year,
+                    modified=self.one_year,
                     last_seen=self.one_year.date(),
-                    source=station_source, **self.key(obs[0]))
+                    source=station_source,
+                    **self.key(obs[0]),
+                )
                 session.commit()
                 self.queue_and_update(celery, obs)
 
                 obs = obs[0]
                 self.check_areas(celery, [obs])
                 station = self.get_station(session, obs)
-                assert station.region == 'GB'
+                assert station.region == "GB"
                 self.check_blocked(station, self.today, self.today, 1)
                 self.check_dates(station, self.one_year.date(), self.today)
                 self.check_no_position(station)
@@ -439,10 +485,14 @@ class StationTest(BaseStationTest):
     def test_replace_query_station(self, celery, session):
         obs = self.make_obs(source=ReportSource.gnss)
         self.station_factory(
-            samples=10, weight=15.0,
-            created=self.ten_days, modified=self.ten_days,
+            samples=10,
+            weight=15.0,
+            created=self.ten_days,
+            modified=self.ten_days,
             last_seen=self.ten_days.date(),
-            source=ReportSource.query, **self.key(obs[0]))
+            source=ReportSource.query,
+            **self.key(obs[0]),
+        )
         session.commit()
         self.queue_and_update(celery, obs)
 
@@ -458,7 +508,7 @@ class StationTest(BaseStationTest):
         assert station.max_lon == obs.lon
         assert station.min_lon == obs.lon
         assert station.radius == 0
-        assert station.region == 'GB'
+        assert station.region == "GB"
         assert station.samples == 3
         assert station.source == ReportSource.gnss
         assert round(station.weight, 2) == 3.0
@@ -469,9 +519,14 @@ class StationTest(BaseStationTest):
                 obs = self.make_obs(source=obs_source)
                 lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
                 self.station_factory(
-                    lat=lat, lon=lon, created=self.one_year,
-                    modified=self.one_year, last_seen=self.one_year.date(),
-                    source=station_source, **self.key(obs[0]))
+                    lat=lat,
+                    lon=lon,
+                    created=self.one_year,
+                    modified=self.one_year,
+                    last_seen=self.one_year.date(),
+                    source=station_source,
+                    **self.key(obs[0]),
+                )
                 session.commit()
                 self.queue_and_update(celery, obs)
 
@@ -480,8 +535,7 @@ class StationTest(BaseStationTest):
                 station = self.get_station(session, obs)
 
                 self.check_blocked(station, None)
-                self.check_dates(station, self.one_year.date(),
-                                 self.today, self.today)
+                self.check_dates(station, self.one_year.date(), self.today, self.today)
                 assert station.lat == obs.lat
                 assert station.max_lat == obs.lat
                 assert station.min_lat == obs.lat
@@ -489,51 +543,64 @@ class StationTest(BaseStationTest):
                 assert station.max_lon == obs.lon
                 assert station.min_lon == obs.lon
                 assert station.radius == 0
-                assert station.region == 'GB'
+                assert station.region == "GB"
                 assert station.samples == 3
                 assert station.source == obs_source
 
 
 class StationMacTest(StationTest):
 
-    unique_key = 'mac'
+    unique_key = "mac"
 
     def key(self, model):
-        return {'mac': model.mac}
+        return {"mac": model.mac}
 
 
 class TestBlue(StationMacTest):
 
     max_radius = BLUE_MAX_RADIUS
     obs_factory = BlueObservationFactory
-    queue_prefix = 'update_blue_'
+    queue_prefix = "update_blue_"
     shard_model = BlueShard
     stat_obs_key = StatKey.blue
     stat_station_key = StatKey.unique_blue
     station_factory = BlueShardFactory
-    type_tag = 'type:blue'
+    type_tag = "type:blue"
 
     def queue_and_update(self, celery, obs):
-        return super(TestBlue, self)._queue_and_update(
-            celery, obs, update_blue)
+        return super(TestBlue, self)._queue_and_update(celery, obs, update_blue)
 
     def test_change(self, celery, session):
         for source in (ReportSource.gnss, ReportSource.query):
-            station = self.station_factory(
-                samples=2, weight=3.0, source=source)
+            station = self.station_factory(samples=2, weight=3.0, source=source)
             station_key = self.key(station)
             lat = station.lat
             lon = station.lon
             obs = [
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.0001, accuracy=20.0,
-                    signal=-30, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.0001,
+                    accuracy=20.0,
+                    signal=-30,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.0002, age=-8000, accuracy=40.0,
-                    signal=-60, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.0002,
+                    age=-8000,
+                    accuracy=40.0,
+                    signal=-60,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.0003, accuracy=100.1,
-                    source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.0003,
+                    accuracy=100.1,
+                    source=source,
+                    **station_key,
+                ),
             ]
             session.commit()
             self.queue_and_update(celery, obs)
@@ -555,46 +622,80 @@ class TestWifi(StationMacTest):
 
     max_radius = WIFI_MAX_RADIUS
     obs_factory = WifiObservationFactory
-    queue_prefix = 'update_wifi_'
+    queue_prefix = "update_wifi_"
     shard_model = WifiShard
     stat_obs_key = StatKey.wifi
     stat_station_key = StatKey.unique_wifi
     station_factory = WifiShardFactory
-    type_tag = 'type:wifi'
+    type_tag = "type:wifi"
 
     def queue_and_update(self, celery, obs):
-        return super(TestWifi, self)._queue_and_update(
-            celery, obs, update_wifi)
+        return super(TestWifi, self)._queue_and_update(celery, obs, update_wifi)
 
     def test_change(self, celery, session):
         for source in (ReportSource.gnss, ReportSource.query):
-            station = self.station_factory(
-                samples=2, weight=3.0, source=source)
+            station = self.station_factory(samples=2, weight=3.0, source=source)
             station_key = self.key(station)
             lat = station.lat
             lon = station.lon
             obs = [
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.002, accuracy=20.0,
-                    signal=-30, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.002,
+                    accuracy=20.0,
+                    signal=-30,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.004, age=-8000, accuracy=40.0,
-                    signal=-60, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.004,
+                    age=-8000,
+                    accuracy=40.0,
+                    signal=-60,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.006, age=1000, accuracy=10.0,
-                    signal=-90, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.006,
+                    age=1000,
+                    accuracy=10.0,
+                    signal=-90,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.006, accuracy=10.0,
-                    speed=20.0, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.006,
+                    accuracy=10.0,
+                    speed=20.0,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.008, age=40000, accuracy=10.0,
-                    source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.008,
+                    age=40000,
+                    accuracy=10.0,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.008, accuracy=10.0,
-                    speed=50.1, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.008,
+                    accuracy=10.0,
+                    speed=50.1,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.010, accuracy=200.1,
-                    source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.010,
+                    accuracy=200.1,
+                    source=source,
+                    **station_key,
+                ),
             ]
             session.commit()
             self.queue_and_update(celery, obs)
@@ -613,16 +714,18 @@ class TestWifi(StationMacTest):
 
     def test_region(self, celery, session):
         obs = []
-        station1 = self.station_factory(lat=46.2884, lon=6.77, region='FR')
-        obs.extend(self.obs_factory.create_batch(
-            5, lat=station1.lat, lon=station1.lon + 0.05,
-            **self.key(station1)
-        ))
-        station2 = self.station_factory(lat=46.2884, lon=7.4, region='FR')
-        obs.extend(self.obs_factory.create_batch(
-            5, lat=station2.lat, lon=station2.lon + 0.05,
-            **self.key(station2)
-        ))
+        station1 = self.station_factory(lat=46.2884, lon=6.77, region="FR")
+        obs.extend(
+            self.obs_factory.create_batch(
+                5, lat=station1.lat, lon=station1.lon + 0.05, **self.key(station1)
+            )
+        )
+        station2 = self.station_factory(lat=46.2884, lon=7.4, region="FR")
+        obs.extend(
+            self.obs_factory.create_batch(
+                5, lat=station2.lat, lon=station2.lon + 0.05, **self.key(station2)
+            )
+        )
         session.commit()
         self.queue_and_update(celery, obs)
 
@@ -630,36 +733,38 @@ class TestWifi(StationMacTest):
         # to not re-trigger region determination
         station1 = self.get_station(session, station1)
         self.check_blocked(station1, None)
-        assert station1.region == 'FR'
+        assert station1.region == "FR"
         station2 = self.get_station(session, station2)
         self.check_blocked(station2, None)
-        assert station2.region == 'CH'
+        assert station2.region == "CH"
 
 
 class TestCell(StationTest):
 
     max_radius = CELL_MAX_RADIUS
     obs_factory = CellObservationFactory
-    queue_prefix = 'update_cell_'
+    queue_prefix = "update_cell_"
     shard_model = CellShard
     stat_obs_key = StatKey.cell
     stat_station_key = StatKey.unique_cell
     station_factory = CellShardFactory
-    type_tag = 'type:cell'
-    unique_key = 'cellid'
+    type_tag = "type:cell"
+    unique_key = "cellid"
 
     def key(self, model):
         return {
-            'radio': model.radio, 'mcc': model.mcc, 'mnc': model.mnc,
-            'lac': model.lac, 'cid': model.cid,
+            "radio": model.radio,
+            "mcc": model.mcc,
+            "mnc": model.mnc,
+            "lac": model.lac,
+            "cid": model.cid,
         }
 
     def queue_and_update(self, celery, obs):
-        return self._queue_and_update(
-            celery, obs, update_cell)
+        return self._queue_and_update(celery, obs, update_cell)
 
     def check_areas(self, celery, obs):
-        queue = celery.data_queues['update_cellarea']
+        queue = celery.data_queues["update_cellarea"]
         queued = set(queue.dequeue())
         cellids = [decode_cellid(ob.unique_key) for ob in obs]
         areaids = set([encode_cellarea(*cellid[:4]) for cellid in cellids])
@@ -668,20 +773,35 @@ class TestCell(StationTest):
     def test_change(self, celery, session):
         for source in (ReportSource.gnss, ReportSource.query):
             station = self.station_factory(
-                radio=Radio.gsm, samples=1, source=source, weight=2.0)
+                radio=Radio.gsm, samples=1, source=source, weight=2.0
+            )
             station_key = self.key(station)
             lat = station.lat
             lon = station.lon
             obs = [
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.002, accuracy=20.0,
-                    signal=-51, source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.002,
+                    accuracy=20.0,
+                    signal=-51,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, signal=-111, lon=lon - 0.004, accuracy=1000.0,
-                    source=source, **station_key),
+                    lat=lat,
+                    signal=-111,
+                    lon=lon - 0.004,
+                    accuracy=1000.0,
+                    source=source,
+                    **station_key,
+                ),
                 self.obs_factory(
-                    lat=lat, lon=lon - 0.004, accuracy=1000.1,
-                    source=source, **station_key),
+                    lat=lat,
+                    lon=lon - 0.004,
+                    accuracy=1000.1,
+                    source=source,
+                    **station_key,
+                ),
             ]
             session.commit()
             self.queue_and_update(celery, obs)

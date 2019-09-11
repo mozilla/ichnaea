@@ -5,11 +5,7 @@ from sqlalchemy import delete, select
 
 from geocalc import circle_radius
 from ichnaea.geocode import GEOCODER
-from ichnaea.models import (
-    decode_cellarea,
-    CellArea,
-    CellShard,
-)
+from ichnaea.models import decode_cellarea, CellArea, CellShard
 from ichnaea import util
 
 
@@ -17,7 +13,7 @@ class CellAreaUpdater(object):
 
     area_table = CellArea.__table__
     cell_model = CellShard
-    queue_name = 'update_cellarea'
+    queue_name = "update_cellarea"
 
     def __init__(self, task):
         self.task = task
@@ -47,15 +43,15 @@ class CellAreaUpdater(object):
             for reg in regions:
                 grouped_regions[reg] += 1
             max_count = max(grouped_regions.values())
-            max_regions = sorted([k for k, v in grouped_regions.items()
-                                  if v == max_count])
+            max_regions = sorted(
+                [k for k, v in grouped_regions.items() if v == max_count]
+            )
             # If we get a tie here, randomly choose the first.
             region = max_regions[0]
             if len(max_regions) > 1:
                 # Try to break the tie based on the center of the area,
                 # but keep the randomly chosen region if this fails.
-                area_region = GEOCODER.region_for_cell(
-                    ctr_lat, ctr_lon, mcc)
+                area_region = GEOCODER.region_for_cell(ctr_lat, ctr_lon, mcc)
                 if area_region is not None:
                     region = area_region
 
@@ -64,8 +60,18 @@ class CellAreaUpdater(object):
     def update_area(self, session, areaid):
         # Select all cells in this area and derive a bounding box for them
         radio, mcc, mnc, lac = decode_cellarea(areaid)
-        load_fields = ('cellid', 'lat', 'lon', 'radius', 'region', 'last_seen',
-                       'max_lat', 'max_lon', 'min_lat', 'min_lon')
+        load_fields = (
+            "cellid",
+            "lat",
+            "lon",
+            "radius",
+            "region",
+            "last_seen",
+            "max_lat",
+            "max_lon",
+            "min_lat",
+            "min_lon",
+        )
 
         shard = self.cell_model.shard_model(radio)
         fields = [getattr(shard.__table__.c, f) for f in load_fields]
@@ -83,14 +89,15 @@ class CellAreaUpdater(object):
         if len(cells) == 0:
             # If there are no more underlying cells, delete the area entry
             session.execute(
-                delete(self.area_table)
-                .where(self.area_table.c.areaid == areaid)
+                delete(self.area_table).where(self.area_table.c.areaid == areaid)
             )
             return
 
         # Otherwise update the area entry based on all the cells
         area = session.execute(
-            select([self.area_table.c.areaid,
+            select(
+                [
+                    self.area_table.c.areaid,
                     self.area_table.c.modified,
                     self.area_table.c.lat,
                     self.area_table.c.lon,
@@ -99,49 +106,58 @@ class CellAreaUpdater(object):
                     self.area_table.c.avg_cell_radius,
                     self.area_table.c.num_cells,
                     self.area_table.c.last_seen,
-                    ])
-            .where(self.area_table.c.areaid == areaid)
+                ]
+            ).where(self.area_table.c.areaid == areaid)
         ).fetchone()
 
-        cell_extremes = numpy.array([
-            (numpy.nan if cell.max_lat is None else cell.max_lat,
-             numpy.nan if cell.max_lon is None else cell.max_lon)
-            for cell in cells] + [
-            (numpy.nan if cell.min_lat is None else cell.min_lat,
-             numpy.nan if cell.min_lon is None else cell.min_lon)
-            for cell in cells
-        ], dtype=numpy.double)
+        cell_extremes = numpy.array(
+            [
+                (
+                    numpy.nan if cell.max_lat is None else cell.max_lat,
+                    numpy.nan if cell.max_lon is None else cell.max_lon,
+                )
+                for cell in cells
+            ]
+            + [
+                (
+                    numpy.nan if cell.min_lat is None else cell.min_lat,
+                    numpy.nan if cell.min_lon is None else cell.min_lon,
+                )
+                for cell in cells
+            ],
+            dtype=numpy.double,
+        )
 
         max_lat, max_lon = numpy.nanmax(cell_extremes, axis=0)
         min_lat, min_lon = numpy.nanmin(cell_extremes, axis=0)
 
         ctr_lat, ctr_lon = numpy.array(
-            [(c.lat, c.lon) for c in cells],
-            dtype=numpy.double).mean(axis=0)
+            [(c.lat, c.lon) for c in cells], dtype=numpy.double
+        ).mean(axis=0)
         ctr_lat = float(ctr_lat)
         ctr_lon = float(ctr_lon)
 
-        radius = circle_radius(
-            ctr_lat, ctr_lon, max_lat, max_lon, min_lat, min_lon)
+        radius = circle_radius(ctr_lat, ctr_lon, max_lat, max_lon, min_lat, min_lon)
 
-        cell_radii = numpy.array([
-            (numpy.nan if cell.radius is None else cell.radius)
-            for cell in cells
-        ], dtype=numpy.int32)
+        cell_radii = numpy.array(
+            [(numpy.nan if cell.radius is None else cell.radius) for cell in cells],
+            dtype=numpy.int32,
+        )
         avg_cell_radius = int(round(numpy.nanmean(cell_radii)))
         num_cells = len(cells)
         region = self.region(ctr_lat, ctr_lon, mcc, cells)
 
         last_seen = None
-        cell_last_seen = set([cell.last_seen for cell in cells
-                              if cell.last_seen is not None])
+        cell_last_seen = set(
+            [cell.last_seen for cell in cells if cell.last_seen is not None]
+        )
         if cell_last_seen:
             last_seen = max(cell_last_seen)
 
         if area is None:
             session.execute(
                 self.area_table.insert(
-                    mysql_on_duplicate='num_cells = num_cells'  # no-op
+                    mysql_on_duplicate="num_cells = num_cells"  # no-op
                 ).values(
                     areaid=areaid,
                     radio=radio,

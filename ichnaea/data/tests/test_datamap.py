@@ -1,19 +1,12 @@
 from collections import defaultdict
 from datetime import timedelta
 
-from ichnaea.data.tasks import (
-    cleanup_datamap,
-    update_datamap,
-)
-from ichnaea.models.content import (
-    DataMap,
-    encode_datamap_grid,
-)
+from ichnaea.data.tasks import cleanup_datamap, update_datamap
+from ichnaea.models.content import DataMap, encode_datamap_grid
 from ichnaea import util
 
 
 class TestDataMapCleaner(object):
-
     @property
     def today(self):
         return util.utcnow().date()
@@ -21,7 +14,8 @@ class TestDataMapCleaner(object):
     def _one(self, lat, lon, time):
         lat, lon = DataMap.scale(lat, lon)
         return DataMap.shard_model(lat, lon)(
-            grid=(lat, lon), created=time, modified=time)
+            grid=(lat, lon), created=time, modified=time
+        )
 
     def test_empty(self, celery, session):
         for shard_id, shard in DataMap.shards().items():
@@ -29,16 +23,18 @@ class TestDataMapCleaner(object):
             assert session.query(shard).count() == 0
 
     def test_cleanup(self, celery, session):
-        session.add_all([
-            self._one(37.0, 6.0, self.today),
-            self._one(37.0, 6.1, self.today - timedelta(days=366)),
-            self._one(37.0, 4.0, self.today),
-            self._one(37.0, 4.1, self.today - timedelta(days=366)),
-            self._one(10.0, 6.0, self.today),
-            self._one(10.0, 6.1, self.today - timedelta(days=366)),
-            self._one(10.0, 4.0, self.today),
-            self._one(10.0, 4.1, self.today - timedelta(days=366)),
-        ])
+        session.add_all(
+            [
+                self._one(37.0, 6.0, self.today),
+                self._one(37.0, 6.1, self.today - timedelta(days=366)),
+                self._one(37.0, 4.0, self.today),
+                self._one(37.0, 4.1, self.today - timedelta(days=366)),
+                self._one(10.0, 6.0, self.today),
+                self._one(10.0, 6.1, self.today - timedelta(days=366)),
+                self._one(10.0, 4.0, self.today),
+                self._one(10.0, 4.1, self.today - timedelta(days=366)),
+            ]
+        )
         session.flush()
 
         for shard_id, shard in DataMap.shards().items():
@@ -47,7 +43,6 @@ class TestDataMapCleaner(object):
 
 
 class TestDataMapUpdater(object):
-
     @property
     def today(self):
         return util.utcnow().date()
@@ -59,8 +54,11 @@ class TestDataMapUpdater(object):
     def _add(self, session, entries):
         for lat, lon, time in entries:
             lat, lon = DataMap.scale(lat, lon)
-            session.add(DataMap.shard_model(lat, lon)(
-                grid=(lat, lon), created=time, modified=time))
+            session.add(
+                DataMap.shard_model(lat, lon)(
+                    grid=(lat, lon), created=time, modified=time
+                )
+            )
         session.flush()
 
     def _check_position(self, stat, lat, lon):
@@ -74,7 +72,7 @@ class TestDataMapUpdater(object):
             grids[shard_id].append(encode_datamap_grid(lat, lon))
 
         for shard_id, values in grids.items():
-            queue = celery.data_queues['update_datamap_' + shard_id]
+            queue = celery.data_queues["update_datamap_" + shard_id]
             queue.enqueue(list(values))
 
     def test_empty(self, celery, session):
@@ -110,19 +108,28 @@ class TestDataMapUpdater(object):
         assert grids[0].modified == self.today
 
     def test_multiple(self, celery, session):
-        self._add(session, [
-            (0.0, 1.0, self.today),
-            (1.0, 2.0, self.yesterday),
-            (-10.0, 40.0, self.yesterday),
-        ])
-        self._queue(celery, [
-            (0.0, 1.0),
-            (1.0, 2.0), (1.0, 2.0),
-            (40.0011, 3.0011), (40.0012, 3.0012), (40.0013, 3.0013),
-            (0.0, 0.0),
-            (1.0, 2.0),
-            (1.00001, 2.00001),
-        ])
+        self._add(
+            session,
+            [
+                (0.0, 1.0, self.today),
+                (1.0, 2.0, self.yesterday),
+                (-10.0, 40.0, self.yesterday),
+            ],
+        )
+        self._queue(
+            celery,
+            [
+                (0.0, 1.0),
+                (1.0, 2.0),
+                (1.0, 2.0),
+                (40.0011, 3.0011),
+                (40.0012, 3.0012),
+                (40.0013, 3.0013),
+                (0.0, 0.0),
+                (1.0, 2.0),
+                (1.00001, 2.00001),
+            ],
+        )
         for shard_id in DataMap.shards():
             update_datamap.delay(shard_id=shard_id).get()
 
@@ -142,6 +149,6 @@ class TestDataMapUpdater(object):
 
         assert created == set([self.today, self.yesterday])
         assert modified == set([self.today, self.yesterday])
-        assert (positions == set([
-            (0.0, 0.0), (0.0, 1.0), (1.0, 2.0),
-            (-10.0, 40.0), (40.001, 3.001)]))
+        assert positions == set(
+            [(0.0, 0.0), (0.0, 1.0), (1.0, 2.0), (-10.0, 40.0), (40.001, 3.001)]
+        )
