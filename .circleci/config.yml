@@ -60,7 +60,7 @@ jobs:
             name: Run linting
             working_directory: /ichnaea
             command: |
-                make lint
+                docker run local/ichnaea_app shell ./docker/run_lint.sh
 
         - run:
             name: Run tests
