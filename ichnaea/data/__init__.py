@@ -9,5 +9,5 @@ def _cell_export_enabled():
     return bool(settings("asset_bucket"))
 
 
-def _web_content_enabled():
+def _map_content_enabled():
     return bool(settings("mapbox_token"))

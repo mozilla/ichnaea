@@ -72,8 +72,8 @@ class AppConfig(RequiredConfigMixin):
         "mapbox_token",
         default="",
         doc=(
-            "Mapbox API key; if you do not provide this, then parts of "
-            "the site will not work"
+            "Mapbox API key; if you do not provide this, then then parts of "
+            "the site showing maps will be disabled"
         ),
     )
 
