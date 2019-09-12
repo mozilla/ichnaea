@@ -2,8 +2,8 @@
 Contains :ref:`celery settings <celery:configuration>`.
 """
 
-from ichnaea.async.config import TASK_QUEUES
 from ichnaea.conf import settings
+from ichnaea.taskapp.config import TASK_QUEUES
 
 if settings("testing"):
     # BBB: Celery 4

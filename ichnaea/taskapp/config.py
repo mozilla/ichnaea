@@ -36,14 +36,14 @@ register(
 
 def configure_celery(celery_app):
     """
-    Configure the celery app stored in :data:`ichnaea.async.app.celery_app`.
+    Configure the celery app stored in :data:`ichnaea.taskapp.app.celery_app`.
     This is executed both inside the master worker process and once in
     each forked worker process.
 
     This parses the application ini and reads in the
-    :mod:`ichnaea.async.settings`.
+    :mod:`ichnaea.taskapp.settings`.
     """
-    celery_app.config_from_object("ichnaea.async.settings")
+    celery_app.config_from_object("ichnaea.taskapp.settings")
 
 
 def configure_data(redis_client):
@@ -76,7 +76,7 @@ def configure_data(redis_client):
 def init_beat(beat, celery_app):
     """
     Configure the passed in celery beat app, usually stored in
-    :data:`ichnaea.async.app.celery_app`.
+    :data:`ichnaea.taskapp.app.celery_app`.
     """
     # Ensure we import all tasks in the context of the beat process,
     # as these configure their own beat schedule.
@@ -93,7 +93,7 @@ def init_worker(
 ):
     """
     Configure the passed in celery app, usually stored in
-    :data:`ichnaea.async.app.celery_app`.
+    :data:`ichnaea.taskapp.app.celery_app`.
 
     Does connection, settings and queue setup. Attaches some
     additional functionality to the :class:`celery.Celery` instance.

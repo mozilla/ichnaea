@@ -9,18 +9,20 @@ from datetime import timedelta
 
 from celery.schedules import crontab
 
-from ichnaea.async.app import celery_app
-from ichnaea.async.task import BaseTask
-from ichnaea.data import _cell_export_enabled
-from ichnaea.data import _web_content_enabled
-from ichnaea.data import area
-from ichnaea.data import datamap
-from ichnaea.data import export
-from ichnaea.data import monitor
-from ichnaea.data import public
-from ichnaea.data import station
-from ichnaea.data import stats
 from ichnaea import models
+from ichnaea.data import (
+    _cell_export_enabled,
+    _web_content_enabled,
+    area,
+    datamap,
+    export,
+    monitor,
+    public,
+    station,
+    stats,
+)
+from ichnaea.taskapp.app import celery_app
+from ichnaea.taskapp.task import BaseTask
 
 
 @celery_app.task(
