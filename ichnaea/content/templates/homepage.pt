@@ -24,7 +24,7 @@
         </p>
     </div>
 
-    <div class="map-callout-right map-callout">
+    <div class="map-callout-right map-callout" tal:condition="map_enabled">
         <a href="/map" title="Detailed data map">
             <img src="${map_image_base_url}" width="256" height="256" />
             <img src="${map_image_url}"

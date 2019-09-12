@@ -27,8 +27,6 @@ HERE = os.path.dirname(__file__)
 IMAGE_PATH = os.path.join(HERE, "static", "images")
 FAVICON_PATH = os.path.join(IMAGE_PATH, "favicon.ico")
 TOUCHICON_PATH = os.path.join(IMAGE_PATH, "apple-touch-icon.png")
-# cache year lookup, needs server restart after new year :)
-THIS_YEAR = "%s" % util.utcnow().year
 
 CSP_BASE = "'self'"
 CSP_POLICY = """\
@@ -60,14 +58,7 @@ MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(settings("asset_url"))
 CSP_POLICY = CSP_POLICY.format(base=CSP_BASE, tiles=MAP_TILES_SRC)
 
 
-def configure_content(config, enable=None):
-    if enable is None:
-        enable = MAP_TILES_URL and settings("mapbox_token")
-
-    if not enable:
-        config.add_view(empty_homepage_view, http_cache=(86400, {"public": True}))
-        return False
-
+def configure_content(config):
     config.add_view(
         favicon_view, name="favicon.ico", http_cache=(86400, {"public": True})
     )
@@ -90,7 +81,6 @@ def configure_content(config, enable=None):
     config.add_route("stats", "/stats")
 
     config.scan("ichnaea.content.views")
-    return True
 
 
 @subscriber(NewResponse)
@@ -158,7 +148,7 @@ class ContentViews(object):
 
     @property
     def this_year(self):
-        return THIS_YEAR
+        return "%s" % util.utcnow().year
 
     def _get_cache(self, cache_key):
         cache_key = self.redis_client.cache_keys[cache_key]
@@ -171,12 +161,22 @@ class ContentViews(object):
         cache_key = self.redis_client.cache_keys[cache_key]
         self.redis_client.set(cache_key, simplejson.dumps(data), ex=ex)
 
+    def is_map_enabled(self):
+        """Return whether maps are enabled.
+
+        Enable maps if and only if there's a mapbox token and a url for the
+        tiles location. Otherwise it's disabled.
+
+        """
+        return bool(MAP_TILES_URL and settings("mapbox_token"))
+
     @view_config(renderer="templates/homepage.pt", http_cache=3600)
     def homepage_view(self):
         image_base_url = HOMEPAGE_MAP_IMAGE.format(token=settings("mapbox_token"))
         image_url = MAP_TILES_URL.format(z=0, x=0, y="0@2x")
         return {
             "page_title": "Overview",
+            "map_enabled": self.is_map_enabled(),
             "map_image_base_url": image_base_url,
             "map_image_url": image_url,
         }
@@ -209,6 +209,7 @@ class ContentViews(object):
     def map_view(self):
         return {
             "page_title": "Map",
+            "map_enabled": self.is_map_enabled(),
             "map_tiles_url": MAP_TILES_URL,
             "map_token": settings("mapbox_token"),
         }
@@ -284,24 +285,6 @@ class ContentViews(object):
                 "Developer Terms of Service:" " Mozilla Location Service Query API"
             )
         }
-
-
-_EMPTY_HOMEPAGE_RESPONSE = """\
-<!DOCTYPE html><html><head>
-<meta charset="UTF-8" />
-<title>ichnaea</title>
-</head><body>
-<h1>It works!</h1>
-<p>This is an installation of the open-source software
-<a href="https://github.com/mozilla/ichnaea">Mozilla Ichnaea</a>.</p>
-<p>Mozilla is not responsible for the operation or problems with
-this specific instance, please contact the site operator first.</p>
-</body></html>
-"""
-
-
-def empty_homepage_view(request):
-    return Response(content_type="text/html", body=_EMPTY_HOMEPAGE_RESPONSE)
 
 
 def favicon_view(request):
