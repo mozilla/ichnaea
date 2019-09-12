@@ -34,7 +34,7 @@ LOGGING_CONFIG = dict(
     loggers=dict(
         alembic={"level": logging.INFO, "qualname": "alembic"},
         ichnaea={"level": logging.INFO, "qualname": "ichnaea"},
-        sqlalchemny={"level": logging.WARN, "qualname": "sqlalchemy.engine"},
+        sqlalchemy={"level": logging.WARN, "qualname": "sqlalchemy.engine"},
     ),
 )
 
