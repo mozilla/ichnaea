@@ -44,23 +44,30 @@ HOMEPAGE_MAP_IMAGE = (
 )
 
 
-def configure_tiles_url(asset_url):
+def get_map_tiles_url(asset_url):
+    """Compute tiles url for maps based on the asset_url.
+
+    :arg str asset_url: the url to static assets or ''
+
+    :returns: tiles_url
+
+    """
     asset_url = asset_url if asset_url else ""
     if not asset_url.endswith("/"):
         asset_url = asset_url + "/"
-    tiles_url = urlparse.urljoin(asset_url, "tiles/" + TILES_PATTERN)
-
-    result = urlparse.urlsplit(tiles_url)
-    tiles_src = urlparse.urlunparse((result.scheme, result.netloc, "", "", "", ""))
-    return (tiles_src, tiles_url)
+    return urlparse.urljoin(asset_url, "tiles/" + TILES_PATTERN)
 
 
-MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(settings("asset_url"))
+def get_csp_policy(asset_url):
+    """Return value for Content-Security-Policy HTTP header.
 
+    :arg str asset_url: the url to static assets or ''
 
-def get_csp_policy():
-    """Return value for Content-Security-Policy HTTP header."""
-    map_tiles_src, _ = configure_tiles_url(settings("asset_url"))
+    :returns: CSP policy string
+
+    """
+    result = urlparse.urlsplit(asset_url)
+    map_tiles_src = urlparse.urlunparse((result.scheme, result.netloc, "", "", "", ""))
     return CSP_POLICY.format(base=CSP_BASE, tiles=map_tiles_src)
 
 
@@ -99,7 +106,9 @@ def security_headers(event):
     response.headers.add("X-Content-Type-Options", "nosniff")
     # Headers for HTML responses.
     if response.content_type == "text/html":
-        response.headers.add("Content-Security-Policy", get_csp_policy())
+        response.headers.add(
+            "Content-Security-Policy", get_csp_policy(settings("asset_url"))
+        )
         response.headers.add("X-Frame-Options", "DENY")
         response.headers.add("X-XSS-Protection", "1; mode=block")
 
@@ -174,12 +183,14 @@ class ContentViews(object):
         tiles location. Otherwise it's disabled.
 
         """
-        return bool(MAP_TILES_URL and settings("mapbox_token"))
+        map_tiles_url = get_map_tiles_url(settings("asset_url"))
+        return bool(map_tiles_url and settings("mapbox_token"))
 
     @view_config(renderer="templates/homepage.pt", http_cache=3600)
     def homepage_view(self):
+        map_tiles_url = get_map_tiles_url(settings("asset_url"))
         image_base_url = HOMEPAGE_MAP_IMAGE.format(token=settings("mapbox_token"))
-        image_url = MAP_TILES_URL.format(z=0, x=0, y="0@2x")
+        image_url = map_tiles_url.format(z=0, x=0, y="0@2x")
         return {
             "page_title": "Overview",
             "map_enabled": self.is_map_enabled(),
@@ -213,17 +224,19 @@ class ContentViews(object):
 
     @view_config(renderer="templates/map.pt", name="map", http_cache=3600)
     def map_view(self):
+        map_tiles_url = get_map_tiles_url(settings("asset_url"))
         return {
             "page_title": "Map",
             "map_enabled": self.is_map_enabled(),
-            "map_tiles_url": MAP_TILES_URL,
+            "map_tiles_url": map_tiles_url,
             "map_token": settings("mapbox_token"),
         }
 
     @view_config(renderer="json", name="map.json", http_cache=3600)
     def map_json(self):
-        offset = MAP_TILES_URL.find(TILES_PATTERN)
-        base_url = MAP_TILES_URL[:offset]
+        map_tiles_url = get_map_tiles_url(settings("asset_url"))
+        offset = map_tiles_url.find(TILES_PATTERN)
+        base_url = map_tiles_url[:offset]
         return {"tiles_url": base_url}
 
     @view_config(renderer="json", name="stats_blue.json", http_cache=3600)

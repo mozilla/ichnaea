@@ -7,34 +7,28 @@ from pyramid.testing import DummyRequest
 from pyramid import testing
 import pytest
 
-from ichnaea.content.views import configure_tiles_url, ContentViews
+from ichnaea.content.views import get_map_tiles_url, ContentViews
 from ichnaea.models.content import Stat, StatKey
 from ichnaea import util
 
 
 class TestConfig(object):
-    @pytest.fixture(scope="function")
-    def config(self):
-        with testing.testConfig() as config:
-            config.registry.skip_logging = set()
-            yield config
-
-    def test_tiles_url(self):
-        src, url = configure_tiles_url("http://127.0.0.1:9/static")
-        assert src == "http://127.0.0.1:9"
+    def test_get_map_tiles_url(self):
+        url = get_map_tiles_url("http://127.0.0.1:9/static")
         assert url == "http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png"
 
 
-class TestContentViews(object):
-    @pytest.fixture(scope="function")
-    def views(self, map_config, redis, session):
-        request = DummyRequest()
-        with testing.testConfig(request=request) as config:
-            config.include("pyramid_chameleon")
-            setattr(request, "db_session", session)
-            setattr(request.registry, "redis_client", redis)
-            yield ContentViews(request)
+@pytest.fixture(scope="function")
+def views(redis, session):
+    request = DummyRequest()
+    with testing.testConfig(request=request) as config:
+        config.include("pyramid_chameleon")
+        setattr(request, "db_session", session)
+        setattr(request.registry, "redis_client", redis)
+        yield ContentViews(request)
 
+
+class TestContentViews(object):
     def test_homepage(self, views):
         result = views.homepage_view()
         assert result["page_title"] == "Overview"
