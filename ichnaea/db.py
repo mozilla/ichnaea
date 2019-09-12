@@ -10,10 +10,8 @@ import certifi
 from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
-from sqlalchemy.sql.expression import Insert
 
 from ichnaea.conf import settings
 
@@ -40,19 +38,6 @@ def get_alembic_config():
     cfg.set_section_option("alembic", "script_location", script_location)
     cfg.set_section_option("alembic", "sqlalchemy.url", settings("db_ddl_uri"))
     return cfg
-
-
-@compiles(Insert, "mysql")
-def on_duplicate(insert, compiler, **kw):
-    """Custom MySQL insert on_duplicate support."""
-    stmt = compiler.visit_insert(insert, **kw)
-    my_var = insert.dialect_kwargs.get("mysql_on_duplicate", None)
-    if my_var:
-        stmt += " ON DUPLICATE KEY UPDATE %s" % my_var
-    return stmt
-
-
-Insert.argument_for("mysql", "on_duplicate", None)
 
 
 def configure_db(type_=None, uri=None, transport="default", _db=None):

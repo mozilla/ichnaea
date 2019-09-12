@@ -509,16 +509,16 @@ class StationUpdater(object):
 
         if new_data["new"]:
             session.execute(
-                shard.__table__.insert(mysql_on_duplicate="samples = samples").values(
-                    new_data["new"]
-                )
+                shard.__table__.insert().values(new_data["new"])
+                # If there was an unexpected insert, log warning instead of error
+                .prefix_with("IGNORE", dialect="mysql")
             )
 
         if new_data["new_block"]:
             session.execute(
-                shard.__table__.insert(
-                    mysql_on_duplicate="block_count = block_count"
-                ).values(new_data["new_block"])
+                shard.__table__.insert().values(new_data["new_block"])
+                # If there was an unexpected insert, log warning instead of error
+                .prefix_with("IGNORE", dialect="mysql")
             )
 
         updates = new_data["block"] + new_data["change"] + new_data["replace"]

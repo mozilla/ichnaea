@@ -64,10 +64,11 @@ class DataMapUpdater(object):
 
         if new_values:
             # do a batch insert of new grids
-            stmt = self.shard.__table__.insert(
-                mysql_on_duplicate="modified = modified"  # no-op
+            session.execute(
+                self.shard.__table__.insert().values(new_values)
+                # If there was an unexpected insert, log warning instead of error
+                .prefix_with("IGNORE", dialect="mysql")
             )
-            session.execute(stmt.values(new_values))
 
         if update_values:
             # do a batch update of grids
