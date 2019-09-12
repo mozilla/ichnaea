@@ -8,13 +8,11 @@ from alembic import command
 from alembic.config import Config as AlembicConfig
 import certifi
 from pymysql.err import DatabaseError
-from sqlalchemy import create_engine, exc
+from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
 from sqlalchemy.pool import NullPool, QueuePool
-from sqlalchemy.sql import func, select
 from sqlalchemy.sql.expression import Insert
 
 from ichnaea.conf import settings
@@ -175,7 +173,7 @@ class Database(object):
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(
-            bind=self.engine, class_=PingableSession, autocommit=False, autoflush=False
+            bind=self.engine, autocommit=False, autoflush=False
         )
 
     def close(self):
@@ -187,22 +185,6 @@ class Database(object):
 
     def __repr__(self):
         return self.uri
-
-
-class PingableSession(Session):
-    """A custom pingable database session."""
-
-    def __init__(self, *args, **kw):
-        # disable automatic docstring
-        return super(PingableSession, self).__init__(*args, **kw)
-
-    def ping(self):
-        """Use this active session to check the database connectivity."""
-        try:
-            self.execute(select([func.now()])).first()
-        except exc.OperationalError:
-            return False
-        return True
 
 
 def create_db(uri=None):
