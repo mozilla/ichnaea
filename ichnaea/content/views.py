@@ -23,6 +23,7 @@ from ichnaea.content.stats import global_stats, histogram, regions
 from ichnaea.models.content import StatKey
 from ichnaea import util
 
+
 HERE = os.path.dirname(__file__)
 IMAGE_PATH = os.path.join(HERE, "static", "images")
 FAVICON_PATH = os.path.join(IMAGE_PATH, "favicon.ico")
@@ -55,7 +56,12 @@ def configure_tiles_url(asset_url):
 
 
 MAP_TILES_SRC, MAP_TILES_URL = configure_tiles_url(settings("asset_url"))
-CSP_POLICY = CSP_POLICY.format(base=CSP_BASE, tiles=MAP_TILES_SRC)
+
+
+def get_csp_policy():
+    """Return value for Content-Security-Policy HTTP header."""
+    map_tiles_src, _ = configure_tiles_url(settings("asset_url"))
+    return CSP_POLICY.format(base=CSP_BASE, tiles=map_tiles_src)
 
 
 def configure_content(config):
@@ -93,7 +99,7 @@ def security_headers(event):
     response.headers.add("X-Content-Type-Options", "nosniff")
     # Headers for HTML responses.
     if response.content_type == "text/html":
-        response.headers.add("Content-Security-Policy", CSP_POLICY)
+        response.headers.add("Content-Security-Policy", get_csp_policy())
         response.headers.add("X-Frame-Options", "DENY")
         response.headers.add("X-XSS-Protection", "1; mode=block")
 
