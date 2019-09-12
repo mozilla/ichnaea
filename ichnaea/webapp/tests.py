@@ -156,7 +156,8 @@ class TestLBHeartbeat(object):
 
 class TestGunicornSettings(object):
     def test_gunicorn_settings_loads(self):
-        from ichnaea.webapp import gunicorn_settings
+        # import this to make sure it is importable
+        from ichnaea.webapp import gunicorn_settings  # noqa
 
 
 class TestVersion(object):
