@@ -79,7 +79,7 @@ Submit API
   target. These targets all have different batch intervals, so data is
   duplicated at this point. The job checks the length and last processing
   time of each queue and schedules a `export_reports` job per target.
-- The async worker export reports job either assembles the data to store
+- The task worker export reports job either assembles the data to store
   in S3, upload it to an external web service or prepares it for internal
   processing. The internal processing job splits the reports into its
   parts, creating one observation per network and queues them into

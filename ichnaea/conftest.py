@@ -16,8 +16,6 @@ from ichnaea.api.locate.searcher import (
     configure_position_searcher,
     configure_region_searcher,
 )
-from ichnaea.async.app import celery_app
-from ichnaea.async.config import init_worker, shutdown_worker as shutdown_celery
 from ichnaea.cache import configure_redis
 from ichnaea.db import configure_db, create_db, get_alembic_config
 from ichnaea.geocode import GEOCODER
@@ -26,6 +24,8 @@ from ichnaea.http import configure_http_session
 from ichnaea.log import configure_raven, configure_stats
 from ichnaea.models import _Model
 from ichnaea.queue import DataQueue
+from ichnaea.taskapp.app import celery_app
+from ichnaea.taskapp.config import init_worker, shutdown_worker as shutdown_celery
 from ichnaea.webapp.config import main, shutdown_worker as shutdown_app
 
 # Module global to hold active session, used by factory-boy

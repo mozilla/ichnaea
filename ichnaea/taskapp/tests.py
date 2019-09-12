@@ -2,7 +2,7 @@ from inspect import getmembers
 
 from celery import signals
 
-from ichnaea.async.task import BaseTask
+from ichnaea.taskapp.task import BaseTask
 
 
 class TestBeat(object):

@@ -197,20 +197,20 @@ Docker Runtime
 Finally you are ready to start containers for the three different
 application roles.
 
-There is a web frontend, async worker and async scheduler role.
+There is a web frontend, a task worker and a task scheduler role.
 The scheduler role is limited to a single running container. You need
 to make sure to never have two containers for the scheduler running at
 the same time. If you use multiple physical machines, the scheduler
 must only run on one of them.
 
-The web app and async worker roles both scale out and you can run
+The web app and task worker roles both scale out and you can run
 as many of them as you want. They internally look at the number of
 available CPU cores in the docker container and run an appropriate
 number of sub-processes. So you can run a single docker container
 per physical/virtual machine.
 
 All roles communicate via the database and Redis only, so can be run
-on different virtual or physical machines. The async workers load
+on different virtual or physical machines. The task workers load
 balance their work internally via data structures in Redis.
 
 If you run multiple web frontend roles, you need to put a load balancer
@@ -310,7 +310,7 @@ first check and get the docker image for the new version, for example:
 
     docker pull mozilla/location:2.2.0
 
-Next up stop all containers running the scheduler and async worker roles.
+Next up stop all containers running the scheduler and task worker roles.
 If you use docker's own daemon support, the `ps`, `stop` and `rm` commands
 can be used to accomplish this.
 

@@ -84,7 +84,7 @@ def main(
         raven_client=raven_client, _client=_geoip_db
     )
 
-    # Needs to be the exact same as the *_incoming entries in async.config.
+    # Needs to be the exact same as the *_incoming entries in taskapp.config.
     registry.data_queues = data_queues = {
         "update_incoming": DataQueue(
             "update_incoming", redis_client, batch=100, compress=True

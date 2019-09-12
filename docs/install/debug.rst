@@ -126,7 +126,7 @@ And inside the container:
     2) "unacked_mutex"
     3) "_kombu.binding.celery.pidbox"
 
-The above output should be there if the async worker containers are
+The above output should be there if the task worker containers are
 running or have been run once.
 
 In the same way we can connect to the MySQL database from inside the
@@ -141,10 +141,10 @@ container. In the same shell container as above:
     mysql>
 
 
-Async Worker
-------------
+Task Worker
+-----------
 
-The async worker uses a Python framework called Celery. You can use the
+The asynchronous task worker uses a Python framework called Celery. You can use the
 `Celery monitoring guide <https://celery.readthedocs.io/en/latest/userguide/monitoring.html>`_
 for more detailed information.
 
@@ -153,7 +153,7 @@ and inside it run:
 
 .. code-block:: bash
 
-    /app/bin/celery -A ichnaea.async.app:celery_app inspect stats
+    /app/bin/celery -A ichnaea.taskapp.app:celery_app inspect stats
     -> celery@388ec81273ba: OK
     {
         ...
