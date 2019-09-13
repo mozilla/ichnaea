@@ -4,15 +4,50 @@
 Debugging
 =========
 
-.. Note:: 2019-08-16: This needs to be updated.
+Debugging webapp
+================
+
+There are some kinds of problems that are hard to debug because gunicorn
+won't start up and doesn't tell you anything.
 
 
-Intro
------
+Run without gunicorn
+--------------------
 
-Once you have a development or production setup of the application,
-you might want to test it and see if all the different parts are
-configured correctly.
+Try running the webapp without gunicorn:
+
+.. code-block:: shell
+
+   $ docker-compose run --rm --service-ports web shell
+   app@78dd072d4a88:/app$ python ichnaea/webapp/app.py
+   running at http://localhost:8000
+   ...
+
+
+If there is a bug in the webapp that's preventing the webapp from starting up,
+it'll spit out a traceback.
+
+
+Run gunicorn with preload
+-------------------------
+
+You can also run gunicorn with ``--preload`` set. Edit ``docker/run_web.sh`` to
+pass ``-preload``. You'll also need to change the worker class to ``sync``
+because preload doesn't work with gevent. Sometimes that'll help debugging
+webapp issues.
+
+
+Switch gunicorn logging level to debug
+--------------------------------------
+
+You can tell gunicorn to log at debug level by adding this to your ``my.env``::
+
+    GUNICORN_LOGLEVEL=debug
+
+Then run ``make run``.
+
+
+.. Note:: 2019-08-16: Below this needs to be updated.
 
 
 MySQL Config

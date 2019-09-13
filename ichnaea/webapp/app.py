@@ -2,6 +2,8 @@
 Holds global web application state and the WSGI handler.
 """
 
+from wsgiref.simple_server import make_server
+
 from ichnaea.webapp.config import main, shutdown_worker
 
 # Internal module global holding the runtime web app.
@@ -34,3 +36,9 @@ def wsgi_app(environ, start_response):
 
 def worker_exit(server, worker):
     shutdown_worker(_APP)
+
+
+if __name__ == "__main__":
+    print("Running at http://localhost:8000")
+    server = make_server("0.0.0.0", 8000, main(ping_connections=True))
+    server.serve_forever()
