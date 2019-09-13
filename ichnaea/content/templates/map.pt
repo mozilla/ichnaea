@@ -11,7 +11,7 @@
 </tal:slot>
 
 <tal:slot metal:fill-slot="content">
-<section id="main-content">
+<section id="main-content" tal:condition="map_enabled">
     <p>
         This map shows areas in which our stumbling community has collected
         data samples. The map shows general areas in which we have data
@@ -21,6 +21,11 @@
     <div id="map"
          data-map_tiles_url="${map_tiles_url}"
          data-map_token="${map_token}"></div>
+</section>
+<section id="main-content" tal:condition="not map_enabled">
+    <p>
+        There is no map information to show.
+    </p>
 </section>
 </tal:slot>
 

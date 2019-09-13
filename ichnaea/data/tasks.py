@@ -12,7 +12,7 @@ from celery.schedules import crontab
 from ichnaea import models
 from ichnaea.data import (
     _cell_export_enabled,
-    _web_content_enabled,
+    _map_content_enabled,
     area,
     datamap,
     export,
@@ -148,7 +148,7 @@ def update_cellarea(self):
     expires=18000,
     _schedule=crontab(hour=0, minute=17),
     _shard_model=models.DataMap,
-    _enabled=_web_content_enabled,
+    _enabled=_map_content_enabled,
 )
 def cleanup_datamap(self, shard_id=None):
     datamap.DataMapCleaner(self, shard_id=shard_id)()
@@ -162,7 +162,7 @@ def cleanup_datamap(self, shard_id=None):
     expires=30,
     _schedule=timedelta(seconds=47),
     _shard_model=models.DataMap,
-    _enabled=_web_content_enabled,
+    _enabled=_map_content_enabled,
 )
 def update_datamap(self, shard_id=None):
     datamap.DataMapUpdater(self, shard_id=shard_id)()
@@ -174,7 +174,7 @@ def update_datamap(self, shard_id=None):
     queue="celery_content",
     expires=18000,
     _schedule=crontab(hour=0, minute=7),
-    _enabled=_web_content_enabled,
+    _enabled=_map_content_enabled,
 )
 def update_statregion(self):
     stats.StatRegion(self)()

@@ -14,7 +14,7 @@ import simplejson
 from sqlalchemy import select
 import sqlalchemy.exc
 
-from ichnaea.data import _web_content_enabled
+from ichnaea.data import _map_content_enabled
 from ichnaea.models import (
     ApiKey,
     BlueObservation,
@@ -404,7 +404,7 @@ class InternalExporter(ReportExporter):
 
         with self.task.redis_pipeline() as pipe:
             self.queue_observations(pipe, observations)
-            if _web_content_enabled and positions:
+            if _map_content_enabled and positions:
                 self.process_datamap(pipe, positions)
 
         self.emit_metrics(api_keys_known, metrics)

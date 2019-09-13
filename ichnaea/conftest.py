@@ -363,17 +363,10 @@ def region_searcher(data_queues, geoip_db, raven_client, redis_client, stats_cli
 
 
 @pytest.fixture(scope="session")
-def map_config(monkeysession):
-    tiles_url = "http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png"
-    monkeysession.setattr("ichnaea.content.views.MAP_TILES_URL", tiles_url)
-
-
-@pytest.fixture(scope="session")
 def global_app(
     db,
     geoip_db,
     http_session,
-    map_config,
     raven_client,
     redis_client,
     stats_client,
