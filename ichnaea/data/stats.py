@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from sqlalchemy import delete, func, select
+from sqlalchemy.dialects.mysql import insert
 
 from ichnaea.models import (
     BlueShard,
@@ -63,11 +64,12 @@ class StatCounterUpdater(object):
 
             old_value = before.value if before else 0
 
-            # Insert a new stat value.
-            stmt = Stat.__table__.insert(
-                mysql_on_duplicate="value = value + %s" % value
-            ).values(key=stat_key, time=day, value=old_value + value)
-            session.execute(stmt)
+            # Insert a new stat value, or increase if exists
+            session.execute(
+                insert(Stat.__table__)
+                .values(key=stat_key, time=day, value=old_value + value)
+                .on_duplicate_key_update(value=columns.value + value)
+            )
             stat_counter.decr(pipe, value)
 
 

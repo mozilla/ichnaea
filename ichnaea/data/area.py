@@ -156,9 +156,7 @@ class CellAreaUpdater(object):
 
         if area is None:
             session.execute(
-                self.area_table.insert(
-                    mysql_on_duplicate="num_cells = num_cells"  # no-op
-                ).values(
+                self.area_table.insert().values(
                     areaid=areaid,
                     radio=radio,
                     mcc=mcc,
@@ -174,6 +172,8 @@ class CellAreaUpdater(object):
                     num_cells=num_cells,
                     last_seen=last_seen,
                 )
+                # If there was an unexpected insert, log warning instead of error
+                .prefix_with("IGNORE", dialect="mysql")
             )
         else:
             session.execute(

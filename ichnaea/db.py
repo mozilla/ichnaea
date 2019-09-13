@@ -8,14 +8,10 @@ from alembic import command
 from alembic.config import Config as AlembicConfig
 import certifi
 from pymysql.err import DatabaseError
-from sqlalchemy import create_engine, exc, event
+from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm.session import Session
-from sqlalchemy.pool import NullPool, Pool, QueuePool
-from sqlalchemy.sql import func, select
-from sqlalchemy.sql.expression import Insert
+from sqlalchemy.pool import NullPool, QueuePool
 
 from ichnaea.conf import settings
 
@@ -42,19 +38,6 @@ def get_alembic_config():
     cfg.set_section_option("alembic", "script_location", script_location)
     cfg.set_section_option("alembic", "sqlalchemy.url", settings("db_ddl_uri"))
     return cfg
-
-
-@compiles(Insert, "mysql")
-def on_duplicate(insert, compiler, **kw):
-    """Custom MySQL insert on_duplicate support."""
-    stmt = compiler.visit_insert(insert, **kw)
-    my_var = insert.dialect_kwargs.get("mysql_on_duplicate", None)
-    if my_var:
-        stmt += " ON DUPLICATE KEY UPDATE %s" % my_var
-    return stmt
-
-
-Insert.argument_for("mysql", "on_duplicate", None)
 
 
 def configure_db(type_=None, uri=None, transport="default", _db=None):
@@ -142,6 +125,7 @@ class Database(object):
             options.update(
                 {
                     "poolclass": QueuePool,
+                    "pool_pre_ping": True,
                     "pool_recycle": 3600,
                     "pool_size": 10,
                     "pool_timeout": 10,
@@ -174,20 +158,11 @@ class Database(object):
         self.engine = create_engine(uri, **options)
 
         self.session_factory = sessionmaker(
-            bind=self.engine, class_=PingableSession, autocommit=False, autoflush=False
+            bind=self.engine, autocommit=False, autoflush=False
         )
 
     def close(self):
         self.engine.pool.dispose()
-
-    def ping(self):
-        """
-        Check database connectivity.
-        On success returns `True`, otherwise `False`.
-        """
-        with db_worker_session(self, commit=False) as session:
-            success = session.ping()
-        return success
 
     def session(self):
         """Return a session for this database."""
@@ -195,52 +170,6 @@ class Database(object):
 
     def __repr__(self):
         return self.uri
-
-
-class PingableSession(Session):
-    """A custom pingable database session."""
-
-    def __init__(self, *args, **kw):
-        # disable automatic docstring
-        return super(PingableSession, self).__init__(*args, **kw)
-
-    def ping(self):
-        """Use this active session to check the database connectivity."""
-        try:
-            self.execute(select([func.now()])).first()
-        except exc.OperationalError:
-            return False
-        return True
-
-
-@event.listens_for(Pool, "checkout")
-def check_connection(dbapi_conn, conn_record, conn_proxy):
-    """
-    Listener for pool checkout events that pings every connection before
-    using it. Implements the `pessimistic disconnect handling strategy
-    <https://docs.sqlalchemy.org/en/latest/core/pooling.html#disconnect-handling-pessimistic>`_.
-    """
-    try:
-        # dbapi_con.ping() ends up calling mysql_ping()
-        # http://dev.mysql.com/doc/refman/5.6/en/mysql-ping.html
-        dbapi_conn.ping(reconnect=True)
-    except exc.OperationalError as ex:
-        error_codes = [
-            # Connection refused
-            2003,
-            # MySQL server has gone away
-            2006,
-            # Lost connection to MySQL server during query
-            2013,
-            # Lost connection to MySQL server at '%s', system error: %d
-            2055,
-        ]
-
-        if ex.args[0] in error_codes:
-            # caught by pool, which will retry with a new connection
-            raise exc.DisconnectionError()
-        else:
-            raise
 
 
 def create_db(uri=None):
