@@ -4,9 +4,7 @@ set -e
 
 # Runs the webapp in gunicorn.
 
-# NOTE(willkg): The docs literalinclude part of this file, so if you change
-# this file, you need to update the line numbers specified in
-# docs/install/config.rst.
+# START GUNICORN CONFIGURATION
 
 # Port for gunicorn to listen on
 GUNICORN_PORT=${GUNICORN_PORT:-"8000"}
@@ -34,6 +32,8 @@ GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-"60"}
 # Python log level for gunicorn logging output: debug, info, warning,
 # error, critical
 GUNICORN_LOGLEVEL=${GUNICORN_LOGLEVEL:-"info"}
+
+# END GUNICORN CONFIGURATION
 
 echo "Running webserver on http://localhost:${GUNICORN_PORT} ..."
 

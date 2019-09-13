@@ -20,7 +20,8 @@ Environment variables
 The webapp uses gunicorn which also has configuration.
 
 .. literalinclude:: ../../docker/run_web.sh
-   :lines: 11-36
+   :start-after: START GUNICORN CONFIGURATION
+   :end-before: END GUNICORN CONFIGURATION
    :language: bash
 
 
