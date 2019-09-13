@@ -183,8 +183,7 @@ class ContentViews(object):
         tiles location. Otherwise it's disabled.
 
         """
-        map_tiles_url = get_map_tiles_url(settings("asset_url"))
-        return bool(map_tiles_url and settings("mapbox_token"))
+        return bool(settings("mapbox_token"))
 
     @view_config(renderer="templates/homepage.pt", http_cache=3600)
     def homepage_view(self):
