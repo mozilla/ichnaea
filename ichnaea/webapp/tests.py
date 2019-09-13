@@ -154,11 +154,10 @@ class TestLBHeartbeat(object):
         app.put("/__lbheartbeat__", status=405)
 
 
-class TestSettings(object):
-    def test_compiles(self):
-        from ichnaea.webapp import gunicorn_settings
-
-        assert type(gunicorn_settings.workers) == int
+class TestGunicornSettings(object):
+    def test_gunicorn_settings_loads(self):
+        # import this to make sure it is importable
+        from ichnaea.webapp import gunicorn_settings  # noqa
 
 
 class TestVersion(object):

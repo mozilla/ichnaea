@@ -9,12 +9,20 @@ from environment variables. There are also a small number of settings
 inside database tables.
 
 
-Environment Variables
+Environment variables
 =====================
 
 .. autocomponent:: ichnaea.conf.AppConfig
    :hide-classname:
    :case: upper
+
+
+The webapp uses gunicorn which also has configuration.
+
+.. literalinclude:: ../../docker/run_web.sh
+   :start-after: START GUNICORN CONFIGURATION
+   :end-before: END GUNICORN CONFIGURATION
+   :language: bash
 
 
 Database
@@ -93,8 +101,8 @@ https://accounts.mapbox.com/
 Set the ``MAP_TOKEN`` configuration value to your API token.
 
 
-Database Configuration
-======================
+Configuration in the database
+=============================
 
 API Keys
 --------
