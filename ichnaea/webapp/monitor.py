@@ -5,11 +5,9 @@ import time
 
 from pyramid.httpexceptions import HTTPServiceUnavailable
 
+from ichnaea.db import ping_session
 from ichnaea.util import contribute_info, version_info
 from ichnaea.webapp.view import BaseView
-
-from sqlalchemy.exc import OperationalError
-from sqlalchemy.sql import func, select
 
 
 def _check_timed(ping_function):
@@ -22,16 +20,7 @@ def _check_timed(ping_function):
 
 def check_database(request):
     """Check that the database is available for a simple query."""
-
-    def ping_database():
-        try:
-            request.db_session.execute(select([func.now()])).first()
-        except OperationalError:
-            return False
-        else:
-            return True
-
-    return _check_timed(ping_database)
+    return _check_timed(lambda: ping_session(request.db_session))
 
 
 def check_geoip(request):

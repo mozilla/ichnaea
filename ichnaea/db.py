@@ -10,8 +10,10 @@ import certifi
 from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
+from sqlalchemy.sql import func, select
 
 from ichnaea.conf import settings
 
@@ -170,6 +172,16 @@ class Database(object):
 
     def __repr__(self):
         return self.uri
+
+
+def ping_session(db_session):
+    """Check that a database session is available, using a simple query."""
+    try:
+        db_session.execute(select([func.now()])).first()
+    except OperationalError:
+        return False
+    else:
+        return True
 
 
 def create_db(uri=None):

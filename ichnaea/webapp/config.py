@@ -12,7 +12,7 @@ from ichnaea.api.locate.searcher import (
 )
 from ichnaea.cache import configure_redis
 from ichnaea.content.views import configure_content
-from ichnaea.db import configure_db, db_session
+from ichnaea.db import configure_db, db_session, db_worker_session, ping_session
 from ichnaea.geoip import configure_geoip
 from ichnaea.http import configure_http_session
 from ichnaea.log import configure_logging, configure_raven, configure_stats
@@ -114,7 +114,8 @@ def main(
 
     # Should we try to initialize and establish the outbound connections?
     if ping_connections:
-        registry.db.ping()
+        with db_worker_session(registry.db, commit=False) as session:
+            ping_session(session)
         registry.redis_client.ping()
 
     return config.make_wsgi_app()
