@@ -19,10 +19,12 @@ LOGGER = logging.getLogger("ichnaea")
 
 LOGGING_FORMAT = "%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s"
 LOGGING_DATEFMT = "%Y-%m-%d %H:%M:%S"
-LOGGING_CONFIG = dict(
-    version=1,
-    formatters={"generic": {"format": LOGGING_FORMAT, "datefmt": LOGGING_DATEFMT}},
-    handlers={
+LOGGING_CONFIG = {
+    "version": 1,
+    "formatters": {
+        "generic": {"format": LOGGING_FORMAT, "datefmt": LOGGING_DATEFMT},
+    },
+    "handlers": {
         "console": {
             "class": "logging.StreamHandler",
             "formatter": "generic",
@@ -30,13 +32,13 @@ LOGGING_CONFIG = dict(
             "stream": "ext://sys.stderr",
         }
     },
-    root={"handlers": ["console"], "level": logging.WARN},
-    loggers=dict(
-        alembic={"level": logging.INFO, "qualname": "alembic"},
-        ichnaea={"level": logging.INFO, "qualname": "ichnaea"},
-        sqlalchemy={"level": logging.WARN, "qualname": "sqlalchemy.engine"},
-    ),
-)
+    "root": {"handlers": ["console"], "level": logging.WARN},
+    "loggers": {
+        "alembic": {"level": logging.INFO, "qualname": "alembic"},
+        "ichnaea": {"level": logging.INFO, "qualname": "ichnaea"},
+        "sqlalchemy": {"level": logging.WARN, "qualname": "sqlalchemy.engine"},
+    },
+}
 
 RAVEN_TRANSPORTS = {
     "gevent": GeventedHTTPTransport,
@@ -47,10 +49,7 @@ RAVEN_TRANSPORTS = {
 
 def configure_logging():
     """Configure basic Python logging."""
-    if settings("testing"):
-        logging.basicConfig(format=LOGGING_FORMAT, datefmt=LOGGING_DATEFMT)
-    else:
-        dictConfig(LOGGING_CONFIG)
+    dictConfig(LOGGING_CONFIG)
 
 
 def configure_raven(transport=None, _client=None):
