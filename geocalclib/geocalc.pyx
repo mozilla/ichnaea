@@ -1,4 +1,4 @@
-# cython: emit_code_comments=False
+# cython: language_level=3, emit_code_comments=False
 
 from libc.math cimport asin, atan, atan2, cos
 from libc.math cimport fmax, fmin, M_PI, sin, sqrt, tan
