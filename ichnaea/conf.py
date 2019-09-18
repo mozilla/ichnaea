@@ -19,8 +19,8 @@ class AppConfig(RequiredConfigMixin):
         default="false",
         parser=bool,
         doc=(
-            "Whether (True) or not (False) we are in a local dev environment."
-            " There are some things that get configured one way in a developer's "
+            "Whether (True) or not (False) we are in a local dev environment. "
+            "There are some things that get configured one way in a developer's "
             "environment and another way in a server environment."
         ),
     )
@@ -34,10 +34,12 @@ class AppConfig(RequiredConfigMixin):
     required_config.add_option(
         "asset_bucket",
         default="",
-        doc="name of AWS S3 bucket to store map tile image assets in",
+        doc="name of AWS S3 bucket to store map tile image assets and export downloads",
     )
     required_config.add_option(
-        "asset_url", default="", doc="Amazon CloudFront url for map tile image assets"
+        "asset_url",
+        default="",
+        doc="url for map tile image assets and export downloads",
     )
 
     # Database related settings
