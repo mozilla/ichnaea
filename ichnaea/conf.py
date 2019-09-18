@@ -15,6 +15,16 @@ HERE = os.path.dirname(__file__)
 class AppConfig(RequiredConfigMixin):
     required_config = ConfigOptions()
     required_config.add_option(
+        "local_dev_env",
+        default="false",
+        parser=bool,
+        doc=(
+            "Whether (True) or not (False) we are in a local dev environment. There are "
+            "some things that get configured one way in a developer's "
+            "environment and another way in a server environment."
+        ),
+    )
+    required_config.add_option(
         "testing",
         default="false",
         parser=bool,

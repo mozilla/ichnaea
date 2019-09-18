@@ -1,7 +1,7 @@
 """Functionality related to statsd, sentry and freeform logging."""
 from collections import deque
 import logging
-from logging.config import dictConfig
+import logging.config
 import time
 
 from pyramid.httpexceptions import HTTPException, HTTPClientError, HTTPRedirection
@@ -15,41 +15,55 @@ from ichnaea.conf import settings
 from ichnaea.exceptions import BaseClientError
 from ichnaea.util import version_info
 
-LOGGER = logging.getLogger("ichnaea")
 
-LOGGING_FORMAT = "%(asctime)s - %(levelname)-5.5s [%(name)s] %(message)s"
-LOGGING_DATEFMT = "%Y-%m-%d %H:%M:%S"
-LOGGING_CONFIG = {
-    "version": 1,
-    "formatters": {
-        "generic": {"format": LOGGING_FORMAT, "datefmt": LOGGING_DATEFMT},
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "generic",
-            "level": logging.DEBUG,
-            "stream": "ext://sys.stderr",
-        }
-    },
-    "root": {"handlers": ["console"], "level": logging.WARN},
-    "loggers": {
-        "alembic": {"level": logging.INFO, "qualname": "alembic"},
-        "ichnaea": {"level": logging.INFO, "qualname": "ichnaea"},
-        "sqlalchemy": {"level": logging.WARN, "qualname": "sqlalchemy.engine"},
-    },
-}
+def configure_logging():
+    """Configure Python logging."""
+    local_dev_env = settings("local_dev_env")
+
+    if local_dev_env:
+        level = "DEBUG"
+        handlers = ["console"]
+    else:
+        level = "INFO"
+        handlers = ["mozlog"]
+
+    logging_config = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "app": {"format": "%(asctime)s %(levelname)-5s [%(name)s] - %(message)s"},
+            "json": {
+                "()": "dockerflow.logging.JsonLogFormatter",
+                "logger_name": "ichnaea",
+            },
+        },
+        "handlers": {
+            "console": {
+                "class": "logging.StreamHandler",
+                "formatter": "app",
+                "level": "DEBUG",
+            },
+            "mozlog": {
+                "class": "logging.StreamHandler",
+                "formatter": "json",
+                "level": "DEBUG",
+            },
+        },
+        "loggers": {
+            "alembic": {"propagate": False, "handlers": handlers, "level": level},
+            "ichnaea": {"propagate": False, "handlers": handlers, "level": level},
+        },
+        "root": {"handlers": handlers, "level": "WARNING"},
+    }
+
+    logging.config.dictConfig(logging_config)
+
 
 RAVEN_TRANSPORTS = {
     "gevent": GeventedHTTPTransport,
     "sync": HTTPTransport,
     "threaded": ThreadedHTTPTransport,
 }
-
-
-def configure_logging():
-    """Configure basic Python logging."""
-    dictConfig(LOGGING_CONFIG)
 
 
 def configure_raven(transport=None, _client=None):
