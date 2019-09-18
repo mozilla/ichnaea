@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 set -e
 
@@ -35,21 +35,31 @@ GUNICORN_LOGLEVEL=${GUNICORN_LOGLEVEL:-"info"}
 
 # END GUNICORN CONFIGURATION
 
-echo "Running webserver on http://localhost:${GUNICORN_PORT} ..."
+LOCAL_DEV_ENV=${LOCAL_DEV_ENV:-"False"}
 
-set -x 
-gunicorn \
-    --pythonpath /app \
-    --workers="${GUNICORN_WORKERS}" \
-    --worker-class="${GUNICORN_WORKER_CLASS}" \
-    --worker-connections="${GUNICORN_WORKER_CONNECTIONS}" \
-    --max-requests="${GUNICORN_MAX_REQUESTS}" \
-    --max-requests-jitter="${GUNICORN_MAX_REQUESTS_JITTER}" \
-    --error-logfile=- \
-    --access-logfile=- \
-    --log-file=- \
-    --log-level="${GUNICORN_LOGLEVEL}" \
-    --timeout="${GUNICORN_TIMEOUT}" \
-    --config=python:ichnaea.webapp.gunicorn_settings \
-    --bind 0.0.0.0:"${GUNICORN_PORT}" \
-    ichnaea.webapp.app:wsgi_app
+
+if [ "${LOCAL_DEV_ENV}" == "True" ]; then
+    echo "*****************************************************************************"
+    echo "Running webapp in local dev environment."
+    echo "Connect at http://localhost:8000"
+    echo "*****************************************************************************"
+    cd /app/ && python ichnaea/webapp/app.py
+
+else
+    set -x
+    gunicorn \
+        --pythonpath /app \
+        --workers="${GUNICORN_WORKERS}" \
+        --worker-class="${GUNICORN_WORKER_CLASS}" \
+        --worker-connections="${GUNICORN_WORKER_CONNECTIONS}" \
+        --max-requests="${GUNICORN_MAX_REQUESTS}" \
+        --max-requests-jitter="${GUNICORN_MAX_REQUESTS_JITTER}" \
+        --capture-output \
+        --error-logfile=- \
+        --access-logfile=- \
+        --log-file=- \
+        --timeout="${GUNICORN_TIMEOUT}" \
+        --config=python:ichnaea.webapp.gunicorn_settings \
+        --bind 0.0.0.0:"${GUNICORN_PORT}" \
+        ichnaea.webapp.app:wsgi_app
+fi

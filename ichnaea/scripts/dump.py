@@ -5,6 +5,7 @@ Script is installed as `location_dump`.
 """
 
 import argparse
+import logging
 import os
 import os.path
 import sys
@@ -13,9 +14,12 @@ from sqlalchemy import text
 
 from ichnaea.db import configure_db, db_worker_session
 from geocalc import bbox
-from ichnaea.log import configure_logging, LOGGER
+from ichnaea.log import configure_logging
 from ichnaea.models import BlueShard, CellShard, WifiShard
 from ichnaea import util
+
+
+LOGGER = logging.getLogger(__name__)
 
 
 def where_area(lat, lon, radius):
