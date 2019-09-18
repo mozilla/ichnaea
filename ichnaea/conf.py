@@ -19,8 +19,8 @@ class AppConfig(RequiredConfigMixin):
         default="false",
         parser=bool,
         doc=(
-            "Whether (True) or not (False) we are in a local dev environment. There are "
-            "some things that get configured one way in a developer's "
+            "Whether (True) or not (False) we are in a local dev environment."
+            " There are some things that get configured one way in a developer's "
             "environment and another way in a server environment."
         ),
     )
