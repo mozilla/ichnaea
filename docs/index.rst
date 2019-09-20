@@ -19,12 +19,6 @@ You can interact with the service in two ways:
 - or locate yourself, based on the radio environment around you.
 
 
-About the name
-==============
-
-In Greek mythology, Ichnaea (Iknaia) means "the tracker".
-
-
 Table of contents
 =================
 
@@ -36,13 +30,18 @@ Table of contents
    glossary
    changes/index
 
-Development
-===========
+
+Source code and license
+=======================
 
 All source code is available on `github under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
 
-License
-=======
 
 The ``ichnaea`` source code is offered under the Apache License 2.0.
+
+
+About the name
+==============
+
+In Greek mythology, Ichnaea (Iknaia) means "the tracker".
