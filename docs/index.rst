@@ -33,6 +33,7 @@ Table of contents
 
    usage
    local_dev
+   architecture
    api/index
    import_export
    install/index
