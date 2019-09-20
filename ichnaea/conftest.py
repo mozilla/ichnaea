@@ -6,7 +6,6 @@ import warnings
 from alembic import command
 from maxminddb.const import MODE_AUTO
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
 from sqlalchemy import event, inspect, text
 from sqlalchemy.exc import ProgrammingError
 import webtest
@@ -71,13 +70,6 @@ GEOIP_DATA = {
         "score": 0.9,
     },
 }
-
-
-@pytest.fixture(scope="session")
-def monkeysession(request):
-    mp = MonkeyPatch()
-    request.addfinalizer(mp.undo)
-    return mp
 
 
 @pytest.fixture(scope="session", autouse=True)
