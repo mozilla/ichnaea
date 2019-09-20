@@ -29,18 +29,12 @@ Table of contents
 =================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   usage
-   local_dev
-   architecture
-   api/index
-   import_export
-   install/index
-   algo/index
+   user_index
+   devdeploy_index
    glossary
    changes/index
-
 
 Development
 ===========

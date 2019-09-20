@@ -24,10 +24,12 @@ position estimate or range calculation was done. The algorithms might be
 unique and changing for each source of the data, though both ichnaea and
 :term:`OpenCellID` currently use similar and comparable techniques.
 
-The fields in the CSV file are as follows:
 
 Cell Fields
 -----------
+
+The fields in the CSV file are as follows:
+
 
 ``radio``
 
