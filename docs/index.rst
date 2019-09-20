@@ -27,8 +27,15 @@ Table of contents
 
    user_index
    devdeploy_index
-   glossary
    changes/index
+   glossary
+
+
+Indices
+=======
+
+* :ref:`genindex`
+* :ref:`glossary`
 
 
 Source code and license
