@@ -13,6 +13,5 @@ Ichnaea.
    configure
    deploy
    metrics
-   import_export
    architecture
-   algo/index
+   import_export

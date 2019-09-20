@@ -127,6 +127,3 @@ The data flow for a Submit API request looks like this:
    contents. As a result network positions can be modified, new networks
    be added or old networks be marked as blocklisted, noting that they've
    recently moved from their old position.
-
-
-

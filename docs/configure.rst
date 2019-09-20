@@ -150,7 +150,7 @@ or `unwiredlabs/v1`.
 
 `NULL` and `ichnaea/v1` are currently synonymous. Setting the schema to one
 of those means the external service uses the same API as the geolocate v1
-API used in ichnaea.
+API used in Ichnaea.
 
 If you set the url to one of the unwiredlabs endpoints, add your API
 token as an anchor fragment to the end of it, so instead of specfifying

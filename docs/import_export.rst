@@ -21,7 +21,7 @@ network. The remaining fields contain information about this network.
 
 The data format does not specify the means and exact algorithms by which the
 position estimate or range calculation was done. The algorithms might be
-unique and changing for each source of the data, though both ichnaea and
+unique and changing for each source of the data, though both Ichnaea and
 :term:`OpenCellID` currently use similar and comparable techniques.
 
 

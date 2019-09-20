@@ -27,6 +27,7 @@ Table of contents
 
    user_index
    devdeploy_index
+   algo/index
    changes/index
    glossary
 
@@ -41,11 +42,11 @@ Indices
 Source code and license
 =======================
 
-All source code is available on `github under ichnaea
+All source code is available on `GitHub under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
 
 
-The ``ichnaea`` source code is offered under the Apache License 2.0.
+The ``Ichnaea`` source code is offered under the Apache License 2.0.
 
 
 About the name

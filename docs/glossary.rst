@@ -30,7 +30,7 @@ Glossary
 
     MLS
         The `Mozilla Location Service <https://location.services.mozilla.com/>`_
-        is an instance of the ichnaea software hosted by Mozilla.
+        is an instance of the Ichnaea software hosted by Mozilla.
 
     observation
     observations
