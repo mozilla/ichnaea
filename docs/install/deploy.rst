@@ -104,7 +104,7 @@ calling the application container with the map argument.
 Docker Config
 =============
 
-The :ref:`the development section <devel>` describes how to set up an
+The :ref:`the development section <localdev>` describes how to set up an
 environment used for working on and developing Ichnaea itself. For a
 production install, you should use pre-packaged docker images, instead
 of installing and setting up the code from Git.

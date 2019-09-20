@@ -12,7 +12,6 @@ consistent application environment in development and production.
 .. toctree::
    :maxdepth: 2
 
-   devel
    deploy
    config
    debug

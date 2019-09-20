@@ -1,3 +1,5 @@
+.. _localdev:
+
 *******************************
  Local development environment
 *******************************
