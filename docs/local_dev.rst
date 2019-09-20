@@ -120,8 +120,8 @@ database and Redis::
 
 .. _localdev-configuration:
 
-Configuration
-=============
+Specifying configuration
+========================
 
 Configuration is pulled from these sources:
 
@@ -167,6 +167,11 @@ In this way:
 3. ``my.env`` lets you set configuration specific to your development
    environment as well as override any configuration and is not checked into
    version control
+
+
+.. seealso::
+
+   See :ref:`config` for configuration settings.
 
 
 Setting configuration specific to your local dev environment
