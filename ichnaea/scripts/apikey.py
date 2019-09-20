@@ -30,6 +30,8 @@ def create_api_key(key):
                     allow_fallback=False,
                     allow_locate=True,
                     allow_region=True,
+                    store_sample_locate=100,
+                    store_sample_submit=100,
                 )
             )
             print("Created API key: %r" % key)
