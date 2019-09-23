@@ -165,9 +165,9 @@ numpy==1.17.2 \
 PyMySQL==0.7.11 \
     --hash=sha256:56e3f5bcef6501012233620b54f6a7b8a34edc5751e85e4e3da9a0d808df5f68 \
     --hash=sha256:ac3dfb1f650582eca2e1e0701598bc04364ac464daa425cbbc26bb32ae54cdd5
-pyramid==1.9.1 \
-    --hash=sha256:7da99f42fbc31cb36ae5297091734cab4e27d222da806dd370f3466ea8c6c422 \
-    --hash=sha256:840f4bbd5994609340de35079da0d1dd94f79942e27818d5d8566f8009fb0b36
+pyramid==1.10.4 \
+    --hash=sha256:51bf64647345237c00d2fe558935e0e4938c156e29f17e203457fd8e1d757dc7 \
+    --hash=sha256:d80ccb8cfa550139b50801591d4ca8a5575334adb493c402fce2312f55d07d66
 pyramid_chameleon==0.3 \
     --hash=sha256:d176792a50eb015d7865b44bd9b24a7bd0489fa9a5cebbd17b9e05048cef9017
 pytest==5.1.2 \
@@ -198,6 +198,9 @@ requests[security]==2.22.0 \
 requests-mock==1.7.0 \
     --hash=sha256:510df890afe08d36eca5bb16b4aa6308a6f85e3159ad3013bac8b9de7bd5a010 \
     --hash=sha256:88d3402dd8b3c69a9e4f9d3a73ad11b15920c6efd36bc27bf1f701cf4a8e4646
+repoze.lru==0.7 \
+    --hash=sha256:0429a75e19380e4ed50c0694e26ac8819b4ea7851ee1fc7583c8572db80aff77 \
+    --hash=sha256:f77bf0e1096ea445beadd35f3479c5cff2aa1efe604a133e67150bc8630a62ea
 Rtree==0.8.3 \
     --hash=sha256:6cb9cf3000963ea6a3db777a597baee2bc55c4fc891e4f1967f262cc96148649 \
     --hash=sha256:8526431aa15d8cea1c07b451ce853b62b1da4cf6b74c07810aba5b81d12efe66 \
