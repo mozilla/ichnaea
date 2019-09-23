@@ -1,7 +1,10 @@
 .. _import_export:
 
-===========
-Data Export
+=================
+Import and export
+=================
+
+Data export
 ===========
 
 Ichnaea supports automatic, periodic CSV (comma separated values) export
@@ -113,3 +116,9 @@ The fields in the CSV file are as follows:
     This field is only used by the :term:`OpenCellID` project and has
     been used historically as a hint towards the quality of the
     position estimate.
+
+
+Data import
+===========
+
+FIXME
