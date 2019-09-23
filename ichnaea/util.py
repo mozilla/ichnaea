@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from datetime import datetime
 import gzip
 from io import BytesIO
+from itertools import zip_longest
 import json
 import os
 import shutil
@@ -95,3 +96,29 @@ def contribute_info():
             except json.JsonDecodeException:
                 pass
     return {}
+
+
+def print_table(table, delimiter=" | "):
+    """Takes a list of lists and prints a table to stdout.
+
+    :arg list-of-lists table: the table to print out
+    :arg str delimiter: the delimiter between fields in a row
+
+    """
+    # Find the max size value for each column
+    col_maxes = [0] * len(table[0])
+    for row in table:
+        col_maxes = [
+            max(len(str(field)), col_max)
+            for field, col_max in zip_longest(row, col_maxes, fillvalue=0)
+        ]
+
+    for row in table:
+        print(
+            delimiter.join(
+                [
+                    str(field).ljust(col_max)
+                    for field, col_max in zip_longest(row, col_maxes, fillvalue="")
+                ]
+            )
+        )

@@ -12,7 +12,7 @@ _MARKER = object()
 API_CACHE_TIMEOUT = 300 + randint(-30, 30)
 API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
 
-_API_KEY_COLUMN_NAMES = (
+API_KEY_COLUMN_NAMES = (
     "valid_key",
     "maxreq",
     "allow_fallback",
@@ -33,7 +33,7 @@ def get_key(session, valid_key):
     value = API_CACHE.get(valid_key, _MARKER)
     if value is _MARKER:
         columns = ApiKey.__table__.c
-        fields = [getattr(columns, f) for f in _API_KEY_COLUMN_NAMES]
+        fields = [getattr(columns, f) for f in API_KEY_COLUMN_NAMES]
         row = (
             session.execute(select(fields).where(columns.valid_key == valid_key))
         ).fetchone()

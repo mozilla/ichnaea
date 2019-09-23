@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+"""
+Create and drop the db.
+
+Use this only in a local dev environment.
+"""
+
 import argparse
 import sys
 
