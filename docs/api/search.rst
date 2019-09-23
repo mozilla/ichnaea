@@ -1,19 +1,21 @@
 .. _api_search:
 
-Search (Deprecated)
-===================
+==============================
+DEPRECATED: Search: /v1/search
+==============================
 
-.. note::
-    Please use the :ref:`api_geolocate_latest` API instead.
+.. deprecated:: 1.2 (2015-07-15)
+   Please use the :ref:`api_geolocate_latest` API instead.
 
-Purpose
-    Determine the current location based on data provided about nearby
-    Bluetooth, cell or WiFi networks and based on the IP address used
-    to access the service.
+**Purpose:** Determine the current location based on data provided about nearby
+Bluetooth, cell or WiFi networks and based on the IP address used to access the
+service.
 
+.. contents::
+   :local:
 
 Request
--------
+=======
 
 Search requests are submitted using a POST request to the URL::
 
@@ -21,7 +23,7 @@ Search requests are submitted using a POST request to the URL::
 
 A search record can contain a list of Bluetooth, cell and WiFi records.
 
-A example of a well formed JSON search request :
+Here is an example of a well formed JSON search request:
 
 .. code-block:: javascript
 
@@ -69,10 +71,10 @@ A example of a well formed JSON search request :
 
 
 Field Definition
-----------------
+================
 
 Bluetooth Fields
-~~~~~~~~~~~~~~~~
+----------------
 
 For `blue` entries, the `key` field is required.
 
@@ -92,7 +94,7 @@ name
 
 
 Cell Fields
-~~~~~~~~~~~
+-----------
 
 radio
     The type of radio network. One of `gsm`, `umts` or `lte`.
@@ -124,7 +126,7 @@ ta
 
 
 WiFi Fields
-~~~~~~~~~~~
+-----------
 
 For `wifi` entries, the `key` field is required. The client must check the
 Wifi SSID for a `_nomap` suffix. Wifi networks with such a suffix must not be
@@ -180,7 +182,7 @@ An example of a valid WiFi record is below:
 
 
 Mapping records into a search request
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------
 
 The mapping can contain zero or more Bluetooth records, zero or more WiFi
 records and zero or more cell records. If any list of records is empty,
@@ -192,7 +194,7 @@ from looking up the position of a single network over time.
 
 
 Response
---------
+========
 
 A successful response will be:
 

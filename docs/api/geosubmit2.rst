@@ -1,15 +1,18 @@
 .. _api_geosubmit2:
 .. _api_geosubmit_latest:
 
-Geosubmit Version 2
-===================
+==================================
+Geosubmit Version 2: /v2/geosubmit
+==================================
 
-Purpose
-    Submit data about nearby Bluetooth beacons, cell or WiFi networks.
+**Purpose:** Submit data about nearby Bluetooth beacons, cell or WiFi networks.
+
+.. contents::
+   :local:
 
 
 Request
--------
+=======
 
 Geosubmit requests are submitted using a POST request to the URL::
 
@@ -18,7 +21,9 @@ Geosubmit requests are submitted using a POST request to the URL::
 There is an earlier :ref:`api_geosubmit` version one API, with a slightly
 different and less extensive field list.
 
-Geosubmit requests are submitted using a POST request with a JSON body:
+Geosubmit requests are submitted using a POST request with a JSON body.
+
+Here is an example body:
 
 .. code-block:: javascript
 
@@ -77,7 +82,7 @@ Geosubmit requests are submitted using a POST request with a JSON body:
 
 
 Field Definition
-----------------
+================
 
 Requests always need to contain a batch of :term:`reports`. Each
 :term:`report` must contain at least one entry in the `bluetoothBeacons`
@@ -88,7 +93,7 @@ the `macAddress` field is required.
 
 
 Global Fields
-~~~~~~~~~~~~~
+-------------
 
 timestamp
     The time of observation of the data, measured in milliseconds since
@@ -97,7 +102,7 @@ timestamp
 
 
 Position Fields
-~~~~~~~~~~~~~~~
+---------------
 
 The position block contains information about where and when the data was
 observed.
@@ -142,7 +147,7 @@ source
 
 
 Bluetooth Beacon Fields
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 macAddress
     The address of the Bluetooth Low Energy (BLE) beacon.
@@ -158,7 +163,7 @@ signalStrength
 
 
 Cell Tower Fields
-~~~~~~~~~~~~~~~~~
+-----------------
 
 radioType
     The type of radio network. One of `gsm`, `wcdma` or `lte`.
@@ -198,7 +203,7 @@ timingAdvance
 
 
 Wifi Access Point Fields
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 macAddress
     The BSSID of the Wifi network. Hidden Wifi networks must not be collected.
@@ -230,7 +235,7 @@ ssid
 
 
 Response
---------
+========
 
 Successful requests return a HTTP 200 response with a body of an empty
 JSON object.

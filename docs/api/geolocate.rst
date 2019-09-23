@@ -1,17 +1,19 @@
 .. _api_geolocate:
 .. _api_geolocate_latest:
 
-Geolocate
-=========
+========================
+Geolocate: /v1/geolocate
+========================
 
-Purpose
-    Determine the current location based on data provided about nearby
-    Bluetooth, cell or WiFi networks and based on the IP address used
-    to access the service.
+**Purpose:** Determine the current location based on data provided about nearby
+Bluetooth, cell or WiFi networks and based on the IP address used to access the
+service.
 
+.. contents::
+   :local:
 
 Request
--------
+=======
 
 Geolocate requests are submitted using a POST request to the URL::
 
@@ -24,7 +26,7 @@ service implements all of the standard GLS API with a couple of additions.
 
 Geolocate requests are submitted using a POST request with a JSON body.
 
-A minimal example using only WiFi networks:
+Here is a minimal example using only WiFi networks:
 
 .. code-block:: javascript
 
@@ -98,7 +100,7 @@ A complete example including all possible fields:
 
 
 Field Definition
-----------------
+================
 
 All of the fields are optional. Though in order to get a Bluetooth or WiFi
 based position estimate at least two networks need to be provided and for
@@ -119,7 +121,7 @@ radio type and thus must be mapped to the JSON keys.
 
 
 Global Fields
-~~~~~~~~~~~~~
+-------------
 
 carrier
     The clear text name of the cell carrier / operator.
@@ -140,7 +142,7 @@ radioType
 
 
 Bluetooth Beacon Fields
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 macAddress
     The address of the Bluetooth Low Energy (BLE) beacon.
@@ -156,7 +158,7 @@ signalStrength
 
 
 Cell Tower Fields
-~~~~~~~~~~~~~~~~~
+-----------------
 
 radioType
     The type of radio network. One of `gsm`, `wcdma` or `lte`.
@@ -191,7 +193,7 @@ timingAdvance
 
 
 WiFi Access Point Fields
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 .. note:: Hidden WiFi networks and those whose SSID (clear text name)
           ends with the string `_nomap` must NOT be used for privacy
@@ -224,7 +226,7 @@ ssid
 
 
 Fallback Fields
-~~~~~~~~~~~~~~~
+---------------
 
 The fallback section is a custom addition to the GLS API.
 
@@ -245,7 +247,7 @@ ipf
     the senders IP address at the time of the query.
 
 Deviations From GLS API
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 As mentioned in the specific fields, our API has a couple of extensions.
 
@@ -276,7 +278,7 @@ As mentioned in the specific fields, our API has a couple of extensions.
   both, with the fallbacks section taking precedence.
 
 Response
---------
+========
 
 A successful response returns a position estimate and an accuracy field.
 Combined these two describe the center and radius of a circle. The users

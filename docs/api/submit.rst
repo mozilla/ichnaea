@@ -1,23 +1,28 @@
 .. _api_submit:
 
-Submit (Deprecated)
-===================
+==============================
+DEPRECATED: Submit: /v1/submit
+==============================
 
-.. note::
-    Please use the :ref:`api_geosubmit_latest` API instead.
+.. deprecated:: 1.2 (2015-07-15)
+   Please use the :ref:`api_geosubmit_latest` API instead.
 
-Purpose
-    Submit data about nearby cell and WiFi networks.
+**Purpose:** Submit data about nearby cell and WiFi networks.
 
+.. contents::
+   :local:
 
 Request
--------
+=======
 
-Submit requests are submitted using a POST request to the following URL::
+Submit requests are submitted using a POST request to one of::
 
+    https://location.services.mozilla.com/v1/submit
     https://location.services.mozilla.com/v1/submit?key=<API_KEY>
 
-with a JSON body:
+with a JSON body containing a position report.
+
+Here is an example position report:
 
 .. code-block:: javascript
 
@@ -66,7 +71,7 @@ with a JSON body:
 
 
 Field Definition
-----------------
+================
 
 The record fields have the same meaning and requirements as explained
 in the :ref:`api_search`.
@@ -94,7 +99,7 @@ the server time will be used.
 
 
 Response
---------
+========
 
 On successful submission, you will get a 204 status code back without
 any data in the body.

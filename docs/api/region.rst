@@ -1,22 +1,26 @@
 .. _api_region:
 .. _api_region_latest:
 
-Region
-======
+===================
+Region: /v1/country
+===================
 
-Purpose
-    Determine the current region based on data provided about nearby
-    Bluetooth, cell or WiFi networks and based on the IP address used
-    to access the service.
+**Purpose:** Determine the current region based on data provided about nearby
+Bluetooth, cell or WiFi networks and based on the IP address used to access the
+service.
 
 The responses use region codes and names from the
 `GENC dataset <http://www.gwg.nga.mil/ccwg.php>`_, which is for the
-most part compatible with the ISO 3166 standard. While the API
-endpoint and JSON payload refers to `country`, no claim about the
+most part compatible with the ISO 3166 standard.
+
+While the API endpoint and JSON payload refers to `country`, no claim about the
 political status of any region is made by this service.
 
+.. contents::
+   :local:
+
 Request
--------
+=======
 
 Requests are submitted using a POST request to the URL::
 
@@ -32,9 +36,9 @@ on the IP address to provide a response:
     {}
 
 Response
---------
+========
 
-A successful response will be:
+Here's an example successful response:
 
 .. code-block:: javascript
 
