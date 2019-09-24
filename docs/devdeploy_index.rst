@@ -14,4 +14,5 @@ Ichnaea.
    deploy
    metrics
    architecture
+   dataflows
    import_export
