@@ -7,6 +7,7 @@ from ssl import PROTOCOL_TLSv1
 from alembic import command
 from alembic.config import Config as AlembicConfig
 import certifi
+from pymysql.constants.CLIENT import MULTI_STATEMENTS
 from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
@@ -156,6 +157,12 @@ class Database(object):
             options["connect_args"]["ssl_version"] = PROTOCOL_TLSv1
             # Needed for SSL
             options["connect_args"]["ssl_ca"] = certifi.where()
+        elif DB_TRANSPORTS[transport] == "pymysql":
+            # PyMySQL 0.8 changed for compatibility with mysqlclient
+            # Use 0.7's binary prefixes, for selecting and inserting binary data
+            options["connect_args"]["binary_prefix"] = True
+            # Use 0.7's multiple statements in one execute block, for initial DB setup
+            options["connect_args"]["client_flag"] = MULTI_STATEMENTS
 
         self.engine = create_engine(uri, **options)
 
