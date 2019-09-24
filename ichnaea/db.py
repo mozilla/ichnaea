@@ -148,6 +148,7 @@ class Database(object):
             uri = db_type + "+" + new_transport + ":" + rest
 
         if DB_TRANSPORTS[transport] == "mysqlconnector":
+            # Use Python, not the C extension
             options["connect_args"]["use_pure"] = True
             # TODO: Update the TLS protocol version as we update MySQL
             # AWS MySQL 5.6 supports TLS v1.0, not v1.1 or v1.2
