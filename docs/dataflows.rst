@@ -4,36 +4,8 @@
 Data flows
 ==========
 
-API keys
-========
-
-API keys are stored in the ``api_key`` table.
-
-API keys are created, updated, and deleted by an admin.
-
-
-Export config
-=============
-
-Export configuration is stored in the ``export_config`` table.
-
-Export configuration is created, updated, and deleted by an admin.
-
-
-Stat data
-=========
-
-Stat data is stored in the ``stat`` and ``region_stat`` tables.
-
-FIXME: data flow for stat data?
-
-
-Datamap data
-============
-
-Datamap data is stored in the ``datamap_*`` tables.
-
-FIXME: data flow for datamap data?
+.. contents::
+   :local:
 
 
 Position data
@@ -54,40 +26,46 @@ Data flow:
    If the user used an api key and the key is sampling submissions, then the
    submission might get dropped at this point.
 
-   OR 
+   *OR*
 
    User submits query to one of the locate API endpoints.
 
-   If the query is handled by `InternalPositionSource`, then the web frontend
+   If the query is handled by ``InternalPositionSource``, then the web frontend
    adds a submission.
 
 2. If the sumission is kept, then the web frontend adds an item to the
-   `update_incoming` queue in Redis.
+   ``update_incoming`` queue in Redis.
 
    The item looks like a::
 
        {"api_key": key, "report": report, "source": source}
 
-   "source" can be one of "gnss", "fused", "query".
+   "source" can be one of:
+   
+   * ``gnss``: Global Navigation Satellite System based data
+   * ``fused``: observation data positioned based on fused data
+   * ``fixed``: outside knowledge about the true position of the station
+   * ``query``: position estimate based on query data
 
-3. The Celery scheduler schedules the `update_incoming` task every 
-   X seconds--see task definition in ``ichnaea/data/tasks.py``.
+3. The Celery scheduler schedules the ``update_incoming`` task every 
+   X seconds--see task definition in `ichnaea/data/tasks.py
+   <https://github.com/mozilla/ichnaea/blob/master/ichnaea/data/tasks.py>`_.
 
-4. A Celery worker executes the `update_incoming` task.
+4. A Celery worker executes the ``update_incoming`` task.
 
    This task acts as a multiplexer and its behavior depends on the
-   `export_config` database table table.
+   ``export_config`` database table table.
 
-   The `update_incoming` task will store data in multiple Redis lists depending
-   on the `export_config` table. For example, it could store it in
-   `queue_export_internal` and one more `queue_export_*` for each export
+   The ``update_incoming`` task will store data in multiple Redis lists depending
+   on the ``export_config`` table. For example, it could store it in
+   ``queue_export_internal`` and one more ``queue_export_*`` for each export
    target. These targets all have different batch intervals, so data is
    duplicated at this point.
 
    The task checks the length and last processing time of each queue and
-   schedules an `export_reports` task if the queue is ready for processing.
+   schedules an ``export_reports`` task if the queue is ready for processing.
 
-5. A Celery worker executes `export_reports` tasks:
+5. A Celery worker executes ``export_reports`` tasks:
 
    * ``dummy``:
 
@@ -118,7 +96,39 @@ Data flow:
 
 6. The Celery worker executes `station updater` tasks.
 
-   These tasks take in the new batch of observations and match them against the
-   known database contents. As a result network positions can be modified, new
-   networks be added or old networks be marked as blocklisted, noting that
-   they've recently moved from their old position.
+   These tasks take in the new batch of observations and match them against
+   known data. As a result, network positions can be modified, new networks can
+   be added, and old networks be marked as blocklisted noting that they've
+   recently moved from their old position.
+
+
+API keys
+========
+
+API keys are stored in the ``api_key`` table.
+
+API keys are created, updated, and deleted by an admin.
+
+
+Export config
+=============
+
+Export configuration is stored in the ``export_config`` table.
+
+Export configuration is created, updated, and deleted by an admin.
+
+
+Stat data
+=========
+
+Stat data is stored in the ``stat`` and ``region_stat`` tables.
+
+FIXME: data flow for stat data?
+
+
+Datamap data
+============
+
+Datamap data is stored in the ``datamap_*`` tables.
+
+FIXME: data flow for datamap data?

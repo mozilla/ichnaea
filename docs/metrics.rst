@@ -4,8 +4,10 @@
 Metrics
 =======
 
+.. Note:: 2019-09-24: This needs to be updated.
+
 As discussed in :ref:`the deployment document <deploy>`, Ichnaea emits
-metrics through the Statsd client library with the intent of
+metrics through the StatsD client library with the intent of
 aggregating and viewing them on a compatible dashboard.
 
 This document describes the metrics collected.

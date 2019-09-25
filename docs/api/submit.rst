@@ -1,8 +1,8 @@
 .. _api_submit:
 
-==============================
-DEPRECATED: Submit: /v1/submit
-==============================
+===============================
+Submit: /v1/submit (DEPRECATED)
+===============================
 
 .. deprecated:: 1.2 (2015-07-15)
    Please use the :ref:`api_geosubmit_latest` API instead.
@@ -76,25 +76,25 @@ Field Definition
 The record fields have the same meaning and requirements as explained
 in the :ref:`api_search`.
 
-The only required fields are `lat` and `lon` and at least one Bluetooth,
-cell or WiFi entry. If neither `lat` nor `lon` are included, the record
+The only required fields are ``lat`` and ``lon`` and at least one Bluetooth,
+cell, or WiFi entry. If neither ``lat`` nor ``lon`` are included, the record
 will be discarded.
 
-The altitude, accuracy and altitude_accuracy fields are all measured in
-meters. Altitude measures the height above or below the mean sea level,
-as defined by WGS84.
+The ``altitude``, ``accuracy``, and ``altitude_accuracy`` fields are all
+measured in meters. Altitude measures the height above or below the mean sea
+level, as defined by WGS84.
 
-The heading field specifies the direction of travel in
+The ``heading`` field specifies the direction of travel in
 0 <= heading <= 360 degrees, counting clockwise relative to the true north.
 
-The speed field specifies the current horizontal velocity and is measured
+The ``speed`` field specifies the current horizontal velocity and is measured
 in meters per second.
 
-The heading and speed fields should be omitted from the report, if the
-speed and heading cannot be determined or the device was stationary
-while observing the environment.
+The ``heading`` and ``speed`` fields should be omitted from the report, if the
+speed and heading cannot be determined or the device was stationary while
+observing the environment.
 
-The time has to be in UTC time, encoded in ISO 8601. If not provided,
+The ``time`` has to be in UTC time, encoded in ISO 8601. If not provided,
 the server time will be used.
 
 

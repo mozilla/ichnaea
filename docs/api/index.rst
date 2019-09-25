@@ -4,22 +4,21 @@
 Services API
 ============
 
-The service APIs accept data submission for geolocation stumbling as
-well as reporting a location based on IP addresses, cell or WiFi networks.
+The service APIs accept data submission for geolocation stumbling as well as
+reporting a location based on IP addresses, cell, or WiFi networks.
 
 New client developments should use the :ref:`api_region_latest`,
-:ref:`api_geolocate_latest` or :ref:`api_geosubmit_latest` APIs.
+:ref:`api_geolocate_latest`, or :ref:`api_geosubmit_latest` APIs.
 
 Requesting an API Key
 =====================
 
-The key has a daily usage limit of about 100,000 requests. As we aren't
-offering a commercial service, please note that we do not make any
-guarantees about the accuracy of the results or the availability of
-the service.
+The api key has a set daily usage limit of about 100,000 requests. As we aren't
+offering a commercial service, please note that we do not make any guarantees
+about the accuracy of the results or the availability of the service.
 
 Please make sure that you actually need the raw API access to
-perform geolocation lookups.  If you just need to get location data
+perform geolocation lookups. If you just need to get location data
 from your web application, you can directly use the
 `HTML5 API
 <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation>`_.
@@ -38,8 +37,10 @@ it might take longer.
 API Access Keys
 ===============
 
-Mozilla is currently evaluating its MLS service and terms and is not currently
-distributing API keys.
+.. Note::
+
+   Mozilla is currently evaluating its MLS service and terms and is not
+   currently distributing API keys.
 
 You can anonymously submit data to the service without an API key via
 any of the submission APIs.
@@ -52,22 +53,23 @@ it as a query argument in the request URI in the form::
 
     https://location.services.mozilla.com/<API>?key=<API_KEY>
 
-Each API key can be rate limited per calendar day, but the default is
-to allow an unlimited number of requests per day.
+Each API key can be rate limited per calendar day, but the default is to allow
+an unlimited number of requests per day.
 
 
 Errors
 ======
 
-Each of the supported APIs can return specific error responses.
-In addition there are some general error responses.
+Each of the supported APIs can return specific error responses. In addition
+there are some general error responses.
 
 
 Invalid API Key
 ---------------
 
-If an API key was required but none or no valid key was given, the service
-responds with a `keyInvalid` message with a HTTP 400 error code:
+If an API key was required but either no key was provided or the provided key
+was invalid, the service responds with a ``keyInvalid`` message and HTTP 400
+error code:
 
 .. code-block:: javascript
 
@@ -87,9 +89,9 @@ responds with a `keyInvalid` message with a HTTP 400 error code:
 API Key Limit
 -------------
 
-API keys can optionally be rate limited. If the limit for a specific
-API key is exceeded, the service responds with a `dailyLimitExceeded`
-message with a HTTP 403 error code:
+API keys can be rate limited. If the limit for a specific API key is exceeded,
+the service responds with a ``dailyLimitExceeded`` message and a HTTP 403
+error code:
 
 .. code-block:: javascript
 
@@ -109,9 +111,9 @@ message with a HTTP 403 error code:
 Parse Error
 -----------
 
-If the client sends a malformed request, typically sending malformed
-or invalid JSON, the service will respond with a `parseError` message
-with a HTTP 400 error code:
+If the client sends a malformed request, typically sending malformed or invalid
+JSON, the service will respond with a ``parseError`` message and a HTTP 400
+error code:
 
 .. code-block:: javascript
 
@@ -131,14 +133,14 @@ with a HTTP 400 error code:
 Service Error
 -------------
 
-If there is a transient service side problem, the service might respond
-with HTTP 5xx error codes with unspecified HTTP bodies.
+If there is a transient service side problem, the service might respond with
+HTTP 5xx error codes with unspecified HTTP bodies.
 
 This might happen if part of the service is down or unreachable. If you
-encounter any 5xx responses, you should retry the request at a later
-time. As a service side problem is unlikely to be resolved immediately,
-you should wait a couple of minutes before retrying the request for the
-first time and a couple of hours later if there's still a problem.
+encounter any 5xx responses, you should retry the request at a later time. As a
+service side problem is unlikely to be resolved immediately, you should wait a
+couple of minutes before retrying the request for the first time and a couple
+of hours later if there's still a problem.
 
 
 APIs

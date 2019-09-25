@@ -2,7 +2,7 @@
 Development/Deployment documentation
 ====================================
 
-These sections covers information for people who are developing or deploying
+This section covers information for people who are developing or deploying
 Ichnaea.
 
 .. toctree::

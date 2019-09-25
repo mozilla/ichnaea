@@ -1,8 +1,8 @@
 .. _api_geosubmit:
 
-====================================
-DEPRECATED: Geosubmit: /v1/geosubmit
-====================================
+=====================================
+Geosubmit: /v1/geosubmit (DEPRECATED)
+=====================================
 
 .. deprecated:: 1.2 (2015-07-15)
    Please use the :ref:`api_geosubmit_latest` API instead.

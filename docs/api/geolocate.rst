@@ -6,7 +6,7 @@ Geolocate: /v1/geolocate
 ========================
 
 **Purpose:** Determine the current location based on data provided about nearby
-Bluetooth, cell or WiFi networks and based on the IP address used to access the
+Bluetooth, cell, or WiFi networks and the IP address used to access the
 service.
 
 .. contents::
@@ -19,14 +19,14 @@ Geolocate requests are submitted using a POST request to the URL::
 
     https://location.services.mozilla.com/v1/geolocate?key=<API_KEY>
 
-This implements almost the same interface as the `Google Maps Geolocation
-API <https://developers.google.com/maps/documentation/geolocation/intro>`_
-endpoint, hence referred to as `GLS` or Google Location Service API. Our
-service implements all of the standard GLS API with a couple of additions.
+This implements a similar interface as the `Google Maps Geolocation API
+<https://developers.google.com/maps/documentation/geolocation/intro>`_
+endpoint also known as `GLS` or Google Location Service API. Our service
+implements all of the standard GLS API with a couple of additions.
 
-Geolocate requests are submitted using a POST request with a JSON body.
+Geolocate requests are submitted using an HTTP POST request with a JSON body.
 
-Here is a minimal example using only WiFi networks:
+Here is a minimal example body using only WiFi networks:
 
 .. code-block:: javascript
 
@@ -63,14 +63,12 @@ A complete example including all possible fields:
         "considerIp": true,
         "homeMobileCountryCode": 208,
         "homeMobileNetworkCode": 1,
-        "bluetoothBeacons": [
-            {
-                "macAddress": "ff:23:45:67:89:ab",
-                "age": 2000,
-                "name": "beacon",
-                "signalStrength": -110
-            }
-        ],
+        "bluetoothBeacons": [{
+            "macAddress": "ff:23:45:67:89:ab",
+            "age": 2000,
+            "name": "beacon",
+            "signalStrength": -110
+        }],
         "cellTowers": [{
             "radioType": "wcdma",
             "mobileCountryCode": 208,
@@ -102,22 +100,22 @@ A complete example including all possible fields:
 Field Definition
 ================
 
-All of the fields are optional. Though in order to get a Bluetooth or WiFi
-based position estimate at least two networks need to be provided and for
-each the `macAddress` needs to be known. The minimum of two networks is a
-mandatory privacy restriction for Bluetooth and WiFi based location services.
+All of the fields are optional, but in order to get a Bluetooth or WiFi based
+position estimate at least two networks need to be provided and include a
+``macAddress``. The two networks minimum is a mandatory privacy restriction
+for Bluetooth and WiFi based location services.
 
 Cell based position estimates require each cell record to contain at least
-the five `radioType`, `mobileCountryCode`, `mobileNetworkCode`,
-`locationAreaCode` and `cellId` values.
+the five ``radioType``, ``mobileCountryCode``, ``mobileNetworkCode``,
+``locationAreaCode``, and ``cellId`` values.
 
 Position estimates do get a lot more precise if in addition to these unique
-identifiers at least `signalStrength` data can be provided for each entry.
+identifiers at least ``signalStrength`` data can be provided for each entry.
 
 Note that all the cell JSON keys use the same names for all radio types,
-generally using the official GSM name to denote similar concepts, even
-though the actual client side API's might use different names for each
-radio type and thus must be mapped to the JSON keys.
+generally using the official GSM name to denote similar concepts even though
+the actual client side API's might use different names for each radio type and
+thus must be mapped to the JSON keys.
 
 
 Global Fields
@@ -127,7 +125,7 @@ carrier
     The clear text name of the cell carrier / operator.
 
 considerIp
-    Should the clients IP address be used to locate it, defaults to true.
+    Should the clients IP address be used to locate it; defaults to true.
 
 homeMobileCountryCode
     The mobile country code stored on the SIM card.
@@ -136,8 +134,8 @@ homeMobileNetworkCode
     The mobile network code stored on the SIM card.
 
 radioType
-    Same as the radioType entry in each cell record. If all the cell
-    entries have the same radioType, it can be provided at the top level
+    Same as the ``radioType`` entry in each cell record. If all the cell
+    entries have the same ``radioType``, it can be provided at the top level
     instead.
 
 
@@ -161,8 +159,8 @@ Cell Tower Fields
 -----------------
 
 radioType
-    The type of radio network. One of `gsm`, `wcdma` or `lte`.
-    This is a custom extension to the GLS API, which only defines the
+    The type of radio network. One of ``gsm``, ``wcdma``, or ``lte``.
+    This is a custom extension to the GLS API which only defines the
     top-level radioType field.
 
 mobileCountryCode
@@ -195,10 +193,12 @@ timingAdvance
 WiFi Access Point Fields
 ------------------------
 
-.. note:: Hidden WiFi networks and those whose SSID (clear text name)
-          ends with the string `_nomap` must NOT be used for privacy
-          reasons. It is the responsibility of the client code to filter
-          these out.
+.. note::
+
+   Hidden WiFi networks and those whose SSID (clear text name) ends with the
+   string ``_nomap`` must NOT be used for privacy reasons.
+   
+   It is the responsibility of the client code to filter these out.
 
 macAddress
     The BSSID of the WiFi network. 
@@ -207,12 +207,13 @@ age
     The number of milliseconds since this network was last detected.
 
 channel
-    The WiFi channel, often 1 - 13 for networks in the 2.4GHz range.
+    The WiFi channel for networks in the 2.4GHz range. This often ranges from 1
+    to 13.
 
 frequency
-    The frequency in MHz of the channel over which the client is
-    communicating with the access point. This is an addition to the
-    GLS API and can be used instead of the channel field.
+    The frequency in MHz of the channel over which the client is communicating
+    with the access point. This is an addition to the GLS API and can be used
+    instead of the channel field.
 
 signalStrength
     The received signal strength (RSSI) in dBm.
@@ -221,8 +222,9 @@ signalToNoiseRatio
     The current signal to noise ratio measured in dB.
 
 ssid
-    The SSID of the Wifi network. Wifi networks with a SSID ending in
-    `_nomap` must not be collected.
+    The SSID of the Wifi network.
+    
+    Wifi networks with a SSID ending in ``_nomap`` must not be collected.
 
 
 Fallback Fields
@@ -230,73 +232,74 @@ Fallback Fields
 
 The fallback section is a custom addition to the GLS API.
 
-By default both a GeoIP based position fallback and a fallback based
-on cell location areas (lac's) are enabled. Simply omit the `fallbacks`
-section if you want to use the defaults. Change the values to `false`
-if you want to disable either of the fallbacks.
+By default, both a GeoIP based position fallback and a fallback based on cell
+location areas (lac's) are enabled. Omit the ``fallbacks`` section if you want
+to use the defaults. Change the values to ``false`` if you want to disable
+either of the fallbacks.
 
 lacf
-    If no exact cell match can be found, fall back from exact cell
-    position estimates to more coarse grained cell location area
-    estimates, rather than going directly to an even worse GeoIP
-    based estimate.
+    If no exact cell match can be found, fall back from exact cell position
+    estimates to more coarse grained cell location area estimates rather than
+    going directly to an even worse GeoIP based estimate.
 
 ipf
-    If no position can be estimated based on any of the provided data
-    points, fall back to an estimate based on a GeoIP database based on
-    the senders IP address at the time of the query.
+    If no position can be estimated based on any of the provided data points,
+    fall back to an estimate based on a GeoIP database based on the senders IP
+    address at the time of the query.
+
 
 Deviations From GLS API
 -----------------------
 
-As mentioned in the specific fields, our API has a couple of extensions.
+Our API differs from the GLS API in these ways:
 
-* The entire Bluetooth section is a custom addition.
+* The entire Bluetooth section is a custom addition--the GLS API does not have
+  this.
 
-* Cell entries allow to specify the `radioType` per cell network
-  instead of globally. This allows for example doing queries with data
-  from multiple active SIM cards where one of them is on a GSM
+* Cell entries allow you to specify the ``radioType`` per cell network instead
+  of globally. This allows for queries with data from multiple active SIM cards.
+  For example, this allows for queries where one of SIM card is on a GSM
   connection while the other uses a WCDMA connection.
 
-* Cell entries take an extra `psc` field.
+* Cell entries take an extra ``psc`` field.
 
-* The WiFi macAddress field takes both upper- and lower-case characters.
-  It also tolerates `:`, `-` or no separator and internally strips them.
+* The WiFi ``macAddress`` field takes both upper- and lower-case characters.
+  It also tolerates ``:``, ``-``, or no separator and internally strips them.
 
-* WiFi entries take an extra `frequency` field.
+* WiFi entries take an extra ``frequency`` field.
 
-* The `fallbacks` section allows some control over the more coarse
-  grained position sources. If no exact match can be found, these can
-  be used to return a `404 Not Found` rather than a coarse grained
-  estimate with a large accuracy value.
+* The ``fallbacks`` section allows some control over the more coarse grained
+  position sources. If no exact match can be found, these can be used to return
+  a "404 Not Found" rather than a coarse grained estimate with a large
+  accuracy value.
 
-* If either the GeoIP or location area fallbacks where used to determine
-  the response, an additional fallback key will be returned in the response.
+* If either the GeoIP or location area fallbacks were used to determine the
+  response, an additional fallback key will be returned in the response.
 
-* The considerIp field has the same purpose as the fallbacks/ipf field.
-  It was introduced into the GLS API later on and we continue to support
-  both, with the fallbacks section taking precedence.
+* The ``considerIp`` field has the same purpose as the fallbacks/ipf field. It
+  was introduced into the GLS API later on and we continue to support both,
+  with the fallbacks section taking precedence.
+
 
 Response
 ========
 
 A successful response returns a position estimate and an accuracy field.
-Combined these two describe the center and radius of a circle. The users
-true position should be inside the circle with a 95th percentile
-confidence value. The accuracy is measured in meters.
+Combined these two describe the center and radius of a circle. The user's true
+position should be inside the circle with a 95th percentile confidence value.
+The accuracy is measured in meters.
 
-If the position is to be shown on a map and the returned accuracy is
-large, it may be advisable to zoom out the map, so that all of the
-circle can be seen, even if the circle itself is not shown graphically.
-That way a user should still see his true position on the map and can
-further zoom in.
+If the position is to be shown on a map and the returned accuracy is large, it
+may be advisable to zoom out the map, so that all of the circle can be seen,
+even if the circle itself is not shown graphically. That way a user should
+still see his true position on the map and can zoom in further.
 
-If instead the returned position is shown highly zoomed in, the user
-may just see an arbitrary location that they don't recognize at all.
-This typically happens when GeoIP based results are returned and the
-returned position is the center of a city or the center of a region.
+If instead the returned position is shown highly zoomed in, the user may just
+see an arbitrary location that they don't recognize at all. This typically
+happens when GeoIP based results are returned and the returned position is the
+center of a city or the center of a region.
 
-A successful response will be:
+An example of a successful response:
 
 .. code-block:: javascript
 
@@ -308,7 +311,7 @@ A successful response will be:
         "accuracy": 100.0
     }
 
-Should the response be based on a GeoIP estimate:
+An example of a successful response based on a GeoIP estimate:
 
 .. code-block:: javascript
 
@@ -321,10 +324,10 @@ Should the response be based on a GeoIP estimate:
         "fallback": "ipf"
     }
 
-Alternatively the fallback field can also state `lacf` for an estimate
+Alternatively the fallback field can also state ``lacf`` for an estimate
 based on a cell location area.
 
-If no position information could be determined, a HTTP status code 404 will
+If no position information could be determined, an HTTP status code 404 will
 be returned:
 
 .. code-block:: javascript

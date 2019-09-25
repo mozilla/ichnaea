@@ -2,10 +2,9 @@
 Ichnaea
 =======
 
-``Ichnaea`` is a service to provide geolocation coordinates
-from other sources of data (Bluetooth, cell or WiFi networks, GeoIP, etc.).
-It is using both :term:`Cell-ID` and Wi-Fi based positioning (:term:`WPS`)
-approaches.
+``Ichnaea`` is a service to provide geolocation coordinates from other sources
+of data (Bluetooth, cell or WiFi networks, GeoIP, etc.). It uses both
+:term:`Cell-ID` and Wi-Fi based positioning (:term:`WPS`) approaches.
 
 Mozilla hosts an instance of this service, called the `Mozilla Location
 Service <https://wiki.mozilla.org/CloudServices/Location>`_
@@ -44,7 +43,6 @@ Source code and license
 
 All source code is available on `GitHub under ichnaea
 <https://github.com/mozilla/ichnaea>`_.
-
 
 The ``Ichnaea`` source code is offered under the Apache License 2.0.
 

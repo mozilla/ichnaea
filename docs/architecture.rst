@@ -29,14 +29,14 @@ service requests.
 All API endpoints require a valid API key to use. The web service caches
 keys to reduce MySQL lookups.
 
-Requests to lookup API endpoints that only contain an IP address are
+Requests to locate API endpoints that only contain an IP address are
 fulfilled just by looking at the Maxmind GeoIP database without
 any MySQL lookups.
 
-Requests to lookup API endpoints that contain additional network information
-are fulfilled by using `location providers`.  These are responsible for
+Requests to locate API endpoints that contain additional network information
+are fulfilled by using `location providers`. These are responsible for
 matching the data against the MySQL tables and generate possible result values
-and corresponding data quality / trustworthiness scores.
+and corresponding data quality/trustworthiness scores.
 
 Some API keys allow falling back to an external web service if the best
 internal result does not match the expected accuracy/precision of the

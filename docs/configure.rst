@@ -8,6 +8,9 @@ The application takes a number of different settings and reads them
 from environment variables. There are also a small number of settings
 inside database tables.
 
+.. contents::
+   :local:
+
 
 Environment variables
 =====================
@@ -35,10 +38,10 @@ The webapp service requires a read-only connection.
 
 The celery worker service requires a read-write connection.
 
-Both of them can be restricted to only DML (data-manipulation) permissions, as
-neither needs DDL (data-definition) rights.
+Both of them can be restricted to only DML (data-manipulation) permissions as
+neither need DDL (data-definition) rights.
 
-DDL changes are only done via the alembic database migration system.
+DDL changes are done using the alembic database migration system.
 
 
 GeoIP
@@ -51,8 +54,11 @@ in version 2 format. Both GeoLite and commercial databases will work.
 Redis
 -----
 
-The Redis cache is used as a classic cache by the web role, as a backend to
-store rate-limiting counters, as a custom and a worker queuing backend.
+The Redis cache is used as a:
+
+* classic cache by the web role
+* backend to store rate-limiting counters
+* custom and a worker queuing backend
 
 
 Sentry
@@ -75,8 +81,8 @@ documentation <metrics>`.
 All metrics are prefixed with a `location` namespace.
 
 
-Map tile assets
----------------
+Map tile and download assets
+----------------------------
 
 The application can optionally generate image tiles for a data map and public
 export files available via the downloads section of the website.
@@ -107,31 +113,22 @@ Configuration in the database
 API Keys
 --------
 
-The project requires API keys to access the locate APIs. You need to add
-API keys manually to the database by direct SQL inserts.
+The project requires API keys to access the locate APIs.
 
 API keys can be any string of up to 40 characters, though random UUID4s
 in hex representation are commonly used, for example
 ``329694ac-a337-4856-af30-66162bc8187a``.
 
-But to start off, you can add a simple literal `test` API key:
-
-.. code-block:: sql
-
-    INSERT INTO api_key
-    (`valid_key`, `allow_locate`, `allow_region`) VALUES ("test", 1, 1);
-
 
 Fallback
 ~~~~~~~~
 
-You can also enable a fallback location provider on a per API key basis.
-This allows you to send queries from this API key onwards to a different
-external service, if the application itself can't provide a good enough
-result.
+You can also enable a fallback location provider on a per API key basis.  This
+allows you to send queries from this API key to an external service if Ichnaea
+can't provide a good-enough result.
 
-In order to configure this fallback mode, some additional columns need
-to be set, for example:
+In order to configure this fallback mode, you need to set the ``fallback_*``
+columns. For example:
 
 .. code-block:: ini
 
@@ -145,80 +142,84 @@ to be set, for example:
 The name can be shared between multiple API keys and acts as a partition
 key for the cache and rate limit tracking.
 
-The schema can be one of  `NULL`, `ichnaea/v1`, `combain/v1`, `googlemaps/v1`
-or `unwiredlabs/v1`.
+The schema can be one of  ``NULL``, ``ichnaea/v1``, ``combain/v1``,
+``googlemaps/v1`` or ``unwiredlabs/v1``.
 
-`NULL` and `ichnaea/v1` are currently synonymous. Setting the schema to one
-of those means the external service uses the same API as the geolocate v1
-API used in Ichnaea.
+``NULL`` and ``ichnaea/v1`` are currently synonymous. Setting the schema to one
+of those means the external service uses the same API as the geolocate v1 API
+used in Ichnaea.
 
 If you set the url to one of the unwiredlabs endpoints, add your API
-token as an anchor fragment to the end of it, so instead of specfifying
-``https://us1.unwiredlabs.com/v2/process.php``, you would instead use
-``https://us1.unwiredlabs.com/v2/process.php#my_secret_token``. The
-code will read the token from here and put it into the request body.
+token as an anchor fragment to the end of it, so instead of::
 
-Note that these services all have different terms about allowing caching
-or rate limiting.
+    https://us1.unwiredlabs.com/v2/process.php
 
-If the service allows caching their responses on an intermediate service,
-the `cache_expire` setting can be used to specify the number of seconds
-the responses should be cached. This can avoid repeated calls to the
+you would instead use::
+
+    https://us1.unwiredlabs.com/v2/process.php#my_secret_token
+    
+The code will read the token from here and put it into the request body.
+
+Note that external services will have different terms regarding caching, data
+collection, and rate limiting.
+
+If the external service allows caching their responses on an intermediate
+service, the ``cache_expire`` setting can be used to specify the number of
+seconds the responses should be cached. This can avoid repeated calls to the
 external service for the same queries.
 
-The rate limit settings are a combination of how many requests are allowed
-to be send to the external service. It's a "number" per "time interval"
-combination, so in the above example 10 requests per 60 seconds.
+The rate limit settings are a combination of how many requests are allowed to
+be send to the external service. It's a "number" per "time interval"
+combination. In the above example, 10 requests per 60 seconds.
 
 
 Export Configuration
 --------------------
 
-The project supports exporting all data that its gets via the submit-style
-APIs to different backends. This configuration lives in the `export_config`
-database table.
+Ichnaea supports exporting position data that it gets via the APIs to different
+export targets. This configuration lives in the ``export_config`` database
+table.
 
 Currently three different kinds of backends are supported:
 
-* Amazon S3 buckets
-* The projects own internal data processing pipeline
-* A HTTPS POST endpoint accepting the geosubmit v2 format
+* s3: Amazon S3 buckets
+* internal: Ichnaea's internal data processing pipeline which creates/
+  updates position data using new position information
+* geosubmit: submitting position information to an HTTP POST endpoint in
+  geosubmit v2 format
 
-The type of the target is determined by the `schema` column of each entry.
+The type of the target is determined by the ``schema`` column of each entry.
 
-All export targets can be configured with a ``batch`` setting that
-determines how many reports have to be available before data is
-submitted to the backend.
+All export targets can be configured with a ``batch`` setting that determines
+how many reports have to be available before data is submitted to the backend.
 
-All exports have an additional ``skip_keys`` setting as a set of
-API keys. Data submitted using one of these API keys will not be
-exported to the target.
+All exports have an additional ``skip_keys`` setting as a set of API keys. Data
+submitted using one of these API keys will not be exported to the target.
 
 There can be multiple instances of the bucket and HTTP POST export
-targets, but only one instance of the internal export.
+targets in ``export_config``, but only one instance of the internal export.
 
-In the simplest case, you insert one row to send data to the internal
-data pipeline via:
+Here's the SQL for setting up an "internal" export target:
 
 .. code-block:: sql
 
     INSERT INTO export_config
-    (`name`, `batch`, `schema`) VALUES ("internal", 1, "internal");
+    (`name`, `batch`, `schema`) VALUES ("internal test", 1, "internal");
 
 For a production setup you want to set the batch column to something
-like `100` or `1000` to get more efficiency. For initial testing its
-easier to set it to `1` so you immediately process any incoming data.
+like ``100`` or ``1000`` to get more efficiency. For initial testing its
+easier to set it to ``1`` so you immediately process any incoming data.
 
 
-Bucket Export
-~~~~~~~~~~~~~
+S3 Bucket Export (s3)
+~~~~~~~~~~~~~~~~~~~~~
 
-The Amazon S3 bucket export combines reports into a gzipped JSON file
-and uploads them to the specified bucket ``url``, for example:
+The schema column must be set to ``s3``.
 
-``s3://amazon_s3_bucket_name/directory/{source}{api_key}/{year}/{month}/{day}``
+The S3 bucket export target combines reports into a gzipped JSON file and
+uploads them to the specified bucket ``url``, for example::
 
-The schema column must be set to `s3`.
+    s3://amazon_s3_bucket_name/directory/{source}{api_key}/{year}/{month}/{day}
 
 The url can contain any level of additional static directories under
 the bucket root. The ``{api_key}/{year}/{month}/{day}`` parts will
@@ -226,29 +227,29 @@ be dynamically replaced by the `api_key` used to upload the data,
 the source of the report (e.g. gnss) and the date when the backup took place.
 The files use a random UUID4 as the filename.
 
-An example filename might be:
+An example filename might be::
 
-``/directory/test/2015/07/15/554d8d3c-5b28-48bb-9aa8-196543235cf2.json.gz``
+    /directory/test/2015/07/15/554d8d3c-5b28-48bb-9aa8-196543235cf2.json.gz
 
-Internal Export
-~~~~~~~~~~~~~~~
 
-The internal export forwards the incoming data into the internal
-data pipeline.
+Internal Export (internal)
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The schema column must be set to `internal`.
+The schema column must be set to ``internal``.
 
-HTTPS Export
-~~~~~~~~~~~~
+The internal export target forwards the incoming data into the internal data
+pipeline.
 
-The HTTPS export buffers incoming data into batches of ``batch``
-size and then submits them using the :ref:`api_geosubmit_latest`
-API to the specified ``url`` endpoint, for example:
 
-``https://localhost/some/api/url?key=export``
+HTTP Export (geosubmit)
+~~~~~~~~~~~~~~~~~~~~~~~
 
-The schema column must be set to `geosubmit`.
+The schema column must be set to ``geosubmit``.
 
-If the project is taking in data from a partner in a data exchange,
-the ``skip_keys`` setting can be used to prevent data being
-round tripped and send back to the same partner that it came from.
+The HTTP export target buffers incoming data into batches of ``batch`` size and
+then submits them using the :ref:`api_geosubmit_latest` API to the specified
+``url`` endpoint.
+
+If the project is taking in data from a partner in a data exchange, the
+``skip_keys`` setting can be used to prevent data being round tripped and send
+back to the same partner that it came from.
