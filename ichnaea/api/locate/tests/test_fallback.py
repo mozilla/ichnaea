@@ -1,3 +1,4 @@
+import json
 from unittest import mock
 
 import colander
@@ -5,7 +6,6 @@ import pytest
 import requests_mock
 from redis import RedisError
 from requests.exceptions import RequestException
-import simplejson
 
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.constants import DataSource
@@ -822,7 +822,7 @@ class BaseFallbackTest(object):
 class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
     @property
     def fallback_cached_result(self):
-        return simplejson.dumps(
+        return json.dumps(
             {
                 "lat": self.fallback_model.lat,
                 "lon": self.fallback_model.lon,

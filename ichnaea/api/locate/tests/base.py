@@ -1,7 +1,7 @@
+import json
 import operator
 
 import requests_mock
-import simplejson as json
 
 from ichnaea.api.exceptions import (
     DailyLimitExceeded,

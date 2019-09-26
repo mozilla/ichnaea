@@ -73,9 +73,9 @@ CELERY_MESSAGE_COMPRESSION = "gzip"
 # Internal data format, only accept JSON variants.
 
 # BBB: Celery 4
-# accept_content = ['json', 'internal_json']
-# result_serializer = 'internal_json'
-# task_serializer = 'internal_json'
-CELERY_ACCEPT_CONTENT = ["json", "internal_json"]
-CELERY_RESULT_SERIALIZER = "internal_json"
-CELERY_TASK_SERIALIZER = "internal_json"
+# accept_content = ["json"]     # Default
+# result_serializer = "json"    # Default
+# task_serializer = "json"      # Default
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TASK_SERIALIZER = "json"

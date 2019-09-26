@@ -2,7 +2,7 @@
 Functionality related to custom Redis based queues.
 """
 
-import simplejson
+import json
 
 from ichnaea.cache import redis_pipeline
 from ichnaea import util
@@ -47,8 +47,7 @@ class DataQueue(object):
             if self.compress:
                 result = [util.decode_gzip(item, encoding=None) for item in result]
             if self.json:
-                # simplejson.loads returns Unicode strings
-                result = [simplejson.loads(item, encoding="utf-8") for item in result]
+                result = [json.loads(item.decode("utf-8")) for item in result]
 
         return result
 
@@ -73,11 +72,7 @@ class DataQueue(object):
             batch = len(items)
 
         if self.json:
-            # simplejson.dumps returns Unicode strings
-            items = [
-                simplejson.dumps(item, encoding="utf-8").encode("utf-8")
-                for item in items
-            ]
+            items = [json.dumps(item).encode("utf-8") for item in items]
 
         if self.compress:
             items = [util.encode_gzip(item, encoding=None) for item in items]

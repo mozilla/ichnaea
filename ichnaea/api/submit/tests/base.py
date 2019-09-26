@@ -1,7 +1,7 @@
+from json import dumps
 from unittest import mock
 
 from redis import RedisError
-from simplejson import dumps
 
 from ichnaea.api.exceptions import ParseError, ServiceUnavailable
 from ichnaea.conftest import GEOIP_DATA

@@ -3,8 +3,6 @@ Contains celery specific one time configuration code.
 """
 
 from kombu import Queue
-from kombu.serialization import register
-import simplejson
 
 from ichnaea.cache import configure_redis
 from ichnaea.db import configure_db
@@ -23,14 +21,6 @@ TASK_QUEUES = (
     Queue("celery_monitor", routing_key="celery_monitor"),
     Queue("celery_reports", routing_key="celery_reports"),
     Queue("celery_wifi", routing_key="celery_wifi"),
-)
-
-register(
-    "internal_json",
-    simplejson.dumps,
-    simplejson.loads,
-    content_type="application/x-internaljson",
-    content_encoding="utf-8",
 )
 
 

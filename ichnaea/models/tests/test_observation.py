@@ -1,4 +1,4 @@
-import simplejson
+import json
 
 from ichnaea.conftest import GB_LAT, GB_LON, GB_MCC
 from ichnaea.models import (
@@ -122,9 +122,7 @@ class TestBlueObservation(BaseTest):
 
     def test_json(self):
         obs = BlueObservationFactory.build(accuracy=None, source=ReportSource.gnss)
-        result = BlueObservation.from_json(
-            simplejson.loads(simplejson.dumps(obs.to_json()))
-        )
+        result = BlueObservation.from_json(json.loads(json.dumps(obs.to_json())))
         assert type(result) is BlueObservation
         assert result.accuracy is None
         assert result.mac == obs.mac
@@ -221,9 +219,7 @@ class TestCellObservation(BaseTest):
 
     def test_json(self):
         obs = CellObservationFactory.build(accuracy=None, source="fixed")
-        result = CellObservation.from_json(
-            simplejson.loads(simplejson.dumps(obs.to_json()))
-        )
+        result = CellObservation.from_json(json.loads(json.dumps(obs.to_json())))
 
         assert type(result) is CellObservation
         assert result.accuracy is None
@@ -482,9 +478,7 @@ class TestWifiObservation(BaseTest):
 
     def test_json(self):
         obs = WifiObservationFactory.build(accuracy=None, source=ReportSource.query)
-        result = WifiObservation.from_json(
-            simplejson.loads(simplejson.dumps(obs.to_json()))
-        )
+        result = WifiObservation.from_json(json.loads(json.dumps(obs.to_json())))
 
         assert type(result) is WifiObservation
         assert result.accuracy is None

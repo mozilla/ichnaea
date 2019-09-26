@@ -1,4 +1,5 @@
 from collections import defaultdict
+import json
 import re
 import time
 from urllib.parse import urlparse
@@ -10,7 +11,6 @@ import botocore.exceptions
 import redis.exceptions
 import requests
 import requests.exceptions
-import simplejson
 from sqlalchemy import select
 import sqlalchemy.exc
 
@@ -163,9 +163,7 @@ class GeosubmitExporter(ReportExporter):
 
         response = requests.post(
             self.config.url,
-            data=util.encode_gzip(
-                simplejson.dumps({"items": reports}), compresslevel=5
-            ),
+            data=util.encode_gzip(json.dumps({"items": reports}), compresslevel=5),
             headers=headers,
             timeout=60.0,
         )
@@ -210,9 +208,7 @@ class S3Exporter(ReportExporter):
         obj_name += uuid.uuid1().hex + ".json.gz"
 
         try:
-            data = util.encode_gzip(
-                simplejson.dumps({"items": reports}), compresslevel=7
-            )
+            data = util.encode_gzip(json.dumps({"items": reports}), compresslevel=7)
 
             s3 = boto3.resource("s3")
             bucket = s3.Bucket(bucketname)
