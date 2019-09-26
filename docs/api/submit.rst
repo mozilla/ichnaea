@@ -15,7 +15,7 @@ Submit: /v1/submit (DEPRECATED)
 Request
 =======
 
-Submit requests are submitted using a POST request to one of::
+Submit requests are submitted using an HTTP POST request to one of::
 
     https://location.services.mozilla.com/v1/submit
     https://location.services.mozilla.com/v1/submit?key=<API_KEY>

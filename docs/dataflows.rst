@@ -13,9 +13,9 @@ Position data
 
 Position data is stored in the database in shard tables:
 
-* ``blue_shard_*``
-* ``cell_*``
-* ``wifi_shard_*``
+* ``blue_shard_*``: hex 0 through f
+* ``cell_*``: ``area``, ``gsm``, ``lte``, and ``wcdma``
+* ``wifi_shard_*``: hex 0 through f
 
 This data is created and updated from incoming API requests.
 
@@ -33,7 +33,7 @@ Data flow:
    If the query is handled by ``InternalPositionSource``, then the web frontend
    adds a submission.
 
-2. If the sumission is kept, then the web frontend adds an item to the
+2. If the submission is kept, then the web frontend adds an item to the
    ``update_incoming`` queue in Redis.
 
    The item looks like a::
@@ -43,7 +43,8 @@ Data flow:
    "source" can be one of:
    
    * ``gnss``: Global Navigation Satellite System based data
-   * ``fused``: observation data positioned based on fused data
+   * ``fused``: position data obtained from a combination of other sensors or
+     outside service queries
    * ``fixed``: outside knowledge about the true position of the station
    * ``query``: position estimate based on query data
 
@@ -87,14 +88,14 @@ Data flow:
      observation per network and queues them into multiple queues, one queue
      corresponding to one database table shard.
      
-     This data ends up in Redis queues like `update_cell_gsm`,
-     `update_cell_wcdma`, `update_wifi_0`, `update_wifi_1`, etc to be
-     processed by `station updater` tasks.
+     This data ends up in Redis queues like ``update_cell_gsm``,
+     ``update_cell_wcdma``, ``update_wifi_0``, ``update_wifi_1``, etc to be
+     processed by ``station updater`` tasks.
      
-     The internal processing job also fills the `update_datamap` queue, to
+     The internal processing job also fills the ``update_datamap`` queue, to
      update the coverage data map on the web site.
 
-6. The Celery worker executes `station updater` tasks.
+6. The Celery worker executes ``station updater`` tasks.
 
    These tasks take in the new batch of observations and match them against
    known data. As a result, network positions can be modified, new networks can
@@ -129,6 +130,7 @@ FIXME: data flow for stat data?
 Datamap data
 ============
 
-Datamap data is stored in the ``datamap_*`` tables.
+Datamap data is stored in the ``datamap_*`` (``ne``, ``nw``, ``se``, ``sw``)
+tables.
 
 FIXME: data flow for datamap data?

@@ -8,7 +8,7 @@ Overview
 ========
 
 The application consists of an HTTP web service implementing the APIs and
-web site and a streaming data pipeline.
+web site, and a streaming data pipeline.
 
 
 Web Service

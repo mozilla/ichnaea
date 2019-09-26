@@ -50,4 +50,4 @@ The ``Ichnaea`` source code is offered under the Apache License 2.0.
 About the name
 ==============
 
-In Greek mythology, Ichnaea (Iknaia) means "the tracker".
+In Greek mythology, Ichnaea (Ιχναίη) means "the tracker".

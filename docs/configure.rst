@@ -182,10 +182,10 @@ table.
 
 Currently three different kinds of backends are supported:
 
-* s3: Amazon S3 buckets
-* internal: Ichnaea's internal data processing pipeline which creates/
+* ``s3``: Amazon S3 buckets
+* ``internal``: Ichnaea's internal data processing pipeline which creates/
   updates position data using new position information
-* geosubmit: submitting position information to an HTTP POST endpoint in
+* ``geosubmit``: submitting position information to an HTTP POST endpoint in
   geosubmit v2 format
 
 The type of the target is determined by the ``schema`` column of each entry.
@@ -251,5 +251,5 @@ then submits them using the :ref:`api_geosubmit_latest` API to the specified
 ``url`` endpoint.
 
 If the project is taking in data from a partner in a data exchange, the
-``skip_keys`` setting can be used to prevent data being round tripped and send
+``skip_keys`` setting can be used to prevent data being round tripped and sent
 back to the same partner that it came from.

@@ -15,11 +15,11 @@ Geosubmit: /v1/geosubmit (DEPRECATED)
 Request
 =======
 
-Geosubmit requests are submitted using a POST request to the URL::
+Geosubmit requests are submitted using an HTTP POST request to the URL::
 
     https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
 
-Geosubmit requests are submitted using a POST request with a JSON body.
+Geosubmit requests are submitted using an HTTP POST request with a JSON body.
 
 Here is an example body:
 

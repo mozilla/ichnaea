@@ -7,7 +7,7 @@ Debugging
 MySQL Config
 ------------
 
-First, lets check the database configuration.
+First, let's check the database configuration.
 
 In a local development environment, you can run the mysql client like this:
 
@@ -29,7 +29,7 @@ Next, check if alembic migrations have been run:
     +--------------+
     1 row in set (0.00 sec)
 
-This needs to produce a single row and some `version_num` in it.  If it isn't
+This needs to produce a single row and some ``version_num`` in it.  If it isn't
 there, check the `Database Setup` part of :ref:`the deploy docs <deploy>`.
 
 Now check the API keys:
@@ -127,7 +127,7 @@ the `Celery monitoring guide
 <https://celery.readthedocs.io/en/latest/userguide/monitoring.html>`_ for more
 detailed information.
 
-A basic test is to call the `inspect stats` commands. Open a shell container
+A basic test is to call the ``inspect stats`` commands. Open a shell container
 and inside it run:
 
 .. code-block:: bash
@@ -161,7 +161,7 @@ should fill up with various tasks.
 Data Pipeline
 -------------
 
-Now that all the building blocks are in place, let's try to send them real data
+Now that all the building blocks are in place, let's try to send real data
 to the service and see how it processes it.
 
 Assuming containers for all three roles are running, we'll use the HTTP
@@ -205,7 +205,7 @@ If we check the available Redis keys again, we might see something like:
     5) "statcounter_unique_wifi_20170705"
     6) "_kombu.binding.celery.pidbox"
 
-If we wait a bit longer, the `update_wifi_0` entry should vanish.
+If we wait a bit longer, the ``update_wifi_0`` entry should vanish.
 
 Once that happened, we can check the database directly. On a MySQL
 client prompt do:
@@ -260,7 +260,7 @@ Note the ``"source": "query"`` part at the end, which tells the pipeline the
 position data does not represent a GPS verified position, but was the result of
 a query.
 
-You can use the same `expire` trick as above again, to get the data processed
+You can use the same ``expire`` trick as above again, to get the data processed
 faster.
 
 In the mysql client, you can see the result:

@@ -13,15 +13,15 @@ without the cooperation of the signal sources or mobile networks.
    compare / trilaterate user locations.
 
 2. Generate signal fingerprints for a fine-grained grid of the world. Find
-   best match for an observed fingerprint.
+   the best match for an observed fingerprint.
 
 The second approach has much better accuracy, but relies on more available and
 constantly updated data. For most of the world this approach is not practical,
 so we currently focus on the first approach.
 
-In theory one could use signal strength data to infer a distance measure from
-it: the further a device is away from the signal source, the weaker the signal
-should get.
+In theory one could use signal strength data to infer a distance measure: the
+further a device is away from the signal source, the weaker the signal should
+get.
 
 Unfortunately the signal strength is more dependent on the device type, how a
 user holds a device, and changing environmental factors like trucks in the way.
@@ -39,7 +39,7 @@ While there are some reflection and multipath problems, it's a much more
 accurate distance predictor. Fine grained enough timing data is unfortunately
 almost never available to the application or operating system layer in client
 devices. Some LTE networks and really modern WiFi networks with support for
-802.11v are the rare exception to this. These are so rare, that we currently
+802.11v are the rare exception to this. These are so rare that we currently
 ignore timing data.
 
 

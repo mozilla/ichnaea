@@ -14,14 +14,14 @@ Geosubmit Version 2: /v2/geosubmit
 Request
 =======
 
-Geosubmit requests are submitted using a POST request to the URL::
+Geosubmit requests are submitted using an HTTP POST request to the URL::
 
     https://location.services.mozilla.com/v2/geosubmit?key=<API_KEY>
 
 There is an earlier :ref:`api_geosubmit` v1 API, with a slightly different and
 less extensive field list.
 
-Geosubmit requests are submitted using a POST request with a JSON body.
+Geosubmit requests are submitted using an HTTP POST request with a JSON body.
 
 Here is an example body:
 
