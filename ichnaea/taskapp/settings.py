@@ -6,29 +6,16 @@ from ichnaea.conf import settings
 from ichnaea.taskapp.config import TASK_QUEUES
 
 if settings("testing"):
-    # BBB: Celery 4
-    # task_always_eager = True
-    # task_eager_propagates = True
-    CELERY_ALWAYS_EAGER = True
-    CELERY_EAGER_PROPAGATES_EXCEPTIONS = True
+    task_always_eager = True
+    task_eager_propagates = True
 
-# BBB: Celery 4
-# broker_url = settings('REDIS_URI')
-# result_backend = settings('REDIS_URI')
-BROKER_URL = settings("redis_uri")
-CELERY_RESULT_BACKEND = settings("redis_uri")
+broker_url = settings("redis_uri")
+result_backend = settings("redis_uri")
 
 # Based on `Celery / Redis caveats
 # <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
 
-# BBB: Celery 4
-# broker_transport_options = {
-#     'socket_connect_timeout': 60,
-#     'socket_keepalive': True,
-#     'socket_timeout': 30,
-#     'visibility_timeout': 43200,
-# }
-BROKER_TRANSPORT_OPTIONS = {
+broker_transport_options = {
     "fanout_patterns": True,
     "fanout_prefix": True,
     "socket_connect_timeout": 60,
@@ -38,44 +25,18 @@ BROKER_TRANSPORT_OPTIONS = {
 }
 
 # Name of the default queue.
-
-# BBB: Celery 4
-# task_default_queue = 'celery_default'
-CELERY_DEFAULT_QUEUE = "celery_default"
+task_default_queue = "celery_default"
 
 # Definition of all queues.
-
-# BBB: Celery 4
-# task_queues = TASK_QUEUES
-CELERY_QUEUES = TASK_QUEUES
+task_queues = TASK_QUEUES
 
 # All modules being searched for @task decorators.
-
-# BBB: Celery 4
-# imports = [
-#     'ichnaea.data.tasks',
-# ]
-CELERY_IMPORTS = ["ichnaea.data.tasks"]
+imports = ["ichnaea.data.tasks"]
 
 # Disable task results.
 task_ignore_result = True
 
 # Optimization for a mix of fast and slow tasks.
-
-# BBB: Celery 4
-# worker_prefetch_multiplier = 8
-# worker_disable_rate_limits = True
-# task_compression = 'gzip'
-CELERYD_PREFETCH_MULTIPLIER = 8
-CELERY_DISABLE_RATE_LIMITS = True
-CELERY_MESSAGE_COMPRESSION = "gzip"
-
-# Internal data format, only accept JSON variants.
-
-# BBB: Celery 4
-# accept_content = ["json"]     # Default
-# result_serializer = "json"    # Default
-# task_serializer = "json"      # Default
-CELERY_ACCEPT_CONTENT = ["json"]
-CELERY_RESULT_SERIALIZER = "json"
-CELERY_TASK_SERIALIZER = "json"
+worker_prefetch_multiplier = 8
+worker_disable_rate_limits = True
+task_compression = "gzip"
