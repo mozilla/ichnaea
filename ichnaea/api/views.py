@@ -2,10 +2,11 @@
 Implementation of a API specific HTTP service view.
 """
 
+import json
+
 import colander
 from ipaddress import ip_address
 from redis import RedisError
-import simplejson as json
 
 from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
 from ichnaea.api.key import get_key, Key, validated_key

@@ -2,6 +2,7 @@
 Contains website related routes and views.
 """
 
+import json
 from operator import itemgetter
 import os
 from urllib import parse as urlparse
@@ -16,7 +17,6 @@ from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
-import simplejson
 
 from ichnaea.conf import settings
 from ichnaea.content.stats import global_stats, histogram, regions
@@ -169,12 +169,12 @@ class ContentViews(object):
         cache_key = self.redis_client.cache_keys[cache_key]
         cached = self.redis_client.get(cache_key)
         if cached:
-            return simplejson.loads(cached)
+            return json.loads(cached)
         return None
 
     def _set_cache(self, cache_key, data, ex=3600):
         cache_key = self.redis_client.cache_keys[cache_key]
-        self.redis_client.set(cache_key, simplejson.dumps(data), ex=ex)
+        self.redis_client.set(cache_key, json.dumps(data), ex=ex)
 
     def is_map_enabled(self):
         """Return whether maps are enabled.

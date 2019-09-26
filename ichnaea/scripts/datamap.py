@@ -6,6 +6,7 @@ Script is installed as `location_map`.
 
 import argparse
 import hashlib
+from json import dumps
 import os
 import os.path
 import shutil
@@ -13,7 +14,6 @@ import sys
 
 import billiard
 import boto3
-from simplejson import dumps
 from sqlalchemy import text
 
 from ichnaea.conf import settings

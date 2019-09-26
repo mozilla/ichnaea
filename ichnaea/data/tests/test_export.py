@@ -1,9 +1,9 @@
+import json
 import time
 from unittest import mock
 
 import boto3
 import requests_mock
-import simplejson
 
 from ichnaea.data.export import DummyExporter, InternalTransform
 from ichnaea.data.tasks import update_blue, update_cell, update_incoming, update_wifi
@@ -181,7 +181,7 @@ class TestGeosubmit(BaseExportTest):
         assert req.headers["User-Agent"] == "ichnaea"
 
         body = util.decode_gzip(req.body)
-        send_reports = simplejson.loads(body)["items"]
+        send_reports = json.loads(body)["items"]
         assert len(send_reports) == 3
 
         for field in ("accuracy", "source", "timestamp"):
@@ -259,7 +259,7 @@ class TestS3(BaseExportTest):
         # check uploaded content
         uploaded_text = util.decode_gzip(test_export)
 
-        send_reports = simplejson.loads(uploaded_text)["items"]
+        send_reports = json.loads(uploaded_text)["items"]
         assert len(send_reports) == 3
         expect = [report["position"]["accuracy"] for report in reports]
         gotten = [report["position"]["accuracy"] for report in send_reports]

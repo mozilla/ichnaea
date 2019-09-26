@@ -3,13 +3,13 @@ Implementation of a fallback source using an external web service.
 """
 
 from collections import defaultdict, namedtuple
+import json
 import time
 
 import colander
 import numpy
 from requests.exceptions import RequestException
 from redis import RedisError
-import simplejson
 
 from ichnaea.api.schema import (
     BoundedFloat,
@@ -368,7 +368,7 @@ class FallbackCache(object):
                 if not value:
                     continue
 
-                value = simplejson.loads(value)
+                value = json.loads(value)
                 if value == LOCATION_NOT_FOUND:
                     value = ExternalResult(None, None, None, None)
                     clustered_results[not_found_cluster] = [value]
@@ -378,7 +378,7 @@ class FallbackCache(object):
                     clustered_results[
                         (round(value.lat, 3), round(value.lat, 3), value.fallback)
                     ].append(value)
-        except (simplejson.JSONDecodeError, RedisError):
+        except (json.JSONDecodeError, RedisError):
             self.raven_client.captureException()
             self._stat_count(fallback_name, "failure")
             return None
@@ -443,7 +443,7 @@ class FallbackCache(object):
             cache_value = result._asdict()
 
         try:
-            cache_value = simplejson.dumps(cache_value)
+            cache_value = json.dumps(cache_value)
             cache_values = dict([(key, cache_value) for key in cache_keys])
 
             with self.redis_client.pipeline() as pipe:
@@ -451,7 +451,7 @@ class FallbackCache(object):
                 for cache_key in cache_keys:
                     pipe.expire(cache_key, expire)
                 pipe.execute()
-        except (simplejson.JSONDecodeError, RedisError):
+        except (json.JSONDecodeError, RedisError):
             self.raven_client.captureException()
 
 
@@ -616,7 +616,7 @@ class FallbackPositionSource(PositionSource):
             try:
                 body = response.json()
                 validated = result_schema.deserialize(body)
-            except (colander.Invalid, simplejson.JSONDecodeError):
+            except (colander.Invalid, json.JSONDecodeError):
                 self.raven_client.captureException()
 
             if not validated:
@@ -624,7 +624,7 @@ class FallbackPositionSource(PositionSource):
 
             return ExternalResult(**validated)
 
-        except (simplejson.JSONDecodeError, RequestException):
+        except (json.JSONDecodeError, RequestException):
             self.raven_client.captureException()
 
     def should_search(self, query, results):

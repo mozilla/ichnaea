@@ -5,13 +5,13 @@ codes.
 
 import atexit
 from collections import namedtuple
+import json
 import os
 
 import genc
 import mobile_codes
 from shapely import geometry
 from shapely import prepared
-import simplejson
 from rtree import index
 
 import geocalc
@@ -55,7 +55,7 @@ class Geocoder(object):
         self._radii = {}
 
         with util.gzip_open(regions_file, "r") as fd:
-            regions_data = simplejson.load(fd)
+            regions_data = json.load(fd)
 
         genc_regions = frozenset([rec.alpha2 for rec in genc.REGIONS])
         for feature in regions_data["features"]:
@@ -67,7 +67,7 @@ class Geocoder(object):
                 self._radii[code] = feature["properties"]["radius"]
 
         with util.gzip_open(buffer_file, "r") as fd:
-            buffer_data = simplejson.load(fd)
+            buffer_data = json.load(fd)
 
         i = 0
         envelopes = []
