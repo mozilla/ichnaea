@@ -2,15 +2,8 @@
 Changelog
 =========
 
-2.2.1 (unreleased)
-==================
-
-Migrations
-~~~~~~~~~~
-
-
-Changes
-~~~~~~~
+After August, 2017, see `releases page
+<https://github.com/mozilla/ichnaea/releases>`_ for releases and notes.
 
 
 2.2.0 (2017-08-23)

@@ -2,10 +2,9 @@
 Ichnaea
 =======
 
-``Ichnaea`` is a service to provide geolocation coordinates
-from other sources of data (Bluetooth, cell or WiFi networks, GeoIP, etc.).
-It is using both :term:`Cell-ID` and Wi-Fi based positioning (:term:`WPS`)
-approaches.
+``Ichnaea`` is a service to provide geolocation coordinates from other sources
+of data (Bluetooth, cell or WiFi networks, GeoIP, etc.). It uses both
+:term:`Cell-ID` and Wi-Fi based positioning (:term:`WPS`) approaches.
 
 Mozilla hosts an instance of this service, called the `Mozilla Location
 Service <https://wiki.mozilla.org/CloudServices/Location>`_
@@ -19,35 +18,36 @@ You can interact with the service in two ways:
 - or locate yourself, based on the radio environment around you.
 
 
-About the name
-==============
-
-In Greek mythology, Ichnaea (Iknaia) means "the tracker".
-
-
 Table of contents
 =================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
-   usage
-   local_dev
-   api/index
-   import_export
-   install/index
+   user_index
+   devdeploy_index
    algo/index
-   glossary
    changes/index
+   glossary
 
 
-Development
-===========
-
-All source code is available on `github under ichnaea
-<https://github.com/mozilla/ichnaea>`_.
-
-License
+Indices
 =======
 
-The ``ichnaea`` source code is offered under the Apache License 2.0.
+* :ref:`genindex`
+* :ref:`glossary`
+
+
+Source code and license
+=======================
+
+All source code is available on `GitHub under ichnaea
+<https://github.com/mozilla/ichnaea>`_.
+
+The ``Ichnaea`` source code is offered under the Apache License 2.0.
+
+
+About the name
+==============
+
+In Greek mythology, Ichnaea (Ιχναίη) means "the tracker".

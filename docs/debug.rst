@@ -4,65 +4,20 @@
 Debugging
 =========
 
-Debugging webapp
-================
-
-There are some kinds of problems that are hard to debug because gunicorn
-won't start up and doesn't tell you anything.
-
-
-Run without gunicorn
---------------------
-
-Try running the webapp without gunicorn:
-
-.. code-block:: shell
-
-   $ docker-compose run --rm --service-ports web shell
-   app@78dd072d4a88:/app$ python ichnaea/webapp/app.py
-   running at http://localhost:8000
-   ...
-
-
-If there is a bug in the webapp that's preventing the webapp from starting up,
-it'll spit out a traceback.
-
-
-Run gunicorn with preload
--------------------------
-
-You can also run gunicorn with ``--preload`` set. Edit ``docker/run_web.sh`` to
-pass ``-preload``. You'll also need to change the worker class to ``sync``
-because preload doesn't work with gevent. Sometimes that'll help debugging
-webapp issues.
-
-
-Switch gunicorn logging level to debug
---------------------------------------
-
-You can tell gunicorn to log at debug level by adding this to your ``my.env``::
-
-    GUNICORN_LOGLEVEL=debug
-
-Then run ``make run``.
-
-
-.. Note:: 2019-08-16: Below this needs to be updated.
-
-
 MySQL Config
 ------------
 
-First, lets check the database configuration. If you have a development
-setup, you can open a MySQL client prompt via:
+First, let's check the database configuration.
+
+In a local development environment, you can run the mysql client like this:
 
 .. code-block:: bash
 
-    docker-compose exec mysql mysql -uroot -plocation location
+   make mysql
 
-Otherwise use the the MySQL client tool and connect to your database.
+In a server environment, use the mysql client to connect to the database.
 
-First up, check if the alembic database setup and migration was run:
+Next, check if alembic migrations have been run:
 
 .. code-block:: sql
 
@@ -74,9 +29,8 @@ First up, check if the alembic database setup and migration was run:
     +--------------+
     1 row in set (0.00 sec)
 
-This needs to produce a single row and some `version_num` in it.
-If it isn't there, check the `Database Setup` part of
-:ref:`the deploy docs <deploy>`.
+This needs to produce a single row and some ``version_num`` in it.  If it isn't
+there, check the `Database Setup` part of :ref:`the deploy docs <deploy>`.
 
 Now check the API keys:
 
@@ -111,84 +65,74 @@ And the export config:
     +----------+-------+----------+------+-----------+--------------+
     1 row in set (0.00 sec)
 
-If you are missing either of these entries, you might have setup your
-database as part of a development setup and used the `./dev test`
-script. This sets up the database for testing needs, but doesn't
-configure the export config required for running a real application setup.
-
-One way to correct this is to downgrade and re-upgrade the database
-schema using alembic. Using the appropriate docker invocation, you
-can run:
-
-.. code-block:: bash
-
-    <...docker or dev script...> alembic downgrade base
-    <...docker or dev script...> alembic upgrade head
-
-This tears down the database schema to an empty state and upgrades it
-again. As part of the upgrade, the API key and export config are added.
+If you are missing either of these entries, then it's likely you need to set up
+API keys and export configuration.
 
 
 Connections
 -----------
 
-Docker containers typically run on their own IP sub-network and
-connecting from inside an application container to a different
-machine can be tricky, especially if those other machines are also
-docker containers.
+Check if the web service and celery containers can connect to the MySQL
+database and Redis datastore.
 
-Best to check if the containers can actually reach the MySQL database
-and Redis datastore.
+Follow the instructions in the `Runtime Checks` part of the :ref:`the deploy
+docs <deploy>`. Make sure to call the ``/__heartbeat__`` HTTP endpoint on the
+web application.
 
-The easiest way is to follow the instructions in the `Runtime Checks`
-part of the :ref:`the deploy docs <deploy>`. Especially calling the
-`/__heartbeat__` HTTP endpoint on the web application.
+Another way to check connections is to start a container and try to connect to
+the two external connections from inside it.
 
-Another way is to start a container and try to connect to the two
-external connections from inside it:
+In a local development environment, you can do this:
 
 .. code-block:: bash
 
-    <...docker or dev script...> shell
+   make shell
 
-And inside the container:
+In a server environment, you need to run the container with configuration in
+the environment.
+
+Once inside the container, you can do this:
 
 .. code-block:: bash
 
-    redis-cli -h $REDIS_HOST
+    $ redis-cli -u $REDIS_URI
     172.17.0.2:6379> keys *
     1) "_kombu.binding.celery"
     2) "unacked_mutex"
     3) "_kombu.binding.celery.pidbox"
 
-The above output should be there if the task worker containers are
-running or have been run once.
+If the task worker containers are running or have been run at least once, you
+should see keys listed.
 
-In the same way we can connect to the MySQL database from inside the
-container. In the same shell container as above:
+Similarly, we can connect to the MySQL database from inside the container.
+Using the same shell, you can run the mysql client:
 
 .. code-block:: bash
 
-    mysql -h $DB_HOST -uroot -plocation location
+    $ mysql -h DBHOST -uUSERNAME --password=PASSWORD DBNAME
     ...
     Welcome to the MySQL monitor.  Commands end with ; or \g.
     ...
     mysql>
 
+Substitute ``DBHOST``, ``USERNAME``, ``PASSWORD``, and ``DBNAME`` according to
+your database setup.
+
 
 Task Worker
 -----------
 
-The asynchronous task worker uses a Python framework called Celery. You can use the
-`Celery monitoring guide <https://celery.readthedocs.io/en/latest/userguide/monitoring.html>`_
-for more detailed information.
+The asynchronous task worker uses a Python framework called Celery. You can use
+the `Celery monitoring guide
+<https://celery.readthedocs.io/en/latest/userguide/monitoring.html>`_ for more
+detailed information.
 
-A basic test is to call the `inspect stats` commands. Open a shell container
+A basic test is to call the ``inspect stats`` commands. Open a shell container
 and inside it run:
 
 .. code-block:: bash
 
-    /app/bin/celery -A ichnaea.taskapp.app:celery_app inspect stats
+    $ celery -A ichnaea.taskapp.app:celery_app inspect stats
     -> celery@388ec81273ba: OK
     {
         ...
@@ -203,26 +147,29 @@ and inside it run:
         }
     }
 
-The output is pretty long. For us the `total` section is the most
-interesting. If you have your worker and scheduler container running
-for some minutes, this section should fill up with various tasks.
+If you get ``Error: no nodes replied within time constraint.``, then Celery
+isn't running.
 
-If this section continues to be empty, something is wrong with the
-scheduler and it isn't adding tasks to the worker queues.
+If this section continues to be empty, something is wrong with the scheduler
+and it isn't adding tasks to the worker queues.
+
+Otherwise, the output is pretty long. Look at the "total" section. If you have
+your worker and scheduler container running for some minutes, this section
+should fill up with various tasks.
 
 
 Data Pipeline
 -------------
 
-Now that all the building blocks are in place, let's try to send them
-real data to the service and see how it processes it.
+Now that all the building blocks are in place, let's try to send real data
+to the service and see how it processes it.
 
 Assuming containers for all three roles are running, we'll use the HTTP
 geosubmit v2 API endpoint to send some new data to the service:
 
 .. code-block:: bash
 
-    curl -H 'Content-Type: application/json' http://127.0.0.1:8000/v2/geosubmit?key=test -d \
+    $ curl -H 'Content-Type: application/json' http://127.0.0.1:8000/v2/geosubmit?key=test -d \
     '{"items": [{"wifiAccessPoints": [{"macAddress": "94B40F010D01"}, {"macAddress": "94B40F010D00"}, {"macAddress": "94B40F010D03"}], "position": {"latitude": 51.0, "longitude": 10.0}}]}'
 
 We can find this data again in Redis, open a Redis client and do:
@@ -258,7 +205,7 @@ If we check the available Redis keys again, we might see something like:
     5) "statcounter_unique_wifi_20170705"
     6) "_kombu.binding.celery.pidbox"
 
-If we wait a bit longer, the `update_wifi_0` entry should vanish.
+If we wait a bit longer, the ``update_wifi_0`` entry should vanish.
 
 Once that happened, we can check the database directly. On a MySQL
 client prompt do:
@@ -306,17 +253,17 @@ geolocate query we just submitted:
 
 .. code-block:: bash
 
-    lrange "queue_export_internal" 0 10
+    172.17.0.2:6379> lrange "queue_export_internal" 0 10
     1) "{\"api_key\": \"test\", \"report\": {\"wifiAccessPoints\": [{\"macAddress\": \"94b40f010d01\"}, {\"macAddress\": \"94b40f010d00\"}, {\"macAddress\": \"94b40f010d03\"}], \"fallbacks\": {\"ipf\": true, \"lacf\": true}, \"position\": {\"latitude\": 51.0, \"longitude\": 10.0, \"accuracy\": 10.0, \"source\": \"query\"}}}"
 
-Note the ``"source": "query"`` part at the end, which tells the pipeline
-the position data does not represent a GPS verified position, but was
-the result of a query.
+Note the ``"source": "query"`` part at the end, which tells the pipeline the
+position data does not represent a GPS verified position, but was the result of
+a query.
 
-You can use the same `expire` trick as above again, to get the data
-processed faster.
+You can use the same ``expire`` trick as above again, to get the data processed
+faster.
 
-On a MySQL prompt, you can see the result:
+In the mysql client, you can see the result:
 
 .. code-block:: sql
 
@@ -331,5 +278,5 @@ On a MySQL prompt, you can see the result:
     3 rows in set (0.00 sec)
 
 Since all the WiFi networks were already known, their position just got
-confirmed. This gets stored in the `last_seen` column, which tracks when
-the network was last confirmed in a query.
+confirmed. This gets stored in the ``last_seen`` column, which tracks when the
+network was last confirmed in a query.

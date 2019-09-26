@@ -3,7 +3,7 @@
 *.so
 *.sublime-*
 .DS_Store
-docs/build
+docs/_build/
 ichnaea/content/static/tiles/
 my.env
 .docker-build

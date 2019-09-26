@@ -1,27 +1,29 @@
 .. _api_search:
 
-Search (Deprecated)
-===================
+===============================
+Search: /v1/search (DEPRECATED)
+===============================
 
-.. note::
-    Please use the :ref:`api_geolocate_latest` API instead.
+.. deprecated:: 1.2 (2015-07-15)
+   Please use the :ref:`api_geolocate_latest` API instead.
 
-Purpose
-    Determine the current location based on data provided about nearby
-    Bluetooth, cell or WiFi networks and based on the IP address used
-    to access the service.
+**Purpose:** Determine the current location based on data provided about nearby
+Bluetooth, cell, or WiFi networks and the IP address used to access the
+service.
 
+.. contents::
+   :local:
 
 Request
--------
+=======
 
-Search requests are submitted using a POST request to the URL::
+Search requests are submitted using an HTTP POST request to the URL::
 
     https://location.services.mozilla.com/v1/search?key=<API_KEY>
 
-A search record can contain a list of Bluetooth, cell and WiFi records.
+A search record can contain a list of Bluetooth, cell, and WiFi records.
 
-A example of a well formed JSON search request :
+Here is an example of a well-formed JSON search request:
 
 .. code-block:: javascript
 
@@ -69,16 +71,16 @@ A example of a well formed JSON search request :
 
 
 Field Definition
-----------------
+================
 
 Bluetooth Fields
-~~~~~~~~~~~~~~~~
+----------------
 
-For `blue` entries, the `key` field is required.
+For ``blue`` entries, the ``key`` field is required.
 
 key **(required)**
-    The `key` is the mac address of the Bluetooth network. So for example
-    a valid key would look similar to `ff:23:45:67:89:ab`.
+    The ``key`` is the mac address of the Bluetooth network. For example,
+    a valid key would look similar to ``ff:23:45:67:89:ab``.
 
 age
     The number of milliseconds since this BLE beacon was last seen.
@@ -92,10 +94,10 @@ name
 
 
 Cell Fields
-~~~~~~~~~~~
+-----------
 
 radio
-    The type of radio network. One of `gsm`, `umts` or `lte`.
+    The type of radio network. One of ``gsm``, ``umts`` or ``lte``.
 
 mcc
     The mobile country code.
@@ -124,10 +126,10 @@ ta
 
 
 WiFi Fields
-~~~~~~~~~~~
+-----------
 
-For `wifi` entries, the `key` field is required. The client must check the
-Wifi SSID for a `_nomap` suffix. Wifi networks with such a suffix must not be
+For ``wifi`` entries, the ``key`` field is required. The client must check the
+Wifi SSID for a ``_nomap`` suffix. Wifi networks with this suffix must not be
 submitted to the server.
 
 Most devices will only report the WiFi frequency or the WiFi channel,
@@ -135,13 +137,14 @@ but not both. The service will accept both if they are provided,
 but you can include only one or omit both fields.
 
 key **(required)**
-    The client must check the WiFi SSID for a `_nomap`
-    suffix. WiFi networks with such a suffix must not be submitted to the
-    server. WiFi networks with a hidden SSID should not be submitted to the
-    server either.
+    The ``key`` is the BSSID of the WiFi network. So for example
+    a valid key would look similar to ``01:23:45:67:89:ab``.
 
-    The `key` is the BSSID of the WiFi network. So for example
-    a valid key would look similar to `01:23:45:67:89:ab`.
+    The client must check the WiFi SSID for a ``_nomap`` suffix. WiFi networks
+    with this suffix must not be submitted to the server.
+    
+    WiFi networks with a hidden SSID should not be submitted to the server
+    either.
 
 age
     The number of milliseconds since this network was last detected.
@@ -163,9 +166,9 @@ signalToNoiseRatio
 
 ssid
     The SSID of the Wifi network. Wifi networks with a SSID ending in
-    `_nomap` must not be collected.
+    ``_nomap`` must not be collected.
 
-An example of a valid WiFi record is below:
+Here's an example of a valid WiFi record:
 
 .. code-block:: javascript
 
@@ -180,10 +183,10 @@ An example of a valid WiFi record is below:
 
 
 Mapping records into a search request
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------
 
 The mapping can contain zero or more Bluetooth records, zero or more WiFi
-records and zero or more cell records. If any list of records is empty,
+records, and zero or more cell records. If any list of records is empty,
 it can be omitted entirely.
 
 For Bluetooth and WiFi lookups at least two keys of nearby networks need
@@ -192,7 +195,7 @@ from looking up the position of a single network over time.
 
 
 Response
---------
+========
 
 A successful response will be:
 
@@ -221,7 +224,7 @@ Should the response be based on a GeoIP estimate:
         "fallback": "ipf"
     }
 
-Alternatively the fallback field can also state `lacf` for an estimate
+Alternatively the fallback field can also state ``lacf`` for an estimate
 based on a cell location area.
 
 If no position can be determined, you instead get:

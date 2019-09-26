@@ -1,24 +1,29 @@
 .. _api_geosubmit2:
 .. _api_geosubmit_latest:
 
-Geosubmit Version 2
-===================
+==================================
+Geosubmit Version 2: /v2/geosubmit
+==================================
 
-Purpose
-    Submit data about nearby Bluetooth beacons, cell or WiFi networks.
+**Purpose:** Submit data about nearby Bluetooth beacons, cell or WiFi networks.
+
+.. contents::
+   :local:
 
 
 Request
--------
+=======
 
-Geosubmit requests are submitted using a POST request to the URL::
+Geosubmit requests are submitted using an HTTP POST request to the URL::
 
     https://location.services.mozilla.com/v2/geosubmit?key=<API_KEY>
 
-There is an earlier :ref:`api_geosubmit` version one API, with a slightly
-different and less extensive field list.
+There is an earlier :ref:`api_geosubmit` v1 API, with a slightly different and
+less extensive field list.
 
-Geosubmit requests are submitted using a POST request with a JSON body:
+Geosubmit requests are submitted using an HTTP POST request with a JSON body.
+
+Here is an example body:
 
 .. code-block:: javascript
 
@@ -77,27 +82,27 @@ Geosubmit requests are submitted using a POST request with a JSON body:
 
 
 Field Definition
-----------------
+================
 
-Requests always need to contain a batch of :term:`reports`. Each
-:term:`report` must contain at least one entry in the `bluetoothBeacons`
-or `cellTowers` array or two entries in the `wifiAccessPoints` array.
+Requests always need to contain a batch of :term:`reports`. Each :term:`report`
+must contain at least one entry in the ``bluetoothBeacons`` or ``cellTowers``
+array or two entries in the ``wifiAccessPoints`` array.
 
-Almost all of the fields are optional. For Bluetooth and WiFi records only
-the `macAddress` field is required.
+Almost all of the fields are optional. For Bluetooth and WiFi records the
+``macAddress`` field is required.
 
 
 Global Fields
-~~~~~~~~~~~~~
+-------------
 
 timestamp
-    The time of observation of the data, measured in milliseconds since
-    the UNIX epoch. Can be omitted if the observation time is very recent.
-    The age values in each section are relative to this timestamp.
+    The time of observation of the data, measured in milliseconds since the
+    UNIX epoch. Can be omitted if the observation time is very recent. The age
+    values in each section are relative to this timestamp.
 
 
 Position Fields
-~~~~~~~~~~~~~~~
+---------------
 
 The position block contains information about where and when the data was
 observed.
@@ -134,15 +139,15 @@ speed
 
 source
     The source of the position information. If the field is omitted, "gps"
-    is assumed. The term `gps` is used to cover all types of satellite
-    based positioning systems incl. Galileo and Glonass.
-    Other possible values are `manual` for a position entered manually into
-    the system and `fused` for a position obtained from a combination of
-    other sensors or outside service queries.
+    is assumed. The term ``gps`` is used to cover all types of satellite based
+    positioning systems including Galileo and Glonass. Other possible values
+    are ``manual`` for a position entered manually into the system and
+    ``fused`` for a position obtained from a combination of other sensors or
+    outside service queries.
 
 
 Bluetooth Beacon Fields
-~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------
 
 macAddress
     The address of the Bluetooth Low Energy (BLE) beacon.
@@ -158,10 +163,10 @@ signalStrength
 
 
 Cell Tower Fields
-~~~~~~~~~~~~~~~~~
+-----------------
 
 radioType
-    The type of radio network. One of `gsm`, `wcdma` or `lte`.
+    The type of radio network; one of ``gsm``, ``wcdma`` or ``lte``.
 
 mobileCountryCode
     The mobile country code.
@@ -187,7 +192,7 @@ primaryScramblingCode
     The primary scrambling code for WCDMA and physical cell id for LTE.
 
 serving
-    A value of `1` indicates this as the serving cell, a value of `0`
+    A value of ``1`` indicates this as the serving cell, a value of ``0``
     indicates a neighboring cell.
 
 signalStrength
@@ -198,14 +203,16 @@ timingAdvance
 
 
 Wifi Access Point Fields
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 macAddress
-    The BSSID of the Wifi network. Hidden Wifi networks must not be collected.
+    The BSSID of the Wifi network.
+    
+    Hidden Wifi networks must not be collected.
 
 radioType
-    The Wifi radio type, one of `802.11a`, `802.11b`, `802.11g`, `802.11n`,
-    `802.11ac`.
+    The Wifi radio type; one of ``802.11a``, ``802.11b``, ``802.11g``,
+    ``802.11n``, ``802.11ac``.
 
 age
     The number of milliseconds since this Wifi network was detected.
@@ -225,12 +232,13 @@ signalToNoiseRatio
     The current signal to noise ratio measured in dB.
 
 ssid
-    The SSID of the Wifi network. Wifi networks with a SSID ending in
-    `_nomap` must not be collected.
+    The SSID of the Wifi network.
+    
+    Wifi networks with a SSID ending in ``_nomap`` must not be collected.
 
 
 Response
---------
+========
 
 Successful requests return a HTTP 200 response with a body of an empty
 JSON object.

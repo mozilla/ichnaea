@@ -27,10 +27,15 @@ class ReportSource(IntEnum):
     A lower integer value hints at a better quality of the report data.
     """
 
-    fixed = 0  # Outside knowledge about the true position of the station.
-    gnss = 3  # Global navigation satellite system based data.
-    fused = 6  # Observation data positioned based on fused data.
-    query = 9  # Position estimate based on query data.
+    # Outside knowledge about the true position of the station.
+    fixed = 0
+    # Global navigation satellite system based data.
+    gnss = 3
+    # Position data obtained from a combination of other sensors or outside
+    # service queries
+    fused = 6
+    # Position estimate based on query data.
+    query = 9
 
 
 # Symbolic constant used in specs passed to normalization functions.

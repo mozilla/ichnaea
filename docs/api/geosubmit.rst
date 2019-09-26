@@ -1,23 +1,27 @@
 .. _api_geosubmit:
 
-Geosubmit (Deprecated)
-======================
+=====================================
+Geosubmit: /v1/geosubmit (DEPRECATED)
+=====================================
 
-.. note::
-    Please use the :ref:`api_geosubmit_latest` API instead.
+.. deprecated:: 1.2 (2015-07-15)
+   Please use the :ref:`api_geosubmit_latest` API instead.
 
-Purpose
-    Submit data about nearby Bluetooth, cell and WiFi networks.
+**Purpose:** Submit data about nearby Bluetooth, cell and WiFi networks.
 
+.. contents::
+   :local:
 
 Request
--------
+=======
 
-Geosubmit requests are submitted using a POST request to the URL::
+Geosubmit requests are submitted using an HTTP POST request to the URL::
 
     https://location.services.mozilla.com/v1/geosubmit?key=<API_KEY>
 
-Geosubmit requests are submitted using a POST request with a JSON body:
+Geosubmit requests are submitted using an HTTP POST request with a JSON body.
+
+Here is an example body:
 
 .. code-block:: javascript
 
@@ -70,7 +74,7 @@ Geosubmit requests are submitted using a POST request with a JSON body:
 
 
 Field Definition
-----------------
+================
 
 Requests always need to contain a batch of :term:`reports`. Each
 :term:`report` must contain at least one entry in the `cellTowers` array or
@@ -158,7 +162,7 @@ speed
 
 
 Response
---------
+========
 
 Successful requests return a HTTP 200 response with a body of an empty
 JSON object.

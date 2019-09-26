@@ -6,9 +6,9 @@ Deployment
 
 .. Note:: 2019-08-16: This needs to be updated.
 
-We deploy ichnaea in an Amazon AWS environment, and there are some
+We deploy Ichnaea in an Amazon AWS environment, and there are some
 optional dependencies on specific AWS services like Amazon S3. The
-documentation assumes you are also using a AWS environment, but ichnaea
+documentation assumes you are also using a AWS environment, but Ichnaea
 can be run in non-AWS environments as well.
 
 Diagram
@@ -104,7 +104,7 @@ calling the application container with the map argument.
 Docker Config
 =============
 
-The :ref:`the development section <devel>` describes how to set up an
+The :ref:`the development section <localdev>` describes how to set up an
 environment used for working on and developing Ichnaea itself. For a
 production install, you should use pre-packaged docker images, instead
 of installing and setting up the code from Git.
@@ -165,7 +165,7 @@ And update the database schema to the latest version:
         mozilla/location:2.1.0 alembic upgrade head
 
 The last command needs to be run whenever you upgrade to a new version
-of ichnaea. You can inspect available database schema changes via
+of Ichnaea. You can inspect available database schema changes via
 alembic with the `history` and `current` sub-commands.
 
 
@@ -303,7 +303,7 @@ the database file was picked up correctly.
 Upgrade
 =======
 
-In order to upgrade a running installation of ichnaea to a new version,
+In order to upgrade a running installation of Ichnaea to a new version,
 first check and get the docker image for the new version, for example:
 
 .. code-block:: bash

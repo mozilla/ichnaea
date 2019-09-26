@@ -38,13 +38,14 @@ WHITESPACE = re.compile(r"\s", flags=re.UNICODE)
 
 class IncomingQueue(object):
     """
-    The incoming queue contains the data collected in the web application
-    tier. It is the single entrypoint from which all other data pipelines
-    get their data.
+    The incoming queue contains the data collected in the web application. It
+    is the single entrypoint from which all other data pipelines get their
+    data.
 
-    It distributes the data into the configured export queues,
-    checks those queues and if they contain enough or old enough data
-    schedules an async export task to process the data in each queue.
+    It distributes the data into the configured export queues, checks those
+    queues and if they contain enough or old enough data schedules an async
+    export task to process the data in each queue.
+
     """
 
     def __init__(self, task):
