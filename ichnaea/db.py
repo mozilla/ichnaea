@@ -2,11 +2,9 @@
 
 import os
 from contextlib import contextmanager
-from ssl import PROTOCOL_TLSv1
 
 from alembic import command
 from alembic.config import Config as AlembicConfig
-import certifi
 from pymysql.constants.CLIENT import MULTI_STATEMENTS
 from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
@@ -25,13 +23,6 @@ DB_TYPE = {
     "rw": settings("db_readwrite_uri"),
 }
 
-DB_TRANSPORTS = {
-    "default": settings("db_library"),
-    "gevent": "pymysql",
-    "sync": "mysqlconnector",
-    "threaded": "pymysql",
-}
-
 
 def get_alembic_config():
     cfg = AlembicConfig()
@@ -43,7 +34,7 @@ def get_alembic_config():
     return cfg
 
 
-def configure_db(type_=None, uri=None, transport="default", _db=None):
+def configure_db(type_=None, uri=None, _db=None):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -56,7 +47,7 @@ def configure_db(type_=None, uri=None, transport="default", _db=None):
         uri = DB_TYPE[type_]
         if type_ == "ddl":
             pool = False
-    return Database(uri, pool=pool, transport=transport)
+    return Database(uri, pool=pool)
 
 
 # the request db_session and db_tween_factory are inspired by
@@ -120,7 +111,7 @@ class Database(object):
     :param uri: A database connection string.
     """
 
-    def __init__(self, uri, pool=True, transport="default"):
+    def __init__(self, uri, pool=True):
         self.uri = uri
 
         options = {"echo": False, "isolation_level": "REPEATABLE READ"}
@@ -140,29 +131,11 @@ class Database(object):
         options["connect_args"] = {"charset": "utf8"}
         options["execution_options"] = {"autocommit": False}
 
-        if transport != "default":
-            # Possibly adjust DB library
-            new_transport = DB_TRANSPORTS[transport]
-            db_type, rest = uri.split("+")
-            old_transport, rest = rest.split(":", 1)
-            uri = db_type + "+" + new_transport + ":" + rest
-
-        if DB_TRANSPORTS[transport] == "mysqlconnector":
-            options["connect_args"]["use_pure"] = True
-            # TODO: Update the TLS protocol version as we update MySQL
-            # AWS MySQL 5.6 supports TLS v1.0, not v1.1 or v1.2
-            # https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_MySQL.html#MySQL.Concepts.SSLSupport
-            # The MySQL 5.7 Docker image supports TLS v1.0 and v1.1, not v1.2
-            # https://github.com/docker-library/mysql/issues/567
-            options["connect_args"]["ssl_version"] = PROTOCOL_TLSv1
-            # Needed for SSL
-            options["connect_args"]["ssl_ca"] = certifi.where()
-        elif DB_TRANSPORTS[transport] == "pymysql":
-            # PyMySQL 0.8 changed for compatibility with mysqlclient
-            # Use 0.7's binary prefixes, for selecting and inserting binary data
-            options["connect_args"]["binary_prefix"] = True
-            # Use 0.7's multiple statements in one execute block, for initial DB setup
-            options["connect_args"]["client_flag"] = MULTI_STATEMENTS
+        # PyMySQL 0.8 changed for compatibility with mysqlclient
+        # Use 0.7's binary prefixes, for selecting and inserting binary data
+        options["connect_args"]["binary_prefix"] = True
+        # Use 0.7's multiple statements in one execute block, for initial DB setup
+        options["connect_args"]["client_flag"] = MULTI_STATEMENTS
 
         self.engine = create_engine(uri, **options)
 

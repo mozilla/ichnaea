@@ -44,27 +44,24 @@ class AppConfig(RequiredConfigMixin):
 
     # Database related settings
     required_config.add_option(
-        "db_library", default="pymysql", doc='one of "pymysql" or "mysqlconnector"'
-    )
-    required_config.add_option(
         "db_readonly_uri",
         doc=(
             "uri for the readonly database; "
-            "mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME"
+            "``mysql+pymysql://USER:PASSWORD@HOST:PORT/NAME``"
         ),
     )
     required_config.add_option(
         "db_readwrite_uri",
         doc=(
             "uri for the read-write database; "
-            "mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME"
+            "``mysql+pymysql://USER:PASSWORD@HOST:PORT/NAME``"
         ),
     )
     required_config.add_option(
         "db_ddl_uri",
         doc=(
             "uri for the ddl database used for migrations; "
-            "mysql+LIBRARY://USER:PASSWORD@HOST:PORT/NAME"
+            "``mysql+pymysql://USER:PASSWORD@HOST:PORT/NAME``"
         ),
     )
 
@@ -78,7 +75,9 @@ class AppConfig(RequiredConfigMixin):
         "statsd_host", default="", doc="StatsD host; blank to disable StatsD"
     )
 
-    required_config.add_option("redis_uri", doc="uri for Redis; redis://HOST:PORT/DB")
+    required_config.add_option(
+        "redis_uri", doc="uri for Redis; ``redis://HOST:PORT/DB``"
+    )
 
     required_config.add_option(
         "mapbox_token",
@@ -92,7 +91,7 @@ class AppConfig(RequiredConfigMixin):
     required_config.add_option(
         "geoip_path",
         default=os.path.join(HERE, "tests/data/GeoIP2-City-Test.mmdb"),
-        doc="absolute path to mmdb file for geoip lookups",
+        doc="absolute path to mmdb file for GeoIP lookups",
     )
 
     def __init__(self, config):
