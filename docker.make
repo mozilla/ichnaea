@@ -56,7 +56,6 @@ build_geocalc:
 
 build_check:
 	@which encode enumerate merge render pngquant
-	$(PYTHON) -c "import sys; from mysql.connector import HAVE_CEXT; sys.exit(not HAVE_CEXT)"
 	$(PYTHON) -c "import sys; from shapely import speedups; sys.exit(not speedups.available)"
 	$(PYTHON) -c "import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"

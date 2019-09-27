@@ -11,7 +11,7 @@ def _dump_nothing(datatype, session, filename, lat=None, lon=None, radius=None):
 
 
 class TestDump(object):
-    def test_main(self, sync_db):
+    def test_main(self, db):
         assert (
             dump.main(
                 [
@@ -22,7 +22,7 @@ class TestDump(object):
                     "--lon=0.1",
                     "--radius=25000",
                 ],
-                _db=sync_db,
+                _db=db,
                 _dump_file=_dump_nothing,
             )
             == 0
