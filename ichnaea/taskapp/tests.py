@@ -34,6 +34,7 @@ class TestBeat(object):
                 "data.cell_export_diff",
                 "data.cell_export_full",
                 "data.export_reports",
+                "data.load_cellarea",
             ]
         )
 

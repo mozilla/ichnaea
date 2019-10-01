@@ -200,3 +200,11 @@ def cleanup_stat(self):
 )
 def update_statcounter(self):
     stats.StatCounterUpdater(self)()
+
+
+@celery_app.task(base=BaseTask, bind=True, queue="celery_content")
+def load_cellarea(self):
+    """Load cell areas from a recent public cell import."""
+
+    update_cellarea()
+    update_statregion.delay()
