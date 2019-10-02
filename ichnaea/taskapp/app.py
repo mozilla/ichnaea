@@ -3,14 +3,29 @@ Holds global celery application state and startup / shutdown handlers.
 """
 from celery import Celery
 from celery.app import app_or_default
-from celery.signals import beat_init, worker_process_init, worker_process_shutdown
+from celery.signals import (
+    beat_init,
+    worker_process_init,
+    worker_process_shutdown,
+    setup_logging,
+)
 
+from ichnaea.log import configure_logging
 from ichnaea.taskapp.config import (
     configure_celery,
     init_beat,
     init_worker,
     shutdown_worker,
 )
+
+
+@setup_logging.connect
+def setup_logging_process(loglevel, logfile, format, colorize, **kwargs):
+    """Called at scheduler and worker setup.
+
+    Configures logging using the same configuration as the webapp.
+    """
+    configure_logging()
 
 
 @beat_init.connect

@@ -2,15 +2,15 @@
 Contains :ref:`celery settings <celery:configuration>`.
 """
 
-from ichnaea.conf import settings
+from ichnaea.conf import settings as app_settings
 from ichnaea.taskapp.config import TASK_QUEUES
 
-if settings("testing"):
+if app_settings("testing"):
     task_always_eager = True
     task_eager_propagates = True
 
-broker_url = settings("redis_uri")
-result_backend = settings("redis_uri")
+broker_url = app_settings("redis_uri")
+result_backend = app_settings("redis_uri")
 
 # Based on `Celery / Redis caveats
 # <celery.rtfd.org/en/latest/getting-started/brokers/redis.html#caveats>`_.
@@ -40,3 +40,6 @@ task_ignore_result = True
 worker_prefetch_multiplier = 8
 worker_disable_rate_limits = True
 task_compression = "gzip"
+
+# Worker concurrency
+worker_concurrency = app_settings("celery_worker_concurrency")
