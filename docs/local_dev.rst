@@ -135,7 +135,7 @@ in the ``my.env`` file will override values in the ENV files or defaults.
 
 The following ENV files can be found in ``/app/docker/config/``:
 
-``app.env``
+``local_dev.env``
    This holds *secrets* and *environment-specific configuration* required
    to get services to work in a Docker-based local development environment.
 

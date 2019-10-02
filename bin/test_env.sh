@@ -38,7 +38,7 @@ if [ "$1" == "--shell" ]; then
         --network ichnaea_default \
         --link ichnaea_mysql_1 \
         --link ichnaea_redis_1 \
-        --env-file ./docker/config/app.env \
+        --env-file ./docker/config/local_dev.env \
         --env-file ./docker/config/test.env \
         --tty \
         --interactive \
@@ -89,7 +89,7 @@ docker run \
     --network ichnaea_default \
     --link ichnaea_mysql_1 \
     --link ichnaea_redis_1 \
-    --env-file ./docker/config/app.env \
+    --env-file ./docker/config/local_dev.env \
     --env-file ./docker/config/test.env \
     --tty \
     --interactive \

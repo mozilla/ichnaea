@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     image: local/ichnaea_app
     env_file:
-      - docker/config/app.env
+      - docker/config/local_dev.env
       - my.env
     volumes:
       - .:/app
@@ -14,7 +14,7 @@ services:
   web:
     image: local/ichnaea_app
     env_file:
-      - docker/config/app.env
+      - docker/config/local_dev.env
       - my.env
     depends_on:
       - mysql
@@ -28,7 +28,7 @@ services:
   scheduler:
     image: local/ichnaea_app
     env_file:
-      - docker/config/app.env
+      - docker/config/local_dev.env
       - my.env
     depends_on:
       - redis
@@ -39,7 +39,7 @@ services:
   worker:
     image: local/ichnaea_app
     env_file:
-      - docker/config/app.env
+      - docker/config/local_dev.env
       - my.env
     depends_on:
       - redis
