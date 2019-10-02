@@ -177,19 +177,17 @@ def ping_session(db_session):
 def create_db(uri=None):
     """Create a database specified by uri and setup tables.
 
-    :arg str uri: either None or a valid uri; if None, uses SQLALCHEMY_URL
+    :arg str uri: either None or a valid uri; if None, uses ``SQLALCHEMY_URL``
         environment variable
 
     :raises sqlalchemy.exc.ProgrammingError: if database already exists
+    :raises SqlAlchemyUrlNotSpecified: if ``SQLALCHEMY_URL`` has no value
 
     Note: This is mysql-specific.
 
     """
     if uri is None:
-        uri = os.environ.get("SQLALCHEMY_URL", "")
-
-    if not uri:
-        raise Exception("No uri specified.")
+        uri = get_sqlalchemy_url()
 
     sa_url = make_url(uri)
     db_to_create = sa_url.database
@@ -207,19 +205,17 @@ def drop_db(uri=None):
     Note that the username/password in the specified uri must have permission
     to create/drop databases.
 
-    :arg str uri: either None or a valid uri; if None, uses SQLALCHEMY_URL
+    :arg str uri: either None or a valid uri; if None, uses ``SQLALCHEMY_URL``
         environment variable
 
     :raises sqlalchemy.exc.InternalError: if database does not exist
+    :raises SqlAlchemyUrlNotSpecified: if ``SQLALCHEMY_URL`` has no value
 
     Note: This is mysql-specific.
 
     """
     if uri is None:
-        uri = os.environ.get("SQLALCHEMY_URL", "")
-
-    if not uri:
-        raise Exception("No uri specified.")
+        uri = get_sqlalchemy_url()
 
     sa_url = make_url(uri)
     db_to_drop = sa_url.database

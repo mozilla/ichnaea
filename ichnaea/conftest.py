@@ -16,7 +16,7 @@ from ichnaea.api.locate.searcher import (
     configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.db import configure_db, create_db
+from ichnaea.db import configure_db, create_db, get_sqlalchemy_url
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import CITY_RADII, configure_geoip
 from ichnaea.http import configure_http_session
@@ -135,7 +135,7 @@ def setup_database():
         pass
 
     # Clean up the tables and set them up
-    db = configure_db("rw")
+    db = configure_db(uri=get_sqlalchemy_url())
     cleanup_tables(db.engine)
     setup_tables(db.engine)
     db.close()
@@ -152,7 +152,7 @@ def database():
 
 @pytest.fixture(scope="session")
 def db(database):
-    db = configure_db("rw")
+    db = configure_db(uri=get_sqlalchemy_url())
     yield db
     db.close()
 
