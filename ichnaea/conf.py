@@ -73,6 +73,12 @@ class AppConfig(RequiredConfigMixin):
     )
 
     required_config.add_option(
+        "celery_worker_concurrency",
+        parser=int,
+        doc="the number of concurrent Celery worker processes executing tasks",
+    )
+
+    required_config.add_option(
         "mapbox_token",
         default="",
         doc=(

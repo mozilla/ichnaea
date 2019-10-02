@@ -1,5 +1,5 @@
 """
-Contains celery specific one time configuration code.
+Contains celery specific one-time configuration code.
 """
 
 from kombu import Queue

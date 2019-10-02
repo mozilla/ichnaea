@@ -22,9 +22,11 @@ def configure_logging():
 
     if local_dev_env:
         level = "DEBUG"
+        celery_level = "INFO"
         handlers = ["console"]
     else:
         level = "INFO"
+        celery_level = "WARNING"
         handlers = ["mozlog"]
 
     logging_config = {
@@ -51,6 +53,7 @@ def configure_logging():
         },
         "loggers": {
             "alembic": {"propagate": False, "handlers": handlers, "level": level},
+            "celery": {"propagate": False, "handlers": handlers, "level": celery_level},
             "ichnaea": {"propagate": False, "handlers": handlers, "level": level},
         },
         "root": {"handlers": handlers, "level": "WARNING"},
