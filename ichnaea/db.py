@@ -3,8 +3,7 @@
 import os
 from contextlib import contextmanager
 
-from alembic import command
-from alembic.config import Config as AlembicConfig
+from alembic.config import main as alembic_main
 from pymysql.constants.CLIENT import MULTI_STATEMENTS
 from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
@@ -17,36 +16,47 @@ from sqlalchemy.sql import func, select
 from ichnaea.conf import settings
 
 
-DB_TYPE = {
-    "ddl": settings("db_ddl_uri"),
-    "ro": settings("db_readonly_uri"),
-    "rw": settings("db_readwrite_uri"),
-}
+DB_TYPE = {"ro": settings("db_readonly_uri"), "rw": settings("db_readwrite_uri")}
 
 
-def get_alembic_config():
-    cfg = AlembicConfig()
+class SqlAlchemyUrlNotSpecified(Exception):
+    """Raised when SQLALCHEMY_URL is not specified in environment."""
 
-    script_location = os.path.join(os.path.dirname(__file__), "alembic")
-    assert os.path.exists(script_location)
-    cfg.set_section_option("alembic", "script_location", script_location)
-    cfg.set_section_option("alembic", "sqlalchemy.url", settings("db_ddl_uri"))
-    return cfg
+    def __init__(self, *args, **kwargs):
+        super().__init__("SQLALCHEMY_URL is not specified in the environment")
 
 
-def configure_db(type_=None, uri=None, _db=None):
+def get_sqlalchemy_url():
+    """Returns the ``SQLALCHEMY_URL`` environment value.
+
+    :returns: the sqlalchemy url to be used for alembic migrations
+
+    :raises SqlAlchemyUrlNotSpecified: if ``SQLALCHEMY_URL`` was not specified
+        or is an empty string
+
+    """
+
+    url = os.environ.get("SQLALCHEMY_URL", "")
+    if not url:
+        raise SqlAlchemyUrlNotSpecified()
+    return url
+
+
+def configure_db(type_=None, uri=None, _db=None, pool=True):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
+    :param type_: one of "ro" or "rw"
+    :param uri: the uri to connect to; if not provided, uses ``type_``
+        parameter
     :param _db: Test-only hook to provide a pre-configured db.
+    :param pool: True for connection pool, False for no connection pool
+
     """
     if _db is not None:
         return _db
-    pool = True
     if uri is None:
         uri = DB_TYPE[type_]
-        if type_ == "ddl":
-            pool = False
     return Database(uri, pool=pool)
 
 
@@ -165,20 +175,19 @@ def ping_session(db_session):
 
 
 def create_db(uri=None):
-    """Create a database specified by uri.
+    """Create a database specified by uri and setup tables.
 
-    :arg str uri: either None or a valid uri
+    :arg str uri: either None or a valid uri; if None, uses ``SQLALCHEMY_URL``
+        environment variable
 
     :raises sqlalchemy.exc.ProgrammingError: if database already exists
+    :raises SqlAlchemyUrlNotSpecified: if ``SQLALCHEMY_URL`` has no value
 
     Note: This is mysql-specific.
 
     """
     if uri is None:
-        uri = DB_TYPE["ddl"]
-
-    if not uri:
-        raise Exception("No uri specified.")
+        uri = get_sqlalchemy_url()
 
     sa_url = make_url(uri)
     db_to_create = sa_url.database
@@ -186,19 +195,8 @@ def create_db(uri=None):
     engine = create_engine(sa_url)
     engine.execute("CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create))
 
-    alembic_cfg = get_alembic_config()
-
-    db = configure_db("ddl", uri=uri)
-    engine = db.engine
-    with engine.connect() as conn:
-        # Then add tables
-        with conn.begin() as trans:
-            # Now stamp the latest alembic version
-            command.stamp(alembic_cfg, "base")
-            command.upgrade(alembic_cfg, "head")
-            trans.commit()
-
-    db.close()
+    alembic_main(["stamp", "base"])
+    alembic_main(["upgrade", "head"])
 
 
 def drop_db(uri=None):
@@ -207,18 +205,17 @@ def drop_db(uri=None):
     Note that the username/password in the specified uri must have permission
     to create/drop databases.
 
-    :arg str uri: either None or a valid uri
+    :arg str uri: either None or a valid uri; if None, uses ``SQLALCHEMY_URL``
+        environment variable
 
     :raises sqlalchemy.exc.InternalError: if database does not exist
+    :raises SqlAlchemyUrlNotSpecified: if ``SQLALCHEMY_URL`` has no value
 
     Note: This is mysql-specific.
 
     """
     if uri is None:
-        uri = DB_TYPE["ddl"]
-
-    if not uri:
-        raise Exception("No uri specified.")
+        uri = get_sqlalchemy_url()
 
     sa_url = make_url(uri)
     db_to_drop = sa_url.database

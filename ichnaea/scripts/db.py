@@ -10,15 +10,15 @@ import sys
 
 from sqlalchemy.exc import InternalError, ProgrammingError
 
-from ichnaea.db import drop_db, create_db
-from ichnaea.conf import settings
+from ichnaea.db import drop_db, create_db, get_sqlalchemy_url
 
 
 def create_database():
     """Create a database."""
-    print("Creating database %s...." % settings("db_ddl_uri"))
+    db_url = get_sqlalchemy_url()
+    print("Creating database %s...." % db_url)
     try:
-        create_db(uri=settings("db_ddl_uri"))
+        create_db(uri=db_url)
     except ProgrammingError:
         print("Database already exists.")
         return 1
@@ -27,9 +27,10 @@ def create_database():
 
 def drop_database():
     """Drop an existing database."""
-    print("Dropping database %s...." % settings("db_ddl_uri"))
+    db_url = get_sqlalchemy_url()
+    print("Dropping database %s...." % db_url)
     try:
-        drop_db(uri=settings("db_ddl_uri"))
+        drop_db(uri=db_url)
     except InternalError:
         print("Database does not exist.")
         return 1

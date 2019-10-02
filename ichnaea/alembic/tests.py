@@ -1,5 +1,9 @@
+import os
+import pathlib
+
 from alembic import command as alembic_command
 from alembic.autogenerate import compare_metadata
+from alembic.config import Config as AlembicConfig
 from alembic.ddl.impl import _type_comparators
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
@@ -7,7 +11,6 @@ from sqlalchemy.schema import MetaData
 from sqlalchemy.sql import sqltypes
 
 from ichnaea.conftest import cleanup_tables
-from ichnaea.db import get_alembic_config
 
 # make sure all models are imported
 from ichnaea.models import _Model  # noqa
@@ -62,6 +65,14 @@ def current_db_revision(db):
         result = conn.execute("select version_num from alembic_version")
         alembic_rev = result.first()
     return None if alembic_rev is None else alembic_rev[0]
+
+
+def get_alembic_config():
+    """Returns an alembic Config with the right ini file."""
+    # alembic.ini is in the repository root.
+    alembic_ini = str(pathlib.Path(__file__).parent.parent.parent / "alembic.ini")
+    assert os.path.exists(alembic_ini)
+    return AlembicConfig(alembic_ini)
 
 
 class TestMigration(object):
