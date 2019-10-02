@@ -59,7 +59,7 @@ LIMIT :limit
         )
     )
 
-    db = configure_db("ro", _db=_db)
+    db = configure_db("ro", _db=_db, pool=False)
     min_grid = b""
     limit = 200000
 

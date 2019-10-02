@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import gc
 import warnings
 
-from alembic import command
+from alembic.config import main as alembic_main
 from maxminddb.const import MODE_AUTO
 import pytest
 from sqlalchemy import event, inspect, text
@@ -16,7 +16,7 @@ from ichnaea.api.locate.searcher import (
     configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.db import configure_db, create_db, get_alembic_config
+from ichnaea.db import configure_db, create_db
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import CITY_RADII, configure_geoip
 from ichnaea.http import configure_http_session
@@ -90,27 +90,28 @@ def package():
             print(obj)
 
 
-def _setup_table_contents(conn):
+def _setup_table_data(engine):
     # Avoid import cycle
     from ichnaea.tests.factories import ApiKeyFactory
 
-    conn.execute(text("DELETE FROM api_key"))
-    conn.execute(text("DELETE FROM export_config"))
-    key = ApiKeyFactory.build(valid_key="test")
-    state = dict(key.__dict__)
-    del state["_sa_instance_state"]
-    conn.execute(key.__table__.insert().values(state))
+    with engine.connect() as conn:
+        with conn.begin() as trans:
+            conn.execute(text("DELETE FROM api_key"))
+            conn.execute(text("DELETE FROM export_config"))
+            key = ApiKeyFactory.build(valid_key="test")
+            state = dict(key.__dict__)
+            del state["_sa_instance_state"]
+            conn.execute(key.__table__.insert().values(state))
+            trans.commit()
 
 
 def setup_tables(engine):
-    alembic_cfg = get_alembic_config()
-    with engine.connect() as conn:
-        with conn.begin() as trans:
-            # Now stamp the latest alembic version
-            command.stamp(alembic_cfg, "base")
-            command.upgrade(alembic_cfg, "head")
-            _setup_table_contents(conn)
-            trans.commit()
+    # Stamp the latest alembic version
+    alembic_main(["stamp", "base"])
+    alembic_main(["upgrade", "head"])
+
+    # Setup table data
+    _setup_table_data(engine)
 
 
 def cleanup_tables(engine):
@@ -134,7 +135,7 @@ def setup_database():
         pass
 
     # Clean up the tables and set them up
-    db = configure_db("ddl")
+    db = configure_db("rw")
     cleanup_tables(db.engine)
     setup_tables(db.engine)
     db.close()
@@ -159,18 +160,18 @@ def db(database):
 @pytest.fixture(scope="function")
 def clean_db(db):
     yield db
-    # drop and recreate all tables
+    # Drop and recreate all tables
     setup_database()
 
 
 @pytest.fixture(scope="function")
 def restore_db(db):
     yield db
-    # add back missing tables
+    # Add back missing tables
     with db.engine.connect() as conn:
         with conn.begin() as trans:
             _Model.metadata.create_all(db.engine)
-            _setup_table_contents(conn)
+            _setup_table_data(db.engine)
             trans.commit()
 
 

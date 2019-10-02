@@ -57,13 +57,6 @@ class AppConfig(RequiredConfigMixin):
             "``mysql+pymysql://USER:PASSWORD@HOST:PORT/NAME``"
         ),
     )
-    required_config.add_option(
-        "db_ddl_uri",
-        doc=(
-            "uri for the ddl database used for migrations; "
-            "``mysql+pymysql://USER:PASSWORD@HOST:PORT/NAME``"
-        ),
-    )
 
     required_config.add_option(
         "sentry_dsn",
