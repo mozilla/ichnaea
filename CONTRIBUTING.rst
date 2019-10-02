@@ -2,14 +2,16 @@
 How to contribute
 =================
 
-We gladly accept outside contributions. We use our
-`Github issue tracker <https://github.com/mozilla/ichnaea/issues>`_
+We gladly accept outside contributions.
+
+We use our `Github issue tracker <https://github.com/mozilla/ichnaea/issues>`_
 for both discussions and talking about new features or bugs. You can
-also fork the project and send us a pull request. If you have a more
-general topic to discuss, the `dev-geolocation@lists.mozilla.org
+also fork the project and send us a pull request.
+
+If you have a more general topic to discuss, the
+`dev-geolocation@lists.mozilla.org
 <https://lists.mozilla.org/listinfo/dev-geolocation>`_
-mailing list is a good place to do so. You can sometimes find us on
-IRC in the `#geo channel on irc.mozilla.org <https://wiki.mozilla.org/IRC>`_.
+mailing list is a good place to do so.
 
 
 Development
