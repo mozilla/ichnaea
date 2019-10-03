@@ -101,9 +101,10 @@ def configure_stats(_client=None):
         return _client
 
     statsd_host = settings("statsd_host")
+    statsd_port = settings("statsd_port")
     klass = DebugStatsClient if not statsd_host else StatsClient
     namespace = None if settings("testing") else "location"
-    client = klass(host=statsd_host, port=8125, namespace=namespace, use_ms=True)
+    client = klass(host=statsd_host, port=statsd_port, namespace=namespace, use_ms=True)
     return client
 
 
