@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-import pytest
-
 from ichnaea.cache import redis_pipeline
 from ichnaea.data.tasks import cleanup_stat, update_statcounter, update_statregion
 from ichnaea.models import Radio, RegionStat, Stat, StatCounter, StatKey
@@ -196,7 +194,6 @@ class TestStatRegion(object):
         assert stat.blue == 0
         assert stat.wifi == 5
 
-    @pytest.mark.xfail(strict=True, reason="raises StaleDataError")
     def test_update_no_changes(self, celery, session):
         """update_statregion does nothing if counts are accurate."""
         CellAreaFactory(radio=Radio.gsm, region="CA", num_cells=2)
