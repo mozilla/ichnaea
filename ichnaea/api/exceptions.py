@@ -143,20 +143,6 @@ class LocationNotFound(BaseAPIClientError):
     message = "Not found"
 
 
-class LocationNotFoundV0(LocationNotFound):
-    """
-    A variant of :exc:`~ichnaea.api.exceptions.LocationNotFound` used
-    in earlier version 0 HTTP APIs.
-    """
-
-    code = 200
-
-    @classmethod
-    def json_body(cls):
-        """A JSON representation of this response."""
-        return {"status": "not_found"}
-
-
 class ParseError(BaseAPIClientError):
     """
     Response given when the request couldn't be parsed.

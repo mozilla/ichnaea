@@ -142,11 +142,6 @@ class TestExceptions(object):
         response = self._check(error, 404)
         assert b"notFound" in response.body
 
-    def test_location_not_found_v0(self):
-        error = api_exceptions.LocationNotFoundV0
-        response = self._check(error, 200)
-        assert response.json == {"status": "not_found"}
-
     def test_parse_error(self):
         error = api_exceptions.ParseError
         response = self._check(error, 400)

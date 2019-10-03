@@ -146,14 +146,6 @@ of hours later if there's still a problem.
 APIs
 ====
 
-Historically the service first offered the custom :ref:`api_search` and
-:ref:`api_submit` APIs. Later it was decided to also implement the
-:ref:`api_geolocate` API to lessen the burden on clients that want to
-support multiple location services. As an extension to this the
-:ref:`api_geosubmit` API was added to offer a consistent way to contribute
-back data to the service. Afterwards the :ref:`api_region` API was added
-and :ref:`api_geosubmit2` superseded its version 1 counterpart.
-
 .. toctree::
    :maxdepth: 1
 
@@ -161,5 +153,15 @@ and :ref:`api_geosubmit2` superseded its version 1 counterpart.
    region
    geosubmit2
    geosubmit
-   search
    submit
+
+
+History
+=======
+
+The service first offered the custom ``/v1/search/`` :ref:`api_submit` APIs.
+Later it was decided to also implement the :ref:`api_geolocate` API to lessen
+the burden on clients that want to support multiple location services. As an
+extension to this the :ref:`api_geosubmit` API was added to offer a consistent
+way to contribute back data to the service. Afterwards the :ref:`api_region`
+API was added and :ref:`api_geosubmit2` superseded its version 1 counterpart.

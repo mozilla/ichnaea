@@ -2,8 +2,7 @@
 Implementation of locate specific HTTP service views.
 """
 
-from ichnaea.api.exceptions import LocationNotFound, LocationNotFoundV0
-from ichnaea.api.locate.schema_v0 import LOCATE_V0_SCHEMA
+from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.query import Query
 from ichnaea.api.views import BaseAPIView
@@ -55,28 +54,6 @@ class BasePositionView(BaseLocateView):
     renderer = "json"
     searcher = "position_searcher"
     view_type = "locate"
-
-
-class LocateV0View(BasePositionView):
-    """View class for v1/search HTTP API."""
-
-    metric_path = "v1.search"
-    not_found = LocationNotFoundV0
-    route = "/v1/search"
-    schema = LOCATE_V0_SCHEMA
-
-    def prepare_response(self, result):
-        response = {
-            "status": "ok",
-            "lat": result["lat"],
-            "lon": result["lon"],
-            "accuracy": result["accuracy"],
-        }
-
-        if result["fallback"]:
-            response["fallback"] = result["fallback"]
-
-        return response
 
 
 class LocateV1View(BasePositionView):
