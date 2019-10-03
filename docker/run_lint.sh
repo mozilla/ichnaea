@@ -12,7 +12,7 @@
 
 set -e
 
-BLACKARGS=("--line-length=88" "--target-version=py36" bin docker ichnaea)
+BLACKARGS=("--line-length=88" "--target-version=py37" bin docker ichnaea)
 
 if [[ $1 == "--fix" ]]; then
     echo ">>> black fix"
