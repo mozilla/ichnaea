@@ -1,5 +1,7 @@
 from datetime import timedelta
 
+import pytest
+
 from ichnaea.cache import redis_pipeline
 from ichnaea.data.tasks import cleanup_stat, update_statcounter, update_statregion
 from ichnaea.models import Radio, RegionStat, Stat, StatCounter, StatKey
@@ -131,13 +133,25 @@ class TestStatCleaner(object):
 
 class TestStatRegion(object):
     def test_empty(self, celery, session):
+        """update_statregion exits early with no data."""
         update_statregion.delay().get()
         stats = session.query(RegionStat).all()
         assert stats == []
 
-    def test_update(self, celery, session):
+    def test_null_region_no_stat(self, celery, session):
+        """update_statregion ignores stations with no region."""
         area = CellAreaFactory(radio=Radio.gsm, num_cells=1)
         area.region = None
+        wifi = WifiShardFactory()
+        wifi.region = None
+        session.flush()
+
+        update_statregion.delay().get()
+        stats = session.query(RegionStat).all()
+        assert stats == []
+
+    def test_insert(self, celery, session):
+        """update_statregion creates RegionStats for new regions."""
         BlueShardFactory.create_batch(2, region="CA")
         BlueShardFactory.create_batch(3, region="GB")
         CellAreaFactory(radio=Radio.gsm, region="DE", num_cells=1)
@@ -147,23 +161,70 @@ class TestStatRegion(object):
         CellAreaFactory(radio=Radio.lte, region="CA", num_cells=4)
         WifiShardFactory.create_batch(5, region="DE")
         WifiShardFactory.create_batch(6, region="US")
-        wifi = WifiShardFactory()
-        wifi.region = None
-        session.add(RegionStat(region="US", blue=1, wifi=2))
-        session.add(RegionStat(region="TW", wifi=1))
+        session.flush()
+
+        update_statregion.delay().get()
+        stats = session.query(RegionStat).order_by("region").all()
+        assert len(stats) == 4
+        actual = [
+            (stat.region, stat.gsm, stat.wcdma, stat.lte, stat.blue, stat.wifi)
+            for stat in stats
+        ]
+        expected = [
+            ("CA", 2, 0, 4, 2, 0),
+            ("DE", 3, 3, 0, 0, 5),
+            ("GB", 0, 0, 0, 3, 0),
+            ("US", 0, 0, 0, 0, 6),
+        ]
+        assert actual == expected
+
+    def test_update(self, celery, session):
+        """update_statregion updates RegionStats with new counts."""
+        CellAreaFactory(radio=Radio.gsm, region="DE", num_cells=3)
+        CellAreaFactory(radio=Radio.wcdma, region="DE", num_cells=3)
+        WifiShardFactory.create_batch(5, region="DE")
+        # DE RegionStat has too many blues, not enough of other radios
+        session.add(RegionStat(region="DE", gsm=0, wcdma=0, lte=0, blue=666, wifi=0))
+        session.flush()
+
+        update_statregion.delay().get()
+        stat = session.query(RegionStat).order_by("region").one()
+        assert stat.region == "DE"
+        assert stat.gsm == 3
+        assert stat.wcdma == 3
+        assert stat.lte == 0
+        assert stat.blue == 0
+        assert stat.wifi == 5
+
+    @pytest.mark.xfail(strict=True, reason="raises StaleDataError")
+    def test_update_no_changes(self, celery, session):
+        """update_statregion does nothing if counts are accurate."""
+        CellAreaFactory(radio=Radio.gsm, region="CA", num_cells=2)
+        CellAreaFactory(radio=Radio.lte, region="CA", num_cells=4)
+        BlueShardFactory.create_batch(2, region="CA")
+        # CA RegionStat has accurate radio counts
+        session.add(RegionStat(region="CA", gsm=2, wcdma=0, lte=4, blue=2, wifi=0))
+        session.flush()
+
+        update_statregion.delay().get()
+        stat = session.query(RegionStat).order_by("region").one()
+        assert stat.region == "CA"
+        assert stat.gsm == 2
+        assert stat.wcdma == 0
+        assert stat.lte == 4
+        assert stat.blue == 2
+        assert stat.wifi == 0
+
+    def test_delete(self, celery, session):
+        """update_statregion deletes RegionStats when no radios remain."""
+        # No radios in XX, but leftover RegionStat
+        session.add(RegionStat(region="XX", gsm=2, lte=4, blue=2))
+
+        # Some radios needed in other region, or update_statregion will exit early
+        BlueShardFactory.create_batch(1, region="GB")
         session.flush()
 
         update_statregion.delay().get()
         stats = session.query(RegionStat).all()
-        assert len(stats) == 4
-
-        for stat in stats:
-            values = (stat.gsm, stat.wcdma, stat.lte, stat.blue, stat.wifi)
-            if stat.region == "DE":
-                assert values == (3, 3, 0, 0, 5)
-            elif stat.region == "CA":
-                assert values == (2, 0, 4, 2, 0)
-            elif stat.region == "GB":
-                assert values == (0, 0, 0, 3, 0)
-            elif stat.region == "US":
-                assert values == (0, 0, 0, 0, 6)
+        assert len(stats) == 1
+        assert stats[0].region == "GB"
