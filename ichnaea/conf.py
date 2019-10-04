@@ -67,6 +67,9 @@ class AppConfig(RequiredConfigMixin):
     required_config.add_option(
         "statsd_host", default="", doc="StatsD host; blank to disable StatsD"
     )
+    required_config.add_option(
+        "statsd_port", default="8125", parser=int, doc="StatsD port"
+    )
 
     required_config.add_option(
         "redis_uri", doc="uri for Redis; ``redis://HOST:PORT/DB``"
