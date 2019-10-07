@@ -81,7 +81,7 @@ shell: my.env .docker-build
 .PHONY: mysql
 mysql: my.env .docker-build
 	${DC} up -d mysql
-	${DC} exec mysql mysql --user root --password=location
+	${DC} exec mysql mysql --user root --password=location location
 
 .PHONY: test
 test: my.env .docker-build
