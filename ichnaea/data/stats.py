@@ -130,32 +130,24 @@ class StatRegion(object):
         if not stats:
             return
 
-        rows = session.execute(select([RegionStat.__table__.c.region])).fetchall()
-        region_stats = set([row.region for row in rows])
+        region_stats = dict(session.query(RegionStat.region, RegionStat).all())
 
-        inserts = []
-        updates = []
         for region, values in stats.items():
-            data = {
-                "region": region,
-                "gsm": values["gsm"],
-                "wcdma": values["wcdma"],
-                "lte": values["lte"],
-                "blue": values["blue"],
-                "wifi": values["wifi"],
-            }
-            if region in region_stats:
-                updates.append(data)
-            else:
-                inserts.append(data)
+            row = region_stats.pop(region, None)
+            is_new = row is None
+            if is_new:
+                row = RegionStat(region=region)
+            row.gsm = values["gsm"]
+            row.wcdma = values["wcdma"]
+            row.lte = values["lte"]
+            row.blue = values["blue"]
+            row.wifi = values["wifi"]
+            if is_new:
+                session.add(row)
+        session.commit()
 
-        if inserts:
-            session.bulk_insert_mappings(RegionStat, inserts)
-
-        if updates:
-            session.bulk_update_mappings(RegionStat, updates)
-
-        obsolete_regions = list(region_stats - set(stats.keys()))
+        # Delete any regions no longer represented by areas
+        obsolete_regions = list(region_stats.keys())
         if obsolete_regions:
             session.execute(
                 RegionStat.__table__.delete().where(

@@ -39,6 +39,7 @@ default:
 	@echo "  lint             - lint code"
 	@echo "  lintfix          - reformat code"
 	@echo "  test             - run unit tests"
+	@echo "  testcoverage     - run unit tests with coverage report"
 	@echo "  testshell        - open a shell in the test environment"
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
 	@echo "  buildjs          - generate js static assets"
@@ -86,6 +87,10 @@ mysql: my.env .docker-build
 .PHONY: test
 test: my.env .docker-build
 	./bin/test_env.sh
+
+.PHONY: testcoverage
+testcoverage: my.env .docker-build
+	./bin/test_env.sh --cov=ichnaea --cov-branch
 
 .PHONY: testshell
 testshell: my.env .docker-build

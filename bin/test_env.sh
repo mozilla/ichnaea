@@ -94,6 +94,6 @@ docker run \
     --tty \
     --interactive \
     --entrypoint= \
-    "${TESTIMAGE}" /app/docker/run_tests.sh
+    "${TESTIMAGE}" /app/docker/run_tests.sh "$@"
 
 echo "Done!"
