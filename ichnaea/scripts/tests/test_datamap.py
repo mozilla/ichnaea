@@ -81,7 +81,7 @@ class TestMap(object):
         assert set([round(float(l[0]), 2) for l in lines]) == set([-10.0, 0.0, 12.35])
         assert set([round(float(l[1]), 2) for l in lines]) == set([-11.0, 12.35])
 
-    def test_main(self, raven, stats):
+    def test_main(self, raven):
         with util.selfdestruct_tempdir() as temp_dir:
             mock_generate = MagicMock()
             with patch.object(datamap, "generate", mock_generate):
@@ -92,9 +92,7 @@ class TestMap(object):
                     "--concurrency=1",
                     "--output=%s" % temp_dir,
                 ]
-                main(
-                    argv, _raven_client=raven, _stats_client=stats, _bucketname="bucket"
-                )
+                main(argv, _raven_client=raven, _bucketname="bucket")
 
                 assert len(mock_generate.mock_calls) == 1
                 args, kw = mock_generate.call_args

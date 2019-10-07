@@ -7,6 +7,7 @@ import json
 import time
 
 import colander
+import markus
 import numpy
 from requests.exceptions import RequestException
 from redis import RedisError
@@ -33,6 +34,9 @@ GOOGLEMAPS_V1_SCHEMA = "googlemaps/v1"
 UNWIREDLABS_V1_SCHEMA = "unwiredlabs/v1"
 # Default fallback schema, if schema is None/NULL
 DEFAULT_SCHEMA = ICHNAEA_V1_SCHEMA
+
+
+METRICS = markus.get_metrics()
 
 
 class ExternalResult(namedtuple("ExternalResult", "lat lon accuracy fallback")):
@@ -271,18 +275,19 @@ class FallbackCache(object):
         },
     }
 
-    def __init__(self, raven_client, redis_client, stats_client, schema=DEFAULT_SCHEMA):
+    def __init__(self, raven_client, redis_client, schema=DEFAULT_SCHEMA):
         self.raven_client = raven_client
         self.redis_client = redis_client
-        self.stats_client = stats_client
         self.schema = DEFAULT_SCHEMA
         self.cache_key_blue = self.cache_keys[schema]["fallback_blue"]
         self.cache_key_cell = self.cache_keys[schema]["fallback_cell"]
         self.cache_key_wifi = self.cache_keys[schema]["fallback_wifi"]
 
-    def _stat_count(self, fallback_name, status):
-        tags = ["fallback_name:%s" % fallback_name, "status:%s" % status]
-        self.stats_client.incr("locate.fallback.cache", tags=tags)
+    def _capture_incr(self, fallback_name, status):
+        METRICS.incr(
+            "locate.fallback.cache",
+            tags=["fallback_name:%s" % fallback_name, "status:%s" % status],
+        )
 
     def _should_cache(self, query):
         """
@@ -355,7 +360,7 @@ class FallbackCache(object):
         fallback_name = query.api_key.fallback_name
 
         if not self._should_cache(query):
-            self._stat_count(fallback_name, "bypassed")
+            self._capture_incr(fallback_name, "bypassed")
             return None
 
         cache_keys = self._cache_keys(query)
@@ -380,21 +385,21 @@ class FallbackCache(object):
                     ].append(value)
         except (json.JSONDecodeError, RedisError):
             self.raven_client.captureException()
-            self._stat_count(fallback_name, "failure")
+            self._capture_incr(fallback_name, "failure")
             return None
 
         if not clustered_results:
-            self._stat_count(fallback_name, "miss")
+            self._capture_incr(fallback_name, "miss")
             return None
 
         if list(clustered_results.keys()) == [not_found_cluster]:
             # the only match was for not found results
-            self._stat_count(fallback_name, "hit")
+            self._capture_incr(fallback_name, "hit")
             return clustered_results[not_found_cluster][0]
 
         if len(clustered_results) == 1:
             # all the cached values agree with each other
-            self._stat_count(fallback_name, "hit")
+            self._capture_incr(fallback_name, "hit")
             results = list(clustered_results.values())[0]
 
             circles = numpy.array(
@@ -417,7 +422,7 @@ class FallbackCache(object):
             )
 
         # inconsistent results
-        self._stat_count(fallback_name, "inconsistent")
+        self._capture_incr(fallback_name, "inconsistent")
         return None
 
     def set(self, query, result, expire=3600):
@@ -552,14 +557,8 @@ class FallbackPositionSource(PositionSource):
         self.caches = {}
         for schema in self.schemas:
             self.caches[schema] = FallbackCache(
-                self.raven_client, self.redis_client, self.stats_client, schema=schema
+                self.raven_client, self.redis_client, schema=schema
             )
-
-    def _stat_count(self, stat, tags):
-        self.stats_client.incr("locate.fallback." + stat, tags=tags)
-
-    def _stat_timed(self, stat, tags):
-        return self.stats_client.timed("locate.fallback." + stat, tags=tags)
 
     def _ratelimit_key(self, name, interval):
         now = int(time.time())
@@ -597,11 +596,12 @@ class FallbackPositionSource(PositionSource):
         try:
             fallback_tag = "fallback_name:%s" % (query.api_key.fallback_name or "none")
 
-            with self._stat_timed("lookup", tags=[fallback_tag]):
+            with METRICS.timer("locate.fallback.lookup", tags=[fallback_tag]):
                 response = outbound_call(query, outbound)
 
-            self._stat_count(
-                "lookup", tags=[fallback_tag, "status:" + str(response.status_code)]
+            METRICS.incr(
+                "locate.fallback.lookup",
+                tags=[fallback_tag, "status:" + str(response.status_code)],
             )
 
             if response.status_code == 404:

@@ -6,6 +6,7 @@ import json
 
 import colander
 from ipaddress import ip_address
+import markus
 from redis import RedisError
 
 from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
@@ -13,6 +14,9 @@ from ichnaea.api.key import get_key, Key, validated_key
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
+
+
+METRICS = markus.get_metrics()
 
 
 class BaseAPIView(BaseView):
@@ -28,7 +32,6 @@ class BaseAPIView(BaseView):
         super(BaseAPIView, self).__init__(request)
         self.raven_client = request.registry.raven_client
         self.redis_client = request.registry.redis_client
-        self.stats_client = request.registry.stats_client
 
     def parse_apikey(self):
         try:
@@ -39,7 +42,7 @@ class BaseAPIView(BaseView):
         return validated_key(api_key_text)
 
     def log_count(self, valid_key):
-        self.stats_client.incr(
+        METRICS.incr(
             self.view_type + ".request",
             tags=["path:" + self.metric_path, "key:" + valid_key],
         )

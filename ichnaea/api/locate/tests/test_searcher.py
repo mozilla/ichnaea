@@ -27,44 +27,42 @@ class SearcherTest(object):
 
     searcher = None
 
-    def _search(self, data_queues, geoip_db, raven, redis, stats, session, klass, **kw):
+    def _search(self, data_queues, geoip_db, raven, redis, session, klass, **kw):
         query = Query(
             api_key=KeyFactory(valid_key="test"),
             api_type="locate",
             session=session,
-            stats_client=stats,
             **kw,
         )
         searcher = klass(
             geoip_db=geoip_db,
             raven_client=raven,
             redis_client=redis,
-            stats_client=stats,
             data_queues=data_queues,
         )
         return searcher.search(query)
 
 
 class TestSearcher(SearcherTest):
-    def test_no_sources(self, data_queues, geoip_db, raven, redis, stats, session):
+    def test_no_sources(self, data_queues, geoip_db, raven, redis, session):
         class TestSearcher(RegionSearcher):
             source_classes = ()
 
         result = self._search(
-            data_queues, geoip_db, raven, redis, stats, session, TestSearcher
+            data_queues, geoip_db, raven, redis, session, TestSearcher
         )
         assert result is None
 
-    def test_no_result(self, data_queues, geoip_db, raven, redis, stats, session):
+    def test_no_result(self, data_queues, geoip_db, raven, redis, session):
         class TestSearcher(RegionSearcher):
             source_classes = (("test", EmptySource),)
 
         result = self._search(
-            data_queues, geoip_db, raven, redis, stats, session, TestSearcher
+            data_queues, geoip_db, raven, redis, session, TestSearcher
         )
         assert result is None
 
-    def test_should_search(self, data_queues, geoip_db, raven, redis, stats, session):
+    def test_should_search(self, data_queues, geoip_db, raven, redis, session):
         class Source(RegionSource):
             def should_search(self, query, results):
                 return False
@@ -76,18 +74,18 @@ class TestSearcher(SearcherTest):
             source_classes = (("test1", DummyRegionSource), ("test2", Source))
 
         result = self._search(
-            data_queues, geoip_db, raven, redis, stats, session, TestSearcher
+            data_queues, geoip_db, raven, redis, session, TestSearcher
         )
         assert result["region_code"] == "DE"
 
 
 class TestPositionSearcher(SearcherTest):
-    def test_result(self, data_queues, geoip_db, raven, redis, stats, session):
+    def test_result(self, data_queues, geoip_db, raven, redis, session):
         class TestSearcher(PositionSearcher):
             source_classes = (("test", DummyPositionSource),)
 
         result = self._search(
-            data_queues, geoip_db, raven, redis, stats, session, TestSearcher
+            data_queues, geoip_db, raven, redis, session, TestSearcher
         )
         assert result["lat"] == 1.0
         assert result["lon"] == 1.0
@@ -96,12 +94,12 @@ class TestPositionSearcher(SearcherTest):
 
 
 class TestRegionSearcher(SearcherTest):
-    def test_result(self, data_queues, geoip_db, raven, redis, stats, session):
+    def test_result(self, data_queues, geoip_db, raven, redis, session):
         class TestSearcher(RegionSearcher):
             source_classes = (("test", DummyRegionSource),)
 
         result = self._search(
-            data_queues, geoip_db, raven, redis, stats, session, TestSearcher
+            data_queues, geoip_db, raven, redis, session, TestSearcher
         )
         assert result["region_code"] == "DE"
         assert result["region_name"] == "Germany"

@@ -74,12 +74,7 @@ def init_beat(beat, celery_app):
 
 
 def init_worker(
-    celery_app,
-    _db=None,
-    _geoip_db=None,
-    _raven_client=None,
-    _redis_client=None,
-    _stats_client=None,
+    celery_app, _db=None, _geoip_db=None, _raven_client=None, _redis_client=None
 ):
     """
     Configure the passed in celery app, usually stored in
@@ -103,7 +98,7 @@ def init_worker(
 
     celery_app.redis_client = redis_client = configure_redis(_client=_redis_client)
 
-    celery_app.stats_client = configure_stats(_client=_stats_client)
+    configure_stats()
 
     celery_app.geoip_db = configure_geoip(raven_client=raven_client, _client=_geoip_db)
 
@@ -127,8 +122,6 @@ def shutdown_worker(celery_app):
     del celery_app.raven_client
     celery_app.redis_client.close()
     del celery_app.redis_client
-    celery_app.stats_client.close()
-    del celery_app.stats_client
     celery_app.geoip_db.close()
     del celery_app.geoip_db
 

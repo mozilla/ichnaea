@@ -4,10 +4,14 @@ Contains a Celery base task.
 
 from celery import Task
 from kombu.serialization import dumps as kombu_dumps, loads as kombu_loads
+import markus
 
 from ichnaea.cache import redis_pipeline
 from ichnaea.conf import settings
 from ichnaea.db import db_worker_session
+
+
+METRICS = markus.get_metrics()
 
 
 class BaseTask(Task):
@@ -70,7 +74,7 @@ class BaseTask(Task):
         Execute the task, capture a statsd timer for the task duration and
         automatically report exceptions into Sentry.
         """
-        with self.stats_client.timed("task", tags=["task:" + self.shortname()]):
+        with METRICS.timer("task", tags=["task:" + self.shortname()]):
             try:
                 result = super(BaseTask, self).__call__(*args, **kw)
             except Exception as exc:
@@ -136,8 +140,3 @@ class BaseTask(Task):
     def redis_client(self):
         """Exposes a :class:`~ichnaea.cache.RedisClient`."""
         return self.app.redis_client
-
-    @property
-    def stats_client(self):
-        """Exposes a :class:`~ichnaea.log.StatsClient`."""
-        return self.app.stats_client

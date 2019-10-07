@@ -90,7 +90,7 @@ class BaseSubmitTest(object):
         res = app.post_json(self.url, [1], status=400)
         assert res.json == ParseError.json_body()
 
-    def test_error_redis_failure(self, app, raven, stats):
+    def test_error_redis_failure(self, app, raven, metricsmock):
         mock_queue = mock.Mock()
         mock_queue.side_effect = RedisError()
 
@@ -100,51 +100,68 @@ class BaseSubmitTest(object):
 
         assert mock_queue.called
         raven.check([("ServiceUnavailable", 1)])
-        stats.check(
-            counter=[
-                ("data.batch.upload", 0),
-                ("request", [self.metric_path, "method:post", "status:503"]),
-            ]
+        metricsmock.print_records()
+        assert not metricsmock.has_record("incr", "data.batch.upload")
+        assert metricsmock.has_record(
+            "incr",
+            "request",
+            value=1,
+            tags=[self.metric_path, "method:post", "status:503"],
         )
 
-    def test_log_api_key_none(self, app, redis, stats):
+    def test_log_api_key_none(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key=None)
-        stats.check(
-            counter=[(self.metric_type + ".request", [self.metric_path, "key:none"])]
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:none"],
         )
         assert redis.keys("apiuser:*") == []
 
-    def test_log_api_key_invalid(self, app, redis, stats):
+    def test_log_api_key_invalid(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="invalid_key")
-        stats.check(
-            counter=[(self.metric_type + ".request", [self.metric_path, "key:none"])]
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:none"],
         )
         assert redis.keys("apiuser:*") == []
 
-    def test_log_api_key_unknown(self, app, redis, stats):
+    def test_log_api_key_unknown(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="abcdefg")
-        stats.check(
-            counter=[(self.metric_type + ".request", [self.metric_path, "key:invalid"])]
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:invalid"],
         )
         assert redis.keys("apiuser:*") == []
 
-    def test_log_stats(self, app, redis, stats):
+    def test_log_stats(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="test")
-        stats.check(
-            counter=[
-                ("data.batch.upload", 1),
-                ("data.batch.upload", ["key:test"]),
-                (
-                    "request",
-                    [self.metric_path, "method:post", "status:%s" % self.status],
-                ),
-                (self.metric_type + ".request", [self.metric_path, "key:test"]),
-            ],
-            timer=[("request", [self.metric_path, "method:post"])],
+        assert metricsmock.has_record(
+            "incr", "data.batch.upload", value=1, tags=["key:test"]
+        )
+        assert metricsmock.has_record(
+            "incr",
+            "request",
+            value=1,
+            tags=[self.metric_path, "method:post", "status:%s" % self.status],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:test"],
+        )
+        assert metricsmock.has_record(
+            "timing", "request", tags=[self.metric_path, "method:post"]
         )
         today = util.utcnow().date()
         assert [k.decode("ascii") for k in redis.keys("apiuser:*")] == [

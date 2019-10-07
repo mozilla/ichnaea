@@ -87,7 +87,7 @@ class TestContentViews(object):
 
 
 class TestFunctionalContent(object):
-    def test_content(self, app, session_tracker, stats):
+    def test_content(self, app, session_tracker, metricsmock):
         app.get("/", status=200)
         app.get("/apple-touch-icon-precomposed.png", status=200)
         app.get("/api", status=200)
@@ -105,15 +105,15 @@ class TestFunctionalContent(object):
         session_tracker(1)
         app.get("/stats", status=200)
         session_tracker(8)
-        stats.check(
-            counter=[
-                ("request", ["path:", "method:get", "status:200"]),
-                ("request", ["path:map", "method:get", "status:200"]),
-            ],
-            timer=[
-                ("request", ["path:", "method:get"]),
-                ("request", ["path:map", "method:get"]),
-            ],
+        assert metricsmock.has_record(
+            "incr", "request", value=1, tags=["path:", "method:get", "status:200"]
+        )
+        assert metricsmock.has_record(
+            "incr", "request", value=1, tags=["path:map", "method:get", "status:200"]
+        )
+        assert metricsmock.has_record("timing", "request", tags=["path:", "method:get"])
+        assert metricsmock.has_record(
+            "timing", "request", tags=["path:map", "method:get"]
         )
 
     @config_override(ASSET_BUCKET="bucket", ASSET_URL="http://127.0.0.1:9/foo")

@@ -4,16 +4,19 @@ import logging
 import logging.config
 import time
 
+import markus
 from pyramid.httpexceptions import HTTPException, HTTPClientError, HTTPRedirection
 from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
 from raven.transport.http import HTTPTransport
 from raven.transport.threaded import ThreadedHTTPTransport
-from datadog.dogstatsd.base import DogStatsd
 
 from ichnaea.conf import settings
 from ichnaea.exceptions import BaseClientError
 from ichnaea.util import version_info
+
+
+METRICS = markus.get_metrics()
 
 
 def configure_logging():
@@ -59,6 +62,15 @@ def configure_logging():
         "root": {"handlers": handlers, "level": "WARNING"},
     }
 
+    if local_dev_env:
+        # In the local dev environment, add markus as a logger so that we can
+        # see metrics in the logs
+        logging_config["loggers"]["markus"] = {
+            "propagate": False,
+            "handlers": handlers,
+            "level": level,
+        }
+
     logging.config.dictConfig(logging_config)
 
 
@@ -70,8 +82,7 @@ RAVEN_TRANSPORTS = {
 
 
 def configure_raven(transport=None, _client=None):
-    """
-    Configure and return a :class:`raven.Client` instance.
+    """Configure and return a :class:`raven.Client` instance.
 
     :param transport: The transport to use, one of the
                       :data:`RAVEN_TRANSPORTS` keys.
@@ -91,21 +102,29 @@ def configure_raven(transport=None, _client=None):
     return client
 
 
-def configure_stats(_client=None):
-    """
-    Configure and return a :class:`~ichnaea.log.StatsClient` instance.
+def configure_stats():
+    """Configure Markus for metrics."""
+    local_dev_env = settings("local_dev_env")
+    if local_dev_env:
+        markus.configure(backends=[{"class": "markus.backends.logging.LoggingMetrics"}])
+        return
 
-    :param _client: Test-only hook to provide a pre-configured client.
-    """
-    if _client is not None:
-        return _client
+    if settings("statsd_port"):
+        markus.configure(
+            backends=[
+                {
+                    "class": "markus.backends.datadog.DatadogMetrics",
+                    "options": {
+                        "statsd_host": settings("statsd_host"),
+                        "statsd_port": settings("statsd_port"),
+                        "statsd_namespace": "location",
+                    },
+                }
+            ]
+        )
+        return
 
-    statsd_host = settings("statsd_host")
-    statsd_port = settings("statsd_port")
-    klass = DebugStatsClient if not statsd_host else StatsClient
-    namespace = None if settings("testing") else "location"
-    client = klass(host=statsd_host, port=statsd_port, namespace=namespace, use_ms=True)
-    return client
+    logging.getLogger(__name__).warning("STATSD_HOST not set; no statsd configured")
 
 
 def log_tween_factory(handler, registry):
@@ -123,7 +142,6 @@ def log_tween_factory(handler, registry):
                 registry.raven_client.captureException()
                 raise
 
-        stats_client = registry.stats_client
         start = time.time()
         statsd_tags = [
             # Convert a URI to a statsd acceptable metric name
@@ -133,10 +151,10 @@ def log_tween_factory(handler, registry):
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            stats_client.timing("request", duration, tags=statsd_tags)
+            METRICS.timing("request", duration, tags=statsd_tags)
 
         def counter_send(status_code):
-            stats_client.incr("request", tags=statsd_tags + ["status:%s" % status_code])
+            METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
 
         try:
             response = handler(request)
@@ -206,104 +224,3 @@ class DebugRavenClient(RavenClient):
 
         for msg in matched_msgs:
             self.msgs.remove(msg)
-
-
-class StatsClient(DogStatsd):
-    """A statsd client."""
-
-    def close(self):
-        if self.socket:
-            self.socket.close()
-            self.socket = None
-
-    def incr(self, *args, **kw):
-        return self.increment(*args, **kw)
-
-
-class DebugStatsClient(StatsClient):
-    """An in-memory statsd client with an inspectable message queue."""
-
-    def __init__(self, *args, **kw):
-        super(DebugStatsClient, self).__init__(*args, **kw)
-        self.msgs = deque(maxlen=100)
-
-    def _clear(self):
-        self.msgs.clear()
-
-    def _send_to_server(self, packet):
-        self.msgs.append(packet)
-
-    def _find_messages(self, msg_type, msg_name, msg_value=None, msg_tags=()):
-        data = {
-            "counter": [],
-            "timer": [],
-            "gauge": [],
-            "histogram": [],
-            "meter": [],
-            "set": [],
-        }
-        for msg in self.msgs:
-            tags = ()
-            if "|#" in msg:
-                parts = msg.split("|#")
-                tags = parts[-1].split(",")
-                msg = parts[0]
-            suffix = msg.split("|")[-1]
-            name, value = msg.split("|")[0].split(":")
-            value = int(value)
-            if suffix == "g":
-                data["gauge"].append((name, value, tags))
-            elif suffix == "ms":
-                data["timer"].append((name, value, tags))
-            elif suffix.startswith("c"):
-                data["counter"].append((name, value, tags))
-            elif suffix == "h":
-                data["histogram"].append((name, value, tags))
-            elif suffix == "m":
-                data["meter"].append((name, value, tags))
-            elif suffix == "s":
-                data["set"].append((name, value, tags))
-
-        result = []
-        for msg in data.get(msg_type):
-            if msg[0] == msg_name:
-                if msg_value is None or msg[1] == msg_value:
-                    if not msg_tags or msg[2] == msg_tags:
-                        result.append((msg[0], msg[1], msg[2]))
-        return result
-
-    def check(self, total=None, **kw):
-        """
-        Checks a partial specification of messages to be found in
-        the stats message stream.
-        """
-        if total is not None:
-            assert total == len(self.msgs)
-
-        for (msg_type, preds) in kw.items():
-            for pred in preds:
-                match = 1
-                value = None
-                tags = ()
-                if isinstance(pred, str):
-                    name = pred
-                elif isinstance(pred, tuple):
-                    if len(pred) == 2:
-                        (name, match) = pred
-                        if isinstance(match, list):
-                            tags = match
-                            match = 1
-                    elif len(pred) == 3:
-                        (name, match, value) = pred
-                        if isinstance(value, list):
-                            tags = value
-                            value = None
-                    elif len(pred) == 4:
-                        (name, match, value, tags) = pred
-                    else:
-                        raise TypeError("wanted 2, 3 or 4 tuple, got %s" % type(pred))
-                else:
-                    raise TypeError("wanted str or tuple, got %s" % type(pred))
-                msgs = self._find_messages(msg_type, name, value, tags)
-                if isinstance(match, int):
-                    assert match == len(msgs)

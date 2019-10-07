@@ -6,22 +6,16 @@ from ichnaea.tests.factories import KeyFactory
 
 
 class SourceTest(object):
-    def _make_query(self, geoip_db, stats, **kw):
-        return Query(
-            api_key=KeyFactory(valid_key="test"),
-            geoip_db=geoip_db,
-            stats_client=stats,
-            **kw,
-        )
+    def _make_query(self, geoip_db, **kw):
+        return Query(api_key=KeyFactory(valid_key="test"), geoip_db=geoip_db, **kw)
 
-    def test_init(self, geoip_db, raven, redis, source, stats):
+    def test_init(self, geoip_db, raven, redis, source):
         assert source.geoip_db == geoip_db
         assert source.raven_client == raven
         assert source.redis_client == redis
-        assert source.stats_client == stats
 
-    def test_should_search(self, geoip_db, source, stats):
-        query = self._make_query(geoip_db, stats)
+    def test_should_search(self, geoip_db, source):
+        query = self._make_query(geoip_db)
         results = source.result_list()
         assert source.should_search(query, results)
 
@@ -34,8 +28,8 @@ class TestPositionSource(SourceTest):
         def search(self, query):
             return self.result_list()
 
-    def test_empty(self, geoip_db, source, stats):
-        query = self._make_query(geoip_db, stats)
+    def test_empty(self, geoip_db, source):
+        query = self._make_query(geoip_db)
         results = source.search(query)
         assert len(results) == 0
         assert type(results) is PositionResultList
@@ -49,8 +43,8 @@ class TestRegionSource(SourceTest):
         def search(self, query):
             return self.result_list()
 
-    def test_empty(self, geoip_db, source, stats):
-        query = self._make_query(geoip_db, stats)
+    def test_empty(self, geoip_db, source):
+        query = self._make_query(geoip_db)
         results = source.search(query)
         assert len(results) == 0
         assert type(results) is RegionResultList

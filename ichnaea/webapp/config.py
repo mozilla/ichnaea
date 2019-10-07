@@ -27,7 +27,6 @@ def main(
     _http_session=None,
     _raven_client=None,
     _redis_client=None,
-    _stats_client=None,
     _position_searcher=None,
     _region_searcher=None,
 ):
@@ -76,7 +75,7 @@ def main(
 
     registry.redis_client = redis_client = configure_redis(_client=_redis_client)
 
-    registry.stats_client = stats_client = configure_stats(_client=_stats_client)
+    configure_stats()
 
     registry.http_session = configure_http_session(_session=_http_session)
 
@@ -99,7 +98,6 @@ def main(
             geoip_db=geoip_db,
             raven_client=raven_client,
             redis_client=redis_client,
-            stats_client=stats_client,
             data_queues=data_queues,
             _searcher=default,
         )
@@ -129,8 +127,6 @@ def shutdown_worker(app):
         del registry.raven_client
         registry.redis_client.close()
         del registry.redis_client
-        registry.stats_client.close()
-        del registry.stats_client
         registry.http_session.close()
         del registry.http_session
         registry.geoip_db.close()

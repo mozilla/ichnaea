@@ -11,11 +11,12 @@ from ichnaea.webapp.view import BaseView
 
 
 def _check_timed(ping_function):
-    with Timer() as timer:
-        success = ping_function()
+    start_time = time.time()
+    success = ping_function()
     if not success:
         return {"up": False, "time": 0}
-    return {"up": True, "time": timer.ms}
+    delta = time.time() - start_time
+    return {"up": True, "time": int(round(1000 * delta))}
 
 
 def check_database(request):
@@ -40,21 +41,6 @@ def configure_monitor(config):
     HeartbeatView.configure(config)
     LBHeartbeatView.configure(config)
     VersionView.configure(config)
-
-
-class Timer(object):
-    def __init__(self):
-        self.start = None
-        self.ms = None
-
-    def __enter__(self):
-        self.start = time.time()
-        return self
-
-    def __exit__(self, typ, value, tb):
-        if self.start is not None:
-            dt = time.time() - self.start
-            self.ms = int(round(1000 * dt))
 
 
 class ContributeView(BaseView):

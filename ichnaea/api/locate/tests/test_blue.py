@@ -26,11 +26,11 @@ class TestBlue(BaseSourceTest):
 
     Source = BlueTestPositionSource
 
-    def test_should_search(self, geoip_db, http_session, session, source, stats):
-        query = self.make_query(geoip_db, http_session, session, stats)
+    def test_should_search(self, geoip_db, http_session, session, source):
+        query = self.make_query(geoip_db, http_session, session)
         self.check_should_search(source, query, False)
 
-    def test_blue(self, geoip_db, http_session, session, source, stats):
+    def test_blue(self, geoip_db, http_session, session, source):
         blue = BlueShardFactory(radius=10, samples=50)
         blue2 = BlueShardFactory(
             lat=blue.lat,
@@ -41,9 +41,7 @@ class TestBlue(BaseSourceTest):
         )
         session.flush()
 
-        query = self.model_query(
-            geoip_db, http_session, session, stats, blues=[blue, blue2]
-        )
+        query = self.model_query(geoip_db, http_session, session, blues=[blue, blue2])
         query.blue[0].signalStrength = -80
         query.blue[1].signalStrength = -90
         results = source.search(query)
