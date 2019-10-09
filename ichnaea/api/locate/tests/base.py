@@ -389,7 +389,7 @@ class CommonLocateTest(BaseLocateTest):
         self.check_queue(data_queues, 0)
 
     def test_no_api_key(
-        self, app, data_queues, metricsmock, redis, status=400, response="invalid_key"
+        self, app, data_queues, redis, metricsmock, status=400, response="invalid_key"
     ):
         res = self._call(app, api_key=None, ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
@@ -501,7 +501,6 @@ class CommonPositionTest(BaseLocateTest):
                 "wifi:none",
             ],
         )
-        metricsmock.print_records()
         assert metricsmock.has_record(
             "incr",
             self.metric_type + ".result",
@@ -822,7 +821,6 @@ class CommonPositionTest(BaseLocateTest):
                 "wifi:many",
             ],
         )
-        metricsmock.print_records()
         assert metricsmock.has_record(
             "incr",
             self.metric_type + ".result",

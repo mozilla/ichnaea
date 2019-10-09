@@ -79,7 +79,7 @@ class TestDatabaseErrors(BaseStationTest):
         return self._queue_and_update(celery, obs, update_cell)
 
     def test_lock_timeout(
-        self, celery, redis, metricsmock, session, session2, restore_db
+        self, celery, redis, session, session2, metricsmock, restore_db
     ):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
@@ -103,32 +103,43 @@ class TestDatabaseErrors(BaseStationTest):
             if num[0] == 2:
                 session2.rollback()
 
-        with metricsmock as mm:
-            try:
-                CellUpdater._retry_wait = 0.0001
-                session.execute("set session innodb_lock_wait_timeout = 1")
-                with mock.patch.object(CellUpdater, "add_area_update", mock_area):
-                    self.queue_and_update(celery, [obs])
+        try:
+            CellUpdater._retry_wait = 0.0001
+            session.execute("set session innodb_lock_wait_timeout = 1")
+            with mock.patch.object(CellUpdater, "add_area_update", mock_area):
+                self.queue_and_update(celery, [obs])
 
-                # the inner task logic was called exactly twice
-                assert num[0] == 2
+            # the inner task logic was called exactly twice
+            assert num[0] == 2
 
-                shard = CellShard.shard_model(obs.cellid)
-                cells = session.query(shard).all()
-                assert len(cells) == 1
-                assert cells[0].samples == 1
+            shard = CellShard.shard_model(obs.cellid)
+            cells = session.query(shard).all()
+            assert len(cells) == 1
+            assert cells[0].samples == 1
 
-                self.check_statcounter(redis, StatKey.cell, 1)
-                self.check_statcounter(redis, StatKey.unique_cell, 1)
+            self.check_statcounter(redis, StatKey.cell, 1)
+            self.check_statcounter(redis, StatKey.unique_cell, 1)
 
-                # Assert generated metrics are correct
-                assert mm.has_record(
-                    "incr", "data.observation.insert", value=1, tags=["type:cell"]
+            # Assert generated metrics are correct
+            assert (
+                len(
+                    metricsmock.filter_records(
+                        "incr", "data.observation.insert", value=1, tags=["type:cell"]
+                    )
                 )
-                assert mm.has_record("timing", "task", tags=["task:data.update_cell"])
-            finally:
-                CellUpdater._retry_wait = orig_wait
-                session.execute(text("drop table %s;" % cell.__tablename__))
+                == 1
+            )
+            assert (
+                len(
+                    metricsmock.filter_records(
+                        "timing", "task", tags=["task:data.update_cell"]
+                    )
+                )
+                == 1
+            )
+        finally:
+            CellUpdater._retry_wait = orig_wait
+            session.execute(text("drop table %s;" % cell.__tablename__))
 
 
 class StationTest(BaseStationTest):
@@ -246,46 +257,54 @@ class StationTest(BaseStationTest):
         self.check_statcounter(redis, self.stat_station_key, 2)
 
     def test_new(self, celery, session, metricsmock):
-        with metricsmock as mm:
-            for source in (ReportSource.gnss, ReportSource.query):
-                obs = self.obs_factory.build(source=source)
-                obs1 = self.obs_factory(
-                    lat=obs.lat + 0.0001, source=source, **self.key(obs)
-                )
-                obs2 = self.obs_factory(
-                    lat=obs.lat - 0.0003, source=source, **self.key(obs)
-                )
-                obs3 = self.obs_factory(
-                    lon=obs.lon + 0.0002, source=source, **self.key(obs)
-                )
-                obs4 = self.obs_factory(
-                    lon=obs.lon - 0.0004, source=source, **self.key(obs)
-                )
-                self.queue_and_update(celery, [obs, obs1, obs2, obs3, obs4])
-
-                self.check_areas(celery, [obs])
-                station = self.get_station(session, obs)
-                assert round(station.lat, 7) == round(obs.lat - 0.00004, 7)
-                assert round(station.max_lat, 7) == round(obs.lat + 0.0001, 7)
-                assert round(station.min_lat, 7) == round(obs.lat - 0.0003, 7)
-                assert round(station.lon, 7) == round(obs.lon - 0.00004, 7)
-                assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
-                assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
-                assert station.radius == 38
-                assert station.region == "GB"
-                assert station.samples == 5
-                assert station.source == source
-                assert round(station.weight, 2) == 5.0
-                self.check_blocked(station, None)
-                self.check_dates(station, self.today, self.today, self.today)
-
-            # Assert generated metrics are correct
-            assert mm.has_record(
-                "incr", "data.observation.insert", value=5, tags=[self.type_tag]
+        for source in (ReportSource.gnss, ReportSource.query):
+            obs = self.obs_factory.build(source=source)
+            obs1 = self.obs_factory(
+                lat=obs.lat + 0.0001, source=source, **self.key(obs)
             )
-            assert mm.has_record(
-                "incr", "data.station.new", value=1, tags=[self.type_tag]
+            obs2 = self.obs_factory(
+                lat=obs.lat - 0.0003, source=source, **self.key(obs)
             )
+            obs3 = self.obs_factory(
+                lon=obs.lon + 0.0002, source=source, **self.key(obs)
+            )
+            obs4 = self.obs_factory(
+                lon=obs.lon - 0.0004, source=source, **self.key(obs)
+            )
+            self.queue_and_update(celery, [obs, obs1, obs2, obs3, obs4])
+
+            self.check_areas(celery, [obs])
+            station = self.get_station(session, obs)
+            assert round(station.lat, 7) == round(obs.lat - 0.00004, 7)
+            assert round(station.max_lat, 7) == round(obs.lat + 0.0001, 7)
+            assert round(station.min_lat, 7) == round(obs.lat - 0.0003, 7)
+            assert round(station.lon, 7) == round(obs.lon - 0.00004, 7)
+            assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
+            assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
+            assert station.radius == 38
+            assert station.region == "GB"
+            assert station.samples == 5
+            assert station.source == source
+            assert round(station.weight, 2) == 5.0
+            self.check_blocked(station, None)
+            self.check_dates(station, self.today, self.today, self.today)
+
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.observation.insert", value=5, tags=[self.type_tag]
+                )
+            )
+            == 2
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.station.new", value=1, tags=[self.type_tag]
+                )
+            )
+            == 2
+        )
 
     def test_new_block(self, celery, session):
         for source in (ReportSource.gnss, ReportSource.query):

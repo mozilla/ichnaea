@@ -40,17 +40,37 @@ class TestMonitor(object):
         redis.set("cache_something", "{}")
 
         monitor_api_key_limits.delay().get()
-        assert metricsmock.has_record(
-            "gauge", "api.limit", tags=["key:test", "path:v1.geolocate"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "gauge", "api.limit", tags=["key:test", "path:v1.geolocate"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "gauge", "api.limit", tags=["key:test", "path:v1.search"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "gauge", "api.limit", tags=["key:test", "path:v1.search"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "gauge", "api.limit", tags=["key:no_key_1", "path:v1.search"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "gauge", "api.limit", tags=["key:no_key_1", "path:v1.search"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "gauge", "api.limit", tags=["key:no_key_2", "path:v1.geolocate"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "gauge", "api.limit", tags=["key:no_key_2", "path:v1.geolocate"]
+                )
+            )
+            == 1
         )
 
 
@@ -107,12 +127,22 @@ class TestMonitorAPIUsers(object):
         redis.pfadd("apiuser:submit:test:" + days_7, bhutan_ip)
 
         monitor_api_users.delay().get()
-        assert metricsmock.has_record(
-            "gauge", "submit.user", value=2, tags=["key:test", "interval:1d"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "gauge", "submit.user", value=2, tags=["key:test", "interval:1d"]
+                )
+            )
+            == 1
         )
         # We count unique IPs over the entire 7 day period, so it's just 3 uniques.
-        assert metricsmock.has_record(
-            "gauge", "submit.user", value=3, tags=["key:test", "interval:7d"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "gauge", "submit.user", value=3, tags=["key:test", "interval:7d"]
+                )
+            )
+            == 1
         )
 
         # the too old key was deleted manually

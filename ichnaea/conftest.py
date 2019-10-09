@@ -321,7 +321,7 @@ def metricsmock():
 
         metricsmock.clear_records()
 
-    See for more: https://markus.readthedocs.io/en/latest/testing.html
+    For more, see: https://markus.readthedocs.io/en/latest/testing.html
 
     """
     with MetricsMock() as mm:

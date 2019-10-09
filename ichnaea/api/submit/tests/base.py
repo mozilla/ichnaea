@@ -100,7 +100,6 @@ class BaseSubmitTest(object):
 
         assert mock_queue.called
         raven.check([("ServiceUnavailable", 1)])
-        metricsmock.print_records()
         assert not metricsmock.has_record("incr", "data.batch.upload")
         assert metricsmock.has_record(
             "incr",

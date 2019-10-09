@@ -58,18 +58,10 @@ def configure_logging():
             "alembic": {"propagate": False, "handlers": handlers, "level": level},
             "celery": {"propagate": False, "handlers": handlers, "level": celery_level},
             "ichnaea": {"propagate": False, "handlers": handlers, "level": level},
+            "markus": {"propagate": False, "handlers": handlers, "level": level},
         },
         "root": {"handlers": handlers, "level": "WARNING"},
     }
-
-    if local_dev_env:
-        # In the local dev environment, add markus as a logger so that we can
-        # see metrics in the logs
-        logging_config["loggers"]["markus"] = {
-            "propagate": False,
-            "handlers": handlers,
-            "level": level,
-        }
 
     logging.config.dictConfig(logging_config)
 

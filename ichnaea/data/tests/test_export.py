@@ -583,14 +583,32 @@ class TestInternal(BaseExportTest):
         self.add_reports(celery, cell_factor=1, wifi_factor=0, cell_mcc=-2)
         self._update_all(session)
 
-        assert metricsmock.has_record(
-            "incr", "data.report.upload", value=1, tags=["key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.upload", value=1, tags=["key:test"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.report.drop", value=1, tags=["key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.observation.drop", value=1, tags=["type:cell", "key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.observation.drop",
+                    value=1,
+                    tags=["type:cell", "key:test"],
+                )
+            )
+            == 1
         )
 
     def test_wifi(self, celery, session):
@@ -631,14 +649,32 @@ class TestInternal(BaseExportTest):
         self.add_reports(celery, cell_factor=0, wifi_factor=1, wifi_key="abcd")
         self._update_all(session)
 
-        assert metricsmock.has_record(
-            "incr", "data.report.upload", value=1, tags=["key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.upload", value=1, tags=["key:test"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.report.drop", value=1, tags=["key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.observation.drop", value=1, tags=["type:wifi", "key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.observation.drop",
+                    value=1,
+                    tags=["type:wifi", "key:test"],
+                )
+            )
+            == 1
         )
 
     def test_position_invalid(self, celery, session, metricsmock):
@@ -652,18 +688,40 @@ class TestInternal(BaseExportTest):
 
         shard = WifiShard.shards()["0"]
         assert session.query(shard).count() == 1
-        metricsmock.print_records()
-        assert metricsmock.has_record(
-            "incr", "data.report.upload", value=2, tags=["key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.upload", value=2, tags=["key:test"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.report.drop", value=1, tags=["key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.observation.insert", value=1, tags=["type:wifi"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.observation.insert", value=1, tags=["type:wifi"]
+                )
+            )
+            == 1
         )
-        assert metricsmock.has_record(
-            "incr", "data.observation.upload", value=1, tags=["type:wifi", "key:test"]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.observation.upload",
+                    value=1,
+                    tags=["type:wifi", "key:test"],
+                )
+            )
+            == 1
         )
 
     def test_no_observations(self, celery, session):
