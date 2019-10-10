@@ -596,11 +596,11 @@ class FallbackPositionSource(PositionSource):
         try:
             fallback_tag = "fallback_name:%s" % (query.api_key.fallback_name or "none")
 
-            with METRICS.timer("locate.fallback.lookup", tags=[fallback_tag]):
+            with METRICS.timer("locate.fallback.lookup_timing", tags=[fallback_tag]):
                 response = outbound_call(query, outbound)
 
             METRICS.incr(
-                "locate.fallback.lookup",
+                "locate.fallback.lookup_count",
                 tags=[fallback_tag, "status:" + str(response.status_code)],
             )
 
