@@ -101,7 +101,7 @@ def configure_stats():
         markus.configure(backends=[{"class": "markus.backends.logging.LoggingMetrics"}])
         return
 
-    if settings("statsd_port"):
+    if settings("statsd_host"):
         markus.configure(
             backends=[
                 {
@@ -114,9 +114,8 @@ def configure_stats():
                 }
             ]
         )
-        return
-
-    logging.getLogger(__name__).warning("STATSD_HOST not set; no statsd configured")
+    else:
+        logging.getLogger(__name__).warning("STATSD_HOST not set; no statsd configured")
 
 
 def log_tween_factory(handler, registry):
