@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import timedelta
 import time
 
+import markus
 import numpy
 from pymysql.err import InternalError as PyMysqlInternalError
 from pymysql.constants.ER import LOCK_WAIT_TIMEOUT, LOCK_DEADLOCK
@@ -22,6 +23,9 @@ from ichnaea.models import (
 )
 from ichnaea.models.constants import BLUE_MAX_RADIUS, CELL_MAX_RADIUS, WIFI_MAX_RADIUS
 from ichnaea import util
+
+
+METRICS = markus.get_metrics()
 
 
 class StationState(object):
@@ -426,7 +430,7 @@ class StationUpdater(object):
 
     def stat_count(self, type_, action, count):
         if count > 0:
-            self.task.stats_client.incr(
+            METRICS.incr(
                 "data.%s.%s" % (type_, action),
                 count,
                 tags=["type:%s" % self.station_type],

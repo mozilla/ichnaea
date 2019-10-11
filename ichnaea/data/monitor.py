@@ -1,7 +1,12 @@
 from collections import defaultdict
 from datetime import timedelta
 
+import markus
+
 from ichnaea import util
+
+
+METRICS = markus.get_metrics()
 
 
 class ApiKeyLimits(object):
@@ -17,8 +22,8 @@ class ApiKeyLimits(object):
             keys = [k.decode("utf-8").split(":")[1:3] for k in keys]
 
         for (api_key, path), value in zip(keys, values):
-            self.task.stats_client.gauge(
-                "api.limit", int(value), tags=["key:" + api_key, "path:" + path]
+            METRICS.gauge(
+                "api.limit", value=int(value), tags=["key:" + api_key, "path:" + path]
             )
 
 
@@ -50,8 +55,8 @@ class ApiUsers(object):
             api_type, api_name, interval = parts
             value = self.task.redis_client.pfcount(*keys)
 
-            self.task.stats_client.gauge(
+            METRICS.gauge(
                 "%s.user" % api_type,
-                value,
+                value=value,
                 tags=["key:%s" % api_name, "interval:%s" % interval],
             )

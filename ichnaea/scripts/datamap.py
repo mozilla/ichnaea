@@ -14,6 +14,7 @@ import sys
 
 import billiard
 import boto3
+import markus
 from sqlalchemy import text
 
 from ichnaea.conf import settings
@@ -32,6 +33,9 @@ if sys.platform == "darwin":
     ZCAT = "gzcat"
 else:
     ZCAT = "zcat"
+
+
+METRICS = markus.get_metrics()
 
 
 def recursive_scandir(top):
@@ -286,13 +290,7 @@ def upload_files(
 
 
 def generate(
-    bucketname,
-    raven_client,
-    stats_client,
-    upload=True,
-    concurrency=2,
-    max_zoom=11,
-    output=None,
+    bucketname, raven_client, upload=True, concurrency=2, max_zoom=11, output=None
 ):
     with util.selfdestruct_tempdir() as workdir:
         pool = billiard.Pool(processes=concurrency)
@@ -310,10 +308,10 @@ def generate(
         if not os.path.isdir(csvdir):
             os.mkdir(csvdir)
 
-        with stats_client.timed("datamaps", tags=["func:export"]):
+        with METRICS.timer("datamaps", tags=["func:export"]):
             result_rows = export_files(pool, csvdir)
 
-        stats_client.timing("datamaps", result_rows, tags=["count:csv_rows"])
+        METRICS.timing("datamaps", result_rows, tags=["count:csv_rows"])
 
         # Concurrently create quadtrees out of CSV files.
         quaddir = os.path.join(basedir, "quadtrees")
@@ -321,10 +319,10 @@ def generate(
             shutil.rmtree(quaddir)
         os.mkdir(quaddir)
 
-        with stats_client.timed("datamaps", tags=["func:encode"]):
+        with METRICS.timer("datamaps", tags=["func:encode"]):
             quadtrees = encode_files(pool, csvdir, quaddir)
 
-        stats_client.timing("datamaps", quadtrees, tags=["count:quadtrees"])
+        METRICS.timing("datamaps", quadtrees, tags=["count:quadtrees"])
 
         pool.close()
         pool.join()
@@ -335,13 +333,13 @@ def generate(
         if os.path.isdir(shapes):
             shutil.rmtree(shapes)
 
-        with stats_client.timed("datamaps", tags=["func:merge"]):
+        with METRICS.timer("datamaps", tags=["func:merge"]):
             merge_files(quaddir, shapes)
 
         # Render tiles, using xargs -P to get concurrency.
         tiles = os.path.abspath(os.path.join(basedir, "tiles"))
 
-        with stats_client.timed("datamaps", tags=["func:render"]):
+        with METRICS.timer("datamaps", tags=["func:render"]):
             render_tiles(shapes, tiles, concurrency, max_zoom)
 
         if upload:
@@ -349,17 +347,17 @@ def generate(
             # can use more processes compared to the CPU bound tasks.
             pool = billiard.Pool(processes=concurrency * 2)
 
-            with stats_client.timed("datamaps", tags=["func:upload"]):
+            with METRICS.timer("datamaps", tags=["func:upload"]):
                 result = upload_files(pool, bucketname, tiles, max_zoom, raven_client)
 
             pool.close()
             pool.join()
 
             for metric, value in result.items():
-                stats_client.timing("datamaps", value, tags=["count:%s" % metric])
+                METRICS.timing("datamaps", value, tags=["count:%s" % metric])
 
 
-def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
+def main(argv, _raven_client=None, _bucketname=None):
     # run for example via:
     # bin/location_map --create --upload \
     #   --output=ichnaea/content/static/tiles/
@@ -379,7 +377,7 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
     if args.create:
         raven_client = configure_raven(transport="sync", _client=_raven_client)
 
-        stats_client = configure_stats(_client=_stats_client)
+        configure_stats()
 
         bucketname = _bucketname
         if not _bucketname:
@@ -400,11 +398,10 @@ def main(argv, _raven_client=None, _stats_client=None, _bucketname=None):
             output = os.path.abspath(args.output)
 
         try:
-            with stats_client.timed("datamaps", tags=["func:main"]):
+            with METRICS.timer("datamaps", tags=["func:main"]):
                 generate(
                     bucketname,
                     raven_client,
-                    stats_client,
                     upload=upload,
                     concurrency=concurrency,
                     output=output,

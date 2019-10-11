@@ -153,7 +153,7 @@ class TestExporter(BaseExportTest):
 
 
 class TestGeosubmit(BaseExportTest):
-    def test_upload(self, celery, session, stats):
+    def test_upload(self, celery, session, metricsmock):
         ApiKeyFactory(valid_key="e5444-794")
         ExportConfigFactory(
             name="test",
@@ -193,17 +193,17 @@ class TestGeosubmit(BaseExportTest):
             ["my-wifi"]
         )
 
-        stats.check(
-            counter=[
-                ("data.export.batch", 1, 1, ["key:test"]),
-                ("data.export.upload", 1, ["key:test", "status:200"]),
-            ],
-            timer=[("data.export.upload", ["key:test"])],
+        assert metricsmock.has_record(
+            "incr", "data.export.batch", value=1, tags=["key:test"]
         )
+        assert metricsmock.has_record(
+            "incr", "data.export.upload", value=1, tags=["key:test", "status:200"]
+        )
+        assert metricsmock.has_record("timing", "data.export.upload", tags=["key:test"])
 
 
 class TestS3(BaseExportTest):
-    def test_upload(self, celery, session, stats):
+    def test_upload(self, celery, session, metricsmock):
         ExportConfigFactory(
             name="backup",
             batch=3,
@@ -265,12 +265,32 @@ class TestS3(BaseExportTest):
         gotten = [report["position"]["accuracy"] for report in send_reports]
         assert set(expect) == set(gotten)
 
-        stats.check(
-            counter=[
-                ("data.export.batch", 4, 1, ["key:backup"]),
-                ("data.export.upload", 4, ["key:backup", "status:success"]),
-            ],
-            timer=[("data.export.upload", 4, ["key:backup"])],
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.export.batch", value=1, tags=["key:backup"]
+                )
+            )
+            == 4
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.export.upload",
+                    value=1,
+                    tags=["key:backup", "status:success"],
+                )
+            )
+            == 4
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "timing", "data.export.upload", tags=["key:backup"]
+                )
+            )
+            == 4
         )
 
 
@@ -442,7 +462,7 @@ class TestInternal(BaseExportTest):
         for shard_id in WifiShard.shards().keys():
             update_wifi.delay(shard_id=shard_id).get()
 
-    def test_stats(self, celery, session, stats):
+    def test_stats(self, celery, session, metricsmock):
         ApiKeyFactory(valid_key="e5444-794")
         session.flush()
 
@@ -452,31 +472,32 @@ class TestInternal(BaseExportTest):
         self.add_reports(celery, 3, api_key=None)
         self._update_all(session)
 
-        stats.check(
-            counter=[
-                ("data.export.batch", 1, 1, ["key:internal"]),
-                ("data.report.upload", 2, 3),
-                ("data.report.upload", 1, 3, ["key:test"]),
-                ("data.report.upload", 1, 6, ["key:e5444-794"]),
-                ("data.observation.upload", 1, 3, ["type:cell", "key:test"]),
-                ("data.observation.upload", 1, 6, ["type:wifi", "key:test"]),
-                ("data.observation.upload", 0, ["type:cell", "key:no_key"]),
-                ("data.observation.upload", 1, 6, ["type:cell", "key:e5444-794"]),
-                ("data.observation.upload", 1, 12, ["type:wifi", "key:e5444-794"]),
-            ]
-        )
-        # we get a variable number of statsd messages and are only
-        # interested in the sum-total
-        for name, total in (("cell", 12), ("wifi", 24)):
-            insert_msgs = [
-                msg
-                for msg in stats.msgs
-                if (msg.startswith("data.observation.insert") and "type:" + name in msg)
-            ]
-            assert (
-                sum([int(msg.split(":")[1].split("|")[0]) for msg in insert_msgs])
-                == total
-            )
+        incr_records = metricsmock.filter_records("incr")
+        # The generated metrics aren't stable and can happen in different
+        # groups. However, the total values are static, so we can assert things
+        # on them. We want to know the total incr values that get generated in
+        # the export.
+        value_totals = {}
+        for record in incr_records:
+            key = (record[1], tuple(record[3]))
+            value_totals[key] = value_totals.setdefault(key, 0) + record[2]
+
+        assert value_totals == {
+            ("data.export.batch", ("key:internal",)): 1,
+            ("data.observation.insert", ("type:cell",)): 12,
+            ("data.observation.insert", ("type:wifi",)): 24,
+            ("data.observation.upload", ("type:cell",)): 3,
+            ("data.observation.upload", ("type:cell", "key:e5444-794")): 6,
+            ("data.observation.upload", ("type:cell", "key:test")): 3,
+            ("data.observation.upload", ("type:wifi",)): 6,
+            ("data.observation.upload", ("type:wifi", "key:e5444-794")): 12,
+            ("data.observation.upload", ("type:wifi", "key:test")): 6,
+            ("data.report.upload", ()): 3,
+            ("data.report.upload", ("key:e5444-794",)): 6,
+            ("data.report.upload", ("key:test",)): 3,
+            ("data.station.new", ("type:cell",)): 12,
+            ("data.station.new", ("type:wifi",)): 24,
+        }
 
     def test_blue(self, celery, session):
         reports = self.add_reports(celery, blue_factor=1, cell_factor=0, wifi_factor=0)
@@ -558,16 +579,36 @@ class TestInternal(BaseExportTest):
         assert len(cells) == 1
         assert cells[0].samples == 1
 
-    def test_cell_invalid(self, celery, session, stats):
+    def test_cell_invalid(self, celery, session, metricsmock):
         self.add_reports(celery, cell_factor=1, wifi_factor=0, cell_mcc=-2)
         self._update_all(session)
 
-        stats.check(
-            counter=[
-                ("data.report.upload", 1, 1, ["key:test"]),
-                ("data.report.drop", 1, 1, ["key:test"]),
-                ("data.observation.drop", 1, 1, ["type:cell", "key:test"]),
-            ]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.upload", value=1, tags=["key:test"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.observation.drop",
+                    value=1,
+                    tags=["type:cell", "key:test"],
+                )
+            )
+            == 1
         )
 
     def test_wifi(self, celery, session):
@@ -604,19 +645,39 @@ class TestInternal(BaseExportTest):
         assert len(wifis) == 1
         assert wifis[0].samples == 1
 
-    def test_wifi_invalid(self, celery, session, stats):
+    def test_wifi_invalid(self, celery, session, metricsmock):
         self.add_reports(celery, cell_factor=0, wifi_factor=1, wifi_key="abcd")
         self._update_all(session)
 
-        stats.check(
-            counter=[
-                ("data.report.upload", 1, 1, ["key:test"]),
-                ("data.report.drop", 1, 1, ["key:test"]),
-                ("data.observation.drop", 1, 1, ["type:wifi", "key:test"]),
-            ]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.upload", value=1, tags=["key:test"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.observation.drop",
+                    value=1,
+                    tags=["type:wifi", "key:test"],
+                )
+            )
+            == 1
         )
 
-    def test_position_invalid(self, celery, session, stats):
+    def test_position_invalid(self, celery, session, metricsmock):
         self.add_reports(
             celery, 1, cell_factor=0, wifi_factor=1, wifi_key="000000123456", lat=-90.1
         )
@@ -627,13 +688,40 @@ class TestInternal(BaseExportTest):
 
         shard = WifiShard.shards()["0"]
         assert session.query(shard).count() == 1
-        stats.check(
-            counter=[
-                ("data.report.upload", 1, 2, ["key:test"]),
-                ("data.report.drop", 1, 1, ["key:test"]),
-                ("data.observation.insert", 1, 1, ["type:wifi"]),
-                ("data.observation.upload", 1, 1, ["type:wifi", "key:test"]),
-            ]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.upload", value=2, tags=["key:test"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.observation.insert", value=1, tags=["type:wifi"]
+                )
+            )
+            == 1
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr",
+                    "data.observation.upload",
+                    value=1,
+                    tags=["type:wifi", "key:test"],
+                )
+            )
+            == 1
         )
 
     def test_no_observations(self, celery, session):

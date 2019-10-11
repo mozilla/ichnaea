@@ -13,7 +13,6 @@ def _make_app(
     _geoip_db=None,
     _raven_client=None,
     _redis_client=None,
-    _stats_client=None,
     _position_searcher=None,
     _region_searcher=None,
 ):
@@ -23,7 +22,6 @@ def _make_app(
         _http_session=_http_session,
         _raven_client=_raven_client,
         _redis_client=_redis_client,
-        _stats_client=_stats_client,
         _position_searcher=_position_searcher,
         _region_searcher=_region_searcher,
     )
@@ -69,7 +67,7 @@ class TestHeartbeat(object):
 
 class TestHeartbeatErrors(object):
     @pytest.fixture(scope="function")
-    def broken_app(self, http_session, raven, stats):
+    def broken_app(self, http_session, raven):
         # Create database connections to the discard port.
         db = configure_db("rw", uri="mysql+pymysql://none:none@127.0.0.1:9/none")
 
@@ -85,7 +83,6 @@ class TestHeartbeatErrors(object):
             _http_session=http_session,
             _raven_client=raven,
             _redis_client=redis_client,
-            _stats_client=stats,
         )
         yield app
 

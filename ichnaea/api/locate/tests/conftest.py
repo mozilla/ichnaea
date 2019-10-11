@@ -5,26 +5,19 @@ from ichnaea.api.locate.tests.base import DummyModel
 
 @pytest.fixture(scope="class")
 def cls_source(
-    request,
-    data_queues,
-    geoip_db,
-    http_session,
-    raven_client,
-    redis_client,
-    stats_client,
+    request, data_queues, geoip_db, http_session, raven_client, redis_client
 ):
     source = request.cls.Source(
         geoip_db=geoip_db,
         raven_client=raven_client,
         redis_client=redis_client,
-        stats_client=stats_client,
         data_queues=data_queues,
     )
     yield source
 
 
 @pytest.fixture(scope="function")
-def source(cls_source, raven, redis, stats):
+def source(cls_source, raven, redis):
     yield cls_source
 
 

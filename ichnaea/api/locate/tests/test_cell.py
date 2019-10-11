@@ -29,39 +29,37 @@ class TestCellPosition(BaseSourceTest):
 
     Source = CellTestPositionSource
 
-    def test_check_empty(self, geoip_db, http_session, session, source, stats):
-        query = self.model_query(geoip_db, http_session, session, stats)
+    def test_check_empty(self, geoip_db, http_session, session, source):
+        query = self.model_query(geoip_db, http_session, session)
         results = source.result_list()
         assert not source.should_search(query, results)
 
-    def test_empty(
-        self, geoip_db, http_session, session_tracker, session, source, stats
-    ):
-        query = self.model_query(geoip_db, http_session, session, stats)
+    def test_empty(self, geoip_db, http_session, session_tracker, session, source):
+        query = self.model_query(geoip_db, http_session, session)
         results = source.search(query)
         self.check_model_results(results, None)
         session_tracker(0)
 
-    def test_cell(self, geoip_db, http_session, session, source, stats):
+    def test_cell(self, geoip_db, http_session, session, source):
         now = util.utcnow()
         cell = CellShardFactory(samples=10)
         session.flush()
 
-        query = self.model_query(geoip_db, http_session, session, stats, cells=[cell])
+        query = self.model_query(geoip_db, http_session, session, cells=[cell])
         results = source.search(query)
         self.check_model_results(results, [cell])
         assert results.best().score == station_score(cell, now)
 
-    def test_cell_wrong_cid(self, geoip_db, http_session, session, source, stats):
+    def test_cell_wrong_cid(self, geoip_db, http_session, session, source):
         cell = CellShardFactory()
         session.flush()
         cell.cid += 1
 
-        query = self.model_query(geoip_db, http_session, session, stats, cells=[cell])
+        query = self.model_query(geoip_db, http_session, session, cells=[cell])
         results = source.search(query)
         self.check_model_results(results, None)
 
-    def test_multiple_cells(self, geoip_db, http_session, session, source, stats):
+    def test_multiple_cells(self, geoip_db, http_session, session, source):
         now = util.utcnow()
         cell = CellShardFactory(samples=100)
         cell2 = CellShardFactory(
@@ -76,9 +74,7 @@ class TestCellPosition(BaseSourceTest):
         )
         session.flush()
 
-        query = self.model_query(
-            geoip_db, http_session, session, stats, cells=[cell, cell2]
-        )
+        query = self.model_query(geoip_db, http_session, session, cells=[cell, cell2])
         results = source.search(query)
         self.check_model_results(
             results,
@@ -92,7 +88,7 @@ class TestCellPosition(BaseSourceTest):
         )
 
     def test_incomplete_keys(
-        self, geoip_db, http_session, session_tracker, session, source, stats
+        self, geoip_db, http_session, session_tracker, session, source
     ):
         cells = CellAreaFactory.build_batch(4)
         cells[0].radio = None
@@ -100,31 +96,29 @@ class TestCellPosition(BaseSourceTest):
         cells[2].mnc = None
         cells[3].lac = None
 
-        query = self.model_query(geoip_db, http_session, session, stats, cells=cells)
+        query = self.model_query(geoip_db, http_session, session, cells=cells)
         results = source.result_list()
         assert not source.should_search(query, results)
         session_tracker(0)
 
-    def test_smallest_area(self, geoip_db, http_session, session, source, stats):
+    def test_smallest_area(self, geoip_db, http_session, session, source):
         now = util.utcnow()
         area = CellAreaFactory(radius=25000, num_cells=8)
         area2 = CellAreaFactory(radius=30000, lat=area.lat + 0.2, num_cells=6)
         session.flush()
 
-        query = self.model_query(
-            geoip_db, http_session, session, stats, cells=[area, area2]
-        )
+        query = self.model_query(geoip_db, http_session, session, cells=[area, area2])
         results = source.search(query)
         self.check_model_results(results, [area])
         assert results.best().score == area_score(area, now)
 
-    def test_minimum_radius(self, geoip_db, http_session, session, source, stats):
+    def test_minimum_radius(self, geoip_db, http_session, session, source):
         areas = CellAreaFactory.create_batch(2)
         areas[0].radius = CELLAREA_MIN_ACCURACY - 2000
         areas[1].radius = CELLAREA_MIN_ACCURACY + 3000
         areas[1].lat = areas[0].lat + 0.2
         session.flush()
 
-        query = self.model_query(geoip_db, http_session, session, stats, cells=areas)
+        query = self.model_query(geoip_db, http_session, session, cells=areas)
         results = source.search(query)
         self.check_model_results(results, [areas[0]], accuracy=CELLAREA_MIN_ACCURACY)

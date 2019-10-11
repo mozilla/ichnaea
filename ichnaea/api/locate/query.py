@@ -1,6 +1,7 @@
 """Code representing a query."""
 
 from ipaddress import ip_address
+import markus
 
 from ichnaea.api.locate.constants import (
     DataAccuracy,
@@ -21,6 +22,7 @@ except ImportError:
     from ordereddict import OrderedDict
 
 METRIC_MAPPING = {0: "none", 1: "one", 2: "many"}
+METRICS = markus.get_metrics()
 
 
 class Query(object):
@@ -42,7 +44,6 @@ class Query(object):
         session=None,
         http_session=None,
         geoip_db=None,
-        stats_client=None,
     ):
         """
         A class representing a concrete query.
@@ -75,13 +76,10 @@ class Query(object):
         :param geoip_db: A geoip database.
         :type geoip_db: :class:`~ichnaea.geoip.GeoIPWrapper`
 
-        :param stats_client: A stats client.
-        :type stats_client: :class:`~ichnaea.log.StatsClient`
         """
         self.geoip_db = geoip_db
         self.http_session = http_session
         self.session = session
-        self.stats_client = stats_client
 
         self.fallback = fallback
         self.ip = ip
@@ -345,7 +343,7 @@ class Query(object):
 
         metric = "%s.%s" % (self.api_type, metric)
         tags = ["key:%s" % self.api_key.valid_key, "region:%s" % region]
-        self.stats_client.incr(metric, tags=tags + extra_tags)
+        METRICS.incr(metric, tags=tags + extra_tags)
 
     def emit_query_stats(self):
         """Emit stats about the data contained in this query."""

@@ -28,7 +28,6 @@ class BaseLocateView(BaseAPIView):
             session=self.request.db_session,
             http_session=self.request.registry.http_session,
             geoip_db=self.request.registry.geoip_db,
-            stats_client=self.stats_client,
         )
 
         searcher = getattr(self.request.registry, self.searcher)

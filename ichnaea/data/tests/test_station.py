@@ -78,7 +78,9 @@ class TestDatabaseErrors(BaseStationTest):
     def queue_and_update(self, celery, obs):
         return self._queue_and_update(celery, obs, update_cell)
 
-    def test_lock_timeout(self, celery, redis, session, session2, stats, restore_db):
+    def test_lock_timeout(
+        self, celery, redis, session, session2, metricsmock, restore_db
+    ):
         obs = CellObservationFactory.build()
         cell = CellShardFactory.build(
             radio=obs.radio,
@@ -117,9 +119,23 @@ class TestDatabaseErrors(BaseStationTest):
 
             self.check_statcounter(redis, StatKey.cell, 1)
             self.check_statcounter(redis, StatKey.unique_cell, 1)
-            stats.check(
-                counter=[("data.observation.insert", 1, ["type:cell"])],
-                timer=[("task", 1, ["task:data.update_cell"])],
+
+            # Assert generated metrics are correct
+            assert (
+                len(
+                    metricsmock.filter_records(
+                        "incr", "data.observation.insert", value=1, tags=["type:cell"]
+                    )
+                )
+                == 1
+            )
+            assert (
+                len(
+                    metricsmock.filter_records(
+                        "timing", "task", tags=["task:data.update_cell"]
+                    )
+                )
+                == 1
             )
         finally:
             CellUpdater._retry_wait = orig_wait
@@ -240,7 +256,7 @@ class StationTest(BaseStationTest):
         self.check_statcounter(redis, self.stat_obs_key, 3)
         self.check_statcounter(redis, self.stat_station_key, 2)
 
-    def test_new(self, celery, session, stats):
+    def test_new(self, celery, session, metricsmock):
         for source in (ReportSource.gnss, ReportSource.query):
             obs = self.obs_factory.build(source=source)
             obs1 = self.obs_factory(
@@ -273,11 +289,21 @@ class StationTest(BaseStationTest):
             self.check_blocked(station, None)
             self.check_dates(station, self.today, self.today, self.today)
 
-        stats.check(
-            counter=[
-                ("data.observation.insert", 2, [self.type_tag]),
-                ("data.station.new", 2, [self.type_tag]),
-            ]
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.observation.insert", value=5, tags=[self.type_tag]
+                )
+            )
+            == 2
+        )
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.station.new", value=1, tags=[self.type_tag]
+                )
+            )
+            == 2
         )
 
     def test_new_block(self, celery, session):

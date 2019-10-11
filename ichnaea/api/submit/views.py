@@ -2,6 +2,7 @@
 Implementation of submit specific HTTP service views.
 """
 
+import markus
 from redis import RedisError
 
 from ichnaea.api.exceptions import (
@@ -15,6 +16,9 @@ from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
 from ichnaea.api.submit.schema_v2 import SUBMIT_V2_SCHEMA
 
 from ichnaea.api.views import BaseAPIView
+
+
+METRICS = markus.get_metrics()
 
 
 class BaseSubmitView(BaseAPIView):
@@ -32,7 +36,7 @@ class BaseSubmitView(BaseAPIView):
         tags = None
         if api_key.valid_key:
             tags = ["key:%s" % api_key.valid_key]
-        self.stats_client.incr("data.batch.upload", tags=tags)
+        METRICS.incr("data.batch.upload", tags=tags)
 
     def submit(self, api_key):
         request_data, errors = self.preprocess_request()

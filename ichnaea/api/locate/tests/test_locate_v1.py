@@ -90,7 +90,7 @@ class LocateV1Base(BaseLocateTest):
 
 
 class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
-    def test_blue(self, app, data_queues, session, stats):
+    def test_blue(self, app, data_queues, session, metricsmock):
         blue = BlueShardFactory()
         offset = 0.00001
         blues = [
@@ -110,31 +110,36 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
         self.check_queue(data_queues, 1)
-        stats.check(
-            counter=[
-                (self.metric_type + ".request", [self.metric_path, "key:test"]),
-                (
-                    self.metric_type + ".result",
-                    [
-                        "key:test",
-                        "region:none",
-                        "fallback_allowed:false",
-                        "accuracy:high",
-                        "status:hit",
-                        "source:internal",
-                    ],
-                ),
-                (
-                    self.metric_type + ".source",
-                    [
-                        "key:test",
-                        "region:none",
-                        "source:internal",
-                        "accuracy:high",
-                        "status:hit",
-                    ],
-                ),
-            ]
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:test"],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".result",
+            value=1,
+            tags=[
+                "key:test",
+                "region:none",
+                "fallback_allowed:false",
+                "accuracy:high",
+                "status:hit",
+                "source:internal",
+            ],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".source",
+            value=1,
+            tags=[
+                "key:test",
+                "region:none",
+                "source:internal",
+                "accuracy:high",
+                "status:hit",
+            ],
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -175,7 +180,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, blue, lat=blue.lat + offset / 2)
         self.check_queue(data_queues, 0)
 
-    def test_cell(self, app, data_queues, session, stats):
+    def test_cell(self, app, data_queues, session, metricsmock):
         cell = CellShardFactory(radio=Radio.lte)
         session.flush()
 
@@ -188,33 +193,45 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
         self.check_queue(data_queues, 1)
-        stats.check(
-            counter=[
-                ("request", [self.metric_path, "method:post", "status:200"]),
-                (self.metric_type + ".request", [self.metric_path, "key:test"]),
-                (
-                    self.metric_type + ".result",
-                    [
-                        "key:test",
-                        "region:none",
-                        "fallback_allowed:false",
-                        "accuracy:medium",
-                        "status:hit",
-                        "source:internal",
-                    ],
-                ),
-                (
-                    self.metric_type + ".source",
-                    [
-                        "key:test",
-                        "region:none",
-                        "source:internal",
-                        "accuracy:medium",
-                        "status:hit",
-                    ],
-                ),
+        assert metricsmock.has_record(
+            "incr",
+            "request",
+            value=1,
+            tags=[self.metric_path, "method:post", "status:200"],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:test"],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".result",
+            value=1,
+            tags=[
+                "key:test",
+                "region:none",
+                "fallback_allowed:false",
+                "accuracy:medium",
+                "status:hit",
+                "source:internal",
             ],
-            timer=[("request", [self.metric_path, "method:post"])],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".source",
+            value=1,
+            tags=[
+                "key:test",
+                "region:none",
+                "source:internal",
+                "accuracy:medium",
+                "status:hit",
+            ],
+        )
+        assert metricsmock.has_record(
+            "timing", "request", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -263,7 +280,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
         self.check_queue(data_queues, 1)
 
-    def test_wifi(self, app, data_queues, session, stats):
+    def test_wifi(self, app, data_queues, session, metricsmock):
         wifi = WifiShardFactory()
         offset = 0.00001
         wifis = [
@@ -286,33 +303,45 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
         self.check_queue(data_queues, 1)
-        stats.check(
-            counter=[
-                ("request", [self.metric_path, "method:post", "status:200"]),
-                (self.metric_type + ".request", [self.metric_path, "key:test"]),
-                (
-                    self.metric_type + ".result",
-                    [
-                        "key:test",
-                        "region:none",
-                        "fallback_allowed:false",
-                        "accuracy:high",
-                        "status:hit",
-                        "source:internal",
-                    ],
-                ),
-                (
-                    self.metric_type + ".source",
-                    [
-                        "key:test",
-                        "region:none",
-                        "source:internal",
-                        "accuracy:high",
-                        "status:hit",
-                    ],
-                ),
+        assert metricsmock.has_record(
+            "incr",
+            "request",
+            value=1,
+            tags=[self.metric_path, "method:post", "status:200"],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".request",
+            value=1,
+            tags=[self.metric_path, "key:test"],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".result",
+            value=1,
+            tags=[
+                "key:test",
+                "region:none",
+                "fallback_allowed:false",
+                "accuracy:high",
+                "status:hit",
+                "source:internal",
             ],
-            timer=[("request", [self.metric_path, "method:post"])],
+        )
+        assert metricsmock.has_record(
+            "incr",
+            self.metric_type + ".source",
+            value=1,
+            tags=[
+                "key:test",
+                "region:none",
+                "source:internal",
+                "accuracy:high",
+                "status:hit",
+            ],
+        )
+        assert metricsmock.has_record(
+            "timing", "request", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -429,7 +458,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
 
 
 class TestError(LocateV1Base, BaseLocateTest):
-    def test_apikey_error(self, app, data_queues, raven, session, stats, restore_db):
+    def test_apikey_error(self, app, data_queues, raven, session, restore_db):
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
@@ -441,7 +470,9 @@ class TestError(LocateV1Base, BaseLocateTest):
         raven.check([("ProgrammingError", 1)])
         self.check_queue(data_queues, 0)
 
-    def test_database_error(self, app, data_queues, raven, session, stats, restore_db):
+    def test_database_error(
+        self, app, data_queues, raven, session, metricsmock, restore_db
+    ):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
             CellShardFactory.build(radio=Radio.wcdma),
@@ -460,24 +491,27 @@ class TestError(LocateV1Base, BaseLocateTest):
         res = self._call(app, body=query, ip=self.test_ip)
         self.check_response(data_queues, res, "ok", fallback="ipf")
         self.check_queue(data_queues, 0)
-        stats.check(
-            counter=[("request", [self.metric_path, "method:post", "status:200"])],
-            timer=[("request", [self.metric_path, "method:post"])],
+        assert metricsmock.has_record(
+            "incr",
+            "request",
+            value=1,
+            tags=[self.metric_path, "method:post", "status:200"],
+        )
+        assert metricsmock.has_record(
+            "timing", "request", tags=[self.metric_path, "method:post"]
         )
         if self.apikey_metrics:
-            stats.check(
-                counter=[
-                    (
-                        self.metric_type + ".result",
-                        [
-                            "key:test",
-                            "region:GB",
-                            "fallback_allowed:false",
-                            "accuracy:high",
-                            "status:miss",
-                        ],
-                    )
-                ]
+            assert metricsmock.has_record(
+                "incr",
+                self.metric_type + ".result",
+                value=1,
+                tags=[
+                    "key:test",
+                    "region:GB",
+                    "fallback_allowed:false",
+                    "accuracy:high",
+                    "status:miss",
+                ],
             )
 
         raven.check([("ProgrammingError", 3)])

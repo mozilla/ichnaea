@@ -8,6 +8,7 @@ import uuid
 import boto3
 import boto3.exceptions
 import botocore.exceptions
+import markus
 import redis.exceptions
 import requests
 import requests.exceptions
@@ -33,7 +34,10 @@ from ichnaea.models import (
 from ichnaea.models.content import encode_datamap_grid
 from ichnaea import util
 
+
 WHITESPACE = re.compile(r"\s", flags=re.UNICODE)
+
+METRICS = markus.get_metrics()
 
 
 class IncomingQueue(object):
@@ -121,9 +125,7 @@ class ReportExporter(object):
         success = False
         for i in range(self._retries):
             try:
-                with self.task.stats_client.timed(
-                    "data.export.upload", tags=self.stats_tags
-                ):
+                with METRICS.timer("data.export.upload", tags=self.stats_tags):
                     self.send(queue_items)
 
                 success = True
@@ -132,7 +134,7 @@ class ReportExporter(object):
                 time.sleep(self._retry_wait * (i ** 2 + 1))
 
             if success:
-                self.task.stats_client.incr("data.export.batch", tags=self.stats_tags)
+                METRICS.incr("data.export.batch", tags=self.stats_tags)
                 break
 
         if success and self.queue.ready():
@@ -170,7 +172,7 @@ class GeosubmitExporter(ReportExporter):
 
         # log upload_status and trigger exception for bad responses
         # this causes the task to be re-tried
-        self.task.stats_client.incr(
+        METRICS.incr(
             "data.export.upload",
             tags=self.stats_tags + ["status:%s" % response.status_code],
         )
@@ -216,11 +218,11 @@ class S3Exporter(ReportExporter):
             obj = bucket.Object(obj_name)
             obj.put(Body=data, ContentEncoding="gzip", ContentType="application/json")
 
-            self.task.stats_client.incr(
+            METRICS.incr(
                 "data.export.upload", tags=self.stats_tags + ["status:success"]
             )
         except Exception:
-            self.task.stats_client.incr(
+            METRICS.incr(
                 "data.export.upload", tags=self.stats_tags + ["status:failure"]
             )
             raise
@@ -443,9 +445,7 @@ class InternalExporter(ReportExporter):
                     suffix = "observation"
                     tags = ["type:%s" % type_] + api_tag
 
-                self.task.stats_client.incr(
-                    "data.%s.%s" % (suffix, action), count, tags=tags
-                )
+                METRICS.incr("data.%s.%s" % (suffix, action), count, tags=tags)
 
     def process_report(self, data):
         report = Report.create(**data)

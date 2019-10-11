@@ -4,6 +4,7 @@ import gc
 import warnings
 
 from alembic.config import main as alembic_main
+from markus.testing import MetricsMock
 from maxminddb.const import MODE_AUTO
 import pytest
 from sqlalchemy import event, inspect, text
@@ -20,7 +21,7 @@ from ichnaea.db import configure_db, create_db, get_sqlalchemy_url
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import CITY_RADII, configure_geoip
 from ichnaea.http import configure_http_session
-from ichnaea.log import configure_raven, configure_stats
+from ichnaea.log import configure_raven
 from ichnaea.models import _Model
 from ichnaea.queue import DataQueue
 from ichnaea.taskapp.app import celery_app
@@ -303,38 +304,47 @@ def redis(redis_client):
     redis_client.flushdb()
 
 
+@pytest.fixture
+def metricsmock():
+    """Return a MetricsMock for asserting things on metrics.
+
+    Usage::
+
+        def test_something(metricsmock):
+            assert metricsmock.has_record(
+                'incr',
+                stat='some.stat',
+                value=1
+            )
+
+    If you ever need to clear the records in the middle of a test, do::
+
+        metricsmock.clear_records()
+
+    For more, see: https://markus.readthedocs.io/en/latest/testing.html
+
+    """
+    with MetricsMock() as mm:
+        yield mm
+
+
 @pytest.fixture(scope="session")
-def stats_client():
-    stats_client = configure_stats()
-    yield stats_client
-    stats_client.close()
-
-
-@pytest.fixture(scope="function")
-def stats(stats_client):
-    yield stats_client
-    stats_client._clear()
-
-
-@pytest.fixture(scope="session")
-def position_searcher(data_queues, geoip_db, raven_client, redis_client, stats_client):
+def position_searcher(data_queues, geoip_db, raven_client, redis_client):
     searcher = configure_position_searcher(
         geoip_db=geoip_db,
         raven_client=raven_client,
         redis_client=redis_client,
-        stats_client=stats_client,
         data_queues=data_queues,
     )
     yield searcher
 
 
 @pytest.fixture(scope="session")
-def region_searcher(data_queues, geoip_db, raven_client, redis_client, stats_client):
+def region_searcher(data_queues, geoip_db, raven_client, redis_client):
     searcher = configure_region_searcher(
         geoip_db=geoip_db,
         raven_client=raven_client,
         redis_client=redis_client,
-        stats_client=stats_client,
         data_queues=data_queues,
     )
     yield searcher
@@ -347,7 +357,6 @@ def global_app(
     http_session,
     raven_client,
     redis_client,
-    stats_client,
     position_searcher,
     region_searcher,
 ):
@@ -357,7 +366,6 @@ def global_app(
         _http_session=http_session,
         _raven_client=raven_client,
         _redis_client=redis_client,
-        _stats_client=stats_client,
         _position_searcher=position_searcher,
         _region_searcher=region_searcher,
     )
@@ -367,24 +375,23 @@ def global_app(
 
 
 @pytest.fixture(scope="function")
-def app(global_app, raven, redis, session, stats):
+def app(global_app, raven, redis, session):
     yield global_app
 
 
 @pytest.fixture(scope="session")
-def global_celery(db, geoip_db, raven_client, redis_client, stats_client):
+def global_celery(db, geoip_db, raven_client, redis_client):
     init_worker(
         celery_app,
         _db=db,
         _geoip_db=geoip_db,
         _raven_client=raven_client,
         _redis_client=redis_client,
-        _stats_client=stats_client,
     )
     yield celery_app
     shutdown_celery(celery_app)
 
 
 @pytest.fixture(scope="function")
-def celery(global_celery, raven, redis, session, stats):
+def celery(global_celery, raven, redis, session):
     yield global_celery
