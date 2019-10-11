@@ -6,6 +6,7 @@ import os
 
 import boto3
 import colander
+from more_itertools import peekable
 from pytz import UTC
 from sqlalchemy.sql import text
 from sqlalchemy.orm import load_only
@@ -119,23 +120,27 @@ def read_stations_from_csv(session, file_handle, redis_client, cellarea_queue):
     # Avoid circular imports
     from ichnaea.data.tasks import load_cellarea, update_cellarea
 
-    csv_content = reader(file_handle)
-    seen_header = None
+    csv_content = peekable(reader(file_handle))
     radio_type = {"UMTS": "wcdma", "GSM": "gsm", "LTE": "lte", "": "Unknown"}
 
     counts = defaultdict(Counter)
     areas = set()
     areas_total = 0
     total = 0
+
+    if not csv_content:
+        LOGGER.warning("Nothing to process.")
+        return
+
+    first_row = csv_content.peek()
+    if first_row == _FIELD_NAMES:
+        # Skip the first row because it's a header row
+        next(csv_content)
+    else:
+        LOGGER.warning("Expected header row, got data: %s", first_row)
+
     try:
         for row in csv_content:
-            if seen_header is None:
-                seen_header = row == _FIELD_NAMES
-                if seen_header:
-                    continue  # Skip header row
-                else:
-                    LOGGER.warning("Expected header row, got data: %s", row)
-
             try:
                 radio = radio_type[row[0]]
             except KeyError:
@@ -165,6 +170,8 @@ def read_stations_from_csv(session, file_handle, redis_client, cellarea_queue):
                 shard = CellShard.create(_raise_invalid=True, **data)
             except (colander.Invalid, ValueError) as e:
                 if total == 0:
+                    # If the first row is invalid, it's likely the rest of the
+                    # file is, too--drop out here.
                     raise InvalidCSV("first row %s is invalid: %s" % (row, e))
                 else:
                     LOGGER.warning("row %s is invalid: %s", row, e)
