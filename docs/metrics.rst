@@ -221,11 +221,11 @@ The fallback name tag specifies which fallback service is used.
     If the cached values didn't agree on a consistent position,
     a `inconsistent` status is used.
 
-``locate.fallback.lookup#fallback_name:<fallback_name>`` : timer
+``locate.fallback.lookup_timing#fallback_name:<fallback_name>`` : timer
 
     Measures the time it takes to do each outbound network request.
 
-``locate.fallback.lookup#fallback_name:<fallback_name>,status:<code>`` : counter
+``locate.fallback.lookup_count#fallback_name:<fallback_name>,status:<code>`` : counter
 
     Counts the HTTP response codes for all outbound requests. There
     is one counter per HTTP response code, for example `200`.
