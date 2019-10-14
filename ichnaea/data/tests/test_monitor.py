@@ -1,10 +1,15 @@
 from datetime import timedelta
+import random
 
-from ichnaea.data.tasks import monitor_api_key_limits, monitor_api_users
+from ichnaea.data.tasks import (
+    monitor_api_key_limits,
+    monitor_api_users,
+    monitor_queue_size,
+)
 from ichnaea import util
 
 
-class TestMonitor(object):
+class TestMonitorApiKeys(object):
     def test_monitor_api_keys_empty(self, celery, metricsmock):
         monitor_api_key_limits.delay().get()
         assert not metricsmock.has_record("gauge", "api.limit")
@@ -147,3 +152,28 @@ class TestMonitorAPIUsers(object):
 
         # the too old key was deleted manually
         assert not redis.exists("apiuser:submit:test:" + days_7)
+
+
+class TestMonitorQueueSize(object):
+    def test_empty_queues(self, celery, redis, metricsmock):
+        data = {name: 0 for name in celery.all_queues}
+
+        monitor_queue_size.delay().get()
+        for key, val in data.items():
+            assert metricsmock.has_record(
+                "gauge", "queue", value=0, tags=["queue:" + key]
+            )
+
+    def test_nonempty(self, celery, redis, metricsmock):
+        data = {"export_queue_internal": 3, "export_queue_backup:abcd-ef-1234": 7}
+        for name in celery.all_queues:
+            data[name] = random.randint(1, 10)
+
+        for key, val in data.items():
+            redis.lpush(key, *range(val))
+
+        monitor_queue_size.delay().get()
+        for key, val in data.items():
+            assert metricsmock.has_record(
+                "gauge", "queue", value=val, tags=["queue:" + key]
+            )
