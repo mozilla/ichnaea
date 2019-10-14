@@ -102,11 +102,10 @@ def init_worker(
 
     celery_app.geoip_db = configure_geoip(raven_client=raven_client, _client=_geoip_db)
 
-    # configure data queues
-    celery_app.all_queues = all_queues = set([q.name for q in TASK_QUEUES])
-
+    # configure data queues and build set of all queues
+    all_queues = set([q.name for q in TASK_QUEUES])
     celery_app.data_queues = data_queues = configure_data(redis_client)
-    all_queues = all_queues.union(
+    celery_app.all_queues = all_queues.union(
         set([queue.key for queue in data_queues.values() if queue.key])
     )
 
