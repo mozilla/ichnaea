@@ -329,7 +329,7 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
         The public CSV export is limited to a few types of radios, so an unexpected
         radio type suggests file corruption or other shenanigans.
         """
-        # In row 3, 'WCDMA'is not a valid radio string
+        # In row 3, 'WCDMA' is not a valid radio string
         csv = StringIO(
             """\
 radio,mcc,net,area,cell,unit,lon,lat,range,samples,changeable,created,updated,averageSignal
@@ -340,15 +340,6 @@ GSM,208,10,30014,20669,,2.5112670,46.5992450,0,78,1,1566307030,1570119413,
         )
         with pytest.raises(InvalidCSV):
             read_stations_from_csv(session, csv, redis_client, cellarea_queue)
-
-        # Only the station before the error is loaded
-        umts = session.query(CellShard.shard_model(Radio.umts)).one()
-        assert umts.lat == 38.8574351
-        assert umts.lon == 23.4123167
-        gsm_model = CellShard.shard_model(Radio.gsm)
-        assert session.query(func.count(gsm_model.cellid)).scalar() == 0
-        assert session.query(func.count(CellArea.areaid)).scalar() == 1
-        assert session.query(func.count(RegionStat.region)).scalar() == 1
 
     def test_empty_radio_skipped(self, session, redis_client, cellarea_queue):
         """

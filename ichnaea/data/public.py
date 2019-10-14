@@ -118,7 +118,7 @@ def read_stations_from_csv(session, file_handle, redis_client, cellarea_queue):
     :arg cellarea_queue: the DataQueue for updating cellarea IDs
     """
     # Avoid circular imports
-    from ichnaea.data.tasks import load_cellarea, update_cellarea
+    from ichnaea.data.tasks import update_cellarea, update_statregion
 
     csv_content = peekable(reader(file_handle))
     radio_type = {"UMTS": "wcdma", "GSM": "gsm", "LTE": "lte", "": "Unknown"}
@@ -139,126 +139,124 @@ def read_stations_from_csv(session, file_handle, redis_client, cellarea_queue):
     else:
         LOGGER.warning("Expected header row, got data: %s", first_row)
 
-    try:
-        for row in csv_content:
-            try:
-                radio = radio_type[row[0]]
-            except KeyError:
-                raise InvalidCSV("Unknown radio type in row: %s" % row)
+    for row in csv_content:
+        try:
+            radio = radio_type[row[0]]
+        except KeyError:
+            raise InvalidCSV("Unknown radio type in row: %s" % row)
 
-            if radio == "Unknown":
-                LOGGER.warning("Skipping unknown radio: %s", row)
+        if radio == "Unknown":
+            LOGGER.warning("Skipping unknown radio: %s", row)
+            continue
+
+        try:
+            data = {
+                "radio": radio,
+                "mcc": int(row[1]),
+                "mnc": int(row[2]),
+                "lac": int(row[3]),
+                "cid": int(row[4]),
+                "psc": int(row[5]) if row[5] else 0,
+                "lon": float(row[6]),
+                "lat": float(row[7]),
+                # Some exported radiuses exceed the max and fail validation
+                "radius": min(int(row[8]), CELL_MAX_RADIUS),
+                "samples": int(row[9]),
+                # row[10] is "changable", always 1 and not imported
+                "created": datetime.fromtimestamp(int(row[11]), UTC),
+                "modified": datetime.fromtimestamp(int(row[12]), UTC),
+            }
+            shard = CellShard.create(_raise_invalid=True, **data)
+        except (colander.Invalid, ValueError) as e:
+            if total == 0:
+                # If the first row is invalid, it's likely the rest of the
+                # file is, too--drop out here.
+                raise InvalidCSV("first row %s is invalid: %s" % (row, e))
+            else:
+                LOGGER.warning("row %s is invalid: %s", row, e)
                 continue
 
-            try:
-                data = {
-                    "radio": radio,
-                    "mcc": int(row[1]),
-                    "mnc": int(row[2]),
-                    "lac": int(row[3]),
-                    "cid": int(row[4]),
-                    "psc": int(row[5]) if row[5] else 0,
-                    "lon": float(row[6]),
-                    "lat": float(row[7]),
-                    # Some exported radiuses exceed the max and fail validation
-                    "radius": min(int(row[8]), CELL_MAX_RADIUS),
-                    "samples": int(row[9]),
-                    # row[10] is "changable", always 1 and not imported
-                    "created": datetime.fromtimestamp(int(row[11]), UTC),
-                    "modified": datetime.fromtimestamp(int(row[12]), UTC),
-                }
-                shard = CellShard.create(_raise_invalid=True, **data)
-            except (colander.Invalid, ValueError) as e:
-                if total == 0:
-                    # If the first row is invalid, it's likely the rest of the
-                    # file is, too--drop out here.
-                    raise InvalidCSV("first row %s is invalid: %s" % (row, e))
-                else:
-                    LOGGER.warning("row %s is invalid: %s", row, e)
-                    continue
+        # Is this station in the database?
+        shard_type = shard.__class__
+        existing = (
+            session.query(shard_type)
+            .filter(shard_type.cellid == shard.cellid)
+            .options(load_only("modified"))
+            .one_or_none()
+        )
+
+        if existing:
+            if existing.modified < data["modified"]:
+                # Update existing station with new data
+                operation = "updated"
+                existing.psc = shard.psc
+                existing.lon = shard.lon
+                existing.lat = shard.lat
+                existing.radius = shard.radius
+                existing.samples = shard.samples
+                existing.created = shard.created
+                existing.modified = shard.modified
             else:
-                # Is this station in the database?
-                shard_type = shard.__class__
-                existing = (
-                    session.query(shard_type)
-                    .filter(shard_type.cellid == shard.cellid)
-                    .options(load_only("modified"))
-                    .one_or_none()
-                )
+                # Do nothing to existing station record
+                operation = "found"
+        else:
+            # Add a new station record
+            operation = "new"
+            shard.min_lat = shard.lat
+            shard.max_lat = shard.lat
+            shard.min_lon = shard.lon
+            shard.max_lon = shard.lon
+            session.add(shard)
 
-                if existing:
-                    if existing.modified < data["modified"]:
-                        # Update existing station with new data
-                        operation = "updated"
-                        existing.psc = shard.psc
-                        existing.lon = shard.lon
-                        existing.lat = shard.lat
-                        existing.radius = shard.radius
-                        existing.samples = shard.samples
-                        existing.created = shard.created
-                        existing.modified = shard.modified
-                    else:
-                        # Do nothing to existing station record
-                        operation = "found"
-                else:
-                    # Add a new station record
-                    operation = "new"
-                    shard.min_lat = shard.lat
-                    shard.max_lat = shard.lat
-                    shard.min_lon = shard.lon
-                    shard.max_lon = shard.lon
-                    session.add(shard)
+        counts[data["radio"]][operation] += 1
 
-                counts[data["radio"]][operation] += 1
+        # Process the cell area?
+        if operation in {"new", "updated"}:
+            areas.add(area_id(shard))
 
-                # Process the cell area?
-                if operation in {"new", "updated"}:
-                    areas.add(area_id(shard))
+        # Process a chunk of stations, report on progress
+        total += 1
+        if total % 1000 == 0:
+            session.commit()
+            LOGGER.info("Processed %d stations", total)
 
-                # Process a chunk of stations, report on progress
-                total += 1
-                if total % 1000 == 0:
-                    session.commit()
-                    LOGGER.info("Processed %d stations", total)
-
-                # Process a chunk of cell areas
-                if areas and (len(areas) % 1000 == 0):
-                    session.commit()
-                    areas_total += len(areas)
-                    LOGGER.info("Processed %d station areas", areas_total)
-                    with redis_pipeline(redis_client) as pipe:
-                        cellarea_queue.enqueue(list(areas), pipe=pipe)
-                    update_cellarea.delay()
-                    areas = set()
-    finally:
-        # Commit remaining station data
-        session.commit()
-
-        # Update the remaining cell areas
-        if areas:
+        if areas and (len(areas) % 1000 == 0):
+            session.commit()
             areas_total += len(areas)
+            LOGGER.info("Processed %d station areas", areas_total)
             with redis_pipeline(redis_client) as pipe:
                 cellarea_queue.enqueue(list(areas), pipe=pipe)
-            load_cellarea.delay()
+            update_cellarea.delay()
+            areas = set()
 
-        # Summarize results
+    # Commit remaining station data
+    session.commit()
+
+    # Update the remaining cell areas
+    if areas:
+        areas_total += len(areas)
+        with redis_pipeline(redis_client) as pipe:
+            cellarea_queue.enqueue(list(areas), pipe=pipe)
+        update_cellarea.delay()
+
+    # Now that we've updated all the cell areas, we need to update the
+    # statregion
+    update_statregion.delay()
+
+    # Summarize results
+    LOGGER.info("Complete, processed %d station%s:", total, "" if total == 1 else "s")
+    for radio_type, op_counts in sorted(counts.items()):
         LOGGER.info(
-            "Complete, processed %d station%s:", total, "" if total == 1 else "s"
+            "  %s: %d new, %d updated, %d already loaded",
+            radio_type,
+            op_counts["new"],
+            op_counts["updated"],
+            op_counts["found"],
         )
-        for radio_type, op_counts in sorted(counts.items()):
-            LOGGER.info(
-                "  %s: %d new, %d updated, %d already loaded",
-                radio_type,
-                op_counts["new"],
-                op_counts["updated"],
-                op_counts["found"],
-            )
-        if areas_total:
-            LOGGER.info(
-                "  %d station area%s updated",
-                areas_total,
-                "" if areas_total == 1 else "s",
-            )
+    if areas_total:
+        LOGGER.info(
+            "  %d station area%s updated", areas_total, "" if areas_total == 1 else "s"
+        )
 
 
 class CellExport(object):
