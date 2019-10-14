@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 """
-Load data from a downloaded public export (full or differential)
+Import from public cell data into a local dev environment.
 
 Download from https://location.services.mozilla.com/downloads
+
+This has been tested with a differential cell export (~400kB compressed).
+A full cell export (~370,000kB) contains unexpected data that will
+require code changes to handle gracefully, and may require adjusting
+the resources of the development environment.
 """
 
 import argparse
