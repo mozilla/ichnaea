@@ -7,8 +7,9 @@ Data import and export
 Data export
 ===========
 
-Ichnaea supports automatic, periodic CSV (comma separated values) export
-of aggregate cell data (position estimates).
+Ichnaea supports automatic, periodic CSV (comma separated values) export of
+aggregate cell data (position estimates). Mozilla's exports are available at
+`<https://location.services.mozilla.com/downloads>`_
 
 The data exchange format was created in collaboration with the
 :term:`OpenCellID` project.
@@ -119,7 +120,7 @@ updated
 averageSignal
     Average signal strength from all observations for the cell network. This
     is an integer value, in dBm.
-    
+
     For example, ``-72``.
 
     This field is only used by the :term:`OpenCellID` project and has been used
@@ -129,4 +130,23 @@ averageSignal
 Data import
 ===========
 
-FIXME
+Aggregate cell data can be imported into an Ichnaea instance.  For the
+development environment:
+
+1. Download a Differental Cell Export from `Mozilla's Download page
+   <https://location.services.mozilla.com/downloads>`_.  Do not extract it, but
+   keep it in the compressed ``.csv.gz`` format, in the root of the repository.
+
+2. In a shell in the app container, import the data::
+
+    $ make shell
+    # Replace with the filename of the downloaded export file
+    app@blahblahblah:/app$ ichnaea/scripts/load_cell_data.py MLS-diff-cell-export-YYYY-MM-DDTHH0000.csv.gz
+
+This will import the cell data, then queue tasks to aggregrate cell areas and
+region statistics. It should take about a minute to process an 300kB export of
+10,000 stations.
+
+Importing a Full Cell Export is not recommended. This will fail due to
+unexpected data, and the development environment may require undocumented
+changes for the larger resource requirements of a full cell export.
