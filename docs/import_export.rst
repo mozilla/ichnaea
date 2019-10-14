@@ -137,20 +137,16 @@ development environment:
    <https://location.services.mozilla.com/downloads>`_.  Do not extract it, but
    keep it in the compressed ``.csv.gz`` format, in the root of the repository.
 
-2. Run the celery workers::
-
-    $ make runcelery
-
-3. In a second shell, import the data::
+2. In a shell in the app container, import the data::
 
     $ make shell
     # Replace with the filename of the downloaded export file
-    app@blahblahblah:/app$ ichnaea/scripts/load_cell_data.py MLS-diff-cell-export-YYYY-MM-DDTXX0000.csv.gz
+    app@blahblahblah:/app$ ichnaea/scripts/load_cell_data.py MLS-diff-cell-export-YYYY-MM-DDTHH0000.csv.gz
 
 This will import the cell data, then queue tasks to aggregrate cell areas and
 region statistics. It should take about a minute to process an 300kB export of
 10,000 stations.
 
-Importing a Full Cell Export is not recommended. The development environment
-will require undocumented changes for the larger resource requirements of a
-full cell export.
+Importing a Full Cell Export is not recommended. This will fail due to
+unexpected data, and the development environment may require undocumented
+changes for the larger resource requirements of a full cell export.
