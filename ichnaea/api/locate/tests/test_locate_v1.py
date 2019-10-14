@@ -171,6 +171,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ]
 
     def test_blue_seen(self, app, data_queues, session):
+        self.check_queue(data_queues, 0)
         blue = BlueShardFactory()
         offset = 0.00002
         blues = [blue, BlueShardFactory(lat=blue.lat + offset)]
