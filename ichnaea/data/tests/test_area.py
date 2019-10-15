@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-import pytest
-
 from ichnaea.data.tasks import update_cellarea
 from ichnaea.models import area_id, encode_cellarea, CellArea, Radio
 from ichnaea.tests.factories import CellAreaFactory, CellShardFactory
@@ -252,7 +250,6 @@ class TestArea(object):
         area = session.query(self.area_model).one()
         assert area.region is None
 
-    @pytest.mark.xfail(reason="Raises TypeError", strict=True)
     def test_region_null_tied(self, celery, session):
         """If an equal number of cells have region=None, the area is None."""
 
@@ -285,8 +282,6 @@ class TestArea(object):
         session.flush()
 
         self.area_queue(celery).enqueue([area_id(cell)])
-        # FIXME: Raises exception while sorting
-        # TypeError: '<' not supported between instances of 'str' and 'NoneType'
         self.task.delay().get()
 
         area = session.query(self.area_model).one()

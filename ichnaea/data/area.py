@@ -44,7 +44,9 @@ class CellAreaUpdater(object):
                 grouped_regions[reg] += 1
             max_count = max(grouped_regions.values())
             max_regions = sorted(
-                [k for k, v in grouped_regions.items() if v == max_count]
+                [k for k, v in grouped_regions.items() if v == max_count],
+                # Emulate Python 2.6, where None is sortable and first
+                key=lambda item: item or "",
             )
             # If we get a tie here, randomly choose the first.
             region = max_regions[0]
