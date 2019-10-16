@@ -14,6 +14,9 @@ from pytz import UTC
 
 from ichnaea.exceptions import GZIPDecodeError
 
+HERE = os.path.dirname(__file__)
+APP_ROOT = os.path.dirname(HERE)
+
 
 @contextmanager
 def gzip_open(filename, mode, compresslevel=6):
@@ -71,7 +74,7 @@ def utcnow():
 
 def version_info():
     """Return version.json information."""
-    version_file = os.path.join(os.path.dirname(__file__), "version.json")
+    version_file = os.path.join(APP_ROOT, "version.json")
     info = {}
     if os.path.exists(version_file):
         with open(version_file, "r") as fp:
@@ -88,7 +91,7 @@ def version_info():
 
 def contribute_info():
     """Return contribute.json information."""
-    contribute_file = os.path.join(os.path.dirname(__file__), "contribute.json")
+    contribute_file = os.path.join(APP_ROOT, "contribute.json")
     if os.path.exists(contribute_file):
         with open(contribute_file, "r") as fp:
             try:
