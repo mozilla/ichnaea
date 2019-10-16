@@ -213,3 +213,76 @@ class TestArea(object):
 
         area = session.query(self.area_model).one()
         assert area.region == "PR"
+
+    def test_region_all_none(self, celery, session):
+        """If all cell regions are None, the area region is None."""
+
+        # Sardinia, in Mediterranean, not identified as part of Italy
+        cell = self.cell_factory(
+            radio=Radio.wcdma,
+            mcc=204,
+            mnc=4,
+            lac=35051,
+            cid=1018429,
+            lat=40.18,
+            lon=9.59,
+            radius=10,
+            region=None,
+        )
+        assert cell.region is None
+        cell2 = self.cell_factory(
+            radio=cell.radio,
+            mcc=cell.mcc,
+            mnc=cell.mnc,
+            lac=cell.lac,
+            cid=cell.cid + 1,
+            lat=cell.lat + 0.1,
+            lon=cell.lon + 0.1,
+            radius=10,
+            region=None,
+        )
+        assert cell2.region is None
+        session.flush()
+
+        self.area_queue(celery).enqueue([area_id(cell)])
+        self.task.delay().get()
+
+        area = session.query(self.area_model).one()
+        assert area.region is None
+
+    def test_region_null_tied(self, celery, session):
+        """If an equal number of cells have region=None, the area is None."""
+
+        # Bornholm, an island in the Baltic sea, not identified as part of Denmark
+        cell = self.cell_factory(
+            radio=Radio.wcdma,
+            mcc=204,
+            mnc=175,
+            lac=1515,
+            cid=13241603,
+            lat=55.115,
+            lon=14.88,
+            radius=10,
+            region=None,
+        )
+        assert cell.region is None
+
+        # Reeuwijk, Netherlands
+        self.cell_factory(
+            radio=Radio.wcdma,
+            mcc=cell.mcc,
+            mnc=cell.mnc,
+            lac=cell.lac,
+            cid=cell.cid + 2,
+            lat=52.056,
+            lon=4.733,
+            radius=10,
+            region="NL",
+        )
+        session.flush()
+
+        self.area_queue(celery).enqueue([area_id(cell)])
+        self.task.delay().get()
+
+        area = session.query(self.area_model).one()
+        assert area.region is None
