@@ -21,7 +21,19 @@ def _check_timed(ping_function):
 
 def check_database(request):
     """Check that the database is available for a simple query."""
-    return _check_timed(lambda: ping_session(request.db_session))
+    data = _check_timed(lambda: ping_session(request.db_session))
+    if data["up"]:
+        current_heads = [
+            row[0]
+            for row in request.db_session.execute(
+                "select version_num from alembic_version"
+            )
+        ]
+        alembic_version = ",".join(sorted(current_heads))
+    else:
+        alembic_version = "unknown"
+    data["alembic_version"] = alembic_version
+    return data
 
 
 def check_geoip(request):

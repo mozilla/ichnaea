@@ -93,7 +93,11 @@ class TestHeartbeatErrors(object):
     def test_database(self, broken_app):
         res = broken_app.get("/__heartbeat__", status=503)
         assert res.content_type == "application/json"
-        assert res.json["database"] == {"up": False, "time": 0}
+        assert res.json["database"] == {
+            "up": False,
+            "time": 0,
+            "alembic_version": "unknown",
+        }
         assert res.headers["Access-Control-Allow-Origin"] == "*"
         assert res.headers["Access-Control-Max-Age"] == "2592000"
 
