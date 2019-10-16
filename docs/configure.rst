@@ -20,6 +20,14 @@ Environment variables
    :case: upper
 
 
+Alembic requires an additional item in the environment:
+
+.. code-block:: bash
+
+   # URI for user with ddl access
+   SQLALCHEMY_URL=mysql+pymysql://USER:PASSWORD@HOST:PORT/DBNAME
+
+
 The webapp uses gunicorn which also has configuration.
 
 .. literalinclude:: ../docker/run_web.sh
