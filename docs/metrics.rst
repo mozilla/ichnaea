@@ -36,8 +36,8 @@ Metric Name                      Type    Tags
 `data.station.new`_              counter type
 `datamaps`_                      timer   func, count
 `locate.fallback.cache`_         counter fallback_name, status
-`locate.fallback.lookup_timing`_ timer   fallback_name, status
-`locate.fallback.lookup_count`_  counter fallback_name, status
+`locate.fallback.lookup`_        counter fallback_name, status
+`locate.fallback.lookup.timing`_ timer   fallback_name, status
 `locate.query`_                  counter key, region, geoip, blue, cell, wifi
 `locate.request`_                counter key, path
 `locate.result`_                 counter key, region, accuracy, status, source, fallback_allowed
@@ -244,8 +244,8 @@ All of this combined might lead to a tagged metric like:
 ``locate.source#key:test,region:de,source:geoip,accuracy:low,status:hit``
 
 .. _locate.fallback.cache:
-.. _locate.fallback.lookup_count:
-.. _locate.fallback.lookup_timing:
+.. _locate.fallback.lookup:
+.. _locate.fallback.lookup.timing:
 
 API Fallback Source Metrics
 ---------------------------
@@ -267,11 +267,11 @@ The fallback name tag specifies which fallback service is used.
     If the cached values didn't agree on a consistent position,
     a `inconsistent` status is used.
 
-``locate.fallback.lookup_timing#fallback_name:<fallback_name>`` : timer
+``locate.fallback.lookup.timing#fallback_name:<fallback_name>`` : timer
 
     Measures the time it takes to do each outbound network request.
 
-``locate.fallback.lookup_count#fallback_name:<fallback_name>,status:<code>`` : counter
+``locate.fallback.lookup#fallback_name:<fallback_name>,status:<code>`` : counter
 
     Counts the HTTP response codes for all outbound requests. There
     is one counter per HTTP response code, for example `200`.
