@@ -6,17 +6,55 @@ Metrics
 
 .. Note:: 2019-09-24: This needs to be updated.
 
-As discussed in :ref:`the deployment document <deploy>`, Ichnaea emits
-metrics through the StatsD client library with the intent of
-aggregating and viewing them on a compatible dashboard.
+Ichnaea emits statsd-compatible metrics using markus_, if the ``STATSD_HOST``
+is configured (see :ref:`the config section <config>`).
 
-This document describes the metrics collected.
+.. _markus: https://markus.readthedocs.io/en/latest/
 
-The code emits most metrics using the statsd tags extension. A metric
-name of ``task#name:function,version:old`` therefor means a statsd metric
+Most metrics use the the statsd tags extension. A metric
+name of ``task#name:function,version:old`` means a statsd metric
 called ``task`` will be emitted with two tags ``name:function`` and
 ``version:old``.
 
+Here's a summary of the metrics emitted by Ichnaea:
+
+================================ ======= =======================================================
+Metric Name                      Type    Tags
+================================ ======= =======================================================
+`api.limit`_                     gauge   key, path
+`data.batch.upload`_             counter key
+`data.export.batch`_             counter key
+`data.export.upload`_            counter key, status
+`data.export.upload`_            timer   key
+`data.observation.drop`_         counter type, key
+`data.observation.insert`_       counter type
+`data.observation.upload`_       counter type, key
+`data.report.drop`_              counter key
+`data.report.upload`_            counter key
+`data.station.blocklist`_        counter type
+`data.station.confirm`_          counter type
+`data.station.new`_              counter type
+`datamaps`_                      timer   func, count
+`locate.fallback.cache`_         counter fallback_name, status
+`locate.fallback.lookup_timing`_ timer   fallback_name, status
+`locate.fallback.lookup_count`_  counter fallback_name, status
+`locate.query`_                  counter key, region, geoip, blue, cell, wifi
+`locate.request`_                counter key, path
+`locate.result`_                 counter key, region, accuracy, status, source, fallback_allowed
+`locate.source`_                 counter key, region, accuracy, status, source
+`locate.user`_                   gauge   key, interval
+`queue`_                         gauge   queue
+`region.request`_                counter key, path
+`request`_                       counter path, method, status
+`request`_                       timer   path, method
+`submit.request`_                counter key, path
+`submit.user`_                   gauge   key, interval
+`task`_                          timer   task
+================================ ======= =======================================================
+
+.. _locate.request:
+.. _region.request:
+.. _submit.request:
 
 API Request Metrics
 -------------------
@@ -42,6 +80,8 @@ These metrics can help in deciding when to remove a deprecated API.
     Two special short names exist for tracking invalid (``invalid``)
     and no (``none``) provided API keys.
 
+.. _locate.user:
+.. _submit.user:
 
 API User Metrics
 ----------------
@@ -64,6 +104,7 @@ Technically these metrics are based on HyperLogLog cardinality numbers
 maintained in a Redis service. They should be accurate to about 1% of
 the actual number.
 
+.. _locate.query:
 
 API Query Metrics
 -----------------
@@ -98,6 +139,7 @@ in it:
     one blue, cell and wifi tag get added. The tags depend on the
     number of valid :term:`stations` for each of the three.
 
+.. _locate.result:
 
 API Result Metrics
 ------------------
@@ -185,6 +227,7 @@ to use the fallback source.
 
     The value is either `true` or `false`.
 
+.. _locate.source:
 
 API Source Metrics
 ------------------
@@ -200,6 +243,9 @@ All of this combined might lead to a tagged metric like:
 
 ``locate.source#key:test,region:de,source:geoip,accuracy:low,status:hit``
 
+.. _locate.fallback.cache:
+.. _locate.fallback.lookup_count:
+.. _locate.fallback.lookup_timing:
 
 API Fallback Source Metrics
 ---------------------------
@@ -230,6 +276,15 @@ The fallback name tag specifies which fallback service is used.
     Counts the HTTP response codes for all outbound requests. There
     is one counter per HTTP response code, for example `200`.
 
+.. _data.batch.upload:
+.. _data.report.upload:
+.. _data.report.drop:
+.. _data.observation.upload:
+.. _data.observation.drop:
+.. _data.observation.insert:
+.. _data.station.confirm:
+.. _data.station.blocklist:
+.. _data.station.new:
 
 Data Pipeline Metrics
 ---------------------
@@ -327,6 +382,8 @@ Along the way several counters measure the steps involved:
     Count the number of Bluetooth, cell or WiFi :term:`station` that were
     discovered for the first time.
 
+.. _data.export.batch:
+.. _data.export.upload:
 
 Data Pipeline Export Metrics
 ----------------------------
@@ -348,6 +405,8 @@ targets. We keep metrics about how those individual export targets perform.
     A status can either be a simple `success` and `failure` or a HTTP
     response code like 200, 400, etc.
 
+.. _api.limit:
+.. _queue:
 
 Internal Monitoring
 -------------------
@@ -385,6 +444,7 @@ Internal Monitoring
 
     These gauges measure the number of items in the Redis update queues.
 
+.. _request:
 
 HTTP Counters
 -------------
@@ -417,6 +477,7 @@ emits a ``request#path:<path>,method:<method>`` timer.
 These timers have the same structure as the HTTP counters, except they
 do not have the response code tag.
 
+.. _task:
 
 Task Timers
 -----------
@@ -430,6 +491,7 @@ For example:
   - ``task#task:data.export_reports``
   - ``task#task:data.update_statcounter``
 
+.. _datamaps:
 
 Datamaps Timers
 ---------------
