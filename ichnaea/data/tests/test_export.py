@@ -199,7 +199,9 @@ class TestGeosubmit(BaseExportTest):
         assert metricsmock.has_record(
             "incr", "data.export.upload", value=1, tags=["key:test", "status:200"]
         )
-        assert metricsmock.has_record("timing", "data.export.upload", tags=["key:test"])
+        assert metricsmock.has_record(
+            "timing", "data.export.upload.timing", tags=["key:test"]
+        )
 
 
 class TestS3(BaseExportTest):
@@ -287,7 +289,7 @@ class TestS3(BaseExportTest):
         assert (
             len(
                 metricsmock.filter_records(
-                    "timing", "data.export.upload", tags=["key:backup"]
+                    "timing", "data.export.upload.timing", tags=["key:backup"]
                 )
             )
             == 4

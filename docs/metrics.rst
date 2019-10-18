@@ -25,7 +25,7 @@ Metric Name                      Type    Tags
 `data.batch.upload`_             counter key
 `data.export.batch`_             counter key
 `data.export.upload`_            counter key, status
-`data.export.upload`_            timer   key
+`data.export.upload.timing`_     timer   key
 `data.observation.drop`_         counter type, key
 `data.observation.insert`_       counter type
 `data.observation.upload`_       counter type, key
@@ -384,6 +384,7 @@ Along the way several counters measure the steps involved:
 
 .. _data.export.batch:
 .. _data.export.upload:
+.. _data.export.upload.timing:
 
 Data Pipeline Export Metrics
 ----------------------------
@@ -395,7 +396,7 @@ targets. We keep metrics about how those individual export targets perform.
 
     Count the number of batches sent to the export target.
 
-``data.export.upload#key:<export_key>`` : timer
+``data.export.upload.timing#key:<export_key>`` : timer
 
     Track how long the upload operation took per export target.
 

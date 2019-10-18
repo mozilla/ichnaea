@@ -125,7 +125,7 @@ class ReportExporter(object):
         success = False
         for i in range(self._retries):
             try:
-                with METRICS.timer("data.export.upload", tags=self.stats_tags):
+                with METRICS.timer("data.export.upload.timing", tags=self.stats_tags):
                     self.send(queue_items)
 
                 success = True
