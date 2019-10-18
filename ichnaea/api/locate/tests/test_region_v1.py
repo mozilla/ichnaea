@@ -48,7 +48,7 @@ class TestView(RegionBase, CommonLocateTest):
             tags=[self.metric_path, "method:post", "status:200"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_geoip_miss(self, app, data_queues, metricsmock):
@@ -61,7 +61,7 @@ class TestView(RegionBase, CommonLocateTest):
             tags=[self.metric_path, "method:post", "status:404"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_incomplete_request(self, app, data_queues):

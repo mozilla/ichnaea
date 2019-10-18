@@ -46,7 +46,7 @@ Metric Name                      Type    Tags
 `queue`_                         gauge   queue
 `region.request`_                counter key, path
 `request`_                       counter path, method, status
-`request`_                       timer   path, method
+`request.timing`_                timer   path, method
 `submit.request`_                counter key, path
 `submit.user`_                   gauge   key, interval
 `task`_                          timer   task
@@ -468,12 +468,13 @@ paths referring to API endpoints. Logging them for unknown and invalid
 paths would overwhelm the system with all the random paths the friendly
 Internet bot army sends along.
 
+.. _request.timing:
 
 HTTP Timers
 -----------
 
 In addition to the HTTP counters, every legitimate, routed request
-emits a ``request#path:<path>,method:<method>`` timer.
+emits a ``request.timing#path:<path>,method:<method>`` timer.
 
 These timers have the same structure as the HTTP counters, except they
 do not have the response code tag.

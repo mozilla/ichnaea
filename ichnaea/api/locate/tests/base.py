@@ -295,7 +295,7 @@ class CommonLocateTest(BaseLocateTest):
             tags=[self.metric_path, "method:get", "status:200"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:get"]
+            "timing", "request.timing", tags=[self.metric_path, "method:get"]
         )
 
     def test_options(self, app):
@@ -334,7 +334,7 @@ class CommonLocateTest(BaseLocateTest):
             tags=[self.metric_path, "method:post", "status:200"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         if self.apikey_metrics:
             assert metricsmock.has_record(
@@ -526,7 +526,7 @@ class CommonPositionTest(BaseLocateTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_cell_not_found(self, app, data_queues, metricsmock):
@@ -585,7 +585,7 @@ class CommonPositionTest(BaseLocateTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_cell_invalid_lac(self, app, data_queues):
@@ -846,7 +846,7 @@ class CommonPositionTest(BaseLocateTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
@@ -870,7 +870,7 @@ class CommonPositionTest(BaseLocateTest):
             tags=[self.metric_path, "key:test"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_fallback(self, app, session, metricsmock):
@@ -958,7 +958,7 @@ class CommonPositionTest(BaseLocateTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_fallback_used_with_geoip(self, app, session, metricsmock):
@@ -1017,7 +1017,7 @@ class CommonPositionTest(BaseLocateTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_store_sample(self, app, data_queues, session):

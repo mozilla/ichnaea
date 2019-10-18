@@ -142,7 +142,7 @@ def log_tween_factory(handler, registry):
 
         def timer_send():
             duration = int(round((time.time() - start) * 1000))
-            METRICS.timing("request", duration, tags=statsd_tags)
+            METRICS.timing("request.timing", duration, tags=statsd_tags)
 
         def counter_send(status_code):
             METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
