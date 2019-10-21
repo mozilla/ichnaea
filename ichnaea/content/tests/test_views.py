@@ -111,9 +111,11 @@ class TestFunctionalContent(object):
         assert metricsmock.has_record(
             "incr", "request", value=1, tags=["path:map", "method:get", "status:200"]
         )
-        assert metricsmock.has_record("timing", "request", tags=["path:", "method:get"])
         assert metricsmock.has_record(
-            "timing", "request", tags=["path:map", "method:get"]
+            "timing", "request.timing", tags=["path:", "method:get"]
+        )
+        assert metricsmock.has_record(
+            "timing", "request.timing", tags=["path:map", "method:get"]
         )
 
     @config_override(ASSET_BUCKET="bucket", ASSET_URL="http://127.0.0.1:9/foo")

@@ -160,7 +160,7 @@ class BaseSubmitTest(object):
             tags=[self.metric_path, "key:test"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         today = util.utcnow().date()
         assert [k.decode("ascii") for k in redis.keys("apiuser:*")] == [

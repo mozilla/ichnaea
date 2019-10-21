@@ -863,7 +863,7 @@ class BaseFallbackTest(object):
             tags=[self.fallback_tag, "status:miss"],
         )
         assert metricsmock.has_record(
-            "timing", "locate.fallback.lookup_timing", tags=[self.fallback_tag]
+            "timing", "locate.fallback.lookup.timing", tags=[self.fallback_tag]
         )
 
     def test_cache_empty_result(
@@ -892,7 +892,7 @@ class BaseFallbackTest(object):
             )
             assert metricsmock.has_record(
                 "incr",
-                "locate.fallback.lookup_count",
+                "locate.fallback.lookup",
                 value=1,
                 tags=[self.fallback_tag, "status:%s" % self.fallback_not_found_status],
             )
@@ -982,7 +982,7 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
         raven.check([("HTTPError", 1)])
         assert metricsmock.has_record(
             "incr",
-            "locate.fallback.lookup_count",
+            "locate.fallback.lookup",
             value=1,
             tags=[self.fallback_tag, "status:403"],
         )
@@ -1007,7 +1007,7 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
         raven.check([("HTTPError", 0)])
         assert metricsmock.has_record(
             "incr",
-            "locate.fallback.lookup_count",
+            "locate.fallback.lookup",
             value=1,
             tags=[self.fallback_tag, "status:404"],
         )
@@ -1027,12 +1027,12 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
         raven.check([("HTTPError", 1)])
         assert metricsmock.has_record(
             "incr",
-            "locate.fallback.lookup_count",
+            "locate.fallback.lookup",
             value=1,
             tags=[self.fallback_tag, "status:500"],
         )
         assert metricsmock.has_record(
-            "timing", "locate.fallback.lookup_timing", tags=[self.fallback_tag]
+            "timing", "locate.fallback.lookup.timing", tags=[self.fallback_tag]
         )
 
     def test_api_key_disallows(self, geoip_db, http_session, session, source):
@@ -1253,12 +1253,12 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             )
             assert metricsmock.has_record(
                 "incr",
-                "locate.fallback.lookup_count",
+                "locate.fallback.lookup",
                 value=1,
                 tags=["fallback_name:fall", "status:200"],
             )
             assert metricsmock.has_record(
-                "timing", "locate.fallback.lookup_timing", tags=["fallback_name:fall"]
+                "timing", "locate.fallback.lookup.timing", tags=["fallback_name:fall"]
             )
             metricsmock.clear_records()
 

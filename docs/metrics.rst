@@ -25,7 +25,7 @@ Metric Name                      Type    Tags
 `data.batch.upload`_             counter key
 `data.export.batch`_             counter key
 `data.export.upload`_            counter key, status
-`data.export.upload`_            timer   key
+`data.export.upload.timing`_     timer   key
 `data.observation.drop`_         counter type, key
 `data.observation.insert`_       counter type
 `data.observation.upload`_       counter type, key
@@ -36,8 +36,8 @@ Metric Name                      Type    Tags
 `data.station.new`_              counter type
 `datamaps`_                      timer   func, count
 `locate.fallback.cache`_         counter fallback_name, status
-`locate.fallback.lookup_timing`_ timer   fallback_name, status
-`locate.fallback.lookup_count`_  counter fallback_name, status
+`locate.fallback.lookup`_        counter fallback_name, status
+`locate.fallback.lookup.timing`_ timer   fallback_name, status
 `locate.query`_                  counter key, region, geoip, blue, cell, wifi
 `locate.request`_                counter key, path
 `locate.result`_                 counter key, region, accuracy, status, source, fallback_allowed
@@ -46,7 +46,7 @@ Metric Name                      Type    Tags
 `queue`_                         gauge   queue
 `region.request`_                counter key, path
 `request`_                       counter path, method, status
-`request`_                       timer   path, method
+`request.timing`_                timer   path, method
 `submit.request`_                counter key, path
 `submit.user`_                   gauge   key, interval
 `task`_                          timer   task
@@ -244,8 +244,8 @@ All of this combined might lead to a tagged metric like:
 ``locate.source#key:test,region:de,source:geoip,accuracy:low,status:hit``
 
 .. _locate.fallback.cache:
-.. _locate.fallback.lookup_count:
-.. _locate.fallback.lookup_timing:
+.. _locate.fallback.lookup:
+.. _locate.fallback.lookup.timing:
 
 API Fallback Source Metrics
 ---------------------------
@@ -267,11 +267,11 @@ The fallback name tag specifies which fallback service is used.
     If the cached values didn't agree on a consistent position,
     a `inconsistent` status is used.
 
-``locate.fallback.lookup_timing#fallback_name:<fallback_name>`` : timer
+``locate.fallback.lookup.timing#fallback_name:<fallback_name>`` : timer
 
     Measures the time it takes to do each outbound network request.
 
-``locate.fallback.lookup_count#fallback_name:<fallback_name>,status:<code>`` : counter
+``locate.fallback.lookup#fallback_name:<fallback_name>,status:<code>`` : counter
 
     Counts the HTTP response codes for all outbound requests. There
     is one counter per HTTP response code, for example `200`.
@@ -384,6 +384,7 @@ Along the way several counters measure the steps involved:
 
 .. _data.export.batch:
 .. _data.export.upload:
+.. _data.export.upload.timing:
 
 Data Pipeline Export Metrics
 ----------------------------
@@ -395,7 +396,7 @@ targets. We keep metrics about how those individual export targets perform.
 
     Count the number of batches sent to the export target.
 
-``data.export.upload#key:<export_key>`` : timer
+``data.export.upload.timing#key:<export_key>`` : timer
 
     Track how long the upload operation took per export target.
 
@@ -467,12 +468,13 @@ paths referring to API endpoints. Logging them for unknown and invalid
 paths would overwhelm the system with all the random paths the friendly
 Internet bot army sends along.
 
+.. _request.timing:
 
 HTTP Timers
 -----------
 
 In addition to the HTTP counters, every legitimate, routed request
-emits a ``request#path:<path>,method:<method>`` timer.
+emits a ``request.timing#path:<path>,method:<method>`` timer.
 
 These timers have the same structure as the HTTP counters, except they
 do not have the response code tag.

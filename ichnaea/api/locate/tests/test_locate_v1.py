@@ -232,7 +232,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -342,7 +342,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             ],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -499,7 +499,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             tags=[self.metric_path, "method:post", "status:200"],
         )
         assert metricsmock.has_record(
-            "timing", "request", tags=[self.metric_path, "method:post"]
+            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         if self.apikey_metrics:
             assert metricsmock.has_record(
