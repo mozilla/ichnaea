@@ -39,7 +39,7 @@ LOCAL_DEV_ENV=${LOCAL_DEV_ENV:-"False"}
 
 # Make sure the app can load; this will route out some of the possible "can't
 # start" scenarios
-python ../ichnaea/webapp/app.py --check
+python /app/ichnaea/webapp/app.py --check
 
 if [ "${LOCAL_DEV_ENV}" == "True" ]; then
     echo "*****************************************************************************"
