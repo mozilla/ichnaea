@@ -1,8 +1,15 @@
 """
 Holds global web application state and the WSGI handler.
+
+You can run this script for a one-process webapp.
+
+Further, you can pass in ``--check`` which will create the app and then exit
+making it easier to suss out startup and configuration issues.
+
 """
 
 import logging
+import sys
 
 from waitress import serve
 
@@ -66,4 +73,9 @@ def log_access_factory(wsgi_app):
 
 
 if __name__ == "__main__":
-    serve(log_access_factory(main(ping_connections=True)), host="0.0.0.0", port=8000)
+    if "--check" in sys.argv:
+        main(ping_connections=False)
+    else:
+        serve(
+            log_access_factory(main(ping_connections=True)), host="0.0.0.0", port=8000
+        )
