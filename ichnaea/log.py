@@ -89,7 +89,8 @@ def configure_raven(transport=None, _client=None):
 
     dsn = settings("sentry_dsn")
     klass = DebugRavenClient if not dsn else RavenClient
-    release = version_info()["tag"]
+    info = version_info()
+    release = info.get("version") or info.get("commit") or "unknown"
     client = klass(dsn=dsn, transport=transport, release=release)
     return client
 
