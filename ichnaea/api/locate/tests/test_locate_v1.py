@@ -171,15 +171,27 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ]
 
     def test_blue_seen(self, app, data_queues, session):
+        """If a query contains no new data, it is not queued for further processing.
+
+        This fails occasionally, see issue #921.
+        """
         self.check_queue(data_queues, 0)
         blue = BlueShardFactory()
         offset = 0.00002
         blues = [blue, BlueShardFactory(lat=blue.lat + offset)]
         session.flush()
+        self.check_queue(data_queues, 0)
         query = self.model_query(blues=blues)
         res = self._call(app, body=query)
         self.check_model_response(res, blue, lat=blue.lat + offset / 2)
-        self.check_queue(data_queues, 0)
+        if data_queues["update_incoming"].size():
+            items = data_queues["update_incoming"].dequeue()
+            pytest.fail(
+                (
+                    "Query added a report to the update_incoming queue."
+                    "\nQuery:\n{}\nReport:\n{}"
+                ).format(query, items)
+            )
 
     def test_cell(self, app, data_queues, session, metricsmock):
         cell = CellShardFactory(radio=Radio.lte)
