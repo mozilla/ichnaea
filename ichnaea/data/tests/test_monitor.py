@@ -5,11 +5,12 @@ from ichnaea.data.tasks import (
     monitor_api_key_limits,
     monitor_api_users,
     monitor_queue_size,
+    sentry_test,
 )
 from ichnaea import util
 
 
-class TestMonitorApiKeys(object):
+class TestMonitorApiKeys:
     def test_monitor_api_keys_empty(self, celery, metricsmock):
         monitor_api_key_limits.delay().get()
         assert not metricsmock.has_record("gauge", "api.limit")
@@ -79,7 +80,7 @@ class TestMonitorApiKeys(object):
         )
 
 
-class TestMonitorAPIUsers(object):
+class TestMonitorAPIUsers:
     @property
     def today(self):
         return util.utcnow().date()
@@ -154,7 +155,7 @@ class TestMonitorAPIUsers(object):
         assert not redis.exists("apiuser:submit:test:" + days_7)
 
 
-class TestMonitorQueueSize(object):
+class TestMonitorQueueSize:
     def test_empty_queues(self, celery, redis, metricsmock):
         data = {name: 0 for name in celery.all_queues}
 
@@ -177,3 +178,12 @@ class TestMonitorQueueSize(object):
             assert metricsmock.has_record(
                 "gauge", "queue", value=val, tags=["queue:" + key]
             )
+
+
+class TestSentryTest:
+    def test_basic(self, celery, raven_client):
+        sentry_test.delay(msg="test message")
+        msgs = [item["message"] for item in raven_client.msgs]
+        assert msgs == ["test message"]
+
+        raven_client._clear()

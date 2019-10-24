@@ -9,7 +9,7 @@ from ichnaea import util
 METRICS = markus.get_metrics()
 
 
-class ApiKeyLimits(object):
+class ApiKeyLimits:
     def __init__(self, task):
         self.task = task
 
@@ -27,7 +27,7 @@ class ApiKeyLimits(object):
             )
 
 
-class ApiUsers(object):
+class ApiUsers:
     def __init__(self, task):
         self.task = task
 
@@ -62,7 +62,7 @@ class ApiUsers(object):
             )
 
 
-class QueueSize(object):
+class QueueSize:
     """Generate gauge metrics for all queue sizes.
 
     This covers the export queues, the celery task queues, and the

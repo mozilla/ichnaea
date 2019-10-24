@@ -67,8 +67,11 @@ def configure_logging():
 
 
 RAVEN_TRANSPORTS = {
+    # Used in the webapp
     "gevent": GeventedHTTPTransport,
+    # Used in the tests
     "sync": HTTPTransport,
+    # Used in celery
     "threaded": ThreadedHTTPTransport,
 }
 
