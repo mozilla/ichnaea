@@ -79,3 +79,14 @@ class QueueSize(object):
         for name in export_queues | self.task.app.all_queues:
             value = self.task.redis_client.llen(name)
             METRICS.gauge("queue", value, tags=["queue:" + name])
+
+
+class SentryTest(object):
+    """Sends a message to Sentry to test out celery."""
+
+    def __init__(self, task, msg):
+        self.task = task
+        self.msg = msg
+
+    def __call__(self):
+        self.task.app.raven_client.captureMessage(self.msg)

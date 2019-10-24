@@ -82,6 +82,11 @@ def monitor_queue_size(self):
     monitor.QueueSize(self)()
 
 
+@celery_app.task(base=BaseTask, bind=True, queue="celery_monitor")
+def sentry_test(self, msg):
+    monitor.SentryTest(self, msg=msg)()
+
+
 @celery_app.task(
     base=BaseTask,
     bind=True,

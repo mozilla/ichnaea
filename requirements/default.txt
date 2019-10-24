@@ -14,6 +14,9 @@ celery[redis]==4.3.0 \
 certifi==2019.9.11 \
     --hash=sha256:e4f3620cfea4f83eedc95b24abd9cd56f3c4b146dd0177e83a21b4eb49e21e50 \
     --hash=sha256:fd7c7c74727ddcf00e9acd26bba8da604ffec95bf1c2144e67aff7a8b50e6cef
+click==7.0 \
+    --hash=sha256:2335065e6395b9e67ca716de5f7526736bfa6ceead690adf616d925bdc622b13 \
+    --hash=sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7
 colander==1.7.0 \
     --hash=sha256:d758163a22d22c39b9eaae049749a5cd503f341231a02ed95af480b1145e81f2 \
     --hash=sha256:f79795d04bd06958bd03ce83d25aeadfe5a04e2877cf0a9f1f4da2d84a9530c3
