@@ -84,7 +84,7 @@ def monitor_queue_size(self):
 
 @celery_app.task(base=BaseTask, bind=True, queue="celery_monitor")
 def sentry_test(self, msg):
-    monitor.SentryTest(self, msg=msg)()
+    self.app.raven_client.captureMessage(msg)
 
 
 @celery_app.task(

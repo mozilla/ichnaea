@@ -71,7 +71,7 @@ RAVEN_TRANSPORTS = {
     "gevent": GeventedHTTPTransport,
     # Used in the tests
     "sync": HTTPTransport,
-    # Used in by celery
+    # Used in celery
     "threaded": ThreadedHTTPTransport,
 }
 
