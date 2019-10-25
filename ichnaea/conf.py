@@ -12,6 +12,14 @@ from everett.manager import ConfigManager, ConfigOSEnv
 HERE = os.path.dirname(__file__)
 
 
+def logging_level_parser(value):
+    """Validates logging level values."""
+    valid_levels = ("CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG")
+    if value not in valid_levels:
+        raise ValueError("%s is not a value in %r" % (value, valid_levels))
+    return value
+
+
 class AppConfig(RequiredConfigMixin):
     required_config = ConfigOptions()
     required_config.add_option(
@@ -29,6 +37,14 @@ class AppConfig(RequiredConfigMixin):
         default="false",
         parser=bool,
         doc="Whether or not we are running tests.",
+    )
+    required_config.add_option(
+        "logging_level",
+        default="INFO",
+        parser=logging_level_parser,
+        doc=(
+            "Logging level to use. One of CRITICAL, ERROR, WARNING, INFO, " "or DEBUG."
+        ),
     )
 
     required_config.add_option(

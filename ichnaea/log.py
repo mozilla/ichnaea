@@ -22,14 +22,11 @@ METRICS = markus.get_metrics()
 def configure_logging():
     """Configure Python logging."""
     local_dev_env = settings("local_dev_env")
+    logging_level = settings("logging_level")
 
     if local_dev_env:
-        level = "DEBUG"
-        celery_level = "INFO"
         handlers = ["console"]
     else:
-        level = "INFO"
-        celery_level = "WARNING"
         handlers = ["mozlog"]
 
     logging_config = {
@@ -55,10 +52,26 @@ def configure_logging():
             },
         },
         "loggers": {
-            "alembic": {"propagate": False, "handlers": handlers, "level": level},
-            "celery": {"propagate": False, "handlers": handlers, "level": celery_level},
-            "ichnaea": {"propagate": False, "handlers": handlers, "level": level},
-            "markus": {"propagate": False, "handlers": handlers, "level": level},
+            "alembic": {
+                "propagate": False,
+                "handlers": handlers,
+                "level": logging_level,
+            },
+            "celery": {
+                "propagate": False,
+                "handlers": handlers,
+                "level": logging_level,
+            },
+            "ichnaea": {
+                "propagate": False,
+                "handlers": handlers,
+                "level": logging_level,
+            },
+            "markus": {
+                "propagate": False,
+                "handlers": handlers,
+                "level": logging_level,
+            },
         },
         "root": {"handlers": handlers, "level": "WARNING"},
     }
