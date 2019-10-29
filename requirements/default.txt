@@ -198,9 +198,9 @@ WebTest==2.0.33 \
 everett==1.0.2 \
     --hash=sha256:66c7991c056fd9b1de54c29e2b5004a30209530faef698d6ecfbf24bfbbdd1fb \
     --hash=sha256:8a5ee8cdde0ed6b3bbb63249e0e0703d4ad91921107ff198e0868ffce5f7b6bc
-black==19.3b0 \
-    --hash=sha256:09a9dcb7c46ed496a9850b76e4e825d6049ecd38b611f1224857a79bd985a8cf \
-    --hash=sha256:68950ffd4d9169716bcb8719a56c07a2f4485354fec061cdd5910aa07369731c
+black==19.10b0 \
+    --hash=sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b \
+    --hash=sha256:c2edb73a08e9e0e6f65a0e6af18b059b8b1cdd5bef997d7a0b181df93dc81539
 dockerflow==2019.9.0 \
     --hash=sha256:2d66cf55c68a02f5e5c4b65bd6a7a3398de8d1b473ac09a8b314d562bad6f43e \
     --hash=sha256:887cd21b4bcdead6f66628dc9879ed5f14eccb038732e68f90e4f476ce714e1c
