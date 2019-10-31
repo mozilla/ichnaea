@@ -82,10 +82,6 @@ def version_info():
                 info = json.load(fp)
             except json.JsonDecodeException:
                 pass
-
-    info["build"] = info.get("build", None)
-    info["commit"] = info.get("commit", None)
-    info["tag"] = info.get("tag", None)
     return info
 
 

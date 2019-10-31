@@ -166,7 +166,7 @@ class TestVersion(object):
         response = app.get("/__version__", status=200)
         assert response.content_type == "application/json"
         data = response.json
-        assert set(data.keys()) == set(["build", "commit", "source", "tag", "version"])
+        assert set(data.keys()) == set(["build", "commit", "source", "version"])
         assert data["source"] == "https://github.com/mozilla/ichnaea"
 
 
