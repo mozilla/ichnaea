@@ -4,6 +4,7 @@ Helper functions and classes around GeoIP lookups, based on Maxmind's
 `geoip2 <https://pypi.python.org/pypi/geoip2>`_ Python packages.
 """
 
+import logging
 import time
 
 import genc
@@ -15,6 +16,10 @@ from maxminddb.const import MODE_AUTO
 from ichnaea.conf import settings
 from ichnaea.constants import DEGREE_DECIMAL_PLACES
 from ichnaea.geocode import GEOCODER
+
+
+LOGGER = logging.getLogger(__name__)
+
 
 # The region codes present in the GeoIP data files, extracted from
 # the CSV files. Accuracy numbers from October 2015 from
@@ -390,6 +395,7 @@ def configure_geoip(filename=None, mode=MODE_AUTO, raven_client=None, _client=No
                 raise OSError("No geoip filename specified.")
             except OSError:
                 raven_client.captureException()
+        LOGGER.info("Returning GeoIPNull.")
         return GeoIPNull()
 
     try:
@@ -405,8 +411,10 @@ def configure_geoip(filename=None, mode=MODE_AUTO, raven_client=None, _client=No
         # Error opening the database file, maybe it doesn't exist
         if raven_client is not None:
             raven_client.captureException()
+        LOGGER.info("Returning GeoIPNull.")
         return GeoIPNull()
 
+    LOGGER.info("GeoIP configured.")
     return db
 
 
