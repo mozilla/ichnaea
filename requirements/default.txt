@@ -131,9 +131,9 @@ pyramid_chameleon==0.3 \
 pytest==5.2.2 \
     --hash=sha256:27abc3fef618a01bebb1f0d6d303d2816a99aa87a5968ebc32fe971be91eb1e6 \
     --hash=sha256:58cee9e09242937e136dbb3dab466116ba20d6b7828c7620f23947f37eb4dae4
-pytest-cov==2.7.1 \
-    --hash=sha256:2b097cde81a302e1047331b48cadacf23577e431b61e9c6f49a1170bbe3d3da6 \
-    --hash=sha256:e00ea4fdde970725482f1f35630d12f074e121a23801aabf2ae154ec6bdd343a
+pytest-cov==2.8.1 \
+    --hash=sha256:cc6742d8bac45070217169f5f72ceee1e0e55b0221f54bcf24845972d3a47f2b \
+    --hash=sha256:cdbdef4f870408ebdbfeb44e63e07eb18bb4619fae852f6e760645fa36172626
 pytz==2019.2 \
     --hash=sha256:26c0b32e437e54a18161324a2fca3c4b9846b74a8dccddd843113109e1116b32 \
     --hash=sha256:c894d57500a4cd2d5c71114aaab77dbab5eabd9022308ce5ac9bb93a60a6f0c7
