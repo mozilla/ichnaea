@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 import struct
+import sys
 import tempfile
 import zlib
 
@@ -97,11 +98,12 @@ def contribute_info():
     return {}
 
 
-def print_table(table, delimiter=" | "):
+def print_table(table, delimiter=" | ", stream_write=sys.stdout.write):
     """Takes a list of lists and prints a table to stdout.
 
     :arg list-of-lists table: the table to print out
     :arg str delimiter: the delimiter between fields in a row
+    :arg writer stream_write: the ``write`` of a file-like object
 
     """
     # Find the max size value for each column
@@ -113,11 +115,12 @@ def print_table(table, delimiter=" | "):
         ]
 
     for row in table:
-        print(
+        stream_write(
             delimiter.join(
                 [
                     str(field).ljust(col_max)
                     for field, col_max in zip_longest(row, col_maxes, fillvalue="")
                 ]
             )
+            + "\n"
         )
