@@ -47,3 +47,4 @@ ignore timing data.
    :maxdepth: 2
 
    accuracy
+   observations

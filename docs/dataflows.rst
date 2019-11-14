@@ -8,6 +8,8 @@ Data flows
    :local:
 
 
+.. _position-data-flow:
+
 Position data
 =============
 
@@ -87,11 +89,11 @@ Data flow:
      The internal processing job splits the reports into its parts, creating one
      observation per network and queues them into multiple queues, one queue
      corresponding to one database table shard.
-     
+
      This data ends up in Redis queues like ``update_cell_gsm``,
      ``update_cell_wcdma``, ``update_wifi_0``, ``update_wifi_1``, etc to be
      processed by ``station updater`` tasks.
-     
+
      The internal processing job also fills the ``update_datamap`` queue, to
      update the coverage data map on the web site.
 
@@ -99,8 +101,9 @@ Data flow:
 
    These tasks take in the new batch of observations and match them against
    known data. As a result, network positions can be modified, new networks can
-   be added, and old networks be marked as blocklisted noting that they've
-   recently moved from their old position.
+   be added, and old networks be marked as blocked noting that they've
+   recently moved from their old position.  See :ref:`observations` for
+   details.
 
 
 API keys
