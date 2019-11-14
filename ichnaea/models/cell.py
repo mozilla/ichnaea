@@ -74,7 +74,7 @@ Example:
 .. code-block:: javascript
 
     {
-        "radio": "umts",
+        "radio": "wcdma",
         "mcc": 123,
         "mnc": 123,
         "lac": 12345,
