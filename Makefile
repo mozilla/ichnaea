@@ -29,12 +29,14 @@ default:
 	@echo "  build            - build docker containers"
 	@echo "  setup            - drop and recreate service state"
 	@echo "  run              - run webapp"
+	@echo "  runwebdebug      - run webapp outside gunicorn, for debugging"
 	@echo "  runcelery        - run scheduler and worker"
 	@echo "  runservices      - run service containers (mysql, redis, etc)"
 	@echo "  stop             - stop all service containers"
 	@echo ""
 	@echo "  shell            - open a shell in the app container"
 	@echo "  mysql            - open mysql prompt"
+	@echo "  redis            - open redis prompt"
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
 	@echo "  lintfix          - reformat code"
@@ -84,6 +86,11 @@ mysql: my.env .docker-build
 	${DC} up -d mysql
 	${DC} exec mysql mysql --user root --password=location location
 
+.PHONY: redis
+redis: my.env .docker-build
+	${DC} up -d redis
+	${DC} exec redis redis-cli
+
 .PHONY: test
 test: my.env .docker-build
 	./bin/test_env.sh
@@ -119,6 +126,10 @@ lintfix: my.env .docker-build
 .PHONY: run
 run: my.env .docker-build
 	${DC} up web
+
+.PHONY: runwebdebug
+runwebdebug: my.env .docker-build
+	${DC} run --rm --service-ports web shell python ichnaea/webapp/app.py
 
 .PHONY: runcelery
 runcelery: my.env .docker-build
