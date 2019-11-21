@@ -16,8 +16,9 @@ class Radio(IntEnum):
 
     gsm = 0
     cdma = 1
-    wcdma = 2
-    umts = 2
+    # wcdma is the preferred name for this radio type, matches Google's API
+    # umts is the original, deprecated name, still used in the public export
+    wcdma = umts = 2
     lte = 3
 
 
