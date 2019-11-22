@@ -256,38 +256,30 @@ class StationTest(BaseStationTest):
         self.check_statcounter(redis, self.stat_obs_key, 3)
         self.check_statcounter(redis, self.stat_station_key, 2)
 
-    def test_new(self, celery, session, metricsmock):
-        for source in (ReportSource.gnss, ReportSource.query):
-            obs = self.obs_factory.build(source=source)
-            obs1 = self.obs_factory(
-                lat=obs.lat + 0.0001, source=source, **self.key(obs)
-            )
-            obs2 = self.obs_factory(
-                lat=obs.lat - 0.0003, source=source, **self.key(obs)
-            )
-            obs3 = self.obs_factory(
-                lon=obs.lon + 0.0002, source=source, **self.key(obs)
-            )
-            obs4 = self.obs_factory(
-                lon=obs.lon - 0.0004, source=source, **self.key(obs)
-            )
-            self.queue_and_update(celery, [obs, obs1, obs2, obs3, obs4])
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_new(self, celery, session, metricsmock, source):
+        obs = self.obs_factory.build(source=source)
+        obs1 = self.obs_factory(lat=obs.lat + 0.0001, source=source, **self.key(obs))
+        obs2 = self.obs_factory(lat=obs.lat - 0.0003, source=source, **self.key(obs))
+        obs3 = self.obs_factory(lon=obs.lon + 0.0002, source=source, **self.key(obs))
+        obs4 = self.obs_factory(lon=obs.lon - 0.0004, source=source, **self.key(obs))
+        self.queue_and_update(celery, [obs, obs1, obs2, obs3, obs4])
 
-            self.check_areas(celery, [obs])
-            station = self.get_station(session, obs)
-            assert round(station.lat, 7) == round(obs.lat - 0.00004, 7)
-            assert round(station.max_lat, 7) == round(obs.lat + 0.0001, 7)
-            assert round(station.min_lat, 7) == round(obs.lat - 0.0003, 7)
-            assert round(station.lon, 7) == round(obs.lon - 0.00004, 7)
-            assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
-            assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
-            assert station.radius == 38
-            assert station.region == "GB"
-            assert station.samples == 5
-            assert station.source == source
-            assert round(station.weight, 2) == 5.0
-            self.check_blocked(station, None)
-            self.check_dates(station, self.today, self.today, self.today)
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        assert round(station.lat, 7) == round(obs.lat - 0.00004, 7)
+        assert round(station.max_lat, 7) == round(obs.lat + 0.0001, 7)
+        assert round(station.min_lat, 7) == round(obs.lat - 0.0003, 7)
+        assert round(station.lon, 7) == round(obs.lon - 0.00004, 7)
+        assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
+        assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
+        assert station.radius == 38
+        assert station.region == "GB"
+        assert station.samples == 5
+        assert station.source == source
+        assert round(station.weight, 2) == 5.0
+        self.check_blocked(station, None)
+        self.check_dates(station, self.today, self.today, self.today)
 
         assert (
             len(
@@ -295,7 +287,7 @@ class StationTest(BaseStationTest):
                     "incr", "data.observation.insert", value=5, tags=[self.type_tag]
                 )
             )
-            == 2
+            == 1
         )
         assert (
             len(
@@ -303,96 +295,96 @@ class StationTest(BaseStationTest):
                     "incr", "data.station.new", value=1, tags=[self.type_tag]
                 )
             )
-            == 2
+            == 1
         )
 
-    def test_new_block(self, celery, session):
-        for source in (ReportSource.gnss, ReportSource.query):
-            obs = self.make_obs(source=source, distance=1.0)
-            self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_new_block(self, celery, session, source):
+        obs = self.make_obs(source=source, distance=1.0)
+        self.queue_and_update(celery, obs)
 
-            obs = obs[0]
-            self.check_areas(celery, [obs])
-            station = self.get_station(session, obs)
-            self.check_blocked(station, self.today, self.today, 1)
-            self.check_dates(station, self.today, self.today)
-            self.check_no_position(station)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        self.check_blocked(station, self.today, self.today, 1)
+        self.check_dates(station, self.today, self.today)
+        self.check_no_position(station)
 
-    def test_no_position_change(self, celery, session):
-        for source in (ReportSource.gnss, ReportSource.query):
-            obs = self.make_obs(source=source)
-            self.station_factory(
-                block_first=self.past.date(),
-                block_last=self.past.date(),
-                block_count=1,
-                created=self.past,
-                modified=self.past,
-                last_seen=None,
-                lat=None,
-                lon=None,
-                max_lat=None,
-                min_lat=None,
-                max_lon=None,
-                min_lon=None,
-                radius=None,
-                region=None,
-                source=None,
-                samples=None,
-                weight=None,
-                **self.key(obs[0]),
-            )
-            session.commit()
-            self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_no_position_change(self, celery, session, source):
+        obs = self.make_obs(source=source)
+        self.station_factory(
+            block_first=self.past.date(),
+            block_last=self.past.date(),
+            block_count=1,
+            created=self.past,
+            modified=self.past,
+            last_seen=None,
+            lat=None,
+            lon=None,
+            max_lat=None,
+            min_lat=None,
+            max_lon=None,
+            min_lon=None,
+            radius=None,
+            region=None,
+            source=None,
+            samples=None,
+            weight=None,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-            obs = obs[0]
-            self.check_areas(celery, [obs])
-            station = self.get_station(session, obs)
-            assert station.lat == obs.lat
-            assert station.max_lat == obs.lat
-            assert station.min_lat == obs.lat
-            assert station.lon == obs.lon
-            assert station.max_lon == obs.lon
-            assert station.min_lon == obs.lon
-            assert station.radius == 0
-            assert station.region == "GB"
-            assert station.source == source
-            assert station.samples == 3
-            assert station.weight == 3.0
-            self.check_blocked(station, self.past.date(), self.past.date(), 1)
-            self.check_dates(station, self.past.date(), self.today, self.today)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        assert station.lat == obs.lat
+        assert station.max_lat == obs.lat
+        assert station.min_lat == obs.lat
+        assert station.lon == obs.lon
+        assert station.max_lon == obs.lon
+        assert station.min_lon == obs.lon
+        assert station.radius == 0
+        assert station.region == "GB"
+        assert station.source == source
+        assert station.samples == 3
+        assert station.weight == 3.0
+        self.check_blocked(station, self.past.date(), self.past.date(), 1)
+        self.check_dates(station, self.past.date(), self.today, self.today)
 
-    def test_no_position_ignore(self, celery, session):
-        for source in (ReportSource.gnss, ReportSource.query):
-            obs = self.make_obs(source=source, distance=1.0)
-            self.station_factory(
-                block_first=self.past.date(),
-                block_last=self.past.date(),
-                block_count=1,
-                created=self.past,
-                modified=self.past,
-                last_seen=None,
-                lat=None,
-                lon=None,
-                max_lat=None,
-                min_lat=None,
-                max_lon=None,
-                min_lon=None,
-                radius=None,
-                region=None,
-                source=None,
-                samples=None,
-                weight=None,
-                **self.key(obs[0]),
-            )
-            session.commit()
-            self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_no_position_ignore(self, celery, session, source):
+        obs = self.make_obs(source=source, distance=1.0)
+        self.station_factory(
+            block_first=self.past.date(),
+            block_last=self.past.date(),
+            block_count=1,
+            created=self.past,
+            modified=self.past,
+            last_seen=None,
+            lat=None,
+            lon=None,
+            max_lat=None,
+            min_lat=None,
+            max_lon=None,
+            min_lon=None,
+            radius=None,
+            region=None,
+            source=None,
+            samples=None,
+            weight=None,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-            obs = obs[0]
-            self.check_areas(celery, [])
-            station = self.get_station(session, obs)
-            assert station.modified.date() == self.past.date()
-            self.check_blocked(station, self.past.date(), self.past.date(), 1)
-            self.check_no_position(station)
+        obs = obs[0]
+        self.check_areas(celery, [])
+        station = self.get_station(session, obs)
+        assert station.modified.date() == self.past.date()
+        self.check_blocked(station, self.past.date(), self.past.date(), 1)
+        self.check_no_position(station)
 
     def test_confirm(self, celery, session):
         obs1 = self.obs_factory.build(source=ReportSource.query)
@@ -418,95 +410,99 @@ class StationTest(BaseStationTest):
             station, self.ten_days.date(), self.ten_days.date(), self.today
         )
 
-    def test_block_half_consistent_obs(self, celery, session):
-        for obs_source in (ReportSource.gnss, ReportSource.query):
-            for station_source in (ReportSource.gnss, ReportSource.query):
-                obs = self.make_obs(source=obs_source, distance=0.5)
-                self.station_factory(
-                    lat=obs[0].lat,
-                    lon=obs[0].lon,
-                    created=self.past,
-                    modified=self.past,
-                    source=station_source,
-                    **self.key(obs[0]),
-                )
-                session.commit()
-                self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("obs_source", (ReportSource.gnss, ReportSource.query))
+    @pytest.mark.parametrize("station_source", (ReportSource.gnss, ReportSource.query))
+    def test_block_half_consistent_obs(
+        self, celery, session, obs_source, station_source
+    ):
+        obs = self.make_obs(source=obs_source, distance=0.5)
+        self.station_factory(
+            lat=obs[0].lat,
+            lon=obs[0].lon,
+            created=self.past,
+            modified=self.past,
+            source=station_source,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-                obs = obs[0]
-                self.check_areas(celery, [obs])
-                station = self.get_station(session, obs)
-                self.check_blocked(station, self.today, self.today, 1)
-                self.check_dates(station, self.past.date(), self.today)
-                self.check_no_position(station)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        self.check_blocked(station, self.today, self.today, 1)
+        self.check_dates(station, self.past.date(), self.today)
+        self.check_no_position(station)
 
-    def test_block_consistent_obs(self, celery, session):
-        for obs_source in (ReportSource.gnss, ReportSource.query):
-            for station_source in (ReportSource.gnss, ReportSource.query):
-                obs = self.make_obs(source=obs_source)
-                lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
-                self.station_factory(
-                    lat=lat,
-                    lon=lon,
-                    created=self.past,
-                    modified=self.past,
-                    source=station_source,
-                    **self.key(obs[0]),
-                )
-                session.commit()
-                self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("obs_source", (ReportSource.gnss, ReportSource.query))
+    @pytest.mark.parametrize("station_source", (ReportSource.gnss, ReportSource.query))
+    def test_block_consistent_obs(self, celery, session, obs_source, station_source):
+        obs = self.make_obs(source=obs_source)
+        lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
+        self.station_factory(
+            lat=lat,
+            lon=lon,
+            created=self.past,
+            modified=self.past,
+            source=station_source,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-                obs = obs[0]
-                self.check_areas(celery, [obs])
-                station = self.get_station(session, obs)
-                assert station.region == "GB"
-                self.check_blocked(station, self.today, self.today, 1)
-                self.check_dates(station, self.past.date(), self.today)
-                self.check_no_position(station)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        assert station.region == "GB"
+        self.check_blocked(station, self.today, self.today, 1)
+        self.check_dates(station, self.past.date(), self.today)
+        self.check_no_position(station)
 
-    def test_block_inconsistent_obs(self, celery, session):
-        for obs_source in (ReportSource.gnss, ReportSource.query):
-            for station_source in (ReportSource.gnss, ReportSource.query):
-                obs = self.make_obs(source=obs_source, distance=1.0)
-                self.station_factory(
-                    created=self.ten_days,
-                    modified=self.ten_days,
-                    last_seen=self.ten_days.date(),
-                    source=station_source,
-                    **self.key(obs[0]),
-                )
-                session.commit()
-                self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("obs_source", (ReportSource.gnss, ReportSource.query))
+    @pytest.mark.parametrize("station_source", (ReportSource.gnss, ReportSource.query))
+    def test_block_inconsistent_obs(self, celery, session, obs_source, station_source):
+        obs = self.make_obs(source=obs_source, distance=1.0)
+        self.station_factory(
+            created=self.ten_days,
+            modified=self.ten_days,
+            last_seen=self.ten_days.date(),
+            source=station_source,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-                obs = obs[0]
-                self.check_areas(celery, [obs])
-                station = self.get_station(session, obs)
-                assert station.region == "GB"
-                self.check_blocked(station, self.today, self.today, 1)
-                self.check_dates(station, self.ten_days.date(), self.today)
-                self.check_no_position(station)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        assert station.region == "GB"
+        self.check_blocked(station, self.today, self.today, 1)
+        self.check_dates(station, self.ten_days.date(), self.today)
+        self.check_no_position(station)
 
-    def test_block_inconsistent_obs_old_station(self, celery, session):
-        for obs_source in (ReportSource.gnss, ReportSource.query):
-            for station_source in (ReportSource.gnss, ReportSource.query):
-                obs = self.make_obs(source=obs_source, distance=1.0)
-                self.station_factory(
-                    created=self.one_year,
-                    modified=self.one_year,
-                    last_seen=self.one_year.date(),
-                    source=station_source,
-                    **self.key(obs[0]),
-                )
-                session.commit()
-                self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("obs_source", (ReportSource.gnss, ReportSource.query))
+    @pytest.mark.parametrize("station_source", (ReportSource.gnss, ReportSource.query))
+    def test_block_inconsistent_obs_old_station(
+        self, celery, session, obs_source, station_source
+    ):
+        obs = self.make_obs(source=obs_source, distance=1.0)
+        self.station_factory(
+            created=self.one_year,
+            modified=self.one_year,
+            last_seen=self.one_year.date(),
+            source=station_source,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-                obs = obs[0]
-                self.check_areas(celery, [obs])
-                station = self.get_station(session, obs)
-                assert station.region == "GB"
-                self.check_blocked(station, self.today, self.today, 1)
-                self.check_dates(station, self.one_year.date(), self.today)
-                self.check_no_position(station)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
+        assert station.region == "GB"
+        self.check_blocked(station, self.today, self.today, 1)
+        self.check_dates(station, self.one_year.date(), self.today)
+        self.check_no_position(station)
 
     def test_replace_query_station(self, celery, session):
         obs = self.make_obs(source=ReportSource.gnss)
@@ -539,39 +535,39 @@ class StationTest(BaseStationTest):
         assert station.source == ReportSource.gnss
         assert round(station.weight, 2) == 3.0
 
-    def test_replace_old_station(self, celery, session):
-        for obs_source in (ReportSource.gnss, ReportSource.query):
-            for station_source in (ReportSource.gnss, ReportSource.query):
-                obs = self.make_obs(source=obs_source)
-                lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
-                self.station_factory(
-                    lat=lat,
-                    lon=lon,
-                    created=self.one_year,
-                    modified=self.one_year,
-                    last_seen=self.one_year.date(),
-                    source=station_source,
-                    **self.key(obs[0]),
-                )
-                session.commit()
-                self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("obs_source", (ReportSource.gnss, ReportSource.query))
+    @pytest.mark.parametrize("station_source", (ReportSource.gnss, ReportSource.query))
+    def test_replace_old_station(self, celery, session, obs_source, station_source):
+        obs = self.make_obs(source=obs_source)
+        lat, lon = self.displace(obs[0].lat, obs[0].lon, distance=1.0)
+        self.station_factory(
+            lat=lat,
+            lon=lon,
+            created=self.one_year,
+            modified=self.one_year,
+            last_seen=self.one_year.date(),
+            source=station_source,
+            **self.key(obs[0]),
+        )
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-                obs = obs[0]
-                self.check_areas(celery, [obs])
-                station = self.get_station(session, obs)
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, obs)
 
-                self.check_blocked(station, None)
-                self.check_dates(station, self.one_year.date(), self.today, self.today)
-                assert station.lat == obs.lat
-                assert station.max_lat == obs.lat
-                assert station.min_lat == obs.lat
-                assert station.lon == obs.lon
-                assert station.max_lon == obs.lon
-                assert station.min_lon == obs.lon
-                assert station.radius == 0
-                assert station.region == "GB"
-                assert station.samples == 3
-                assert station.source == obs_source
+        self.check_blocked(station, None)
+        self.check_dates(station, self.one_year.date(), self.today, self.today)
+        assert station.lat == obs.lat
+        assert station.max_lat == obs.lat
+        assert station.min_lat == obs.lat
+        assert station.lon == obs.lon
+        assert station.max_lon == obs.lon
+        assert station.min_lon == obs.lon
+        assert station.radius == 0
+        assert station.region == "GB"
+        assert station.samples == 3
+        assert station.source == obs_source
 
 
 class StationMacTest(StationTest):
@@ -596,52 +592,48 @@ class TestBlue(StationMacTest):
     def queue_and_update(self, celery, obs):
         return super(TestBlue, self)._queue_and_update(celery, obs, update_blue)
 
-    def test_change(self, celery, session):
-        for source in (ReportSource.gnss, ReportSource.query):
-            station = self.station_factory(samples=2, weight=3.0, source=source)
-            station_key = self.key(station)
-            lat = station.lat
-            lon = station.lon
-            obs = [
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.0001,
-                    accuracy=20.0,
-                    signal=-30,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.0002,
-                    age=-8000,
-                    accuracy=40.0,
-                    signal=-60,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.0003,
-                    accuracy=100.1,
-                    source=source,
-                    **station_key,
-                ),
-            ]
-            session.commit()
-            self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_change(self, celery, session, source):
+        station = self.station_factory(samples=2, weight=3.0, source=source)
+        station_key = self.key(station)
+        lat = station.lat
+        lon = station.lon
+        obs = [
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.0001,
+                accuracy=20.0,
+                signal=-30,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.0002,
+                age=-8000,
+                accuracy=40.0,
+                signal=-60,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat, lon=lon - 0.0003, accuracy=100.1, source=source, **station_key
+            ),
+        ]
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-            station = self.get_station(session, station)
-            assert station.lat == lat
-            assert station.max_lat == lat
-            assert station.min_lat == lat
-            assert round(station.lon, 7) == round(lon - 0.0000305, 7)
-            assert station.max_lon == lon
-            assert round(station.min_lon, 7) == round(lon - 0.0002, 7)
-            assert station.radius == 12
-            assert station.samples == 4
-            assert station.source == source
-            assert round(station.weight, 2) == 3.96
+        station = self.get_station(session, station)
+        assert station.lat == lat
+        assert station.max_lat == lat
+        assert station.min_lat == lat
+        assert round(station.lon, 7) == round(lon - 0.0000305, 7)
+        assert station.max_lon == lon
+        assert round(station.min_lon, 7) == round(lon - 0.0002, 7)
+        assert station.radius == 12
+        assert station.samples == 4
+        assert station.source == source
+        assert round(station.weight, 2) == 3.96
 
 
 class TestWifi(StationMacTest):
@@ -658,85 +650,81 @@ class TestWifi(StationMacTest):
     def queue_and_update(self, celery, obs):
         return super(TestWifi, self)._queue_and_update(celery, obs, update_wifi)
 
-    def test_change(self, celery, session):
-        for source in (ReportSource.gnss, ReportSource.query):
-            station = self.station_factory(samples=2, weight=3.0, source=source)
-            station_key = self.key(station)
-            lat = station.lat
-            lon = station.lon
-            obs = [
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.002,
-                    accuracy=20.0,
-                    signal=-30,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.004,
-                    age=-8000,
-                    accuracy=40.0,
-                    signal=-60,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.006,
-                    age=1000,
-                    accuracy=10.0,
-                    signal=-90,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.006,
-                    accuracy=10.0,
-                    speed=20.0,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.008,
-                    age=40000,
-                    accuracy=10.0,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.008,
-                    accuracy=10.0,
-                    speed=50.1,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.010,
-                    accuracy=200.1,
-                    source=source,
-                    **station_key,
-                ),
-            ]
-            session.commit()
-            self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_change(self, celery, session, source):
+        station = self.station_factory(samples=2, weight=3.0, source=source)
+        station_key = self.key(station)
+        lat = station.lat
+        lon = station.lon
+        obs = [
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.002,
+                accuracy=20.0,
+                signal=-30,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.004,
+                age=-8000,
+                accuracy=40.0,
+                signal=-60,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.006,
+                age=1000,
+                accuracy=10.0,
+                signal=-90,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.006,
+                accuracy=10.0,
+                speed=20.0,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.008,
+                age=40000,
+                accuracy=10.0,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.008,
+                accuracy=10.0,
+                speed=50.1,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat, lon=lon - 0.010, accuracy=200.1, source=source, **station_key
+            ),
+        ]
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-            station = self.get_station(session, station)
-            assert station.lat == lat
-            assert station.max_lat == lat
-            assert station.min_lat == lat
-            assert round(station.lon, 7) == round(lon - 0.0019971, 7)
-            assert station.max_lon == lon
-            assert round(station.min_lon, 7) == round(lon - 0.006, 7)
-            assert station.radius == 278
-            assert station.samples == 6
-            assert station.source == source
-            assert round(station.weight, 2) == 16.11
+        station = self.get_station(session, station)
+        assert station.lat == lat
+        assert station.max_lat == lat
+        assert station.min_lat == lat
+        assert round(station.lon, 7) == round(lon - 0.0019971, 7)
+        assert station.max_lon == lon
+        assert round(station.min_lon, 7) == round(lon - 0.006, 7)
+        assert station.radius == 278
+        assert station.samples == 6
+        assert station.source == source
+        assert round(station.weight, 2) == 16.11
 
     def test_region(self, celery, session):
         obs = []
@@ -796,52 +784,48 @@ class TestCell(StationTest):
         areaids = set([encode_cellarea(*cellid[:4]) for cellid in cellids])
         assert queued == areaids
 
-    def test_change(self, celery, session):
-        for source in (ReportSource.gnss, ReportSource.query):
-            station = self.station_factory(
-                radio=Radio.gsm, samples=1, source=source, weight=2.0
-            )
-            station_key = self.key(station)
-            lat = station.lat
-            lon = station.lon
-            obs = [
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.002,
-                    accuracy=20.0,
-                    signal=-51,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    signal=-111,
-                    lon=lon - 0.004,
-                    accuracy=1000.0,
-                    source=source,
-                    **station_key,
-                ),
-                self.obs_factory(
-                    lat=lat,
-                    lon=lon - 0.004,
-                    accuracy=1000.1,
-                    source=source,
-                    **station_key,
-                ),
-            ]
-            session.commit()
-            self.queue_and_update(celery, obs)
+    @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
+    def test_change(self, celery, session, source):
+        station = self.station_factory(
+            radio=Radio.gsm, samples=1, source=source, weight=2.0
+        )
+        station_key = self.key(station)
+        lat = station.lat
+        lon = station.lon
+        obs = [
+            self.obs_factory(
+                lat=lat,
+                lon=lon - 0.002,
+                accuracy=20.0,
+                signal=-51,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat,
+                signal=-111,
+                lon=lon - 0.004,
+                accuracy=1000.0,
+                source=source,
+                **station_key,
+            ),
+            self.obs_factory(
+                lat=lat, lon=lon - 0.004, accuracy=1000.1, source=source, **station_key
+            ),
+        ]
+        session.commit()
+        self.queue_and_update(celery, obs)
 
-            obs = obs[0]
-            self.check_areas(celery, [obs])
-            station = self.get_station(session, station)
-            assert station.lat == lat
-            assert station.max_lat == lat
-            assert station.min_lat == lat
-            assert round(station.lon, 7) == round(lon - 0.0015793, 7)
-            assert station.max_lon == lon
-            assert round(station.min_lon, 7) == round(lon - 0.004, 7)
-            assert station.radius == 168
-            assert station.samples == 3
-            assert station.source == source
-            assert round(station.weight, 3) == 9.245
+        obs = obs[0]
+        self.check_areas(celery, [obs])
+        station = self.get_station(session, station)
+        assert station.lat == lat
+        assert station.max_lat == lat
+        assert station.min_lat == lat
+        assert round(station.lon, 7) == round(lon - 0.0015793, 7)
+        assert station.max_lon == lon
+        assert round(station.min_lon, 7) == round(lon - 0.004, 7)
+        assert station.radius == 168
+        assert station.samples == 3
+        assert station.source == source
+        assert round(station.weight, 3) == 9.245
