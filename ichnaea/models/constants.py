@@ -17,7 +17,6 @@ class Radio(IntEnum):
     gsm = 0
     cdma = 1
     wcdma = 2
-    umts = 2
     lte = 3
 
 
