@@ -334,7 +334,6 @@ class TestCellReport(BaseTest):
     def test_radio(self):
         field = "radio"
         self.compare(field, "gsm", Radio.gsm)
-        self.compare(field, "umts", Radio.wcdma)
         self.compare(field, "wcdma", Radio.wcdma)
         self.compare(field, "lte", Radio.lte)
         assert self.sample(radio="cdma") is None

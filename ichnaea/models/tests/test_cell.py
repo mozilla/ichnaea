@@ -154,9 +154,9 @@ class TestCellShard(object):
 
     def test_shard_id(self):
         assert CellShard.shard_id(Radio.lte) == "lte"
-        assert CellShard.shard_id(Radio.umts) == "wcdma"
+        assert CellShard.shard_id(Radio.wcdma) == "wcdma"
         assert CellShard.shard_id("gsm") == "gsm"
-        assert CellShard.shard_id("umts") == "wcdma"
+        assert CellShard.shard_id("wcdma") == "wcdma"
         assert CellShard.shard_id("") is None
         assert CellShard.shard_id(None) is None
 

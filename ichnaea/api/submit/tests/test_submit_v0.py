@@ -155,7 +155,7 @@ class TestView(BaseSubmitTest):
     def test_cell(self, app, celery):
         now = util.utcnow()
         today = now.replace(hour=0, minute=0, second=0)
-        cell = CellShardFactory.build(radio=Radio.umts)
+        cell = CellShardFactory.build(radio=Radio.wcdma)
         res = self._post(
             app,
             [

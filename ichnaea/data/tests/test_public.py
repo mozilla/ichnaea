@@ -187,23 +187,23 @@ LTE,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220588,1570120328,
         )
         read_stations_from_csv(session, csv, redis_client, cellarea_queue)
 
-        # Check the details of the UMTS station
-        umts = session.query(CellShard.shard_model(Radio.umts)).one()
-        assert umts.mcc == 202
-        assert umts.mnc == 1
-        assert umts.lac == 2120
-        assert umts.cid == 12842
-        assert umts.lat == 38.8574351
-        assert umts.lon == 23.4123167
-        assert umts.max_lat == umts.lat
-        assert umts.min_lat == umts.lat
-        assert umts.max_lon == umts.lon
-        assert umts.min_lon == umts.lon
-        assert umts.radius == 0
-        assert umts.samples == 6
-        assert umts.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=UTC)
-        assert umts.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=UTC)
-        assert umts.region == "GR"
+        # Check the details of the WCDMA station
+        wcdma = session.query(CellShard.shard_model(Radio.wcdma)).one()
+        assert wcdma.mcc == 202
+        assert wcdma.mnc == 1
+        assert wcdma.lac == 2120
+        assert wcdma.cid == 12842
+        assert wcdma.lat == 38.8574351
+        assert wcdma.lon == 23.4123167
+        assert wcdma.max_lat == wcdma.lat
+        assert wcdma.min_lat == wcdma.lat
+        assert wcdma.max_lon == wcdma.lon
+        assert wcdma.min_lon == wcdma.lon
+        assert wcdma.radius == 0
+        assert wcdma.samples == 6
+        assert wcdma.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=UTC)
+        assert wcdma.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=UTC)
+        assert wcdma.region == "GR"
 
         # Check the counts of the other station types
         gsm_model = CellShard.shard_model(Radio.gsm)
@@ -231,7 +231,7 @@ LTE,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220588,1570120328,
     def test_modified_station(self, session, redis_client, cellarea_queue):
         """A modified station updates existing records."""
         station_data = {
-            "radio": Radio.umts,
+            "radio": Radio.wcdma,
             "mcc": 202,
             "mnc": 1,
             "lac": 2120,
@@ -259,21 +259,21 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
         )
         read_stations_from_csv(session, csv, redis_client, cellarea_queue)
 
-        # Check the details of the UMTS station
-        umts = session.query(CellShard.shard_model(Radio.umts)).one()
+        # Check the details of the updated station
+        wcdma = session.query(CellShard.shard_model(Radio.wcdma)).one()
         # New position, other details from import
-        assert umts.lat == 38.8574351
-        assert umts.lon == 23.4123167
-        assert umts.radius == 0
-        assert umts.samples == 6
-        assert umts.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=UTC)
-        assert umts.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=UTC)
+        assert wcdma.lat == 38.8574351
+        assert wcdma.lon == 23.4123167
+        assert wcdma.radius == 0
+        assert wcdma.samples == 6
+        assert wcdma.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=UTC)
+        assert wcdma.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=UTC)
         # Other details unchanged
-        assert umts.max_lat == station_data["max_lat"]
-        assert umts.min_lat == station_data["min_lat"]
-        assert umts.max_lon == station_data["max_lon"]
-        assert umts.min_lon == station_data["min_lon"]
-        assert umts.region == "GR"
+        assert wcdma.max_lat == station_data["max_lat"]
+        assert wcdma.min_lat == station_data["min_lat"]
+        assert wcdma.max_lon == station_data["max_lon"]
+        assert wcdma.min_lon == station_data["min_lon"]
+        assert wcdma.region == "GR"
 
         # A Modified station triggers the creation of a new CellArea
         cell_area = session.query(CellArea).order_by(CellArea.areaid).one()
@@ -287,7 +287,7 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
     def test_outdated_station(self, session, redis_client, cellarea_queue):
         """An older statuon record does not update existing station records."""
         station_data = {
-            "radio": Radio.umts,
+            "radio": Radio.wcdma,
             "mcc": 202,
             "mnc": 1,
             "lac": 2120,
@@ -312,11 +312,11 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
         read_stations_from_csv(session, csv, redis_client, cellarea_queue)
 
         # The existing station is unmodified
-        umts = session.query(CellShard.shard_model(Radio.umts)).one()
-        assert umts.lat == 38.85
-        assert umts.lon == 23.41
-        assert umts.created == datetime(2019, 1, 1, tzinfo=UTC)
-        assert umts.modified == datetime(2019, 10, 7, tzinfo=UTC)
+        wcdma = session.query(CellShard.shard_model(Radio.wcdma)).one()
+        assert wcdma.lat == 38.85
+        assert wcdma.lon == 23.41
+        assert wcdma.created == datetime(2019, 1, 1, tzinfo=UTC)
+        assert wcdma.modified == datetime(2019, 10, 7, tzinfo=UTC)
 
         # No CellAreas or RegionStats are generated
         assert session.query(func.count(CellArea.areaid)).scalar() == 0
@@ -360,9 +360,9 @@ GSM,208,10,30014,20669,,2.5112670,46.5992450,0,78,1,1566307030,1570119413,
         read_stations_from_csv(session, csv, redis_client, cellarea_queue)
 
         # The empty radio row is skipped, but the following row is processed.
-        umts = session.query(CellShard.shard_model(Radio.umts)).one()
-        assert umts.lat == 38.8574351
-        assert umts.lon == 23.4123167
+        wcdma = session.query(CellShard.shard_model(Radio.wcdma)).one()
+        assert wcdma.lat == 38.8574351
+        assert wcdma.lon == 23.4123167
         gsm_model = CellShard.shard_model(Radio.gsm)
         assert session.query(func.count(gsm_model.cellid)).scalar() == 1
         assert session.query(func.count(CellArea.areaid)).scalar() == 2
@@ -385,10 +385,10 @@ LTE,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220588,1570120328,
         gsm_model = CellShard.shard_model(Radio.gsm)
         assert session.query(func.count(gsm_model.cellid)).scalar() == 0
 
-        # The valid UMTS and LTE rows are processed, and in the same region
-        umts_model = CellShard.shard_model(Radio.umts)
+        # The valid WCDMA and LTE rows are processed, and in the same region
+        wcdma_model = CellShard.shard_model(Radio.wcdma)
         lte_model = CellShard.shard_model(Radio.lte)
-        assert session.query(func.count(umts_model.cellid)).scalar() == 1
+        assert session.query(func.count(wcdma_model.cellid)).scalar() == 1
         assert session.query(func.count(lte_model.cellid)).scalar() == 1
         assert session.query(func.count(CellArea.areaid)).scalar() == 2
         assert session.query(func.count(RegionStat.region)).scalar() == 1
@@ -410,10 +410,10 @@ LTE,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220588,1570120328,
         gsm_model = CellShard.shard_model(Radio.gsm)
         assert session.query(func.count(gsm_model.cellid)).scalar() == 0
 
-        # The valid UMTS and LTE rows are processed, and in the same region
-        umts_model = CellShard.shard_model(Radio.umts)
+        # The valid WCDMA and LTE rows are processed, and in the same region
+        wcdma_model = CellShard.shard_model(Radio.wcdma)
         lte_model = CellShard.shard_model(Radio.lte)
-        assert session.query(func.count(umts_model.cellid)).scalar() == 1
+        assert session.query(func.count(wcdma_model.cellid)).scalar() == 1
         assert session.query(func.count(lte_model.cellid)).scalar() == 1
         assert session.query(func.count(CellArea.areaid)).scalar() == 2
         assert session.query(func.count(RegionStat.region)).scalar() == 1

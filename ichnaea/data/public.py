@@ -121,6 +121,7 @@ def read_stations_from_csv(session, file_handle, redis_client, cellarea_queue):
     from ichnaea.data.tasks import update_cellarea, update_statregion
 
     csv_content = peekable(reader(file_handle))
+    # UMTS was the original name for WCDMA stations
     radio_type = {"UMTS": "wcdma", "GSM": "gsm", "LTE": "lte", "": "Unknown"}
 
     counts = defaultdict(Counter)
