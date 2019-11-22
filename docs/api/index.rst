@@ -159,9 +159,34 @@ APIs
 History
 =======
 
-The service first offered the custom ``/v1/search/`` :ref:`api_submit` APIs.
-Later it was decided to also implement the :ref:`api_geolocate` API to lessen
-the burden on clients that want to support multiple location services. As an
-extension to this the :ref:`api_geosubmit` API was added to offer a consistent
-way to contribute back data to the service. Afterwards the :ref:`api_region`
-API was added and :ref:`api_geosubmit2` superseded its version 1 counterpart.
+The service launched in 2013, and first offered custom ``/v1/search/`` and
+:ref:`/v1/submit/ <api_submit>` APIs, used by the MozStumbler_ app. Later that
+year the :ref:`/v1/geolocate <api_geolocate>` API was implemented, to reduce
+the burden on clients that already used the
+`Google Maps Geolocation API`_.  This was followed by the
+:ref:`/v1/geosubmit <api_geosubmit>` API, to make contribution more consistant.
+
+In 2014, the ``/v1/geosubmit`` and ``/v1/geolocate`` API were recommended for
+client development, and the ``/v1/submit`` and ``/v1/search`` APIs were marked
+as deprecated.
+
+In 2015, the :ref:`/v2/geosubmit <api_geosubmit>` API was added, to expand the
+submitted data fields and accept data from partners. The
+:ref:`/v1/country <api_region>` API was also added, to provide region rather
+than position lookups.
+
+In 2016, a ``/v1/transfer`` API was added, for bulk transfers of data from one
+instance of Ichnaea to another. This was also when work started on the 2.0
+implementation of Ichnaea, and `MozStumbler switched`_ to ``/v1/geolocate`` and
+``/v1/geosubmit``.
+
+In 2017, the ``/v1/transfer`` API was removed from the 2.0 branch, and Mozilla
+stopped active development of Ichnaea, leaving 1.5 as the production
+deployment.
+
+In 2019, Ichnaea development started up again, to prepare the 2.0 codebase
+for production. The deprecated ``/v1/search`` API was removed.
+
+.. _MozStumbler: https://github.com/mozilla/MozStumbler
+.. _`Google Maps Geolocation API`: https://developers.google.com/maps/documentation/geolocation/intro
+.. _`MozStumbler switched`: https://github.com/mozilla/MozStumbler/pull/1500
