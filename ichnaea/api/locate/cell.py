@@ -119,7 +119,7 @@ def cluster_areas(areas, lookups, min_age=0):
                         obs_data[area.areaid][1],
                         area_score(area, now),
                         encode_cellarea(*area.areaid),
-                        bool(area.last_seen >= today),
+                        bool(area.last_seen is not None and area.last_seen >= today),
                     )
                 ],
                 dtype=NETWORK_DTYPE,
