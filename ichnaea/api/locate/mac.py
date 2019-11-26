@@ -56,7 +56,7 @@ def cluster_networks(
                 obs_data[model.mac][1],
                 station_score(model, now),
                 encode_mac(model.mac),
-                bool(model.last_seen >= today),
+                bool(model.last_seen is not None and model.last_seen >= today),
             )
             for model in models
         ],

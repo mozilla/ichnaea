@@ -80,7 +80,7 @@ def cluster_cells(cells, lookups, min_age=0):
                         obs_data[cell.cellid][1],
                         station_score(cell, now),
                         encode_cellid(*cell.cellid),
-                        bool(cell.last_seen >= today),
+                        bool(cell.last_seen is not None and cell.last_seen >= today),
                     )
                     for cell in area_cells
                 ],
