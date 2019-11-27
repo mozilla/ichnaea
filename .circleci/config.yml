@@ -1,14 +1,6 @@
 version: 2
 jobs:
   build:
-    branches:
-        ignore:
-            # Old feature branch
-            - 1.5.x
-            # Generated docs hosted on GitHub
-            - gh-pages
-            # 2015 experiment to use ReadTheDocs
-            - readthedocs
     docker:
       - image: mozilla/cidockerbases:docker-latest
     working_directory: /
