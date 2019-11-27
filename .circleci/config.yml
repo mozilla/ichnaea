@@ -113,3 +113,14 @@ jobs:
                 fi
               fi
 
+workflows:
+  version: 2
+  #
+  # workflow jobs are _not_ run in tag builds by default, so we have to enable that.
+  # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
+  build-test-push:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
