@@ -43,7 +43,7 @@ def configure_data(redis_client):
     data_queues = {
         # *_incoming need to be the exact same as in webapp.config
         "update_incoming": DataQueue(
-            "update_incoming", redis_client, batch=100, compress=True
+            "update_incoming", redis_client, batch=500, compress=True
         )
     }
     for key in ("update_cellarea",):
