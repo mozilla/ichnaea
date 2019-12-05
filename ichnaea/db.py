@@ -83,6 +83,8 @@ def db_worker_session(database, commit=True):
     """
     try:
         session = database.session()
+        if commit:
+            session.begin_nested()
         yield session
         if commit:
             session.commit()

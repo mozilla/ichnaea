@@ -1,9 +1,13 @@
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest import mock
 
 import pytest
+from pymysql.err import InternalError, MySQLError
+from pymysql.constants.ER import LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT
+from pytz import UTC
 from sqlalchemy import text
+from sqlalchemy.exc import InterfaceError
 
 from geocalc import destination
 from ichnaea.db import configure_db
@@ -33,7 +37,7 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class BaseStationTest(object):
+class BaseStationTest:
 
     queue_prefix = None
     shard_model = None
@@ -89,8 +93,15 @@ class TestDatabaseErrors(BaseStationTest):
             lac=obs.lac,
             cid=obs.cid,
             samples=10,
+            created=datetime(2019, 12, 1, tzinfo=UTC),
         )
         session2.add(cell)
+        # flush sends the INSERT to the database, but does not commit it.
+        # This cell is seen as an existing cell the first pass through
+        # the task. However, because of the rollback inside the task, it is
+        # removed from the database, and the observation inserts it as a new
+        # cell. This is probably an error in the test, but it retained because
+        # it is a working historical test.
         session2.flush()
 
         orig_add_area = CellUpdater.add_area_update
@@ -115,9 +126,12 @@ class TestDatabaseErrors(BaseStationTest):
             shard = CellShard.shard_model(obs.cellid)
             cells = session.query(shard).all()
             assert len(cells) == 1
-            assert cells[0].samples == 1
-
             self.check_statcounter(redis, StatKey.cell, 1)
+
+            # As mentioned above, the cell was inserted as new from the observation
+            cell = cells[0]
+            assert cell.samples == 1
+            assert datetime.now(tz=UTC) - cell.created < timedelta(seconds=60)
             self.check_statcounter(redis, StatKey.unique_cell, 1)
 
             # Assert generated metrics are correct
@@ -140,6 +154,74 @@ class TestDatabaseErrors(BaseStationTest):
         finally:
             CellUpdater._retry_wait = orig_wait
             session.execute(text("drop table %s;" % cell.__tablename__))
+
+    @pytest.mark.parametrize(
+        "errclass,errno,errmsg",
+        (
+            (
+                # This was an InternalError before PyMySQL 0.9.0
+                InternalError,
+                LOCK_DEADLOCK,
+                "Deadlock found when trying to get lock; try restarting transaction",
+            ),
+            (
+                InternalError,
+                LOCK_WAIT_TIMEOUT,
+                "Lock wait timeout exceeded; try restarting transaction",
+            ),
+        ),
+        ids=("deadlock", "wait-timeout"),
+    )
+    def test_retriable_exceptions(
+        self, celery, redis, session, db, metricsmock, errclass, errno, errmsg
+    ):
+
+        obs = CellObservationFactory.build(radio=Radio.lte)
+        shard = CellShard.shard_model(obs.cellid)
+        cell = CellShardFactory.build(
+            radio=obs.radio,
+            mcc=obs.mcc,
+            mnc=obs.mnc,
+            lac=obs.lac,
+            cid=obs.cid,
+            samples=10,
+            created=datetime(2019, 12, 5, tzinfo=UTC),
+        )
+        session.add(cell)
+        session.commit()
+
+        error = errclass(errno, errmsg)
+        wrapped = InterfaceError.instance(
+            statement="SELECT COUNT(*) FROM cell_area",
+            params={},
+            orig=error,
+            dbapi_base_err=MySQLError,
+        )
+        with mock.patch.object(
+            CellUpdater, "add_area_update", side_effect=[wrapped, None]
+        ), mock.patch("ichnaea.data.station.time.sleep") as sleepy:
+            self.queue_and_update(celery, [obs])
+            assert CellUpdater.add_area_update.call_count == 2
+            sleepy.assert_called_once_with(1)
+
+        cells = session.query(shard).all()
+        assert len(cells) == 1
+        self.check_statcounter(redis, StatKey.cell, 1)
+
+        # The existing cell record was updated
+        cell = cells[0]
+        assert cell.samples == 11
+        assert cell.created == datetime(2019, 12, 5, tzinfo=UTC)
+        self.check_statcounter(redis, StatKey.unique_cell, 0)
+
+        # Assert generated metrics are correct
+        assert metricsmock.has_record(
+            "incr", "data.observation.insert", value=1, tags=["type:cell"]
+        )
+        assert metricsmock.has_record(
+            "incr", "data.station.confirm", value=1, tags=["type:cell"]
+        )
+        assert metricsmock.has_record("timing", "task", tags=["task:data.update_cell"])
 
 
 class StationTest(BaseStationTest):
