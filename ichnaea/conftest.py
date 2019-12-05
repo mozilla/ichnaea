@@ -196,25 +196,6 @@ def session(db):
 
 
 @pytest.fixture(scope="function")
-def sync_session(db):
-    with db.engine.connect() as conn:
-        with conn.begin() as trans:
-            db.session_factory.configure(bind=conn)
-            session = db.session()
-
-            # Set the global session context for factory-boy.
-            SESSION["default"] = session
-            yield session
-            del SESSION["default"]
-
-            trans.rollback()
-            session.close()
-            db.session_factory.configure(bind=db.engine)
-
-    API_CACHE.clear()
-
-
-@pytest.fixture(scope="function")
 def session_tracker(session):
     """
     This install an event handler into the active session, which
