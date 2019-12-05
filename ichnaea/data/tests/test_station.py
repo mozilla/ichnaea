@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from unittest import mock
 
 import pytest
-from pymysql.err import InternalError, MySQLError
+from pymysql.err import InternalError, MySQLError, OperationalError
 from pymysql.constants.ER import LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT
 from pytz import UTC
 from sqlalchemy import text
@@ -159,8 +159,7 @@ class TestDatabaseErrors(BaseStationTest):
         "errclass,errno,errmsg",
         (
             (
-                # This was an InternalError before PyMySQL 0.9.0
-                InternalError,
+                OperationalError,
                 LOCK_DEADLOCK,
                 "Deadlock found when trying to get lock; try restarting transaction",
             ),
