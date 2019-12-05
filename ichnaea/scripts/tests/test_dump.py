@@ -65,21 +65,21 @@ class TestDump(object):
     def _mac_keys(self, networks):
         return [network.mac for network in networks]
 
-    def test_blue(self, sync_session):
+    def test_blue(self, session):
         # Add one network outside the desired area.
         BlueShardFactory(lat=46.5743, lon=6.3532, region="FR")
         blues = BlueShardFactory.create_batch(1)
-        sync_session.flush()
-        self._export(sync_session, "blue", self._mac_keys(blues), restrict=True)
+        session.flush()
+        self._export(session, "blue", self._mac_keys(blues), restrict=True)
 
-    def test_cell(self, sync_session):
+    def test_cell(self, session):
         cells = CellShardFactory.create_batch(2)
         # Add one far away network, with no area restriction.
         cells.append(CellShardFactory(lat=46.5743, lon=6.3532, region="FR"))
-        sync_session.flush()
-        self._export(sync_session, "cell", self._cell_keys(cells))
+        session.flush()
+        self._export(session, "cell", self._cell_keys(cells))
 
-    def test_wifi(self, sync_session):
+    def test_wifi(self, session):
         wifis = WifiShardFactory.create_batch(5)
-        sync_session.flush()
-        self._export(sync_session, "wifi", self._mac_keys(wifis))
+        session.flush()
+        self._export(session, "wifi", self._mac_keys(wifis))

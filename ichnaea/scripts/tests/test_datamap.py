@@ -20,7 +20,7 @@ class TestMap(object):
         for name in ("1,0", "meta"):
             assert os.path.isfile(os.path.join(path, name))
 
-    def test_files(self, sync_session):
+    def test_files(self, session):
         today = util.utcnow().date()
         rows = [
             dict(time=today, lat=12.345, lon=12.345),
@@ -32,8 +32,8 @@ class TestMap(object):
             data = DataMap.shard_model(lat, lon)(
                 grid=(lat, lon), created=row["time"], modified=row["time"]
             )
-            sync_session.add(data)
-        sync_session.flush()
+            session.add(data)
+        session.flush()
 
         lines = []
         rows = 0
@@ -47,9 +47,7 @@ class TestMap(object):
             for shard_id, shard in DataMap.shards().items():
                 filename = "map_%s.csv.gz" % shard_id
                 filepath = os.path.join(temp_dir, filename)
-                result = export_file(
-                    filepath, shard.__tablename__, _session=sync_session
-                )
+                result = export_file(filepath, shard.__tablename__, _session=session)
 
                 if not result:
                     assert not os.path.isfile(filepath)
