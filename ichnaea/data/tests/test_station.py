@@ -6,11 +6,9 @@ import pytest
 from pymysql.err import InternalError, MySQLError, OperationalError
 from pymysql.constants.ER import LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT
 from pytz import UTC
-from sqlalchemy import text
 from sqlalchemy.exc import InterfaceError
 
 from geocalc import destination
-from ichnaea.db import configure_db
 from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import update_blue, update_cell, update_wifi
 from ichnaea.models import (
@@ -61,105 +59,9 @@ class BaseStationTest:
 
 
 class TestDatabaseErrors(BaseStationTest):
-    # this is a standalone class to ensure DB isolation
-
     queue_prefix = "update_cell_"
     shard_model = CellShard
     unique_key = "cellid"
-
-    @pytest.fixture(scope="function")
-    def session2(self, database):
-        # Create a second independent database session.
-        db = configure_db("ro")
-        session = db.session()
-        try:
-            yield session
-            session.rollback()
-        finally:
-            session.close()
-            db.close()
-
-    def queue_and_update(self, celery, obs):
-        return self._queue_and_update(celery, obs, update_cell)
-
-    def test_lock_timeout(
-        self, celery, redis, session, session2, metricsmock, restore_db
-    ):
-        obs = CellObservationFactory.build()
-        cell = CellShardFactory.build(
-            radio=obs.radio,
-            mcc=obs.mcc,
-            mnc=obs.mnc,
-            lac=obs.lac,
-            cid=obs.cid,
-            samples=10,
-            created=datetime(2019, 12, 1, tzinfo=UTC),
-        )
-        session2.add(cell)
-        # flush sends the INSERT to the database, but does not commit it.
-        # This cell is seen as an existing cell the first pass through
-        # the task. However, because of the rollback inside the task, it is
-        # removed from the database, and the observation inserts it as a new
-        # cell. This is probably an error in the test, but it retained because
-        # it is a working historical test.
-        session2.flush()
-
-        orig_add_area = CellUpdater.add_area_update
-        orig_wait = CellUpdater._retry_wait
-        num = [0]
-
-        def mock_area(self, updated_areas, key, num=num, session2=session2):
-            orig_add_area(self, updated_areas, key)
-            num[0] += 1
-            if num[0] == 2:
-                session2.rollback()
-
-        try:
-            CellUpdater._retry_wait = 0.0001
-            session.execute("set session innodb_lock_wait_timeout = 1")
-            with mock.patch.object(CellUpdater, "add_area_update", mock_area):
-                self.queue_and_update(celery, [obs])
-
-            # the inner task logic was called exactly twice
-            assert num[0] == 2
-
-            shard = CellShard.shard_model(obs.cellid)
-            cells = session.query(shard).all()
-            assert len(cells) == 1
-            self.check_statcounter(redis, StatKey.cell, 1)
-
-            # As mentioned above, the cell was inserted as new from the observation
-            cell = cells[0]
-            assert cell.samples == 1
-            assert datetime.now(tz=UTC) - cell.created < timedelta(seconds=60)
-            self.check_statcounter(redis, StatKey.unique_cell, 1)
-
-            # Assert generated metrics are correct
-            assert (
-                len(
-                    metricsmock.filter_records(
-                        "incr", "data.observation.insert", value=1, tags=["type:cell"]
-                    )
-                )
-                == 1
-            )
-            assert (
-                len(
-                    metricsmock.filter_records(
-                        "timing", "task", tags=["task:data.update_cell"]
-                    )
-                )
-                == 1
-            )
-            assert metricsmock.has_record(
-                "incr",
-                "data.station.dberror",
-                value=1,
-                tags=["type:cell", "errno:%s" % LOCK_WAIT_TIMEOUT],
-            )
-        finally:
-            CellUpdater._retry_wait = orig_wait
-            session.execute(text("drop table %s;" % cell.__tablename__))
 
     @pytest.mark.parametrize(
         "errclass,errno,errmsg",
@@ -180,6 +82,7 @@ class TestDatabaseErrors(BaseStationTest):
     def test_retriable_exceptions(
         self, celery, redis, session, db, metricsmock, errclass, errno, errmsg
     ):
+        """Test database exceptions where the task should wait and try again."""
 
         obs = CellObservationFactory.build(radio=Radio.lte)
         shard = CellShard.shard_model(obs.cellid)
@@ -205,7 +108,7 @@ class TestDatabaseErrors(BaseStationTest):
         with mock.patch.object(
             CellUpdater, "add_area_update", side_effect=[wrapped, None]
         ), mock.patch("ichnaea.data.station.time.sleep") as sleepy:
-            self.queue_and_update(celery, [obs])
+            self._queue_and_update(celery, [obs], update_cell)
             assert CellUpdater.add_area_update.call_count == 2
             sleepy.assert_called_once_with(1)
 
