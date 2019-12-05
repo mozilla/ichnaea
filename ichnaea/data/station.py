@@ -574,6 +574,14 @@ class StationUpdater(object):
                     and exc.orig.args[0] in self._retriable
                 ):
                     success = False
+                    METRICS.incr(
+                        "data.station.dberror",
+                        1,
+                        tags=[
+                            "type:%s" % self.station_type,
+                            "errno:%s" % exc.orig.args[0],
+                        ],
+                    )
                     time.sleep(self._retry_wait * (i ** 2 + 1))
                 else:
                     raise

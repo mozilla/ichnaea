@@ -151,6 +151,12 @@ class TestDatabaseErrors(BaseStationTest):
                 )
                 == 1
             )
+            assert metricsmock.has_record(
+                "incr",
+                "data.station.dberror",
+                value=1,
+                tags=["type:cell", "errno:%s" % LOCK_WAIT_TIMEOUT],
+            )
         finally:
             CellUpdater._retry_wait = orig_wait
             session.execute(text("drop table %s;" % cell.__tablename__))
@@ -221,6 +227,12 @@ class TestDatabaseErrors(BaseStationTest):
             "incr", "data.station.confirm", value=1, tags=["type:cell"]
         )
         assert metricsmock.has_record("timing", "task", tags=["task:data.update_cell"])
+        assert metricsmock.has_record(
+            "incr",
+            "data.station.dberror",
+            value=1,
+            tags=["type:cell", "errno:%s" % errno],
+        )
 
 
 class StationTest(BaseStationTest):

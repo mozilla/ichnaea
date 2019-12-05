@@ -78,6 +78,9 @@ to queues like ``update_wifi_0`` and ``update_blue_a``.
 These per-shard queues are processed when a large enough batch is accumulated,
 or when the queue is about to expire.  Batching increases the chances that
 there will be several observations for a station processed in the same chunk.
+It also increases the chance that two station updating threads will try to
+update the same station. This causes a deadlock, which restarts one of the
+tasks and is tracked with the metric ``data.station.dberror``.
 
 Observation Weight
 ==================
