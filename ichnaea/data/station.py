@@ -6,7 +6,7 @@ import markus
 import numpy
 from pymysql.err import MySQLError
 from pymysql.constants.ER import LOCK_WAIT_TIMEOUT, LOCK_DEADLOCK
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import StatementError
 
 from geocalc import circle_radius, distance
 from ichnaea.geocode import GEOCODER
@@ -568,7 +568,7 @@ class StationUpdater(object):
                         )
 
                 success = True
-            except SQLAlchemyError as exc:
+            except StatementError as exc:
                 if (
                     isinstance(exc.orig, MySQLError)
                     and exc.orig.args[0] in self._retriable
