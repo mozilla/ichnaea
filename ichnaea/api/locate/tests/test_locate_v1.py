@@ -170,13 +170,17 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             }
         ]
 
-    def test_blue_seen(self, app, data_queues, session):
+    @pytest.mark.parametrize("mac", ["a82067491500", "a82067491501"])
+    def test_blue_seen(self, app, data_queues, session, mac):
         """If a query contains no new data, it is not queued for further processing.
 
-        This fails occasionally, see issue #921.
+        Due to an issue with truncating bytestrings in a numpy array (numpy
+        issue 8089), addresses that end in '00' were once detected as new
+        stations.
         """
+
         self.check_queue(data_queues, 0)
-        blue = BlueShardFactory()
+        blue = BlueShardFactory(mac=mac)
         offset = 0.00002
         blues = [blue, BlueShardFactory(lat=blue.lat + offset)]
         session.flush()

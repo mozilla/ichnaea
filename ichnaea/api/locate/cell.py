@@ -1,5 +1,6 @@
 """Search implementation using a cell database."""
 
+from base64 import b64decode
 from collections import defaultdict
 import math
 
@@ -42,7 +43,7 @@ NETWORK_DTYPE = numpy.dtype(
         ("age", numpy.int32),
         ("signalStrength", numpy.int32),
         ("score", numpy.double),
-        ("id", "S11"),
+        ("id_b64", "S16"),
         ("seen_today", numpy.bool),
     ]
 )
@@ -79,7 +80,7 @@ def cluster_cells(cells, lookups, min_age=0):
                         obs_data[cell.cellid][0],
                         obs_data[cell.cellid][1],
                         station_score(cell, now),
-                        encode_cellid(*cell.cellid),
+                        encode_cellid(*cell.cellid, codec="base64"),
                         bool(cell.last_seen is not None and cell.last_seen >= today),
                     )
                     for cell in area_cells
@@ -118,7 +119,7 @@ def cluster_areas(areas, lookups, min_age=0):
                         obs_data[area.areaid][0],
                         obs_data[area.areaid][1],
                         area_score(area, now),
-                        encode_cellarea(*area.areaid),
+                        encode_cellarea(*area.areaid, codec="base64"),
                         bool(area.last_seen is not None and area.last_seen >= today),
                     )
                 ],
@@ -284,8 +285,8 @@ class CellPositionMixin(object):
                     )
 
                     used_networks = [
-                        ("cell", bytes(id_), bool(seen_today))
-                        for id_, seen_today in cluster[["id", "seen_today"]]
+                        ("cell", b64decode(id_b64), bool(seen_today))
+                        for id_b64, seen_today in cluster[["id_b64", "seen_today"]]
                     ]
 
                     results.add(
@@ -312,8 +313,8 @@ class CellPositionMixin(object):
                     )
 
                     used_networks = [
-                        ("area", bytes(id_), bool(seen_today))
-                        for id_, seen_today in cluster[["id", "seen_today"]]
+                        ("area", b64decode(id_b64), bool(seen_today))
+                        for id_b64, seen_today in cluster[["id_b64", "seen_today"]]
                     ]
 
                     results.add(
