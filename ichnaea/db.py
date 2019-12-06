@@ -83,7 +83,10 @@ def db_worker_session(database, commit=True):
     """
     try:
         session = database.session()
-        if commit:
+        # When running in a test that is expecting to issue a rollback,
+        # add a savepoint so that test fixtures are not also rolled back.
+        # TODO: Find a more elegant way to do this.
+        if getattr(database, "tests_task_use_savepoint", False):
             session.begin_nested()
         yield session
         if commit:

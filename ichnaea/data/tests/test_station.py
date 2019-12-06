@@ -97,6 +97,8 @@ class TestDatabaseErrors(BaseStationTest):
         )
         session.add(cell)
         session.commit()
+        # TODO: Find a more elegant way to do this
+        db.tests_task_use_savepoint = True
 
         error = errclass(errno, errmsg)
         wrapped = InterfaceError.instance(
@@ -111,6 +113,8 @@ class TestDatabaseErrors(BaseStationTest):
             self._queue_and_update(celery, [obs], update_cell)
             assert CellUpdater.add_area_update.call_count == 2
             sleepy.assert_called_once_with(1)
+
+        del db.tests_task_use_savepoint
 
         cells = session.query(shard).all()
         assert len(cells) == 1
