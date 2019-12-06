@@ -4,9 +4,9 @@ import time
 
 import markus
 import numpy
-from pymysql.err import InternalError as PyMysqlInternalError
+from pymysql.err import MySQLError
 from pymysql.constants.ER import LOCK_WAIT_TIMEOUT, LOCK_DEADLOCK
-from sqlalchemy.exc import InternalError as SQLInternalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from geocalc import circle_radius, distance
 from ichnaea.geocode import GEOCODER
@@ -568,12 +568,20 @@ class StationUpdater(object):
                         )
 
                 success = True
-            except SQLInternalError as exc:
+            except SQLAlchemyError as exc:
                 if (
-                    isinstance(exc.orig, PyMysqlInternalError)
+                    isinstance(exc.orig, MySQLError)
                     and exc.orig.args[0] in self._retriable
                 ):
                     success = False
+                    METRICS.incr(
+                        "data.station.dberror",
+                        1,
+                        tags=[
+                            "type:%s" % self.station_type,
+                            "errno:%s" % exc.orig.args[0],
+                        ],
+                    )
                     time.sleep(self._retry_wait * (i ** 2 + 1))
                 else:
                     raise

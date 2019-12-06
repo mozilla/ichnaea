@@ -1,12 +1,14 @@
 from collections import defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from unittest import mock
 
 import pytest
-from sqlalchemy import text
+from pymysql.err import InternalError, MySQLError, OperationalError
+from pymysql.constants.ER import LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT
+from pytz import UTC
+from sqlalchemy.exc import InterfaceError
 
 from geocalc import destination
-from ichnaea.db import configure_db
 from ichnaea.data.station import CellUpdater
 from ichnaea.data.tasks import update_blue, update_cell, update_wifi
 from ichnaea.models import (
@@ -33,7 +35,7 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
-class BaseStationTest(object):
+class BaseStationTest:
 
     queue_prefix = None
     shard_model = None
@@ -57,31 +59,33 @@ class BaseStationTest(object):
 
 
 class TestDatabaseErrors(BaseStationTest):
-    # this is a standalone class to ensure DB isolation
-
     queue_prefix = "update_cell_"
     shard_model = CellShard
     unique_key = "cellid"
 
-    @pytest.fixture(scope="function")
-    def session2(self, database):
-        # Create a second independent database session.
-        db = configure_db("ro")
-        session = db.session()
-        try:
-            yield session
-            session.rollback()
-        finally:
-            session.close()
-            db.close()
-
-    def queue_and_update(self, celery, obs):
-        return self._queue_and_update(celery, obs, update_cell)
-
-    def test_lock_timeout(
-        self, celery, redis, session, session2, metricsmock, restore_db
+    @pytest.mark.parametrize(
+        "errclass,errno,errmsg",
+        (
+            (
+                OperationalError,
+                LOCK_DEADLOCK,
+                "Deadlock found when trying to get lock; try restarting transaction",
+            ),
+            (
+                InternalError,
+                LOCK_WAIT_TIMEOUT,
+                "Lock wait timeout exceeded; try restarting transaction",
+            ),
+        ),
+        ids=("deadlock", "wait-timeout"),
+    )
+    def test_retriable_exceptions(
+        self, celery, redis, session, db, metricsmock, errclass, errno, errmsg
     ):
-        obs = CellObservationFactory.build()
+        """Test database exceptions where the task should wait and try again."""
+
+        obs = CellObservationFactory.build(radio=Radio.lte)
+        shard = CellShard.shard_model(obs.cellid)
         cell = CellShardFactory.build(
             radio=obs.radio,
             mcc=obs.mcc,
@@ -89,57 +93,53 @@ class TestDatabaseErrors(BaseStationTest):
             lac=obs.lac,
             cid=obs.cid,
             samples=10,
+            created=datetime(2019, 12, 5, tzinfo=UTC),
         )
-        session2.add(cell)
-        session2.flush()
+        session.add(cell)
+        session.commit()
+        # TODO: Find a more elegant way to do this
+        db.tests_task_use_savepoint = True
 
-        orig_add_area = CellUpdater.add_area_update
-        orig_wait = CellUpdater._retry_wait
-        num = [0]
+        error = errclass(errno, errmsg)
+        wrapped = InterfaceError.instance(
+            statement="SELECT COUNT(*) FROM cell_area",
+            params={},
+            orig=error,
+            dbapi_base_err=MySQLError,
+        )
+        with mock.patch.object(
+            CellUpdater, "add_area_update", side_effect=[wrapped, None]
+        ), mock.patch("ichnaea.data.station.time.sleep") as sleepy:
+            self._queue_and_update(celery, [obs], update_cell)
+            assert CellUpdater.add_area_update.call_count == 2
+            sleepy.assert_called_once_with(1)
 
-        def mock_area(self, updated_areas, key, num=num, session2=session2):
-            orig_add_area(self, updated_areas, key)
-            num[0] += 1
-            if num[0] == 2:
-                session2.rollback()
+        del db.tests_task_use_savepoint
 
-        try:
-            CellUpdater._retry_wait = 0.0001
-            session.execute("set session innodb_lock_wait_timeout = 1")
-            with mock.patch.object(CellUpdater, "add_area_update", mock_area):
-                self.queue_and_update(celery, [obs])
+        cells = session.query(shard).all()
+        assert len(cells) == 1
+        self.check_statcounter(redis, StatKey.cell, 1)
 
-            # the inner task logic was called exactly twice
-            assert num[0] == 2
+        # The existing cell record was updated
+        cell = cells[0]
+        assert cell.samples == 11
+        assert cell.created == datetime(2019, 12, 5, tzinfo=UTC)
+        self.check_statcounter(redis, StatKey.unique_cell, 0)
 
-            shard = CellShard.shard_model(obs.cellid)
-            cells = session.query(shard).all()
-            assert len(cells) == 1
-            assert cells[0].samples == 1
-
-            self.check_statcounter(redis, StatKey.cell, 1)
-            self.check_statcounter(redis, StatKey.unique_cell, 1)
-
-            # Assert generated metrics are correct
-            assert (
-                len(
-                    metricsmock.filter_records(
-                        "incr", "data.observation.insert", value=1, tags=["type:cell"]
-                    )
-                )
-                == 1
-            )
-            assert (
-                len(
-                    metricsmock.filter_records(
-                        "timing", "task", tags=["task:data.update_cell"]
-                    )
-                )
-                == 1
-            )
-        finally:
-            CellUpdater._retry_wait = orig_wait
-            session.execute(text("drop table %s;" % cell.__tablename__))
+        # Assert generated metrics are correct
+        assert metricsmock.has_record(
+            "incr", "data.observation.insert", value=1, tags=["type:cell"]
+        )
+        assert metricsmock.has_record(
+            "incr", "data.station.confirm", value=1, tags=["type:cell"]
+        )
+        assert metricsmock.has_record("timing", "task", tags=["task:data.update_cell"])
+        assert metricsmock.has_record(
+            "incr",
+            "data.station.dberror",
+            value=1,
+            tags=["type:cell", "errno:%s" % errno],
+        )
 
 
 class StationTest(BaseStationTest):

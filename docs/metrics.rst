@@ -33,6 +33,7 @@ Metric Name                      Type    Tags
 `data.report.upload`_            counter key
 `data.station.blocklist`_        counter type
 `data.station.confirm`_          counter type
+`data.station.dberror`_          counter type, errno
 `data.station.new`_              counter type
 `datamaps`_                      timer   func, count
 `locate.fallback.cache`_         counter fallback_name, status
@@ -285,6 +286,7 @@ The fallback name tag specifies which fallback service is used.
 .. _data.station.confirm:
 .. _data.station.blocklist:
 .. _data.station.new:
+.. _data.station.dberror:
 
 Data Pipeline Metrics
 ---------------------
@@ -381,6 +383,18 @@ Along the way several counters measure the steps involved:
 
     Count the number of Bluetooth, cell or WiFi :term:`station` that were
     discovered for the first time.
+
+``data.station.dberror#type:<type>,errno:<errno>``: counters
+
+    Count the number of retryable database errors.  ``type`` is ``blue``,
+    ``cell``, or ``wifi``, and ``errno`` is the error number, which can be
+    found on the `MySQL Server Error Reference`_.
+
+    Retryable database errors, like a deadlock (``1213``) cause the station
+    updating task to sleep and start over. Other database errors are not
+    counted, but instead halt the task and are recorded in Sentry.
+
+.. _`MySQL Server Error Reference`: https://dev.mysql.com/doc/refman/5.7/en/server-error-reference.html
 
 .. _data.export.batch:
 .. _data.export.upload:
