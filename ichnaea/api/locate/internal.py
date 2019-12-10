@@ -56,10 +56,10 @@ class InternalPositionSource(
             return
 
         result_networks = {"area": set(), "blue": set(), "cell": set(), "wifi": set()}
-        for network in best_result.used_networks:
-            if network[2]:
+        for net_type, net_id, seen_today in best_result.used_networks:
+            if seen_today:
                 # only add network if it was last_seen today
-                result_networks[network[0]].add(network[1])
+                result_networks[net_type].add(net_id)
 
         if result_networks == query.networks():
             # don't store queries, based exclusively on data,

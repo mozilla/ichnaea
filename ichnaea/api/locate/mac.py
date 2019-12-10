@@ -1,5 +1,6 @@
 """Search implementation using a mac based source."""
 
+from base64 import b64decode
 from collections import defaultdict
 import itertools
 import math
@@ -22,7 +23,7 @@ NETWORK_DTYPE = numpy.dtype(
         ("age", numpy.int32),
         ("signalStrength", numpy.int32),
         ("score", numpy.double),
-        ("mac", "S6"),
+        ("mac_b64", "S8"),
         ("seen_today", numpy.bool),
     ]
 )
@@ -55,7 +56,7 @@ def cluster_networks(
                 obs_data[model.mac][0],
                 obs_data[model.mac][1],
                 station_score(model, now),
-                encode_mac(model.mac),
+                encode_mac(model.mac, codec="base64"),
                 bool(model.last_seen is not None and model.last_seen >= today),
             )
             for model in models
@@ -181,8 +182,8 @@ def aggregate_cluster_position(
     score = float(cluster["score"].sum())
 
     used_networks = [
-        (data_type, bytes(mac), bool(seen_today))
-        for mac, seen_today in sample[["mac", "seen_today"]]
+        (data_type, b64decode(mac_b64), bool(seen_today))
+        for mac_b64, seen_today in sample[["mac_b64", "seen_today"]]
     ]
 
     return result_type(
