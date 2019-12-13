@@ -10,8 +10,8 @@ def _dump_nothing(datatype, session, filename, lat=None, lon=None, radius=None):
     return 0
 
 
-class TestDump(object):
-    def test_main(self, db):
+class TestDump:
+    def test_main(self, db, session):
         assert (
             dump.main(
                 [

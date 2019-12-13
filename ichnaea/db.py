@@ -9,7 +9,7 @@ from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
 from sqlalchemy.sql import func, select
 
@@ -42,7 +42,7 @@ def get_sqlalchemy_url():
     return url
 
 
-def configure_db(type_=None, uri=None, _db=None, pool=True):
+def configure_db(type_=None, uri=None, _db=None, pool=True, test=False):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -51,13 +51,15 @@ def configure_db(type_=None, uri=None, _db=None, pool=True):
         parameter
     :param _db: Test-only hook to provide a pre-configured db.
     :param pool: True for connection pool, False for no connection pool
+    :param test: True if TestDatabase should be used instead of Database
 
     """
     if _db is not None:
         return _db
     if uri is None:
         uri = DB_TYPE[type_]
-    return Database(uri, pool=pool)
+    klass = TestDatabase if test else Database
+    return klass(uri, pool=pool)
 
 
 # the request db_session and db_tween_factory are inspired by
@@ -83,11 +85,6 @@ def db_worker_session(database, commit=True):
     """
     try:
         session = database.session()
-        # When running in a test that is expecting to issue a rollback,
-        # add a savepoint so that test fixtures are not also rolled back.
-        # TODO: Find a more elegant way to do this.
-        if getattr(database, "tests_task_use_savepoint", False):
-            session.begin_nested()
         yield session
         if commit:
             session.commit()
@@ -95,7 +92,7 @@ def db_worker_session(database, commit=True):
         session.rollback()
         raise
     finally:
-        session.close()
+        database.release_session(session)
 
 
 def db_tween_factory(handler, registry):
@@ -114,16 +111,17 @@ def db_tween_factory(handler, registry):
                 except DatabaseError:
                     registry.raven_client.captureException()
                 finally:
-                    session.close()
+                    registry.db.release_session(session)
         return response
 
     return db_tween
 
 
-class Database(object):
+class Database:
     """A class representing an active database.
 
     :param uri: A database connection string.
+    :param pool: True for connection pool, False for no connection pool
     """
 
     def __init__(self, uri, pool=True):
@@ -165,8 +163,47 @@ class Database(object):
         """Return a session for this database."""
         return self.session_factory()
 
+    def release_session(self, session):
+        """Release a session for this database."""
+        session.close()
+
     def __repr__(self):
         return self.uri
+
+
+class TestDatabase(Database):
+    """An active database, with test features like a shared session.
+
+    :param uri: A database connection string.
+    :param pool: True for connection pool, False for no connection pool
+    """
+
+    def __init__(self, uri, pool=True):
+        super().__init__(uri, pool)
+        self.has_session_fixture = False  # Set at session fixture setup
+        self.session_factory = scoped_session(self.session_factory)
+
+    def session(self, bind=None):
+        """Return a thread-local session for this database.
+
+        :param bind: Bind the session to a connection, such as a transaction.
+
+        The session fixture handles removing the thread-local session at the
+        test teardown, so it must be included if db.session() is used in a test.
+        """
+        if not self.has_session_fixture:
+            raise Exception("Tests must include session fixture to use .session()")
+        if bind is not None:
+            return self.session_factory(bind=bind)
+        return super().session()
+
+    def release_session(self, session):
+        """Release a session for this database."""
+        assert self.has_session_fixture  # Closed in the session fixture
+
+    def close(self):
+        self.session_factory.remove()
+        super().close()
 
 
 def ping_session(db_session):

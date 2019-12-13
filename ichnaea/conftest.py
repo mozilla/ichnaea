@@ -153,7 +153,7 @@ def database():
 
 @pytest.fixture(scope="session")
 def db(database):
-    db = configure_db(uri=get_sqlalchemy_url())
+    db = configure_db(uri=get_sqlalchemy_url(), test=True)
     yield db
     db.close()
 
@@ -178,10 +178,11 @@ def restore_db(db):
 
 @pytest.fixture(scope="function")
 def session(db):
+    """Return a thread-local session, and clean up at test teardown."""
     with db.engine.connect() as conn:
         with conn.begin() as trans:
-            db.session_factory.configure(bind=conn)
-            session = db.session()
+            db.has_session_fixture = True
+            session = db.session(bind=conn)
 
             # Set the global session context for factory-boy.
             SESSION["default"] = session
@@ -190,8 +191,8 @@ def session(db):
 
             trans.rollback()
             session.close()
-            db.session_factory.configure(bind=db.engine)
-
+            db.session_factory.remove()
+            db.has_session_fixture = False
     API_CACHE.clear()
 
 
