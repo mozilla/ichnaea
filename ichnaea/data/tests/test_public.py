@@ -156,7 +156,7 @@ class TestExport(object):
 
 
 @pytest.fixture
-def cellarea_queue(redis_client):
+def cellarea_queue(redis_client, celery):
     """Return the DataQueue for updating CellAreas by ID."""
     return configure_data(redis_client)["update_cellarea"]
 

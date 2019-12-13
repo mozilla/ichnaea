@@ -9,7 +9,7 @@ from pymysql.err import DatabaseError
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
 from sqlalchemy.sql import func, select
 
@@ -42,7 +42,7 @@ def get_sqlalchemy_url():
     return url
 
 
-def configure_db(type_=None, uri=None, _db=None, pool=True):
+def configure_db(type_=None, uri=None, _db=None, pool=True, shared=False):
     """
     Configure and return a :class:`~ichnaea.db.Database` instance.
 
@@ -51,13 +51,14 @@ def configure_db(type_=None, uri=None, _db=None, pool=True):
         parameter
     :param _db: Test-only hook to provide a pre-configured db.
     :param pool: True for connection pool, False for no connection pool
-
+    :param shared: True for a thread-local sessions, False for independent
+        sessions
     """
     if _db is not None:
         return _db
     if uri is None:
         uri = DB_TYPE[type_]
-    return Database(uri, pool=pool)
+    return Database(uri, pool=pool, shared=shared)
 
 
 # the request db_session and db_tween_factory are inspired by
@@ -83,11 +84,6 @@ def db_worker_session(database, commit=True):
     """
     try:
         session = database.session()
-        # When running in a test that is expecting to issue a rollback,
-        # add a savepoint so that test fixtures are not also rolled back.
-        # TODO: Find a more elegant way to do this.
-        if getattr(database, "tests_task_use_savepoint", False):
-            session.begin_nested()
         yield session
         if commit:
             session.commit()
@@ -95,7 +91,7 @@ def db_worker_session(database, commit=True):
         session.rollback()
         raise
     finally:
-        session.close()
+        database.release_session(session)
 
 
 def db_tween_factory(handler, registry):
@@ -114,19 +110,22 @@ def db_tween_factory(handler, registry):
                 except DatabaseError:
                     registry.raven_client.captureException()
                 finally:
-                    session.close()
+                    registry.db.release_session(session)
         return response
 
     return db_tween
 
 
-class Database(object):
+class Database:
     """A class representing an active database.
 
     :param uri: A database connection string.
+    :param pool: True for connection pool, False for no connection pool
+    :param shared: True for a thread-local sessions, False for independent
+    sessions
     """
 
-    def __init__(self, uri, pool=True):
+    def __init__(self, uri, pool=True, shared=False):
         self.uri = uri
 
         options = {"echo": False, "isolation_level": "REPEATABLE READ"}
@@ -157,13 +156,29 @@ class Database(object):
         self.session_factory = sessionmaker(
             bind=self.engine, autocommit=False, autoflush=False
         )
+        self.shared = shared
+        if shared:
+            self.session_factory = scoped_session(self.session_factory)
 
     def close(self):
+        if self.shared:
+            self.session_factory.remove()
         self.engine.pool.dispose()
 
-    def session(self):
-        """Return a session for this database."""
-        return self.session_factory()
+    def session(self, bind=None):
+        """Return a session for this database.
+
+        :param bind: Bind the session to a connection, such as a transaction.
+        """
+        kwargs = {}
+        if bind is not None:
+            kwargs["bind"] = bind
+        return self.session_factory(**kwargs)
+
+    def release_session(self, session):
+        """Release a session for this database."""
+        if not self.shared:
+            session.close()
 
     def __repr__(self):
         return self.uri

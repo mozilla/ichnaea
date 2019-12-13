@@ -17,7 +17,7 @@ from ichnaea.api.locate.searcher import (
     configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
-from ichnaea.db import configure_db, create_db, get_sqlalchemy_url
+from ichnaea.db import Database, configure_db, create_db, get_sqlalchemy_url
 from ichnaea.geocode import GEOCODER
 from ichnaea.geoip import CITY_RADII, configure_geoip
 from ichnaea.http import configure_http_session
@@ -151,11 +151,56 @@ def database():
     setup_database()
 
 
+class TestDatabase(Database):
+    """An active database, with test checks with a shared session.
+
+    :param uri: A database connection string.
+    :param pool: True for connection pool, False for no connection pool
+    :param shared: True for a thread-local sessions, False for independent
+    sessions
+    """
+
+    def __init__(self, uri, pool=True, shared=False):
+        super().__init__(uri, pool, shared)
+        if shared:
+            self.has_session_fixture = False  # Set at session fixture setup
+
+    def session(self, bind=None):
+        """Return a thread-local session for this database.
+
+        :param bind: Bind the session to a connection, such as a transaction.
+
+        The session fixture handles removing the thread-local session at the
+        test teardown, so it must be included if db.session() is used in a test.
+        """
+        if self.shared and not self.has_session_fixture:
+            raise Exception("Tests must include session fixture to use .session()")
+        return super().session(bind=bind)
+
+
 @pytest.fixture(scope="session")
-def db(database):
-    db = configure_db(uri=get_sqlalchemy_url())
+def db_independent_session(database):
+    """Return TestDatabase where db.session() returns a new session."""
+    db = TestDatabase(uri=get_sqlalchemy_url())
     yield db
     db.close()
+
+
+@pytest.fixture(scope="session")
+def db_shared_session(database):
+    """Return TestDatabase where db.session() returns the thread-local session."""
+    db = TestDatabase(uri=get_sqlalchemy_url(), shared=True)
+    yield db
+    db.close()
+
+
+@pytest.fixture
+def db(request, database):
+    """Return a consistent database (independent or thread-local sessions)."""
+    if "db_shared_session" in request.fixturenames:
+        yield request.getfixturevalue("db_shared_session")
+    else:
+        yield request.getfixturevalue("db_independent_session")
 
 
 @pytest.fixture(scope="function")
@@ -176,12 +221,16 @@ def restore_db(db):
             trans.commit()
 
 
-@pytest.fixture(scope="function")
-def session(db):
-    with db.engine.connect() as conn:
+@pytest.fixture
+def independent_session(db_independent_session):
+    """Yield then cleanup an independent, transaction-based session.
+
+    If code calls db.session(), it will be a new session bound to the same transaction.
+    """
+    with db_independent_session.engine.connect() as conn:
         with conn.begin() as trans:
-            db.session_factory.configure(bind=conn)
-            session = db.session()
+            db_independent_session.session_factory.configure(bind=conn)
+            session = db_independent_session.session()
 
             # Set the global session context for factory-boy.
             SESSION["default"] = session
@@ -190,9 +239,45 @@ def session(db):
 
             trans.rollback()
             session.close()
-            db.session_factory.configure(bind=db.engine)
-
+            db_independent_session.session_factory.configure(
+                bind=db_independent_session.engine
+            )
     API_CACHE.clear()
+
+
+@pytest.fixture
+def shared_session(db_shared_session):
+    """Yield then cleanup a thread-local, transaction-based session.
+
+    If code calls db.session(), it will get the same session.
+    """
+    with db_shared_session.engine.connect() as conn:
+        with conn.begin() as trans:
+            db_shared_session.has_session_fixture = True
+            session = db_shared_session.session(bind=conn)
+
+            # Set the global session context for factory-boy.
+            SESSION["default"] = session
+            yield session
+            del SESSION["default"]
+
+            trans.rollback()
+            session.close()
+            db_shared_session.session_factory.remove()
+            db_shared_session.has_session_fixture = False
+    API_CACHE.clear()
+
+
+@pytest.fixture
+def session(request):
+    """Return a consistent session (independent or thread-local)."""
+    if (
+        "db_shared_session" in request.fixturenames
+        or "shared_session" in request.fixturenames
+    ):
+        yield request.getfixturevalue("shared_session")
+    else:
+        yield request.getfixturevalue("independent_session")
 
 
 @pytest.fixture(scope="function")
@@ -332,8 +417,8 @@ def region_searcher(data_queues, geoip_db, raven_client, redis_client):
 
 
 @pytest.fixture(scope="session")
-def global_app(
-    db,
+def app_independent_session(
+    db_independent_session,
     geoip_db,
     http_session,
     raven_client,
@@ -341,8 +426,9 @@ def global_app(
     position_searcher,
     region_searcher,
 ):
+    """Yield and cleanup a webapp based on independent sessions."""
     wsgiapp = main(
-        _db=db,
+        _db=db_independent_session,
         _geoip_db=geoip_db,
         _http_session=http_session,
         _raven_client=raven_client,
@@ -355,16 +441,49 @@ def global_app(
     shutdown_app(app.app)
 
 
-@pytest.fixture(scope="function")
-def app(global_app, raven, redis, session):
-    yield global_app
+@pytest.fixture(scope="session")
+def app_shared_session(
+    db_shared_session,
+    geoip_db,
+    http_session,
+    raven_client,
+    redis_client,
+    position_searcher,
+    region_searcher,
+):
+    """Yield and cleanup a webapp based on a thread-local shared session."""
+    wsgiapp = main(
+        _db=db_shared_session,
+        _geoip_db=geoip_db,
+        _http_session=http_session,
+        _raven_client=raven_client,
+        _redis_client=redis_client,
+        _position_searcher=position_searcher,
+        _region_searcher=region_searcher,
+    )
+    app = webtest.TestApp(wsgiapp)
+    yield app
+    shutdown_app(app.app)
+
+
+@pytest.fixture
+def app(request, db, raven, redis):
+    """Return a webapp based on the requested session type."""
+    if (
+        "db_shared_session" in request.fixturenames
+        or "shared_session" in request.fixturenames
+    ):
+        raise request.getfixturevalue("app_shared_session")
+    else:
+        yield request.getfixturevalue("app_independent_session")
 
 
 @pytest.fixture(scope="session")
-def global_celery(db, geoip_db, raven_client, redis_client):
+def global_celery(db_independent_session, geoip_db, raven_client, redis_client):
+    """Yield and cleanup a taskapp based on independent sessions."""
     init_worker(
         celery_app,
-        _db=db,
+        _db=db_independent_session,
         _geoip_db=geoip_db,
         _raven_client=raven_client,
         _redis_client=redis_client,
@@ -373,6 +492,21 @@ def global_celery(db, geoip_db, raven_client, redis_client):
     shutdown_celery(celery_app)
 
 
-@pytest.fixture(scope="function")
-def celery(global_celery, raven, redis, session):
+@pytest.fixture
+def celery_shared_session(db_independent_session, db_shared_session, global_celery):
+    """Yield a taskapp using a thread-local session."""
+    global_celery.db = db_shared_session
     yield global_celery
+    global_celery.db = db_independent_session
+
+
+@pytest.fixture
+def celery(request, global_celery, raven, redis):
+    """Return a taskapp using the requested session type."""
+    if (
+        "db_shared_session" in request.fixturenames
+        or "shared_session" in request.fixturenames
+    ):
+        yield request.getfixturevalue("celery_shared_session")
+    else:
+        yield global_celery
