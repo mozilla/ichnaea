@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import timedelta
-import time
 
+import backoff
 import markus
 import numpy
 from pymysql.err import MySQLError
@@ -400,6 +400,15 @@ class CellState(StationState):
         return values
 
 
+def is_retryable(exception):
+    """Return True if the exception is retryable."""
+    return (
+        isinstance(exception, StatementError)
+        and isinstance(exception.orig, MySQLError)
+        and exception.orig.args[0] in (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
+    )
+
+
 class StationUpdater(object):
 
     obs_model = None
@@ -407,9 +416,6 @@ class StationUpdater(object):
     station_type = None
     stat_obs_key = None
     stat_station_key = None
-    _retriable = (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
-    _retries = 3
-    _retry_wait = 1.0
 
     def __init__(self, task, shard_id=None):
         self.task = task
@@ -553,51 +559,50 @@ class StationUpdater(object):
         if not sharded_obs:
             return
 
-        success = False
-        for i in range(self._retries):
-            try:
-                stats_counter = defaultdict(int)
-                updated_areas = set()
+        retry_update_observations = backoff.on_exception(
+            backoff.expo,
+            StatementError,
+            max_tries=3,
+            giveup=self.abort_or_count_exception,
+        )(self.update_observations)
 
-                with self.task.db_session() as session:
-                    for shard, shard_values in sharded_obs.items():
-                        updated_areas.update(
-                            self.update_shard(
-                                session, shard, shard_values, stats_counter
-                            )
-                        )
+        updated_areas, stats = retry_update_observations(sharded_obs)
+        with self.task.redis_pipeline() as pipe:
+            if updated_areas:
+                self.queue_area_updates(pipe, updated_areas)
+            self.emit_stats(pipe, stats)
 
-                success = True
-            except StatementError as exc:
-                if (
-                    isinstance(exc.orig, MySQLError)
-                    and exc.orig.args[0] in self._retriable
-                ):
-                    success = False
-                    METRICS.incr(
-                        "data.station.dberror",
-                        1,
-                        tags=[
-                            "type:%s" % self.station_type,
-                            "errno:%s" % exc.orig.args[0],
-                        ],
-                    )
-                    time.sleep(self._retry_wait * (i ** 2 + 1))
-                else:
-                    raise
+        if self.data_queue.ready():
+            self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
 
-            if success:
-                break
+    def update_observations(self, sharded_observations):
+        """Update the station data based on per-shard observations."""
+        stats = defaultdict(int)
+        updated_areas = set()
 
-        if success:
-            with self.task.redis_pipeline() as pipe:
-                if updated_areas:
-                    self.queue_area_updates(pipe, updated_areas)
+        with self.task.db_session() as session:
+            for shard, shard_values in sharded_observations.items():
+                areas = self.update_shard(session, shard, shard_values, stats)
+                updated_areas.update(areas)
+        return updated_areas, stats
 
-                self.emit_stats(pipe, stats_counter)
+    def abort_or_count_exception(self, exception):
+        """Check if we should retry or abort on exception.
 
-            if self.data_queue.ready():
-                self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
+        If it is a retryable MySQL error, log the error code and return False
+        to retry. Otherwise, return True to abort.
+        """
+        if is_retryable(exception):
+            METRICS.incr(
+                "data.station.dberror",
+                1,
+                tags=[
+                    "type:%s" % self.station_type,
+                    "errno:%s" % exception.orig.args[0],
+                ],
+            )
+            return False
+        return True
 
 
 class MacUpdater(StationUpdater):

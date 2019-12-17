@@ -116,10 +116,10 @@ class TestDatabaseErrors(BaseStationTest):
         )
         with mock.patch.object(
             CellUpdater, "add_area_update", side_effect=[wrapped, None]
-        ), mock.patch("ichnaea.data.station.time.sleep") as sleepy:
+        ), mock.patch("backoff._sync.time.sleep") as sleepy:
             self._queue_and_update(celery, [obs], update_cell)
             assert CellUpdater.add_area_update.call_count == 2
-            sleepy.assert_called_once_with(1)
+            sleepy.assert_called_once()
 
         cells = session.query(shard).all()
         assert len(cells) == 1
