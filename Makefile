@@ -44,6 +44,7 @@ default:
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
 	@echo "  buildjs          - generate js static assets"
 	@echo "  buildcss         - generate css static assets"
+	@echo "  download         - re-download vendor source and test data"
 	@echo ""
 	@echo "  help             - see this text"
 	@echo ""
@@ -131,3 +132,7 @@ runservices: my.env .docker-build
 .PHONY: stop
 stop: my.env
 	${DC} stop
+
+.PHONY: download
+download: my.env
+	${DC} run --rm --no-deps app shell make -f docker.make download

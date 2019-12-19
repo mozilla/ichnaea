@@ -1,9 +1,6 @@
 Vendor
 ======
 
-These tarballs where downloaded from::
-
-    wget -q -O datamaps-76e620adabbedabd6866b23b30c145b53bae751e.tar.gz \
-        https://github.com/ericfischer/datamaps/archive/76e620adabbedabd6866b23b30c145b53bae751e.tar.gz
-
-    wget -q https://github.com/maxmind/libmaxminddb/releases/download/1.3.2/libmaxminddb-1.3.2.tar.gz
+These tarballs where downloaded from https://github.com/ericfischer/datamaps and
+https://github.com/maxmind/libmaxminddb. To download new versions and confirm
+they work, update ``docker.make`` and run ``make download build test``.
