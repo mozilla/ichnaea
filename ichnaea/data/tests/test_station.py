@@ -35,6 +35,13 @@ from ichnaea.tests.factories import (
 from ichnaea import util
 
 
+@pytest.fixture
+def backoff_sleep_mock():
+    """Mock backoff's time.sleep, so that test remain fast."""
+    with mock.patch("backoff._sync.time.sleep") as mocked_sleep:
+        yield mocked_sleep
+
+
 class BaseStationTest:
 
     queue_prefix = None
@@ -89,6 +96,7 @@ class TestDatabaseErrors(BaseStationTest):
         errclass,
         errno,
         errmsg,
+        backoff_sleep_mock,
     ):
         """Test database exceptions where the task should wait and try again."""
 
@@ -116,10 +124,10 @@ class TestDatabaseErrors(BaseStationTest):
         )
         with mock.patch.object(
             CellUpdater, "add_area_update", side_effect=[wrapped, None]
-        ), mock.patch("backoff._sync.time.sleep") as sleepy:
+        ):
             self._queue_and_update(celery, [obs], update_cell)
             assert CellUpdater.add_area_update.call_count == 2
-            sleepy.assert_called_once()
+            backoff_sleep_mock.assert_called_once()
 
         cells = session.query(shard).all()
         assert len(cells) == 1
