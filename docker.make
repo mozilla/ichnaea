@@ -34,19 +34,19 @@ all:
 	@echo ""
 	@echo "make rules:"
 	@echo ""
-	@echo "  build_deps          - build datamaps and libmaxmind"
-	@echo "  build_python_deps   - install and check python dependencies"
-	@echo "  build_geocalc       - compile and install geocalclib"
-	@echo "  check               - check that C libraries are available to Python"
-	@echo "  download            - download libraries and test data"
+	@echo "  build_deps        - build datamaps and libmaxmind"
+	@echo "  build_python_deps - install and check python dependencies"
+	@echo "  build_geocalc     - compile and install geocalclib"
+	@echo "  check             - check that C libraries are available to Python"
+	@echo "  update_vendored   - update libraries and test data"
 	@echo ""
-	@echo "  build_datamaps      - build datamaps binaries"
-	@echo "  build_libmaxmind    - build libmaxmind library"
-	@echo "  download_datamaps   - download datamaps source"
-	@echo "  download_libmaxmind - download libmaxmind source"
-	@echo "  download_test_data  - download MaxMind DB test data"
+	@echo "  build_datamaps    - build datamaps binaries"
+	@echo "  build_libmaxmind  - build libmaxmind library"
+	@echo "  update_datamaps   - update datamaps source"
+	@echo "  update_libmaxmind - update libmaxmind source"
+	@echo "  update_test_data  - update MaxMind DB test data"
 	@echo ""
-	@echo "  help                - see this text"
+	@echo "  help              - see this text"
 
 build_datamaps:
 	cd $(VENDOR); tar zxf $(DATAMAPS_NAME).tar.gz
@@ -82,20 +82,20 @@ build_check:
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
 	$(PYTHON) -c "import sys; from ichnaea.geocode import GEOCODER; sys.exit(not GEOCODER.region(51.5, -0.1) == 'GB')"
 
-.PHONY: download_datamaps
-download_datamaps:
+.PHONY: update_datamaps
+update_datamaps:
 	cd $(VENDOR) && wget -q \
 	    -O $(DATAMAPS_NAME).tar.gz \
         https://github.com/ericfischer/datamaps/archive/$(DATAMAPS_COMMIT).tar.gz
 
-.PHONY: download_libmaxmind
-download_libmaxmind:
+.PHONY: update_libmaxmind
+update_libmaxmind:
 	cd $(VENDOR) && wget -q \
 	    -O $(LIBMAXMIND_NAME).tar.gz \
 	    https://github.com/maxmind/libmaxminddb/releases/download/$(LIBMAXMIND_VERSION)/$(LIBMAXMIND_NAME).tar.gz
 
-.PHONY: download_test_data
-download_test_data:
+.PHONY: update_test_data
+update_test_data:
 	cd $(TEST_DATA) && wget -q \
 	    -O GeoIP2-City-Test.json \
 	    https://raw.githubusercontent.com/maxmind/MaxMind-DB/master/source-data/GeoIP2-City-Test.json && \
@@ -106,5 +106,5 @@ download_test_data:
 	    -O GeoIP2-Connection-Type-Test.mmdb \
 	    https://github.com/maxmind/MaxMind-DB/raw/master/test-data/GeoIP2-Connection-Type-Test.mmdb
 
-.PHONY: download
-download: download_datamaps download_libmaxmind download_test_data
+.PHONY: update_vendored
+update_vendored: update_datamaps update_libmaxmind update_test_data

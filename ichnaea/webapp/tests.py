@@ -62,7 +62,7 @@ class TestHeartbeat(object):
             assert isinstance(data[name]["time"], int)
             assert data[name]["time"] >= 0
 
-        # Run "make download" when this gets too old
+        # Run "make update-vendored" when this gets too old
         assert 1 < data["geoip"]["age_in_days"] < 1000
 
 

@@ -253,17 +253,17 @@ with a web brower.
 
 Updating Test GeoIP Data and Libraries
 ======================================
-The development environment uses a test MaxMind GeoIP database, and a test
-confirms that this is less than 1000 days old. To update this database and
-confirm tests pass, run::
+The development environment uses a test MaxMind GeoIP database, and the Ichnaea
+test suite will fail if this is more than 1000 days old. To update this
+database and confirm tests pass, run::
 
-    $ make download test
+    $ make update-vendored test
 
 Commit the refreshed files.
 
-This command can also be used to updated `libmaxmindb` and the `datamaps`
-source. Update `docker.make` for the desired versions, and run::
+This command can also be used to updated ``libmaxmindb`` and the ``datamaps``
+source. Update ``docker.make`` for the desired versions, and run::
 
-    $ make download build test
+    $ make update-vendored build test
 
 Commit the updated source tarballs.
