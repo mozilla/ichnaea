@@ -263,9 +263,9 @@ urllib3[secure]==1.25.6 \
 venusian==1.2.0 \
     --hash=sha256:2f2d077a1eedc3fda40425f65687c8c494da7e83d7c23bc2c4d1a40eb3ca5b6d \
     --hash=sha256:64ec8285b80b110d0ae5db4280e90e31848a59db98db1aba4d7d46f48ce91e3e
-waitress==1.4.0 \
-    --hash=sha256:edbb927a6f7c43d4fde35740786a30c180c1623d70a7ad5fd1d1f4adacc54468 \
-    --hash=sha256:b3b6450106b65bfcbefce5940fff23240305db86683cbf4e524af199b514ba61
+waitress==1.4.1 \
+    --hash=sha256:3776cbb9abebefb51e5b654f8728928aa17b656d9f6943c58ce8f48e87cef4e3 \
+    --hash=sha256:f4118cbce75985fd60aeb4f0d781aba8dc7ae28c18e50753e913d7a7dee76b62
 WebOb==1.8.5 \
     --hash=sha256:05aaab7975e0ee8af2026325d656e5ce14a71f1883c52276181821d6d5bf7086 \
     --hash=sha256:36db8203c67023d68c1b00208a7bf55e3b10de2aa317555740add29c619de12b
