@@ -80,7 +80,15 @@ class TestDatabaseErrors(BaseStationTest):
         ids=("deadlock", "wait-timeout"),
     )
     def test_retriable_exceptions(
-        self, celery, redis, session, db, metricsmock, errclass, errno, errmsg
+        self,
+        celery,
+        redis,
+        session,
+        db_shared_session,
+        metricsmock,
+        errclass,
+        errno,
+        errmsg,
     ):
         """Test database exceptions where the task should wait and try again."""
 
@@ -97,8 +105,7 @@ class TestDatabaseErrors(BaseStationTest):
         )
         session.add(cell)
         session.commit()
-        # TODO: Find a more elegant way to do this
-        db.tests_task_use_savepoint = True
+        session.begin_nested()  # Protect test cell from task rollback
 
         error = errclass(errno, errmsg)
         wrapped = InterfaceError.instance(
@@ -113,8 +120,6 @@ class TestDatabaseErrors(BaseStationTest):
             self._queue_and_update(celery, [obs], update_cell)
             assert CellUpdater.add_area_update.call_count == 2
             sleepy.assert_called_once_with(1)
-
-        del db.tests_task_use_savepoint
 
         cells = session.query(shard).all()
         assert len(cells) == 1
