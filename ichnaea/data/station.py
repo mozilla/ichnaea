@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import timedelta
-import time
 
+import backoff
 import markus
 import numpy
 from pymysql.err import MySQLError
@@ -400,6 +400,58 @@ class CellState(StationState):
         return values
 
 
+def _retry_updates_on_mysql_lock_fail(function, station_type):
+    """Wrap update_observations to retry on MySQL lock errors.
+
+    This handles these MySQL errors:
+    * (1213) Deadlock when trying to get lock
+    * (1205) Lock wait timeout exceeded
+
+    In both cases, restarting the transaction may work.
+
+    This wraps StationUpdater.update_observations, using backoff.on_exception,
+    to detect these errors, increment a metric (data.station.dberror), and try
+    again after a short random sleep.
+
+    Other exceptions are raised, and three failures in a row will be raised as
+    well.
+    """
+
+    def is_mysql_lock_error(exception):
+        """Is the exception a retryable MySQL lock error?"""
+        return (
+            isinstance(exception, StatementError)
+            and isinstance(exception.orig, MySQLError)
+            and exception.orig.args[0] in (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
+        )
+
+    def count_exception(exception):
+        """Increment the tracking metric for lock errors."""
+        METRICS.incr(
+            "data.station.dberror",
+            1,
+            tags=["type:%s" % station_type, "errno:%s" % exception.orig.args[0]],
+        )
+
+    def giveup_handler(exception):
+        """Based on this raised exception, should we give up or retry?
+
+        If it is a SQLAlchemy wrapper for a retryable MySQL exception,
+        then we should increment a metric and retry.
+
+        If it isn't one of the special exceptions, then give up.
+        """
+        if is_mysql_lock_error(exception):
+            count_exception(exception)
+            return False  # Retry if possible
+        return True  # Give up on other unknown errors.
+
+    retry_wrapper = backoff.on_exception(
+        backoff.expo, StatementError, max_tries=3, giveup=giveup_handler
+    )
+    return retry_wrapper(function)
+
+
 class StationUpdater(object):
 
     obs_model = None
@@ -407,9 +459,6 @@ class StationUpdater(object):
     station_type = None
     stat_obs_key = None
     stat_station_key = None
-    _retriable = (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
-    _retries = 3
-    _retry_wait = 1.0
 
     def __init__(self, task, shard_id=None):
         self.task = task
@@ -553,51 +602,29 @@ class StationUpdater(object):
         if not sharded_obs:
             return
 
-        success = False
-        for i in range(self._retries):
-            try:
-                stats_counter = defaultdict(int)
-                updated_areas = set()
+        retry_wrapper = _retry_updates_on_mysql_lock_fail(
+            self.update_observations, station_type=self.station_type
+        )
+        updated_areas, stats = retry_wrapper(sharded_obs)
 
-                with self.task.db_session() as session:
-                    for shard, shard_values in sharded_obs.items():
-                        updated_areas.update(
-                            self.update_shard(
-                                session, shard, shard_values, stats_counter
-                            )
-                        )
+        with self.task.redis_pipeline() as pipe:
+            if updated_areas:
+                self.queue_area_updates(pipe, updated_areas)
+            self.emit_stats(pipe, stats)
 
-                success = True
-            except StatementError as exc:
-                if (
-                    isinstance(exc.orig, MySQLError)
-                    and exc.orig.args[0] in self._retriable
-                ):
-                    success = False
-                    METRICS.incr(
-                        "data.station.dberror",
-                        1,
-                        tags=[
-                            "type:%s" % self.station_type,
-                            "errno:%s" % exc.orig.args[0],
-                        ],
-                    )
-                    time.sleep(self._retry_wait * (i ** 2 + 1))
-                else:
-                    raise
+        if self.data_queue.ready():
+            self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
 
-            if success:
-                break
+    def update_observations(self, sharded_observations):
+        """Update the station data based on per-shard observations."""
+        stats = defaultdict(int)
+        updated_areas = set()
 
-        if success:
-            with self.task.redis_pipeline() as pipe:
-                if updated_areas:
-                    self.queue_area_updates(pipe, updated_areas)
-
-                self.emit_stats(pipe, stats_counter)
-
-            if self.data_queue.ready():
-                self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
+        with self.task.db_session() as session:
+            for shard, shard_values in sharded_observations.items():
+                areas = self.update_shard(session, shard, shard_values, stats)
+                updated_areas.update(areas)
+        return updated_areas, stats
 
 
 class MacUpdater(StationUpdater):
