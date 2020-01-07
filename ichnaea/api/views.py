@@ -94,9 +94,14 @@ class BaseAPIView(BaseView):
             except GZIPDecodeError as exc:
                 errors.append({"name": None, "description": repr(exc)})
 
+        if isinstance(request_content, bytes):
+            content = request_content.decode(self.request.charset)
+        else:
+            content = request_content
+
         request_data = {}
         try:
-            request_data = json.loads(request_content, encoding=self.request.charset)
+            request_data = json.loads(content)
         except ValueError as exc:
             errors.append({"name": None, "description": repr(exc)})
 
