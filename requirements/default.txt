@@ -14,7 +14,7 @@ celery[redis]==4.4.0 \
 certifi==2019.11.28 \
     --hash=sha256:017c25db2a153ce562900032d5bc68e9f191e44e9a0f762f373977de9df1fbb3 \
     --hash=sha256:25b64c7da4cd7479594d035c08c2d809eb4aab3a26e5a990ea98cc450c320f1f
-click==7.0 \
+Click==7.0 \
     --hash=sha256:2335065e6395b9e67ca716de5f7526736bfa6ceead690adf616d925bdc622b13 \
     --hash=sha256:5b94b49521f6456670fdb30cd82a4eca9412788a93fa6dd6df72c94d5a8ff2d7
 colander==1.7.0 \
@@ -130,7 +130,7 @@ PyMySQL==0.9.3 \
 pyramid==1.10.4 \
     --hash=sha256:51bf64647345237c00d2fe558935e0e4938c156e29f17e203457fd8e1d757dc7 \
     --hash=sha256:d80ccb8cfa550139b50801591d4ca8a5575334adb493c402fce2312f55d07d66
-pyramid_chameleon==0.3 \
+pyramid-chameleon==0.3 \
     --hash=sha256:d176792a50eb015d7865b44bd9b24a7bd0489fa9a5cebbd17b9e05048cef9017
 pytest==5.3.2 \
     --hash=sha256:6b571215b5a790f9b41f19f3531c53a45cf6bb8ef2988bc1ff9afb38270b25fa \
