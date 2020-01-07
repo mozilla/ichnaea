@@ -629,7 +629,9 @@ class StationUpdater(object):
 
 class MacUpdater(StationUpdater):
     def query_shard(self, session, shard, keys):
-        return (session.query(shard).filter(shard.mac.in_(keys))).all()
+        return (
+            (session.query(shard).filter(shard.mac.in_(keys))).with_for_update().all()
+        )
 
 
 class BlueUpdater(MacUpdater):
@@ -662,7 +664,11 @@ class CellUpdater(StationUpdater):
     stat_station_key = StatKey.unique_cell
 
     def query_shard(self, session, shard, keys):
-        return (session.query(shard).filter(shard.cellid.in_(keys))).all()
+        return (
+            (session.query(shard).filter(shard.cellid.in_(keys)))
+            .with_for_update()
+            .all()
+        )
 
     def add_area_update(self, updated_areas, key):
         updated_areas.add(encode_cellarea(*decode_cellid(key)[:4]))
