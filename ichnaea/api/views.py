@@ -90,13 +90,15 @@ class BaseAPIView(BaseView):
         if self.request.headers.get("Content-Encoding") == "gzip":
             # handle gzip self.request bodies
             try:
-                request_content = util.decode_gzip(self.request.body)
+                request_content = util.decode_gzip(self.request.body, encoding=None)
             except GZIPDecodeError as exc:
                 errors.append({"name": None, "description": repr(exc)})
 
+        content = request_content.decode(self.request.charset)
+
         request_data = {}
         try:
-            request_data = json.loads(request_content, encoding=self.request.charset)
+            request_data = json.loads(content)
         except ValueError as exc:
             errors.append({"name": None, "description": repr(exc)})
 
