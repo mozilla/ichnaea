@@ -32,10 +32,8 @@ def gzip_open(filename, mode, compresslevel=6):
             yield gzip_file
 
 
-def encode_gzip(data, compresslevel=6, encoding="utf-8"):
+def encode_gzip(data, compresslevel=6):
     """Encode the passed in data with gzip."""
-    if encoding and isinstance(data, str):
-        data = data.encode(encoding)
     out = BytesIO()
     with gzip.GzipFile(
         None, "wb", compresslevel=compresslevel, fileobj=out
@@ -44,16 +42,14 @@ def encode_gzip(data, compresslevel=6, encoding="utf-8"):
     return out.getvalue()
 
 
-def decode_gzip(data, encoding="utf-8"):
-    """Decode the bytes data and return a Unicode string.
+def decode_gzip(data):
+    """Return the gzip-decompressed bytes.
 
     :raises: :exc:`~ichnaea.exceptions.GZIPDecodeError`
     """
     try:
         with gzip.GzipFile(None, mode="rb", fileobj=BytesIO(data)) as gzip_file:
             out = gzip_file.read()
-        if encoding:
-            return out.decode(encoding)
         return out
     except (IOError, OSError, EOFError, struct.error, zlib.error) as exc:
         raise GZIPDecodeError(repr(exc))

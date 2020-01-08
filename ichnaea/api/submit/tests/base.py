@@ -40,7 +40,7 @@ class BaseSubmitTest(object):
     def test_gzip(self, app, celery):
         cell, query = self._one_cell_query()
         data = {"items": [query]}
-        body = util.encode_gzip(dumps(data))
+        body = util.encode_gzip(dumps(data).encode())
         headers = {"Content-Encoding": "gzip"}
         res = app.post(
             self.url,
