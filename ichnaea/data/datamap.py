@@ -2,6 +2,7 @@ from datetime import timedelta
 
 from sqlalchemy import delete, select
 
+from ichnaea.db import retry_on_mysql_lock_fail
 from ichnaea.models.content import DataMap, encode_datamap_grid
 from ichnaea import util
 
@@ -34,7 +35,12 @@ class DataMapUpdater(object):
         self.shard = DataMap.shards().get(shard_id)
         self.shard_table = self.shard.__table__
 
-    def _update_shards(self, session, grids):
+    @retry_on_mysql_lock_fail(metric="datamaps.dberror")
+    def _update_shards(self, grids):
+        with self.task.db_session() as session:
+            self._update_shards_with_session(session, grids)
+
+    def _update_shards_with_session(self, session, grids):
         today = util.utcnow().date()
 
         rows = session.execute(
@@ -81,8 +87,7 @@ class DataMapUpdater(object):
         if not grids or not self.shard:
             return 0
 
-        with self.task.db_session() as session:
-            self._update_shards(session, grids)
+        self._update_shards(grids)
 
         if queue.ready():
             self.task.apply_countdown(kwargs={"shard_id": self.shard_id})

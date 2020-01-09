@@ -1,14 +1,11 @@
 from collections import defaultdict
 from datetime import timedelta
 
-import backoff
 import markus
 import numpy
-from pymysql.err import MySQLError
-from pymysql.constants.ER import LOCK_WAIT_TIMEOUT, LOCK_DEADLOCK
-from sqlalchemy.exc import StatementError
 
 from geocalc import circle_radius, distance
+from ichnaea.db import retry_on_mysql_lock_fail
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import (
     decode_cellid,
@@ -400,58 +397,6 @@ class CellState(StationState):
         return values
 
 
-def _retry_updates_on_mysql_lock_fail(function, station_type):
-    """Wrap update_observations to retry on MySQL lock errors.
-
-    This handles these MySQL errors:
-    * (1213) Deadlock when trying to get lock
-    * (1205) Lock wait timeout exceeded
-
-    In both cases, restarting the transaction may work.
-
-    This wraps StationUpdater.update_observations, using backoff.on_exception,
-    to detect these errors, increment a metric (data.station.dberror), and try
-    again after a short random sleep.
-
-    Other exceptions are raised, and three failures in a row will be raised as
-    well.
-    """
-
-    def is_mysql_lock_error(exception):
-        """Is the exception a retryable MySQL lock error?"""
-        return (
-            isinstance(exception, StatementError)
-            and isinstance(exception.orig, MySQLError)
-            and exception.orig.args[0] in (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
-        )
-
-    def count_exception(exception):
-        """Increment the tracking metric for lock errors."""
-        METRICS.incr(
-            "data.station.dberror",
-            1,
-            tags=["type:%s" % station_type, "errno:%s" % exception.orig.args[0]],
-        )
-
-    def giveup_handler(exception):
-        """Based on this raised exception, should we give up or retry?
-
-        If it is a SQLAlchemy wrapper for a retryable MySQL exception,
-        then we should increment a metric and retry.
-
-        If it isn't one of the special exceptions, then give up.
-        """
-        if is_mysql_lock_error(exception):
-            count_exception(exception)
-            return False  # Retry if possible
-        return True  # Give up on other unknown errors.
-
-    retry_wrapper = backoff.on_exception(
-        backoff.expo, StatementError, max_tries=3, giveup=giveup_handler
-    )
-    return retry_wrapper(function)
-
-
 class StationUpdater(object):
 
     obs_model = None
@@ -602,9 +547,9 @@ class StationUpdater(object):
         if not sharded_obs:
             return
 
-        retry_wrapper = _retry_updates_on_mysql_lock_fail(
-            self.update_observations, station_type=self.station_type
-        )
+        retry_wrapper = retry_on_mysql_lock_fail(
+            metric="data.station.dberror", metric_tags=[f"type:{self.station_type}"]
+        )(self.update_observations)
         updated_areas, stats = retry_wrapper(sharded_obs)
 
         with self.task.redis_pipeline() as pipe:

@@ -3,8 +3,7 @@ from datetime import datetime, timedelta
 from unittest import mock
 
 import pytest
-from pymysql.err import InternalError, MySQLError, OperationalError
-from pymysql.constants.ER import LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT
+from pymysql.err import MySQLError
 from pytz import UTC
 from sqlalchemy.exc import InterfaceError
 
@@ -32,14 +31,8 @@ from ichnaea.tests.factories import (
     WifiObservationFactory,
     WifiShardFactory,
 )
+from ichnaea.tests.test_db import RETRIABLES
 from ichnaea import util
-
-
-@pytest.fixture
-def backoff_sleep_mock():
-    """Mock backoff's time.sleep, so that test remain fast."""
-    with mock.patch("backoff._sync.time.sleep") as mocked_sleep:
-        yield mocked_sleep
 
 
 class BaseStationTest:
@@ -71,20 +64,7 @@ class TestDatabaseErrors(BaseStationTest):
     unique_key = "cellid"
 
     @pytest.mark.parametrize(
-        "errclass,errno,errmsg",
-        (
-            (
-                OperationalError,
-                LOCK_DEADLOCK,
-                "Deadlock found when trying to get lock; try restarting transaction",
-            ),
-            (
-                InternalError,
-                LOCK_WAIT_TIMEOUT,
-                "Lock wait timeout exceeded; try restarting transaction",
-            ),
-        ),
-        ids=("deadlock", "wait-timeout"),
+        "errclass,errno,errmsg", list(RETRIABLES.values()), ids=list(RETRIABLES.keys())
     )
     def test_retriable_exceptions(
         self,
