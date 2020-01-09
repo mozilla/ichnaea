@@ -115,7 +115,9 @@ class CellAreaUpdater(object):
                     self.area_table.c.num_cells,
                     self.area_table.c.last_seen,
                 ]
-            ).where(self.area_table.c.areaid == areaid)
+            )
+            .where(self.area_table.c.areaid == areaid)
+            .with_for_update()
         ).fetchone()
 
         cell_extremes = numpy.array(

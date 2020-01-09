@@ -44,9 +44,9 @@ class DataMapUpdater(object):
         today = util.utcnow().date()
 
         rows = session.execute(
-            select([self.shard_table.c.grid, self.shard_table.c.modified]).where(
-                self.shard_table.c.grid.in_(grids)
-            )
+            select([self.shard_table.c.grid, self.shard_table.c.modified])
+            .where(self.shard_table.c.grid.in_(grids))
+            .with_for_update()
         ).fetchall()
 
         outdated = set()
