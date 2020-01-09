@@ -1,7 +1,6 @@
 from contextlib import contextmanager
 from datetime import datetime
 import gzip
-from io import BytesIO
 from itertools import zip_longest
 import json
 import os
@@ -32,29 +31,18 @@ def gzip_open(filename, mode, compresslevel=6):
             yield gzip_file
 
 
-def encode_gzip(data, compresslevel=6, encoding="utf-8"):
+def encode_gzip(data, compresslevel=6):
     """Encode the passed in data with gzip."""
-    if encoding and isinstance(data, str):
-        data = data.encode(encoding)
-    out = BytesIO()
-    with gzip.GzipFile(
-        None, "wb", compresslevel=compresslevel, fileobj=out
-    ) as gzip_file:
-        gzip_file.write(data)
-    return out.getvalue()
+    return gzip.compress(data, compresslevel=compresslevel)
 
 
-def decode_gzip(data, encoding="utf-8"):
-    """Decode the bytes data and return a Unicode string.
+def decode_gzip(data):
+    """Return the gzip-decompressed bytes.
 
     :raises: :exc:`~ichnaea.exceptions.GZIPDecodeError`
     """
     try:
-        with gzip.GzipFile(None, mode="rb", fileobj=BytesIO(data)) as gzip_file:
-            out = gzip_file.read()
-        if encoding:
-            return out.decode(encoding)
-        return out
+        return gzip.decompress(data)
     except (IOError, OSError, EOFError, struct.error, zlib.error) as exc:
         raise GZIPDecodeError(repr(exc))
 

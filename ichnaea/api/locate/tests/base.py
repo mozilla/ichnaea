@@ -438,7 +438,7 @@ class CommonLocateTest(BaseLocateTest):
         wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
 
-        body = util.encode_gzip(json.dumps(query))
+        body = util.encode_gzip(json.dumps(query).encode())
         headers = {"Content-Encoding": "gzip"}
         res = self._call(
             app, body=body, headers=headers, method="post", status=self.not_found.code

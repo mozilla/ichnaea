@@ -20,29 +20,18 @@ class TestUtil(object):
         assert now.tzinfo == UTC
 
     def test_encode_gzip(self):
-        data = util.encode_gzip("foo")
-        assert data[:4] == self.gzip_foo[:4]
-        assert data[-13:] == self.gzip_foo[-13:]
-
-    def test_encode_gzip_bytes(self):
         data = util.encode_gzip(b"foo")
+        # Test around the 4-byte timestamp
         assert data[:4] == self.gzip_foo[:4]
-        assert data[-13:] == self.gzip_foo[-13:]
+        assert data[8:] == self.gzip_foo[8:]
 
     def test_decode_gzip(self):
         data = util.decode_gzip(self.gzip_foo)
-        assert data == "foo"
+        assert data == b"foo"
 
     def test_roundtrip_gzip(self):
         data = util.decode_gzip(util.encode_gzip(b"foo"))
-        assert data == "foo"
-
-    def test_no_encoding(self):
-        data = util.encode_gzip(b"\x00ab", encoding=None)
-        assert isinstance(data, bytes)
-        result = util.decode_gzip(data, encoding=None)
-        assert isinstance(result, bytes)
-        assert result == b"\x00ab"
+        assert data == b"foo"
 
     def test_decode_gzip_error(self):
         with pytest.raises(GZIPDecodeError):

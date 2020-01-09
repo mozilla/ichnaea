@@ -45,7 +45,7 @@ class DataQueue(object):
             result = pipe.execute()[0]
 
             if self.compress:
-                result = [util.decode_gzip(item, encoding=None) for item in result]
+                result = [util.decode_gzip(item) for item in result]
             if self.json:
                 result = [json.loads(item.decode("utf-8")) for item in result]
 
@@ -75,7 +75,7 @@ class DataQueue(object):
             items = [json.dumps(item).encode("utf-8") for item in items]
 
         if self.compress:
-            items = [util.encode_gzip(item, encoding=None) for item in items]
+            items = [util.encode_gzip(item) for item in items]
 
         if pipe is not None:
             self._push(pipe, items, batch)
