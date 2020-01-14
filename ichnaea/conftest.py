@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+from unittest import mock
 import gc
 import warnings
 
@@ -510,3 +511,13 @@ def celery(request, global_celery, raven, redis):
         yield request.getfixturevalue("celery_shared_session")
     else:
         yield global_celery
+
+
+@pytest.fixture
+def backoff_sleep_mock():
+    """Mock backoff's time.sleep, so that test remain fast.
+
+    Useful when testing retry_on_mysql_lock_fail.
+    """
+    with mock.patch("backoff._sync.time.sleep") as mocked_sleep:
+        yield mocked_sleep

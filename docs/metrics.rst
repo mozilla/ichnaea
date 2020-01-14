@@ -36,6 +36,7 @@ Metric Name                      Type    Tags
 `data.station.dberror`_          counter type, errno
 `data.station.new`_              counter type
 `datamaps`_                      timer   func, count
+`datamaps.dberror`_              counter errno
 `locate.fallback.cache`_         counter fallback_name, status
 `locate.fallback.lookup`_        counter fallback_name, status
 `locate.fallback.lookup.timing`_ timer   fallback_name, status
@@ -387,14 +388,13 @@ Along the way several counters measure the steps involved:
 ``data.station.dberror#type:<type>,errno:<errno>``: counters
 
     Count the number of retryable database errors.  ``type`` is ``blue``,
-    ``cell``, or ``wifi``, and ``errno`` is the error number, which can be
-    found on the `MySQL Server Error Reference`_.
+    ``cell``, ``cellarea``, or ``wifi``, and ``errno`` is the error number,
+    which can be found on the `MySQL Server Error Reference`_.
 
-    Retryable database errors, like a deadlock (``1213``) cause the station
-    updating task to sleep and start over. Other database errors are not
-    counted, but instead halt the task and are recorded in Sentry.
-
-.. _`MySQL Server Error Reference`: https://dev.mysql.com/doc/refman/5.7/en/server-error-reference.html
+    Retryable database errors, like a lock timeout (``1205``) or deadlock
+    (``1213``) cause the station updating task to sleep and start over.  Other
+    database errors are not counted, but instead halt the task and are recorded
+    in Sentry.
 
 .. _data.export.batch:
 .. _data.export.upload:
@@ -508,6 +508,7 @@ For example:
   - ``task#task:data.update_statcounter``
 
 .. _datamaps:
+.. _datamaps.dberror:
 
 Datamaps Timers
 ---------------
@@ -534,3 +535,16 @@ to monitor its operation.
 
     Pseudo-timers to track the number of CSV rows, Quadtree files and
     image tiles.
+
+
+``datamaps.dberror#errno:<errno>``: counter
+
+    Count the number of retryable database errors.  ``errno`` is the error
+    number, which can be found on the `MySQL Server Error Reference`_.
+
+    Retryable database errors, like a lock timeout (``1205``) or deadlock
+    (``1213``) cause the station updating task to sleep and start over.  Other
+    database errors are not counted, but instead halt the task and are recorded
+    in Sentry.
+
+.. _`MySQL Server Error Reference`: https://dev.mysql.com/doc/refman/5.7/en/server-error-reference.html

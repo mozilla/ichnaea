@@ -4,11 +4,14 @@ import os
 from contextlib import contextmanager
 
 from alembic.config import main as alembic_main
+import backoff
+import markus
 from pymysql.constants.CLIENT import MULTI_STATEMENTS
-from pymysql.err import DatabaseError
+from pymysql.constants.ER import LOCK_WAIT_TIMEOUT, LOCK_DEADLOCK
+from pymysql.err import DatabaseError, MySQLError
 from sqlalchemy import create_engine
 from sqlalchemy.engine.url import make_url
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, StatementError
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.pool import NullPool, QueuePool
 from sqlalchemy.sql import func, select
@@ -17,6 +20,7 @@ from ichnaea.conf import settings
 
 
 DB_TYPE = {"ro": settings("db_readonly_uri"), "rw": settings("db_readwrite_uri")}
+METRICS = markus.get_metrics()
 
 
 class SqlAlchemyUrlNotSpecified(Exception):
@@ -242,3 +246,59 @@ def drop_db(uri=None):
     sa_url.database = None
     engine = create_engine(sa_url)
     engine.execute("DROP DATABASE {}".format(db_to_drop))
+
+
+def retry_on_mysql_lock_fail(metric=None, metric_tags=None):
+    """Function decorator to backoff and retry on MySQL lock failures.
+
+    This handles these MySQL errors:
+    * (1205) Lock wait timeout exceeded
+    * (1213) Deadlock when trying to get lock
+
+    In both cases, restarting the transaction may work.
+
+    It expects the errors to be wrapped in a SQLAlchemy StatementError, and
+    that SQLAlchemy issued a transaction rollback, so it is safe to retry after
+    a short sleep. It uses backoff.on_exception to implement the exponential
+    backoff.
+
+    Other exceptions are raised, and if limits are met, then the final
+    exception is raised as well.
+
+    :arg str metric: An optional counter metric to track handled errors
+    :arg list metric_tags: Additional tags to send with the metric
+    :return: A function decorator implementing the retry logic
+    """
+
+    def is_mysql_lock_error(exception):
+        """Is the exception a retryable MySQL lock error?"""
+        return (
+            isinstance(exception, StatementError)
+            and isinstance(exception.orig, MySQLError)
+            and exception.orig.args[0] in (LOCK_DEADLOCK, LOCK_WAIT_TIMEOUT)
+        )
+
+    def count_exception(exception):
+        """Increment the tracking metric for lock errors."""
+        tags = ["errno:%s" % exception.orig.args[0]]
+        if metric_tags:
+            tags.extend(metric_tags)
+        METRICS.incr(metric, 1, tags=tags)
+
+    def giveup_handler(exception):
+        """Based on this raised exception, should we give up or retry?
+
+        If it is a SQLAlchemy wrapper for a retryable MySQL exception,
+        then we should increment a metric and retry.
+
+        If it isn't one of the special exceptions, then give up.
+        """
+        if is_mysql_lock_error(exception):
+            if metric:
+                count_exception(exception)
+            return False  # Retry if possible
+        return True  # Give up on other unknown errors.
+
+    return backoff.on_exception(
+        backoff.expo, StatementError, max_tries=3, giveup=giveup_handler
+    )

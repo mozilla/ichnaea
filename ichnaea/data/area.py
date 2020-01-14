@@ -4,6 +4,7 @@ import numpy
 from sqlalchemy import delete, select
 
 from geocalc import circle_radius
+from ichnaea.db import retry_on_mysql_lock_fail
 from ichnaea.geocode import GEOCODER
 from ichnaea.models import decode_cellarea, CellArea, CellShard
 from ichnaea import util
@@ -22,13 +23,18 @@ class CellAreaUpdater(object):
 
     def __call__(self):
         areaids = self.queue.dequeue()
+        self.update_areas(areaids)
+        if self.queue.ready():
+            self.task.apply_countdown()
 
+    @retry_on_mysql_lock_fail(
+        metric="data.station.dberror", metric_tags=["type:cellarea"]
+    )
+    def update_areas(self, areaids):
+        """Update the cell areas based on cell station records."""
         with self.task.db_session() as session:
             for areaid in set(areaids):
                 self.update_area(session, areaid)
-
-        if self.queue.ready():
-            self.task.apply_countdown()
 
     def region(self, ctr_lat, ctr_lon, mcc, cells):
         region = None
@@ -109,7 +115,9 @@ class CellAreaUpdater(object):
                     self.area_table.c.num_cells,
                     self.area_table.c.last_seen,
                 ]
-            ).where(self.area_table.c.areaid == areaid)
+            )
+            .where(self.area_table.c.areaid == areaid)
+            .with_for_update()
         ).fetchone()
 
         cell_extremes = numpy.array(
