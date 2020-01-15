@@ -1,6 +1,7 @@
 import json
 import operator
 
+import pytest
 import requests_mock
 
 from ichnaea.api.exceptions import (
@@ -444,6 +445,24 @@ class CommonLocateTest(BaseLocateTest):
             app, body=body, headers=headers, method="post", status=self.not_found.code
         )
         self.check_response(data_queues, res, "not_found")
+
+    def test_truncated_gzip(self, app, data_queues):
+        wifis = WifiShardFactory.build_batch(2)
+        query = self.model_query(wifis=wifis)
+
+        body = util.encode_gzip(json.dumps(query).encode())[:-2]
+        headers = {"Content-Encoding": "gzip"}
+        res = self._call(app, body=body, headers=headers, method="post", status=400)
+        self.check_response(data_queues, res, "parse_error")
+
+    def test_bad_encoding(self, app, data_queues):
+        body = b'{"comment": "R\xe9sum\xe9 from 1990", "items": []}'
+        assert "Résumé" in body.decode("iso8859-1")
+        with pytest.raises(UnicodeDecodeError):
+            body.decode("utf-8")
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        res = self._call(app, body=body, headers=headers, method="post", status=400)
+        self.check_response(data_queues, res, "parse_error")
 
 
 class CommonPositionTest(BaseLocateTest):

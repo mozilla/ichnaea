@@ -1,7 +1,9 @@
+# coding=utf-8
 from json import dumps
 from unittest import mock
 
 from redis import RedisError
+import pytest
 
 from ichnaea.api.exceptions import ParseError, ServiceUnavailable
 from ichnaea.conftest import GEOIP_DATA
@@ -61,6 +63,28 @@ class BaseSubmitTest(object):
             headers=headers,
             content_type="application/json",
             status=400,
+        )
+        assert self.queue(celery).size() == 0
+
+    def test_truncated_gzip(self, app, celery, raven):
+        headers = {"Content-Encoding": "gzip"}
+        body = util.encode_gzip(b'{"items": []}')[:-2]
+        app.post(
+            self.url,
+            body,
+            headers=headers,
+            content_type="application/json",
+            status=400,
+        )
+        assert self.queue(celery).size() == 0
+
+    def test_bad_encoding(self, app, celery, raven):
+        body = b'{"comment": "R\xe9sum\xe9 from 1990", "items": []}'
+        assert "Résumé" in body.decode("iso8859-1")
+        with pytest.raises(UnicodeDecodeError):
+            body.decode("utf-8")
+        app.post(
+            self.url, body, content_type="application/json; charset=utf-8", status=400,
         )
         assert self.queue(celery).size() == 0
 
