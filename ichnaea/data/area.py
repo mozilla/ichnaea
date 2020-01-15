@@ -32,9 +32,20 @@ class CellAreaUpdater(object):
     )
     def update_areas(self, areaids):
         """Update the cell areas based on cell station records."""
+        areaid_set = set(areaids)
         with self.task.db_session() as session:
-            for areaid in set(areaids):
-                self.update_area(session, areaid)
+            # Fetch and lock existing cellarea rows
+            rows = session.execute(
+                select([self.area_table.c.areaid])
+                .where(self.area_table.c.areaid.in_(areaid_set))
+                .with_for_update()
+            ).fetchall()
+            existing_areas = set(row[0] for row in rows)
+
+            # Update each cellarea row from cell tables
+            for areaid in areaid_set:
+                area_is_new = decode_cellarea(areaid) not in existing_areas
+                self.update_area(session, areaid, area_is_new)
 
     def region(self, ctr_lat, ctr_lon, mcc, cells):
         region = None
@@ -65,7 +76,7 @@ class CellAreaUpdater(object):
 
         return region
 
-    def update_area(self, session, areaid):
+    def update_area(self, session, areaid, area_is_new):
         # Select all cells in this area and derive a bounding box for them
         radio, mcc, mnc, lac = decode_cellarea(areaid)
         load_fields = (
@@ -102,24 +113,6 @@ class CellAreaUpdater(object):
             return
 
         # Otherwise update the area entry based on all the cells
-        area = session.execute(
-            select(
-                [
-                    self.area_table.c.areaid,
-                    self.area_table.c.modified,
-                    self.area_table.c.lat,
-                    self.area_table.c.lon,
-                    self.area_table.c.radius,
-                    self.area_table.c.region,
-                    self.area_table.c.avg_cell_radius,
-                    self.area_table.c.num_cells,
-                    self.area_table.c.last_seen,
-                ]
-            )
-            .where(self.area_table.c.areaid == areaid)
-            .with_for_update()
-        ).fetchone()
-
         cell_extremes = numpy.array(
             [
                 (
@@ -164,7 +157,7 @@ class CellAreaUpdater(object):
         if cell_last_seen:
             last_seen = max(cell_last_seen)
 
-        if area is None:
+        if area_is_new:
             session.execute(
                 self.area_table.insert().values(
                     areaid=areaid,
