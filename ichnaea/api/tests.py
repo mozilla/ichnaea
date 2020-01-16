@@ -1,3 +1,4 @@
+import json
 import time
 
 import colander
@@ -114,13 +115,24 @@ class TestRenamingMapping(object):
 
 
 class TestExceptions(object):
-    def _check(self, error, status, json=True, content_type="application/json"):
-        response = Request.blank("/").get_response(error())
+    def _check(
+        self,
+        error,
+        status,
+        json=True,
+        content_type="application/json",
+        is_instance=False,
+    ):
+        if is_instance:
+            error_instance = error
+        else:
+            error_instance = error()
+        response = Request.blank("/").get_response(error_instance)
         if content_type:
             assert response.content_type == content_type
         assert response.status_code == status
         if json:
-            assert response.json == error.json_body()
+            assert response.json == error_instance.json_body()
         return response
 
     def test_str(self):
@@ -146,6 +158,13 @@ class TestExceptions(object):
         error = api_exceptions.ParseError
         response = self._check(error, 400)
         assert b"parseError" in response.body
+
+    def test_parse_error_details(self):
+        error = api_exceptions.ParseError(details=["Details of Error"])
+        response = self._check(error, 400, json=False, is_instance=True)
+        assert b"parseError" in response.body
+        content = json.loads(response.body.decode())
+        assert content["details"] == ["Details of Error"]
 
     def test_upload_success(self):
         error = api_exceptions.UploadSuccess

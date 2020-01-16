@@ -255,7 +255,7 @@ class TestView(BaseSubmitTest):
 
     def test_error(self, app, celery, raven):
         wifi = WifiShardFactory.build()
-        self._post(
+        response = self._post(
             app,
             [
                 {
@@ -265,6 +265,11 @@ class TestView(BaseSubmitTest):
             ],
             status=400,
         )
+        assert response.json["details"]["validation"] == {
+            "items.0.wifiAccessPoints.0.macAddress": (
+                "10 is not a string: {'macAddress': ''}"
+            )
+        }
         assert self.queue(celery).size() == 0
 
     def test_error_missing_latlon(self, app, celery):

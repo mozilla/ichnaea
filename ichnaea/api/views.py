@@ -84,7 +84,6 @@ class BaseAPIView(BaseView):
         return should_limit
 
     def preprocess_request(self):
-        errors = []
 
         request_content = self.request.body
         if self.request.headers.get("Content-Encoding") == "gzip":
@@ -92,28 +91,30 @@ class BaseAPIView(BaseView):
             try:
                 request_content = util.decode_gzip(self.request.body)
             except GZIPDecodeError as exc:
-                errors.append({"name": None, "description": repr(exc)})
+                raise self.prepare_exception(ParseError({"decode": repr(exc)}))
 
-        content = ""
         try:
             content = request_content.decode(self.request.charset)
         except UnicodeDecodeError as exc:
-            errors.append({"name": None, "description": repr(exc)})
+            # Use str(), since repr() includes the full source bytes
+            raise self.prepare_exception(ParseError({"decode": str(exc)}))
 
         request_data = {}
-        try:
-            request_data = json.loads(content)
-        except ValueError as exc:
-            errors.append({"name": None, "description": repr(exc)})
+        if content:
+            try:
+                request_data = json.loads(content)
+            except ValueError as exc:
+                raise self.prepare_exception(ParseError({"decode": repr(exc)}))
 
         validated_data = {}
+        errors = None
         try:
             validated_data = self.schema.deserialize(request_data)
         except colander.Invalid as exc:
-            errors.append({"name": None, "description": exc.asdict()})
+            errors = {"validation": exc.asdict()}
 
         if request_content and errors:
-            raise self.prepare_exception(ParseError())
+            raise self.prepare_exception(ParseError(errors))
 
         return validated_data
 

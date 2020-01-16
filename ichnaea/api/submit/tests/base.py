@@ -70,11 +70,7 @@ class BaseSubmitTest(object):
         headers = {"Content-Encoding": "gzip"}
         body = util.encode_gzip(b'{"items": []}')[:-2]
         app.post(
-            self.url,
-            body,
-            headers=headers,
-            content_type="application/json",
-            status=400,
+            self.url, body, headers=headers, content_type="application/json", status=400
         )
         assert self.queue(celery).size() == 0
 
@@ -84,7 +80,7 @@ class BaseSubmitTest(object):
         with pytest.raises(UnicodeDecodeError):
             body.decode("utf-8")
         app.post(
-            self.url, body, content_type="application/json; charset=utf-8", status=400,
+            self.url, body, content_type="application/json; charset=utf-8", status=400
         )
         assert self.queue(celery).size() == 0
 
@@ -96,23 +92,31 @@ class BaseSubmitTest(object):
 
     def test_error_get(self, app, raven):
         res = app.get(self.url, status=400)
-        assert res.json == ParseError.json_body()
+        assert res.json == ParseError().json_body()
 
     def test_error_empty_body(self, app, raven):
         res = app.post(self.url, "", status=400)
-        assert res.json == ParseError.json_body()
+        assert res.json == ParseError().json_body()
 
     def test_error_empty_json(self, app, raven):
         res = app.post_json(self.url, {}, status=400)
-        assert res.json == ParseError.json_body()
+        detail = {"items": "Required"}
+        assert res.json == ParseError({"validation": detail}).json_body()
 
     def test_error_no_json(self, app, raven):
         res = app.post(self.url, "\xae", status=400)
-        assert res.json == ParseError.json_body()
+        detail = "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+        assert res.json == ParseError({"decode": detail}).json_body()
 
     def test_error_no_mapping(self, app, raven):
         res = app.post_json(self.url, [1], status=400)
-        assert res.json == ParseError.json_body()
+        detail = {
+            "": (
+                '"[1]" is not a mapping type: Does not implement dict-like'
+                " functionality."
+            )
+        }
+        assert res.json == ParseError({"validation": detail}).json_body()
 
     def test_error_redis_failure(self, app, raven, metricsmock):
         mock_queue = mock.Mock()

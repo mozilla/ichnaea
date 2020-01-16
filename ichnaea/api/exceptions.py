@@ -152,6 +152,17 @@ class ParseError(BaseAPIClientError):
     domain = "global"
     reason = "parseError"
     message = "Parse Error"
+    error_details = None
+
+    def __init__(self, details=None):
+        self.error_details = details
+        super().__init__()
+
+    def json_body(self):
+        content = super().json_body()
+        if self.error_details:
+            content["details"] = self.error_details
+        return content
 
 
 class ServiceUnavailable(BaseAPIServiceError):

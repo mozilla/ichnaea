@@ -280,12 +280,18 @@ class TestView(BaseSubmitTest):
         self._post(app, items)
         assert self.queue(celery).size() == batch
 
-    def test_error(self, app, celery, raven):
+    def test_error_not_dict(self, app, celery, raven):
         wifi = WifiShardFactory.build()
         res = app.post_json(
             "/v1/submit", [{"lat": wifi.lat, "lon": wifi.lon, "cell": []}], status=400
         )
-        assert res.json == ParseError.json_body()
+        detail = {
+            "": (
+                "\"[{'lat': 51.5, 'lon': -0.1, 'cell': []}]\" is not a mapping"
+                " type: Does not implement dict-like functionality."
+            )
+        }
+        assert res.json == ParseError({"validation": detail}).json_body()
 
     def test_error_missing_latlon(self, app, celery):
         wifi = WifiShardFactory.build()

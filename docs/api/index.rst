@@ -126,8 +126,18 @@ error code:
             }],
             "code": 400,
             "message": "Parse Error"
+            "details": {
+                "decode": "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+            }
         }
     }
+
+The ``details`` item will be a mapping with the key ``"decode"`` or
+``"validation"``.  If the key is ``"decode"``, the value will be a string
+describing a fundamental decoding issue, such as failing to decompress gzip
+content, to convert to unicode from the declared charset, or to parse as JSON.
+If the key is ``"validation"``, the value will describe validation errors in
+the JSON payload.
 
 
 Service Error
