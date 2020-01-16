@@ -15,7 +15,7 @@ class BaseLocateView(BaseAPIView):
     searcher = None
 
     def locate(self, api_key):
-        request_data, errors = self.preprocess_request()
+        request_data = self.preprocess_request()
 
         query = Query(
             fallback=request_data.get("fallbacks"),

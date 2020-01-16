@@ -39,7 +39,7 @@ class BaseSubmitView(BaseAPIView):
         METRICS.incr("data.batch.upload", tags=tags)
 
     def submit(self, api_key):
-        request_data, errors = self.preprocess_request()
+        request_data = self.preprocess_request()
 
         if not request_data:
             # don't allow completely empty request

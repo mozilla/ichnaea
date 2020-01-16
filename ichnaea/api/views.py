@@ -115,7 +115,7 @@ class BaseAPIView(BaseView):
         if request_content and errors:
             raise self.prepare_exception(ParseError())
 
-        return (validated_data, errors)
+        return validated_data
 
     def __call__(self):
         """Execute the view and return a response."""
