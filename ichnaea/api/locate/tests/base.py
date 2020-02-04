@@ -221,13 +221,13 @@ class BaseLocateTest(object):
                 del body["fallback"]
             assert body == self.ip_response
         elif status == "invalid_key":
-            assert response.json == InvalidAPIKey.json_body()
+            assert response.json == InvalidAPIKey().json_body()
         elif status == "not_found":
-            assert response.json == self.not_found.json_body()
+            assert response.json == self.not_found().json_body()
         elif status == "parse_error":
             assert response.json == ParseError(details).json_body()
         elif status == "limit_exceeded":
-            assert response.json == DailyLimitExceeded.json_body()
+            assert response.json == DailyLimitExceeded().json_body()
         if status != "ok":
             self.check_queue(data_queues, 0)
 

@@ -124,7 +124,7 @@ class BaseSubmitTest(object):
 
         with mock.patch("ichnaea.queue.DataQueue.enqueue", mock_queue):
             res = self._post_one_cell(app, status=503)
-            assert res.json == ServiceUnavailable.json_body()
+            assert res.json == ServiceUnavailable().json_body()
 
         assert mock_queue.called
         raven.check([("ServiceUnavailable", 1)])
