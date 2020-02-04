@@ -1,6 +1,7 @@
 import json
 import operator
 
+import pytest
 import requests_mock
 
 from ichnaea.api.exceptions import (
@@ -207,7 +208,9 @@ class BaseLocateTest(object):
     def check_queue(self, data_queues, num):
         assert data_queues["update_incoming"].size() == num
 
-    def check_response(self, data_queues, response, status, fallback=None):
+    def check_response(
+        self, data_queues, response, status, fallback=None, details=None
+    ):
         assert response.content_type == "application/json"
         assert response.headers["Access-Control-Allow-Origin"] == "*"
         assert response.headers["Access-Control-Max-Age"] == "2592000"
@@ -218,13 +221,13 @@ class BaseLocateTest(object):
                 del body["fallback"]
             assert body == self.ip_response
         elif status == "invalid_key":
-            assert response.json == InvalidAPIKey.json_body()
+            assert response.json == InvalidAPIKey().json_body()
         elif status == "not_found":
-            assert response.json == self.not_found.json_body()
+            assert response.json == self.not_found().json_body()
         elif status == "parse_error":
-            assert response.json == ParseError.json_body()
+            assert response.json == ParseError(details).json_body()
         elif status == "limit_exceeded":
-            assert response.json == DailyLimitExceeded.json_body()
+            assert response.json == DailyLimitExceeded().json_body()
         if status != "ok":
             self.check_queue(data_queues, 0)
 
@@ -371,7 +374,8 @@ class CommonLocateTest(BaseLocateTest):
 
     def test_error_no_json(self, app, data_queues, metricsmock):
         res = self._call(app, "\xae", method="post", status=400)
-        self.check_response(data_queues, res, "parse_error")
+        detail = "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
+        self.check_response(data_queues, res, "parse_error", details={"decode": detail})
         assert metricsmock.has_record(
             "incr",
             self.metric_type + ".request",
@@ -381,7 +385,15 @@ class CommonLocateTest(BaseLocateTest):
 
     def test_error_no_mapping(self, app, data_queues):
         res = self._call(app, [1], status=400)
-        self.check_response(data_queues, res, "parse_error")
+        detail = {
+            "": (
+                '"[1]" is not a mapping type: Does not implement dict-like'
+                " functionality."
+            )
+        }
+        self.check_response(
+            data_queues, res, "parse_error", details={"validation": detail}
+        )
 
     def test_error_invalid_key(self, app, data_queues):
         res = self._call(app, {"invalid": 0}, ip=self.test_ip, status=200)
@@ -444,6 +456,32 @@ class CommonLocateTest(BaseLocateTest):
             app, body=body, headers=headers, method="post", status=self.not_found.code
         )
         self.check_response(data_queues, res, "not_found")
+
+    def test_truncated_gzip(self, app, data_queues):
+        wifis = WifiShardFactory.build_batch(2)
+        query = self.model_query(wifis=wifis)
+
+        body = util.encode_gzip(json.dumps(query).encode())[:-2]
+        headers = {"Content-Encoding": "gzip"}
+        res = self._call(app, body=body, headers=headers, method="post", status=400)
+        detail = (
+            "GZIPDecodeError(\"EOFError('Compressed file ended before the"
+            " end-of-stream marker was reached')\")"
+        )
+        self.check_response(data_queues, res, "parse_error", details={"decode": detail})
+
+    def test_bad_encoding(self, app, data_queues):
+        body = b'{"comment": "R\xe9sum\xe9 from 1990", "items": []}'
+        assert "Résumé" in body.decode("iso8859-1")
+        with pytest.raises(UnicodeDecodeError):
+            body.decode("utf-8")
+        headers = {"Content-Type": "application/json; charset=utf-8"}
+        res = self._call(app, body=body, headers=headers, method="post", status=400)
+        detail = (
+            "'utf-8' codec can't decode byte 0xe9 in position 14: invalid"
+            " continuation byte"
+        )
+        self.check_response(data_queues, res, "parse_error", details={"decode": detail})
 
 
 class CommonPositionTest(BaseLocateTest):

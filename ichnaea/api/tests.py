@@ -1,3 +1,4 @@
+import json
 import time
 
 import colander
@@ -115,7 +116,7 @@ class TestRenamingMapping(object):
 
 class TestExceptions(object):
     def _check(self, error, status, json=True, content_type="application/json"):
-        response = Request.blank("/").get_response(error())
+        response = Request.blank("/").get_response(error)
         if content_type:
             assert response.content_type == content_type
         assert response.status_code == status
@@ -124,36 +125,43 @@ class TestExceptions(object):
         return response
 
     def test_str(self):
-        error = api_exceptions.LocationNotFound
-        assert str(error()) == "<LocationNotFound>: 404"
+        error = api_exceptions.LocationNotFound()
+        assert str(error) == "<LocationNotFound>: 404"
 
     def test_daily_limit(self):
-        error = api_exceptions.DailyLimitExceeded
+        error = api_exceptions.DailyLimitExceeded()
         response = self._check(error, 403)
         assert b"dailyLimitExceeded" in response.body
 
     def test_invalid_apikey(self):
-        error = api_exceptions.InvalidAPIKey
+        error = api_exceptions.InvalidAPIKey()
         response = self._check(error, 400)
         assert b"keyInvalid" in response.body
 
     def test_location_not_found(self):
-        error = api_exceptions.LocationNotFound
+        error = api_exceptions.LocationNotFound()
         response = self._check(error, 404)
         assert b"notFound" in response.body
 
     def test_parse_error(self):
-        error = api_exceptions.ParseError
+        error = api_exceptions.ParseError()
         response = self._check(error, 400)
         assert b"parseError" in response.body
 
+    def test_parse_error_details(self):
+        error = api_exceptions.ParseError(details=["Details of Error"])
+        response = self._check(error, 400, json=False)
+        assert b"parseError" in response.body
+        content = json.loads(response.body.decode())
+        assert content["details"] == ["Details of Error"]
+
     def test_upload_success(self):
-        error = api_exceptions.UploadSuccess
+        error = api_exceptions.UploadSuccess()
         response = self._check(error, 200)
         assert response.body == b"{}"
 
     def test_upload_success_v0(self):
-        error = api_exceptions.UploadSuccessV0
+        error = api_exceptions.UploadSuccessV0()
         response = self._check(error, 204, json=False, content_type=None)
         assert response.body == b""
 

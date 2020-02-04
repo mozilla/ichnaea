@@ -828,7 +828,7 @@ class BaseFallbackTest(object):
 
     @property
     def fallback_not_found(self):
-        return LocationNotFound.json_body()
+        return LocationNotFound().json_body()
 
     def _check_success_fallbacks(self, request_json):
         assert "considerIp" not in request_json
@@ -996,7 +996,7 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             mock_request.register_uri(
                 "POST",
                 requests_mock.ANY,
-                json=LocationNotFound.json_body(),
+                json=LocationNotFound().json_body(),
                 status_code=404,
             )
 

@@ -34,8 +34,7 @@ class JSONException(HTTPException):
     def __str__(self):
         return "<%s>: %s" % (self.__class__.__name__, self.code)
 
-    @classmethod
-    def json_body(cls):
+    def json_body(self):
         """A JSON representation of this response."""
         return {}
 
@@ -46,11 +45,6 @@ class UploadSuccess(JSONException):
     """
 
     code = 200
-
-    @classmethod
-    def json_body(cls):
-        """A JSON representation of this response."""
-        return {}
 
 
 class UploadSuccessV0(UploadSuccess):
@@ -74,16 +68,19 @@ class BaseAPIError(JSONException):
     reason = ""
     message = ""
 
-    @classmethod
-    def json_body(cls):
+    def json_body(self):
         """A JSON representation of this response."""
         return {
             "error": {
                 "errors": [
-                    {"domain": cls.domain, "reason": cls.reason, "message": cls.message}
+                    {
+                        "domain": self.domain,
+                        "reason": self.reason,
+                        "message": self.message,
+                    }
                 ],
-                "code": cls.code,
-                "message": cls.message,
+                "code": self.code,
+                "message": self.message,
             }
         }
 
@@ -152,6 +149,17 @@ class ParseError(BaseAPIClientError):
     domain = "global"
     reason = "parseError"
     message = "Parse Error"
+    error_details = None
+
+    def __init__(self, details=None):
+        self.error_details = details
+        super().__init__()
+
+    def json_body(self):
+        content = super().json_body()
+        if self.error_details:
+            content["details"] = self.error_details
+        return content
 
 
 class ServiceUnavailable(BaseAPIServiceError):
