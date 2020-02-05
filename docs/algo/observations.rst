@@ -20,12 +20,7 @@ The Station Model
 
 A station, regardless of type, is modeled as a circle, where the center is the
 weighted average position of observations, and the radius is large enough to
-contain historical observations.  A model can be composed of observations from
-location queries, giving an estimated position and region for the station, but
-keeping it from being using in location queries. A model can instead be
-composed of observations based on submission reports, which include a position
-from GPS or another source. These stations can be used to help estimate
-position for location queries.
+contain historical observations.
 
 .. Source document:
 .. https://docs.google.com/drawings/d/1E_QK-NEgB4PkovPjWdWZHNQjm60ed2PAZyZyYkPb9iQ
@@ -184,6 +179,14 @@ there will be several observations for a station processed in the same chunk.
 It also increases the chance that two station updating threads will try to
 update the same station. This may cause timeouts or deadlocks due to lock
 contention, and is tracked with the metric ``data.station.dberror``.
+
+A station is either based on observations from location queries (with estimated
+positions from Ichnaea), or from observations from submission reports (with
+positions from GPS or similar sources). When a station built from location
+queries has a valid observation from a submission report, the station is
+upgraded by discarding the existing position estimate and using the submitted,
+satellite-backed position (see the *Replace* transition state in the
+`Updating Stations`_ section below).
 
 Observation Weight
 ==================
