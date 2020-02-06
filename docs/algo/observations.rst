@@ -5,67 +5,165 @@ Observations
 ============
 
 Ichnaea builds its database of Bluetooth, WiFi, and Cell stations based on
-observations of those stations.
+observations of those stations. The goal is not to identify the position of
+the station, but to identify where the station is likely to be observed.
+
+Depending on the observation quality, the station updating algorithm can
+confirm a station is active, adjust the position estimate, block it temporarily
+from location queries, or remove historic position data completely.
 
 .. contents::
    :local:
 
-The theoretical model is that a station radiates in a circle, so that
-observations are equally likely in any direction. Observations are more likely
-closer to the station, and will have a higher signal strength the closer they
-are. The station position can then be estimated by taking the average position
-of the observations, and further observations will result in a more accurate
-estimate of the station position.
+The Station Model
+=================
 
-.. Source embeded in document:
-.. https://docs.google.com/document/d/13KWfVTNTM5_XgNLZkTwLWlvl8a9pYbm3RVwb5PW76hg
+A station, regardless of type, is modeled as a circle, where the center is the
+weighted average position of observations, and the radius is large enough to
+contain historical observations.
 
-.. figure:: observations-theory.png
-    :width: 640px
-    :height: 493px
+.. Source document:
+.. https://docs.google.com/drawings/d/1E_QK-NEgB4PkovPjWdWZHNQjm60ed2PAZyZyYkPb9iQ
+
+.. figure:: observations-model.png
+    :width: 360px
+    :height: 360px
+    :align: center
+    :alt: A station model, with a weight of 12.5, a box containing historical
+          observations, and a circle with a radius that contains the historical
+          observations.
+
+New observations are matched to the existing model.  If the observations match
+the model type (for example, GPS submissions for a GPS-based model), then they
+can update the model's position and radius.
+
+.. Source document:
+.. https://docs.google.com/drawings/d/1bIxj9NZHmYYw_W0nmCBRKef2Ze6ee-PYiKBr6J2buNw
+
+.. figure:: observations-model-new-obs.png
+    :width: 360px
+    :height: 360px
+    :align: center
+    :alt: Seven new observations of a station, two outside of the bounding box
+          and one outside of the bounding radius.
+
+The new observations are weighted by features like accuracy, age, speed, and
+signal strength. Some observations have a weight of 0, and are discarded.
+
+.. Source document:
+.. https://docs.google.com/drawings/d/1GHCFCt9rf1smZxN_TpqcnVnL_z5fYxEvQcZoYdLxnBQ
+
+.. figure:: observations-model-weighted.png
+    :width: 360px
+    :height: 360px
+    :align: center
+    :alt: After weighting, two observations are eliminated, one has a weight
+          of 2.0, four have weights less than 1.
+
+The station's position is adjusted by the new observations, and the station
+weight is increased. Stations with many observations have a large weight, so
+new observations have a diminishing impact on the station position.
+
+To complete the update, the observation bounding box is expanded, if
+needed, to enclose the new observations. The radius is adjusted for the
+new center and bounding box.
+
+.. Source document:
+.. https://docs.google.com/drawings/d/12DL83yvTPUMt3gNEca9qP9kr-sSxyY7XcJjMxaTBxWA
+
+.. figure:: observations-model-update.png
+    :width: 360px
+    :height: 360px
+    :align: center
+    :alt: The updated model is overlaid on the ghost of the previous model. The
+          center has moved down and to the left, closer to the new observations.
+          The bounding box has expanded up and left, and the radius has
+          increased to the new box extent.
+
+
+Modeling WiFi and Cell Stations
+===============================
+
+The station model tracks where the station is observed, and does not attempt to
+determine where the emitter is located.
+
+For example, a WiFi router may physically be located inside a building, to
+maximize the signal for the people in the building. However, people on the
+sidewalk or road outside the building are more likely to observe the WiFi
+router at the same time they have a good GPS or other GNSS position lock. The
+WiFi station model will be weighted toward the outside observations, and may
+show a position outside of the building.
+
+.. Source document:
+.. https://docs.google.com/drawings/d/1E7YbqdUcBW3yzGTdl-4RXzZ-0AFmVTaT_7CqxLytWnQ
+
+.. figure:: observations-wifi.png
+    :width: 480px
+    :height: 480px
     :scale: 50%
     :align: center
-    :alt: A station, radiating equally in all directions, with declining strength
-          and a maximum radius, along with a random sample of observations.
-    :figclass: align-center
+    :alt: A wifi router in a building has some observations inside the
+          building, but the majority are from the sidewalk and the street
+          outside, so the station model locates the station just outside the
+          building.
 
-    The theoretical model of a station and observations
+Cell signals are directional, transmitting in an arc or wedge rather than
+in all directions. They are often observed by phones in vehicles, such as
+when following directions from a map application.
 
-Radio observations are more complicated than the model. Most stations do not
-radiate equally in all directions, and signal strength is not always correlated
-with distance from the station. Some stations are mobile, such as WiFi on a
-commuter train. Some stations are moved, such as a WiFi access point that moves
-with the owners to a new home. Additionally, the reporting device may not
-acquire a high accuracy position reading, and may report stations from a cache
-after the station is out of range.
+In a city, the station model will encompass the service area, biased toward
+observations on roads. The cell emitter will often be outside of the model
+radius.
 
-The station updating algorithm combines multiple data items to mitigate
-non-ideal observations. The position estimate uses a weighted average, so that
-stronger observations contribute more to the position estimate than the weaker
-ones, and some observations are discarded entirely. Observations are batched to
-detect outliers. Positions backed by GPS are preferred over those sourced from
-location queries.
+.. Source:
+.. https://docs.google.com/drawings/d/1oNnlLREgv8NGdPIk3EjwdAPF_3jZsgn8Zh0dVEe_JB0
 
-Based on the confidence in the observations, the station updating algorithm can
-confirm a station is active, adjust the position, block it temporarily from
-location queries, or remove historic position data completely.
+.. figure:: observations-cell-city.png
+    :width: 480px
+    :height: 480px
+    :scale: 50%
+    :align: center
+    :alt: A cell signal in a city partially covers a block. Most of the
+          observations are along roads surrounding that block. The station
+          model places the station near the center of the block, with a
+          radius that covers the observations, but does not include the
+          actual cell signal.
+
+Outside of cities, a cell tower often covers a large area, and individual
+cell signals are broadcast in narrow wedges. The observations may be a
+large distance away from the emitter, along cross-country roads. The station
+model is often centered on these roads, and the cell signal source is well
+outside of the radius.
+
+.. Source:
+.. https://docs.google.com/drawings/d/1b_BDsdfco9ctXVHvWK7RSGmgOM5ssz-gYauhf564GVc
+
+.. figure:: observations-cell-country.png
+    :width: 480px
+    :height: 223px
+    :scale: 50%
+    :align: center
+    :alt: A cell signal in the country that is a distance from the tower.
+          Most of the observations are along a straight cross-country road.
+          The station model is centered on the middle of the road section
+          covered by the station.
 
 Sources and Batching
 ====================
 
 Observations come from two sources:
 
-Submission reports
-  The device sends the detected radio stations, along with a position, which is
-  usually derived from high-precision satellite data such as GPS.  These
-  reports are used to determine the position of newly discovered stations, or
-  to refine the position estimates of known stations.
-
 Location queries
   The device sends the detected radio sources, and Ichnaea returns a position
   estimate or region based on known stations and the requester's IP address.
   This data is used to discover new stations, and to confirm that known
   stations are still active.
+
+Submission reports
+  The device sends the detected radio stations, along with a position, which is
+  usually derived from high-precision satellite data such as GPS.  These
+  reports are used to determine the position of newly discovered stations, or
+  to refine the position estimates of known stations.
 
 The :ref:`data flow process <position-data-flow>` creates observations by
 pairing the position data with each station, and then adds the observations to
@@ -79,8 +177,16 @@ These per-shard queues are processed when a large enough batch is accumulated,
 or when the queue is about to expire.  Batching increases the chances that
 there will be several observations for a station processed in the same chunk.
 It also increases the chance that two station updating threads will try to
-update the same station. This causes a deadlock, which restarts one of the
-tasks and is tracked with the metric ``data.station.dberror``.
+update the same station. This may cause timeouts or deadlocks due to lock
+contention, and is tracked with the metric ``data.station.dberror``.
+
+A station is either based on observations from location queries (with estimated
+positions from Ichnaea), or from observations from submission reports (with
+positions from GPS or similar sources). When a station built from location
+queries has a valid observation from a submission report, the station is
+upgraded by discarding the existing position estimate and using the submitted,
+satellite-backed position (see the *Replace* transition state in the
+`Updating Stations`_ section below).
 
 Observation Weight
 ==================
@@ -135,9 +241,10 @@ For more information, see `Weight Algorithm Details`_.
 Blocked Stations
 ================
 Only stationary cell, WiFi, and Bluetooth stations should be considered when
-estimating a position for a location query. Ichnaea keeps track of mobile
-stations as blocked stations, and uses observations to keep them blocked or
-move them back to regular stations.
+estimating a position for a location query. Mobile stations are identified
+by observations that are well outside the expected range of the station type.
+Ichnaea keeps track of these as blocked stations, and uses observations to keep
+them blocked or move them back to regular stations.
 
 When a station is blocked, it remains blocked for 48 hours. This temporary
 block is used to handle a usually stationary station that is moved, such as a
