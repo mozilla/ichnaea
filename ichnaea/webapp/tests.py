@@ -99,8 +99,6 @@ class TestHeartbeatErrors(object):
             "time": 0,
             "alembic_version": "unknown",
         }
-        assert res.headers["Access-Control-Allow-Origin"] == "*"
-        assert res.headers["Access-Control-Max-Age"] == "2592000"
 
     def test_geoip(self, broken_app):
         res = broken_app.get("/__heartbeat__", status=503)
@@ -113,9 +111,16 @@ class TestHeartbeatErrors(object):
         assert res.json["redis"] == {"up": False, "time": 0}
 
     def test_lbheartbeat(self, broken_app):
+        """LBHeartbeat returns OK for a broken application."""
         res = broken_app.get("/__lbheartbeat__", status=200)
         assert res.content_type == "application/json"
         assert res.json["status"] == "OK"
+
+    def test_no_cors_headers(self, broken_app):
+        """Heartbeat does not allow CORS."""
+        res = broken_app.get("/__heartbeat__", status=503)
+        assert "Access-Control-Allow-Origin" not in res.headers
+        assert "Access-Control-Max-Age" not in res.headers
 
 
 class TestLBHeartbeat(object):
@@ -123,8 +128,6 @@ class TestLBHeartbeat(object):
         res = app.get("/__lbheartbeat__", status=200)
         assert res.content_type == "application/json"
         assert res.json["status"] == "OK"
-        assert res.headers["Access-Control-Allow-Origin"] == "*"
-        assert res.headers["Access-Control-Max-Age"] == "2592000"
 
     def test_head(self, app):
         res = app.head("/__lbheartbeat__", status=200)
@@ -136,24 +139,16 @@ class TestLBHeartbeat(object):
         assert res.content_type == "application/json"
         assert res.json["status"] == "OK"
 
-    def test_options(self, app):
-        res = app.options(
-            "/__lbheartbeat__",
-            status=200,
-            headers={
-                "Access-Control-Request-Method": "POST",
-                "Origin": "localhost.local",
-            },
-        )
-        assert res.headers["Access-Control-Allow-Origin"] == "*"
-        assert res.headers["Access-Control-Max-Age"] == "2592000"
-        assert res.content_length is None
-        assert res.content_type is None
+    @pytest.mark.parametrize("method", ("DELETE", "PATCH", "PUT", "OPTIONS"))
+    def test_unsupported_methods(self, app, method):
+        caller = getattr(app, method.lower())
+        caller("/__lbheartbeat__", status=405)
 
-    def test_unsupported_methods(self, app):
-        app.delete("/__lbheartbeat__", status=405)
-        app.patch("/__lbheartbeat__", status=405)
-        app.put("/__lbheartbeat__", status=405)
+    def test_no_cors_headers(self, app):
+        """LBHeartbeat does not allow CORS."""
+        res = app.get("/__lbheartbeat__", status=200)
+        assert "Access-Control-Allow-Origin" not in res.headers
+        assert "Access-Control-Max-Age" not in res.headers
 
 
 class TestGunicornSettings(object):
