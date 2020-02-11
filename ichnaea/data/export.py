@@ -329,7 +329,8 @@ class InternalTransform(object):
         cells = self._parse_list(item, report, self.cell_id, self.cell_map)
         wifis = self._parse_list(item, report, self.wifi_id, self.wifi_map)
 
-        gps_age = item.get("position", {}).get("age", 0)
+        position = item.get("position") or {}
+        gps_age = position.get("age", 0)
         timestamp = item.get("timestamp")
         if timestamp:
             # turn timestamp into GPS timestamp
