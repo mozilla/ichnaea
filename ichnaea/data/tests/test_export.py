@@ -36,6 +36,7 @@ class BaseExportTest(object):
         lat=None,
         lon=None,
         source=None,
+        set_position=True,
     ):
         reports = []
         timestamp = int(time.time() * 1000)
@@ -43,16 +44,19 @@ class BaseExportTest(object):
             pos = CellShardFactory.build()
             report = {
                 "timestamp": timestamp,
-                "position": {},
+                "position": None,
                 "bluetoothBeacons": [],
                 "cellTowers": [],
                 "wifiAccessPoints": [],
             }
-            report["position"]["latitude"] = lat or pos.lat
-            report["position"]["longitude"] = lon or pos.lon
-            report["position"]["accuracy"] = 17.0 + i
-            if source is not None:
-                report["position"]["source"] = source
+            if set_position:
+                report["position"] = {
+                    "latitude": lat or pos.lat,
+                    "longitude": lon or pos.lon,
+                    "accuracy": 17.0 + i,
+                }
+                if source is not None:
+                    report["position"]["source"] = source
 
             blues = BlueShardFactory.build_batch(blue_factor, lat=pos.lat, lon=pos.lon)
             for blue in blues:
@@ -89,7 +93,7 @@ class BaseExportTest(object):
         items = [
             {
                 "api_key": api_key,
-                "source": rep["position"].get("source", "gnss"),
+                "source": (rep["position"] or {}).get("source", "gnss"),
                 "report": rep,
             }
             for rep in reports
@@ -129,6 +133,16 @@ class TestExporter(BaseExportTest):
         ]:
             assert self.queue_length(redis, queue_key) == num
 
+    def test_null_position(self, celery, redis, session):
+        """Reports with null position are queued."""
+        ApiKeyFactory(valid_key="no-position")
+        ExportConfigFactory(name="everything", batch=5)
+        session.flush()
+
+        self.add_reports(celery, 1, api_key="no-position", set_position=False)
+        update_incoming.delay().get()
+        assert self.queue_length(redis, "queue_export_everything") == 1
+
     def test_retry(self, celery, redis, session):
         ExportConfigFactory(name="test", batch=1)
         session.flush()
@@ -154,10 +168,10 @@ class TestExporter(BaseExportTest):
 
 class TestGeosubmit(BaseExportTest):
     def test_upload(self, celery, session, metricsmock):
-        ApiKeyFactory(valid_key="e5444-794")
+        ApiKeyFactory(valid_key="e5444-7946")
         ExportConfigFactory(
             name="test",
-            batch=3,
+            batch=4,
             schema="geosubmit",
             url="http://127.0.0.1:9/v2/geosubmit?key=external",
         )
@@ -167,6 +181,7 @@ class TestGeosubmit(BaseExportTest):
         reports.extend(self.add_reports(celery, 1, source="gnss"))
         reports.extend(self.add_reports(celery, 1, api_key="e5444e9f-7946"))
         reports.extend(self.add_reports(celery, 1, api_key=None, source="fused"))
+        reports.extend(self.add_reports(celery, 1, set_position=False))
 
         with requests_mock.Mocker() as mock:
             mock.register_uri("POST", requests_mock.ANY, text="{}")
@@ -182,11 +197,11 @@ class TestGeosubmit(BaseExportTest):
 
         body = util.decode_gzip(req.body)
         send_reports = json.loads(body)["items"]
-        assert len(send_reports) == 3
+        assert len(send_reports) == 4
 
         for field in ("accuracy", "source", "timestamp"):
-            expect = [report["position"].get(field) for report in reports]
-            gotten = [report["position"].get(field) for report in send_reports]
+            expect = [(report["position"] or {}).get(field) for report in reports]
+            gotten = [(report["position"] or {}).get(field) for report in send_reports]
             assert set(expect) == set(gotten)
 
         assert set([w["ssid"] for w in send_reports[0]["wifiAccessPoints"]]) == set(
@@ -213,12 +228,14 @@ class TestS3(BaseExportTest):
             url="s3://bucket/backups/{source}/{api_key}/{year}/{month}/{day}",
         )
         ApiKeyFactory(valid_key="e5444-794")
+        ApiKeyFactory(valid_key="no-position")
         session.flush()
 
         reports = self.add_reports(celery, 3)
         self.add_reports(celery, 3, api_key="e5444-794", source="gnss")
         self.add_reports(celery, 3, api_key="e5444-794", source="fused")
         self.add_reports(celery, 3, api_key=None)
+        self.add_reports(celery, 3, api_key="no-position", set_position=False)
 
         mock_conn = mock.MagicMock()
         mock_bucket = mock.MagicMock()
@@ -231,8 +248,8 @@ class TestS3(BaseExportTest):
 
         obj_calls = mock_bucket.Object.call_args_list
         put_calls = mock_obj.put.call_args_list
-        assert len(obj_calls) == 4
-        assert len(put_calls) == 4
+        assert len(obj_calls) == 5
+        assert len(put_calls) == 5
 
         keys = []
         test_export = None
@@ -253,6 +270,7 @@ class TestS3(BaseExportTest):
             [
                 ("gnss", "test"),
                 ("gnss", "no_key"),
+                ("gnss", "no-position"),
                 ("gnss", "e5444-794"),
                 ("fused", "e5444-794"),
             ]
@@ -273,7 +291,7 @@ class TestS3(BaseExportTest):
                     "incr", "data.export.batch", value=1, tags=["key:backup"]
                 )
             )
-            == 4
+            == 5
         )
         assert (
             len(
@@ -284,7 +302,7 @@ class TestS3(BaseExportTest):
                     tags=["key:backup", "status:success"],
                 )
             )
-            == 4
+            == 5
         )
         assert (
             len(
@@ -292,7 +310,7 @@ class TestS3(BaseExportTest):
                     "timing", "data.export.upload.timing", tags=["key:backup"]
                 )
             )
-            == 4
+            == 5
         )
 
 
@@ -346,6 +364,18 @@ class TestInternalTransform(object):
         ) == {
             "blue": [{"age": 1000}, {"age": -1000, "mac": "ab"}],
             "wifi": [{"age": -1500}, {"age": 500}],
+        }
+
+    def test_null_position(self):
+        assert self.transform(
+            {
+                "position": None,
+                "bluetoothBeacons": [{"age": 2000}, {"macAddress": "ab"}],
+                "wifiAccessPoints": [{"age": -500}, {"age": 1500}],
+            }
+        ) == {
+            "blue": [{"age": 2000}, {"mac": "ab"}],
+            "wifi": [{"age": -500}, {"age": 1500}],
         }
 
     def test_timestamp(self):
@@ -736,3 +766,15 @@ class TestInternal(BaseExportTest):
         self._update_all(session, datamap_only=True)
         assert celery.data_queues["update_datamap_ne"].size() == 1
         assert celery.data_queues["update_datamap_sw"].size() == 1
+
+    def test_no_position(self, celery, session, metricsmock):
+        self.add_reports(celery, 1, set_position=False)
+        self._update_all(session)
+        assert (
+            len(
+                metricsmock.filter_records(
+                    "incr", "data.report.drop", value=1, tags=["key:test"]
+                )
+            )
+            == 1
+        )
