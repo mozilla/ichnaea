@@ -40,6 +40,7 @@ def check_geoip(request):
     geoip_db = request.registry.geoip_db
     result = _check_timed(geoip_db.ping)
     result["age_in_days"] = geoip_db.age
+    result["version"] = geoip_db.version
     return result
 
 

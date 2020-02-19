@@ -454,6 +454,14 @@ class GeoIPWrapper(Reader):
         build_epoch = self.metadata().build_epoch
         return int(round((time.time() - build_epoch) / 86400, 0))
 
+    @property
+    def version(self):
+        """
+        :returns: The version of the database.
+        :rtype: int
+        """
+        return self.metadata().build_epoch
+
     def ping(self):
         """
         :returns: True if this is a real database with a valid db file.
@@ -573,6 +581,13 @@ class GeoIPNull(object):
         :returns: -1
         """
         return -1
+
+    @property
+    def version(self):
+        """
+        :returns: 1582121727
+        """
+        return 1582121727
 
     def close(self):
         pass

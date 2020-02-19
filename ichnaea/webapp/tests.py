@@ -103,7 +103,12 @@ class TestHeartbeatErrors(object):
     def test_geoip(self, broken_app):
         res = broken_app.get("/__heartbeat__", status=503)
         assert res.content_type == "application/json"
-        assert res.json["geoip"] == {"up": False, "time": 0, "age_in_days": -1}
+        assert res.json["geoip"] == {
+            "up": False,
+            "time": 0,
+            "age_in_days": -1,
+            "version": 1582121727,
+        }
 
     def test_redis(self, broken_app):
         res = broken_app.get("/__heartbeat__", status=503)
