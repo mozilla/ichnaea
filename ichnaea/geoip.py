@@ -462,7 +462,7 @@ class GeoIPWrapper(Reader):
         :rtype: string as iso-8601 YYYY-MM-DDTMM:HH:SSZ
         """
         epoch = self.metadata().build_epoch
-        return datetime.datetime.fromtimestamp(epoch).isoformat() + "Z"
+        return datetime.datetime.fromtimestamp(epoch).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     def ping(self):
         """
