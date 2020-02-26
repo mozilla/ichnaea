@@ -4,6 +4,7 @@ Helper functions and classes around GeoIP lookups, based on Maxmind's
 `geoip2 <https://pypi.python.org/pypi/geoip2>`_ Python packages.
 """
 
+import datetime
 import logging
 import time
 
@@ -458,9 +459,10 @@ class GeoIPWrapper(Reader):
     def version(self):
         """
         :returns: The version of the database.
-        :rtype: int
+        :rtype: string as iso-8601 YYYY-MM-DDTMM:HH:SSZ
         """
-        return self.metadata().build_epoch
+        epoch = self.metadata().build_epoch
+        return datetime.datetime.fromtimestamp(epoch).isoformat() + "Z"
 
     def ping(self):
         """
@@ -585,9 +587,9 @@ class GeoIPNull(object):
     @property
     def version(self):
         """
-        :returns: 1582121727
+        :returns: 2020-02-26T12:17:00Z
         """
-        return 1582121727
+        return "2020-02-26T12:17:00Z"
 
     def close(self):
         pass
