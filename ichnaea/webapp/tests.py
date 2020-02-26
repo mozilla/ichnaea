@@ -107,7 +107,7 @@ class TestHeartbeatErrors(object):
             "up": False,
             "time": 0,
             "age_in_days": -1,
-            "version": 1582121727,
+            "version": "2020-02-26T12:17:00Z",
         }
 
     def test_redis(self, broken_app):
