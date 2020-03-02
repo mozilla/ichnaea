@@ -156,8 +156,8 @@ requests-mock==1.7.0 \
 repoze.lru==0.7 \
     --hash=sha256:0429a75e19380e4ed50c0694e26ac8819b4ea7851ee1fc7583c8572db80aff77 \
     --hash=sha256:f77bf0e1096ea445beadd35f3479c5cff2aa1efe604a133e67150bc8630a62ea
-Rtree==0.9.3 \
-    --hash=sha256:55c046a98e8d84235792de1f18635f680d7b4085264fbced6b073f28fcbe353a
+Rtree==0.9.4 \
+    --hash=sha256:cae327e2c03b3da4ea40d0fdf68f3e55fe9f302c56b9f31e1bfeb36dbea73f44
 scipy==1.4.1 \
     --hash=sha256:00af72998a46c25bdb5824d2b729e7dabec0c765f9deb0b504f928591f5ff9d4 \
     --hash=sha256:0902a620a381f101e184a958459b36d3ee50f5effd186db76e131cbefcbb96f7 \
