@@ -4,56 +4,20 @@ import pathlib
 from alembic import command as alembic_command
 from alembic.autogenerate import compare_metadata
 from alembic.config import Config as AlembicConfig
-from alembic.ddl.impl import _type_comparators
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy.schema import MetaData
-from sqlalchemy.sql import sqltypes
 
 from ichnaea.conftest import cleanup_tables
 
 # make sure all models are imported
 from ichnaea.models import _Model  # noqa
 
-_compare_attrs = {
-    sqltypes._Binary: ("length",),
-    sqltypes.Date: (),
-    sqltypes.DateTime: ("fsp", "timezone"),
-    sqltypes.Integer: ("display_width", "unsigned", "zerofill"),
-    sqltypes.String: ("binary", "charset", "collation", "length", "unicode"),
-}
-
-
-def db_compare_type(
-    context, inspected_column, metadata_column, inspected_type, metadata_type
-):
-    # return True if the types are different, False if not, or None
-    # to allow the default implementation to compare these types
-    expected = metadata_column.type
-    migrated = inspected_column.type
-
-    # this extends the logic in alembic.ddl.impl.DefaultImpl.compare_type
-    type_affinity = migrated._type_affinity
-    compare_attrs = _compare_attrs.get(type_affinity, None)
-    if compare_attrs is not None:
-        if type(expected) != type(migrated):
-            return True
-        for attr in compare_attrs:
-            if getattr(expected, attr, None) != getattr(migrated, attr, None):
-                return True
-        return False
-
-    # fall back to limited alembic type comparison
-    comparator = _type_comparators.get(type_affinity, None)
-    if comparator is not None:
-        return comparator(expected, migrated)
-    raise AssertionError("Unsupported DB type comparison.")
-
 
 def compare_schema(engine, metadata):
     # compare the db schema from a migrated database to
     # one created fresh from the model definitions
-    opts = {"compare_type": db_compare_type, "compare_server_default": True}
+    opts = {"compare_type": True, "compare_server_default": True}
     with engine.connect() as conn:
         context = MigrationContext.configure(connection=conn, opts=opts)
         diff = compare_metadata(context, metadata)
