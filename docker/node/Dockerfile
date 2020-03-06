@@ -4,7 +4,9 @@ FROM node:8-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get --no-install-recommends install -y \
+    apt-utils \
+    ca-certificates \
     bzip2 \
     git \
     make \
