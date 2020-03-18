@@ -344,7 +344,7 @@ class CommonLocateTest(BaseLocateTest):
                 "incr",
                 self.metric_type + ".query",
                 value=1,
-                tags=["key:test", "region:GB", "blue:none", "cell:none", "wifi:none"],
+                tags=["key:test", "blue:none", "cell:none", "wifi:none"],
             )
             assert metricsmock.has_record(
                 "incr",
@@ -352,7 +352,6 @@ class CommonLocateTest(BaseLocateTest):
                 value=1,
                 tags=[
                     "key:test",
-                    "region:GB",
                     "fallback_allowed:false",
                     "accuracy:low",
                     "status:hit",
@@ -363,13 +362,7 @@ class CommonLocateTest(BaseLocateTest):
                 "incr",
                 self.metric_type + ".source",
                 value=1,
-                tags=[
-                    "key:test",
-                    "region:GB",
-                    "source:geoip",
-                    "accuracy:low",
-                    "status:hit",
-                ],
+                tags=["key:test", "source:geoip", "accuracy:low", "status:hit"],
             )
 
     def test_error_no_json(self, app, data_queues, metricsmock):
@@ -530,14 +523,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".query",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "geoip:false",
-                "blue:many",
-                "cell:none",
-                "wifi:none",
-            ],
+            tags=["key:test", "geoip:false", "blue:many", "cell:none", "wifi:none"],
         )
         assert metricsmock.has_record(
             "incr",
@@ -545,7 +531,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "accuracy:high",
                 "fallback_allowed:false",
                 "status:miss",
@@ -555,13 +540,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]
@@ -589,14 +568,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".query",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "geoip:false",
-                "blue:none",
-                "cell:one",
-                "wifi:none",
-            ],
+            tags=["key:test", "geoip:false", "blue:none", "cell:one", "wifi:none"],
         )
         assert metricsmock.has_record(
             "incr",
@@ -604,7 +576,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:medium",
                 "status:miss",
@@ -614,13 +585,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:medium",
-                "status:miss",
-            ],
+            tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]
@@ -675,14 +640,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".query",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "geoip:false",
-                "blue:none",
-                "cell:none",
-                "wifi:none",
-            ],
+            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
         )
         assert metricsmock.has_record(
             "incr",
@@ -690,7 +648,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:low",
                 "status:hit",
@@ -701,13 +658,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_cellarea_with_lacf(self, app, session, metricsmock):
@@ -735,14 +686,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".query",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "geoip:false",
-                "blue:none",
-                "cell:none",
-                "wifi:none",
-            ],
+            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
         )
         assert metricsmock.has_record(
             "incr",
@@ -750,7 +694,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:low",
                 "status:hit",
@@ -761,13 +704,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_cellarea_without_lacf(self, app, data_queues, session, metricsmock):
@@ -819,7 +756,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:low",
                 "status:hit",
@@ -850,14 +786,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".query",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "geoip:false",
-                "blue:none",
-                "cell:none",
-                "wifi:many",
-            ],
+            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:many"],
         )
         assert metricsmock.has_record(
             "incr",
@@ -865,7 +794,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "accuracy:high",
                 "fallback_allowed:false",
                 "status:miss",
@@ -875,13 +803,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]
@@ -949,14 +871,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".query",
             value=1,
-            tags=[
-                "key:fall",
-                "region:none",
-                "geoip:false",
-                "blue:none",
-                "cell:many",
-                "wifi:many",
-            ],
+            tags=["key:fall", "geoip:false", "blue:none", "cell:many", "wifi:many"],
         )
         assert metricsmock.has_record(
             "incr",
@@ -964,7 +879,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:fall",
-                "region:none",
                 "fallback_allowed:true",
                 "accuracy:high",
                 "status:hit",
@@ -975,25 +889,13 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:fall",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:fall", "source:internal", "accuracy:high", "status:miss"],
         )
         assert metricsmock.has_record(
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:fall",
-                "region:none",
-                "source:fallback",
-                "accuracy:high",
-                "status:hit",
-            ],
+            tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]
@@ -1035,7 +937,6 @@ class CommonPositionTest(BaseLocateTest):
             value=1,
             tags=[
                 "key:fall",
-                "region:GB",
                 "fallback_allowed:true",
                 "accuracy:high",
                 "status:hit",
@@ -1046,13 +947,7 @@ class CommonPositionTest(BaseLocateTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:fall",
-                "region:GB",
-                "source:fallback",
-                "accuracy:high",
-                "status:hit",
-            ],
+            tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]

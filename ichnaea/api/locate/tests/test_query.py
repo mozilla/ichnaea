@@ -359,7 +359,7 @@ class TestQueryStats(QueryTest):
             "incr",
             "locate.query",
             value=1,
-            tags=["key:test", "region:GB", "blue:none", "cell:none", "wifi:none"],
+            tags=["key:test", "blue:none", "cell:none", "wifi:none"],
         )
 
     def test_one(self, geoip_db, metricsmock):
@@ -375,7 +375,7 @@ class TestQueryStats(QueryTest):
                 "incr",
                 "locate.query",
                 1,
-                ["key:test", "region:GB", "blue:one", "cell:one", "wifi:one"],
+                ["key:test", "blue:one", "cell:one", "wifi:one"],
             )
         ]
 
@@ -392,7 +392,7 @@ class TestQueryStats(QueryTest):
                 "incr",
                 "locate.query",
                 1,
-                ["key:test", "region:GB", "blue:many", "cell:many", "wifi:many"],
+                ["key:test", "blue:many", "cell:many", "wifi:many"],
             )
         ]
 
@@ -450,13 +450,7 @@ class TestResultStats(QueryTest):
             "incr",
             "region.result",
             value=1,
-            tags=[
-                "key:test",
-                "region:GB",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:hit"],
         )
 
     def test_no_ip(self, geoip_db, metricsmock):
@@ -474,13 +468,7 @@ class TestResultStats(QueryTest):
             "incr",
             "locate.result",
             value=1,
-            tags=[
-                "key:test",
-                "region:GB",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:miss",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:miss"],
         )
 
     def test_low_miss(self, geoip_db, metricsmock):
@@ -489,13 +477,7 @@ class TestResultStats(QueryTest):
             "incr",
             "locate.result",
             value=1,
-            tags=[
-                "key:test",
-                "region:GB",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:miss",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:miss"],
         )
 
     def test_low_hit(self, geoip_db, metricsmock):
@@ -506,13 +488,7 @@ class TestResultStats(QueryTest):
             "incr",
             "locate.result",
             value=1,
-            tags=[
-                "key:test",
-                "region:GB",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:hit"],
         )
 
     def test_medium_miss(self, geoip_db, metricsmock):
@@ -524,7 +500,6 @@ class TestResultStats(QueryTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:medium",
                 "status:miss",
@@ -540,7 +515,6 @@ class TestResultStats(QueryTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:medium",
                 "status:miss",
@@ -556,7 +530,6 @@ class TestResultStats(QueryTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:medium",
                 "status:hit",
@@ -572,7 +545,6 @@ class TestResultStats(QueryTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:high",
                 "status:miss",
@@ -586,13 +558,7 @@ class TestResultStats(QueryTest):
             "incr",
             "locate.result",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "fallback_allowed:false",
-                "accuracy:high",
-                "status:hit",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:high", "status:hit"],
         )
 
     def test_mixed_miss(self, geoip_db, metricsmock):
@@ -606,7 +572,6 @@ class TestResultStats(QueryTest):
             value=1,
             tags=[
                 "key:test",
-                "region:GB",
                 "fallback_allowed:false",
                 "accuracy:high",
                 "status:miss",
@@ -624,7 +589,6 @@ class TestResultStats(QueryTest):
             value=1,
             tags=[
                 "key:test",
-                "region:GB",
                 "fallback_allowed:false",
                 "accuracy:medium",
                 "status:hit",
@@ -676,13 +640,7 @@ class TestSourceStats(QueryTest):
             "incr",
             "locate.source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
 
     def test_high_miss(self, geoip_db, metricsmock):
@@ -693,13 +651,7 @@ class TestSourceStats(QueryTest):
             "incr",
             "locate.source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:geoip",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:test", "source:geoip", "accuracy:high", "status:miss"],
         )
 
     def test_no_results(self, geoip_db, metricsmock):
@@ -710,11 +662,5 @@ class TestSourceStats(QueryTest):
             "incr",
             "locate.source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )

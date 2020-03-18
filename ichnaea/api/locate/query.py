@@ -336,13 +336,9 @@ class Query(object):
         possible_result = bool(self.expected_accuracy != DataAccuracy.none)
         return allowed and possible_result
 
-    def _emit_region_stat(self, metric, extra_tags):
-        region = self.region
-        if not region:
-            region = "none"
-
+    def _emit_stat(self, metric, extra_tags):
         metric = "%s.%s" % (self.api_type, metric)
-        tags = ["key:%s" % self.api_key.valid_key, "region:%s" % region]
+        tags = ["key:%s" % self.api_key.valid_key]
         METRICS.incr(metric, tags=tags + extra_tags)
 
     def emit_query_stats(self):
@@ -361,7 +357,7 @@ class Query(object):
         for name, length in (("blue", blues), ("cell", cells), ("wifi", wifis)):
             num = METRIC_MAPPING[min(length, 2)]
             tags.append("{name}:{num}".format(name=name, num=num))
-        self._emit_region_stat("query", tags)
+        self._emit_stat("query", tags)
 
     def emit_result_stats(self, result):
         """Emit stats about how well the result satisfied the query."""
@@ -391,7 +387,7 @@ class Query(object):
         ]
         if status == "hit" and source:
             tags.append("source:%s" % source.name)
-        self._emit_region_stat("result", tags)
+        self._emit_stat("result", tags)
 
     def emit_source_stats(self, source, results):
         """Emit stats about how well the source satisfied the query."""
@@ -411,4 +407,4 @@ class Query(object):
             "accuracy:%s" % self.expected_accuracy.name,
             "status:%s" % status,
         ]
-        self._emit_region_stat("source", tags)
+        self._emit_stat("source", tags)

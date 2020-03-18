@@ -1279,13 +1279,7 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
                 "incr",
                 "locate.source",
                 value=1,
-                tags=[
-                    "key:test",
-                    "region:none",
-                    "source:fallback",
-                    "accuracy:medium",
-                    "status:hit",
-                ],
+                tags=["key:test", "source:fallback", "accuracy:medium", "status:hit"],
             )
 
     def test_dont_recache(self, geoip_db, http_session, session, source, metricsmock):

@@ -33,13 +33,7 @@ class TestRegionSource(BaseSourceTest):
             "incr",
             self.api_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_blue_miss(self, geoip_db, http_session, session, source):
@@ -63,13 +57,7 @@ class TestRegionSource(BaseSourceTest):
             "incr",
             self.api_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_ambiguous_mcc(self, geoip_db, http_session, session, source, metricsmock):
@@ -91,13 +79,7 @@ class TestRegionSource(BaseSourceTest):
             "incr",
             self.api_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_multiple_mcc(self, geoip_db, http_session, session, source):
@@ -143,13 +125,7 @@ class TestRegionSource(BaseSourceTest):
             "incr",
             self.api_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:low",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_wifi_miss(self, geoip_db, http_session, session, source):
