@@ -47,6 +47,8 @@ Metric Name                      Type    Tags
 `locate.user`_                   gauge   key, interval
 `queue`_                         gauge   queue
 `region.request`_                counter key, path
+`region.result`_                 counter key, region, accuracy, status, source, fallback_allowed
+`region.user`_                   gauge   key, interval
 `request`_                       counter path, method, status
 `request.timing`_                timer   path, method
 `submit.request`_                counter key, path
@@ -83,6 +85,7 @@ These metrics can help in deciding when to remove a deprecated API.
     and no (``none``) provided API keys.
 
 .. _locate.user:
+.. _region.user:
 .. _submit.user:
 
 API User Metrics
@@ -142,6 +145,7 @@ in it:
     number of valid :term:`stations` for each of the three.
 
 .. _locate.result:
+.. _region.result:
 
 API Result Metrics
 ------------------
