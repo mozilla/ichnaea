@@ -1,7 +1,7 @@
 -c constraints.txt
 
-alembic==1.4.1 \
-    --hash=sha256:791a5686953c4b366d3228c5377196db2f534475bb38d26f70eb69668efd9028
+alembic==1.4.2 \
+    --hash=sha256:035ab00497217628bf5d0be82d664d8713ab13d37b630084da8e1f98facf4dbf
 botocore==1.15.33 \
     --hash=sha256:4240f2fb38c4cccc0fd319e6620a30a1c19b869c1e33ff864eec9cde7965a6ba \
     --hash=sha256:078a9731e054f9ee914a8eac77e445de3c1344a00d7eebfee9cae7f40b7f48e8
