@@ -40,13 +40,15 @@ Metric Name                      Type    Tags
 `locate.fallback.cache`_         counter fallback_name, status
 `locate.fallback.lookup`_        counter fallback_name, status
 `locate.fallback.lookup.timing`_ timer   fallback_name, status
-`locate.query`_                  counter key, region, geoip, blue, cell, wifi
+`locate.query`_                  counter key, geoip, blue, cell, wifi
 `locate.request`_                counter key, path
-`locate.result`_                 counter key, region, accuracy, status, source, fallback_allowed
-`locate.source`_                 counter key, region, accuracy, status, source
+`locate.result`_                 counter key, accuracy, status, source, fallback_allowed
+`locate.source`_                 counter key, accuracy, status, source
 `locate.user`_                   gauge   key, interval
 `queue`_                         gauge   queue
 `region.request`_                counter key, path
+`region.result`_                 counter key, accuracy, status, source, fallback_allowed
+`region.user`_                   gauge   key, interval
 `request`_                       counter path, method, status
 `request.timing`_                timer   path, method
 `submit.request`_                counter key, path
@@ -83,6 +85,7 @@ These metrics can help in deciding when to remove a deprecated API.
     and no (``none``) provided API keys.
 
 .. _locate.user:
+.. _region.user:
 .. _submit.user:
 
 API User Metrics
@@ -112,17 +115,13 @@ API Query Metrics
 -----------------
 
 For each incoming API query we log metrics about the data contained in
-the query with the metric name and tags:
+the query with the metric name and tag:
 
-``<api_type>.query#key<apikey>,region:<region_code>`` : counter
+``<api_type>.query#key<apikey>`` : counter
 
 `api_type` describes the type of API being used, independent of the
 version number of the API. So `v1/country` gets logged as `region`
 and both `v1/search` and `v1/geolocate` get logged as `locate`.
-
-`region_code` is either a two-letter GENC region code like `de` or the
-special value `none` if the region of origin of the incoming request
-could not be determined.
 
 We extend the metric with additional tags based on the data contained
 in it:
@@ -141,7 +140,11 @@ in it:
     one blue, cell and wifi tag get added. The tags depend on the
     number of valid :term:`stations` for each of the three.
 
+.. versionchanged:: 2020.04.unreleased
+   Removed the ``region`` tag
+
 .. _locate.result:
+.. _region.result:
 
 API Result Metrics
 ------------------
@@ -150,7 +153,7 @@ Similar to the API query metrics we also collect metrics about each
 result of an API query. This follows the same per API type and per
 region rules under the prefix / tag combination:
 
-``<api_type>.result#key:<apikey>,region:<region_code>``
+``<api_type>.result#key:<apikey>``
 
 The result metrics measure if we satisfied the incoming API query in
 the best possible fashion. Incoming queries can generally contain
@@ -229,6 +232,9 @@ to use the fallback source.
 
     The value is either `true` or `false`.
 
+.. versionchanged:: 2020.04.unreleased
+   Removed the ``region`` tag
+
 .. _locate.source:
 
 API Source Metrics
@@ -236,14 +242,17 @@ API Source Metrics
 
 In addition to the final API result, we also collect metrics about each
 individual data source we use to answer queries under the
-``<api_type>.source#key:<apikey>,region:<region_code>`` metric.
+``<api_type>.source#key:<apikey>`` metric.
 
 Each request may use one or multiple of these sources to deliver a result.
 We log the same metrics as mentioned above for the result.
 
 All of this combined might lead to a tagged metric like:
 
-``locate.source#key:test,region:de,source:geoip,accuracy:low,status:hit``
+``locate.source#key:test,source:geoip,accuracy:low,status:hit``
+
+.. versionchanged:: 2020.04.unreleased
+   Removed the ``region`` tag
 
 .. _locate.fallback.cache:
 .. _locate.fallback.lookup:

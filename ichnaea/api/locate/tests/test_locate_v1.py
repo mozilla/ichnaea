@@ -122,7 +122,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:high",
                 "status:hit",
@@ -133,13 +132,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -228,7 +221,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:medium",
                 "status:hit",
@@ -239,13 +231,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:medium",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:medium", "status:hit"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]
@@ -338,7 +324,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             value=1,
             tags=[
                 "key:test",
-                "region:none",
                 "fallback_allowed:false",
                 "accuracy:high",
                 "status:hit",
@@ -349,13 +334,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             "incr",
             self.metric_type + ".source",
             value=1,
-            tags=[
-                "key:test",
-                "region:none",
-                "source:internal",
-                "accuracy:high",
-                "status:hit",
-            ],
+            tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
         assert metricsmock.has_record(
             "timing", "request.timing", tags=[self.metric_path, "method:post"]
@@ -524,7 +503,6 @@ class TestError(LocateV1Base, BaseLocateTest):
                 value=1,
                 tags=[
                     "key:test",
-                    "region:GB",
                     "fallback_allowed:false",
                     "accuracy:high",
                     "status:miss",
