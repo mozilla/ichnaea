@@ -13,6 +13,7 @@ import sys
 
 from waitress import serve
 
+from ichnaea.conf import settings
 from ichnaea.webapp.config import main, shutdown_worker
 
 
@@ -77,5 +78,8 @@ if __name__ == "__main__":
         main(ping_connections=False)
     else:
         serve(
-            log_access_factory(main(ping_connections=True)), host="0.0.0.0", port=8000
+            log_access_factory(main(ping_connections=True)),
+            host="0.0.0.0",
+            port=8000,
+            expose_tracebacks=settings("local_dev_env"),
         )
