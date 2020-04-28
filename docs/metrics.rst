@@ -140,7 +140,7 @@ in it:
     one blue, cell and wifi tag get added. The tags depend on the
     number of valid :term:`stations` for each of the three.
 
-.. versionchanged:: 2020.04.16
+.. versionchanged:: 2020.04.unreleased
    Removed the ``region`` tag
 
 .. _locate.result:
@@ -232,7 +232,7 @@ to use the fallback source.
 
     The value is either `true` or `false`.
 
-.. versionchanged:: 2020.04.16
+.. versionchanged:: 2020.04.unreleased
    Removed the ``region`` tag
 
 .. _locate.source:
@@ -251,7 +251,7 @@ All of this combined might lead to a tagged metric like:
 
 ``locate.source#key:test,source:geoip,accuracy:low,status:hit``
 
-.. versionchanged:: 2020.04.16
+.. versionchanged:: 2020.04.unreleased
    Removed the ``region`` tag
 
 .. _locate.fallback.cache:
