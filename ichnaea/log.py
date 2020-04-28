@@ -100,7 +100,7 @@ def configure_logging():
     logging.config.dictConfig(logging_config)
 
     structlog_processors = (
-        [structlog.stdlib.filter_by_level]
+        [structlog.threadlocal.merge_threadlocal, structlog.stdlib.filter_by_level]
         + structlog_shared_processors
         + [
             structlog.stdlib.PositionalArgumentsFormatter(),
@@ -111,7 +111,7 @@ def configure_logging():
         ]
     )
     structlog.configure(
-        context_class=dict,
+        context_class=structlog.threadlocal.wrap_dict(dict),
         processors=structlog_processors,
         logger_factory=structlog.stdlib.LoggerFactory(
             ignore_frame_names=["venusian", "pyramid.config"]

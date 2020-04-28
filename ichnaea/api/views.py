@@ -8,6 +8,7 @@ import colander
 from ipaddress import ip_address
 import markus
 from redis import RedisError
+from structlog.threadlocal import bind_threadlocal
 
 from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
 from ichnaea.api.key import get_key, Key, validated_key
@@ -48,6 +49,7 @@ class BaseAPIView(BaseView):
             self.view_type + ".request",
             tags=["path:" + self.metric_path, "key:" + valid_key],
         )
+        bind_threadlocal(api_path=self.metric_path, api_key=valid_key)
 
     def log_ip_and_rate_limited(self, valid_key, maxreq):
         # Log IP

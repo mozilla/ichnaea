@@ -57,6 +57,8 @@ def log_middleware(wsgi_app):
         method = environ["REQUEST_METHOD"]
         path = environ.get("PATH_INFO", "")
         start = time.time()
+        structlog.threadlocal.clear_threadlocal()
+        structlog.threadlocal.bind_threadlocal(http_method=method, http_path=path)
 
         def log_response(status, headers, exc_info=None):
             duration = time.time() - start
@@ -66,8 +68,6 @@ def log_middleware(wsgi_app):
                 status_code = status
 
             params = {
-                "http_method": method,
-                "http_path": path,
                 "http_status": status_code,
                 "duration": round(duration, 3),  # Round to milliseconds
             }
