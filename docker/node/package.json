@@ -13,7 +13,7 @@
     "clean-css-cli": "~4.1",
     "datatables": "~1.10",
     "font-awesome": "~4.7",
-    "jquery": "~3.4.1",
+    "jquery": "~3.5.0",
     "jquery-flot": "~0.8",
     "leaflet-hash": "~0.2",
     "leaflet.locatecontrol": "~0.61",
