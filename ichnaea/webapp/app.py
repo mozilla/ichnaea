@@ -75,7 +75,10 @@ def log_middleware(wsgi_app):
             content_length_str = ""
             for key, val in headers:
                 if key.lower() == "content-length":
-                    params["content_length"] = val
+                    try:
+                        params["content_length"] = int(val)
+                    except ValueError:
+                        pass
                     content_length_str = f" ({val})"
                     break
 
