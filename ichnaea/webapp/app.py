@@ -8,16 +8,14 @@ making it easier to suss out startup and configuration issues.
 
 """
 
-import logging
 import sys
+import time
 
+import structlog
 from waitress import serve
 
 from ichnaea.conf import settings
 from ichnaea.webapp.config import main, shutdown_worker
-
-
-LOGGER = logging.getLogger("ichnaea")
 
 
 # Internal module global holding the runtime web app.
@@ -52,20 +50,40 @@ def worker_exit(server, worker):
     shutdown_worker(_APP)
 
 
-def log_access_factory(wsgi_app):
-    """WSGI middleware for logging HTTP requests."""
+def log_middleware(wsgi_app):
+    """WSGI middleware for logging."""
 
     def handle(environ, start_response):
         method = environ["REQUEST_METHOD"]
         path = environ.get("PATH_INFO", "")
+        start = time.time()
+        structlog.threadlocal.clear_threadlocal()
+        structlog.threadlocal.bind_threadlocal(http_method=method, http_path=path)
 
         def log_response(status, headers, exc_info=None):
-            content_length = ""
+            duration = time.time() - start
+            try:
+                status_code = int(status.split()[0])
+            except (ValueError, AttributeError, IndexError):
+                status_code = status
+
+            params = {
+                "http_status": status_code,
+                "duration": round(duration, 3),  # Round to milliseconds
+            }
+
+            content_length_str = ""
             for key, val in headers:
                 if key.lower() == "content-length":
-                    content_length = "(%s)" % val
+                    try:
+                        params["content_length"] = int(val)
+                    except ValueError:
+                        pass
+                    content_length_str = f" ({val})"
                     break
-            LOGGER.info("%s %s - %s %s", method, path, status, content_length)
+
+            logger = structlog.get_logger("canonical-log-line")
+            logger.info(f"{method} {path} - {status}{content_length_str}", **params)
             return start_response(status, headers, exc_info)
 
         return wsgi_app(environ, log_response)
@@ -78,7 +96,7 @@ if __name__ == "__main__":
         main(ping_connections=False)
     else:
         serve(
-            log_access_factory(main(ping_connections=True)),
+            log_middleware(main(ping_connections=True)),
             host="0.0.0.0",
             port=8000,
             expose_tracebacks=settings("local_dev_env"),

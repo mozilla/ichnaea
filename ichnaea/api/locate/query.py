@@ -2,6 +2,7 @@
 
 from ipaddress import ip_address
 import markus
+from structlog.threadlocal import bind_threadlocal
 
 from ichnaea.api.locate.constants import (
     DataAccuracy,
@@ -90,6 +91,19 @@ class Query(object):
         if api_type not in (None, "region", "locate"):
             raise ValueError("Invalid api_type.")
         self.api_type = api_type
+
+        bind_threadlocal(
+            api_type=api_type,
+            region=self.region,
+            blue=len(blue or []),
+            blue_valid=len(self.blue),
+            cell=len(cell or []),
+            cell_valid=len(self.cell),
+            wifi=len(wifi or []),
+            wifi_valid=len(self.wifi),
+            has_geoip=bool(self.geoip),
+            has_ip=bool(ip),
+        )
 
     @property
     def fallback(self):
@@ -364,9 +378,7 @@ class Query(object):
         if not self.collect_metrics():
             return
 
-        allow_fallback = str(
-            bool(self.api_key and self.api_key.can_fallback() or False)
-        ).lower()
+        allow_fallback = bool(self.api_key and self.api_key.can_fallback() or False)
 
         if result is None:
             data_accuracy = DataAccuracy.none
@@ -381,13 +393,19 @@ class Query(object):
             status = "hit"
 
         tags = [
-            "fallback_allowed:%s" % allow_fallback,
+            "fallback_allowed:%s" % str(allow_fallback).lower(),
             "accuracy:%s" % self.expected_accuracy.name,
             "status:%s" % status,
         ]
         if status == "hit" and source:
             tags.append("source:%s" % source.name)
         self._emit_stat("result", tags)
+        bind_threadlocal(
+            fallback_allowed=allow_fallback,
+            accuracy=data_accuracy.name,
+            accuracy_min=self.expected_accuracy.name,
+            result_status=status,
+        )
 
     def emit_source_stats(self, source, results):
         """Emit stats about how well the source satisfied the query."""
@@ -396,6 +414,7 @@ class Query(object):
 
         # If any one of the results was good enough, consider it a hit.
         status = "miss"
+        result = None
         for result in results:
             if result.data_accuracy <= self.expected_accuracy:
                 # equal or better / smaller accuracy
@@ -408,3 +427,10 @@ class Query(object):
             "status:%s" % status,
         ]
         self._emit_stat("source", tags)
+        bind_prefix = f"source_{source.name}"
+        bind_stats = {
+            bind_prefix + "_accuracy": result and result.data_accuracy.name or None,
+            bind_prefix + "_accuracy_min": self.expected_accuracy.name,
+            bind_prefix + "_status": status,
+        }
+        bind_threadlocal(**bind_stats)
