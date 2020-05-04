@@ -38,7 +38,7 @@ def wsgi_app(environ, start_response):
     global _APP
 
     if _APP is None:
-        _APP = main(ping_connections=True)
+        _APP = log_middleware(main(ping_connections=True))
         if environ is None and start_response is None:
             # Called as part of gunicorn's post_worker_init
             return _APP
