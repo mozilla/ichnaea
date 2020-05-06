@@ -181,61 +181,76 @@ def configure_stats():
 def log_tween_factory(handler, registry):
     """A logging tween, handling collection of stats, exceptions, and a request log."""
 
+    local_dev_env = settings("local_dev_env")
+
     def log_tween(request):
-        structlog.threadlocal.clear_threadlocal()
-
-        if request.path in registry.skip_logging or request.path.startswith("/static"):
-            # shortcut handling for static assets
-            try:
-                return handler(request)
-            except HTTPException:
-                # don't capture exceptions for normal responses
-                raise
-            except Exception:
-                registry.raven_client.captureException()
-                raise
-
+        """Time a request, emit metrics and log results, with exception handling."""
         start = time.time()
-        statsd_tags = [
-            # Convert a URI to a statsd acceptable metric name
-            "path:%s" % request.path.replace("/", ".").lstrip(".").replace("@", "-"),
-            "method:%s" % request.method.lower(),
-        ]
+        structlog.threadlocal.clear_threadlocal()
         structlog.threadlocal.bind_threadlocal(
             http_method=request.method, http_path=request.path
         )
+        # Skip detailed logging and capturing for static assets, either in
+        # /static or paths like /robots.txt
+        full_logs = not (
+            request.path in registry.skip_logging or request.path.startswith("/static")
+        )
 
         def record_response(status_code):
-            duration = time.time() - start
-            duration_ms = int(round(duration * 1000))
-            duration_s = round(duration, 3)
+            """Time request, (maybe) emit metrics, and (maybe) log this request.
 
-            METRICS.timing("request.timing", duration_ms, tags=statsd_tags)
-            METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
-            logger = structlog.get_logger("canonical-log-line")
-            logger.info(
-                f"{request.method} {request.path} - {status_code}",
-                http_status=status_code,
-                duration_s=duration_s,
-            )
+            For static assets, metrics are skipped, and logs are skipped unless
+            we're in the development environment.
+            """
+            duration = time.time() - start
+
+            if full_logs:
+                # Emit a request.timing and a request metric
+                duration_ms = int(round(duration * 1000))
+                statsd_tags = [
+                    # Convert a URI to a statsd acceptable metric name
+                    "path:%s"
+                    % request.path.replace("/", ".").lstrip(".").replace("@", "-"),
+                    "method:%s" % request.method.lower(),
+                ]
+                METRICS.timing("request.timing", duration_ms, tags=statsd_tags)
+                METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
+
+            if local_dev_env or full_logs:
+                # Emit a canonical-log-line
+                duration_s = round(duration, 3)
+                logger = structlog.get_logger("canonical-log-line")
+                logger.info(
+                    f"{request.method} {request.path} - {status_code}",
+                    http_status=status_code,
+                    duration_s=duration_s,
+                )
 
         try:
             response = handler(request)
             record_response(response.status_code)
             return response
         except (BaseClientError, HTTPRedirection) as exc:
-            # don't capture exceptions
+            # BaseClientError: 4xx error raise by Ichnaea API, other Ichnaea code
+            # HTTPRedirection: 3xx redirect from Pyramid
+            # Log, but do not send these exceptions to Sentry
             record_response(exc.status_code)
             raise
         except HTTPClientError:
-            # ignore general client side errors
+            # HTTPClientError: 4xx error from Pyramid
+            # Do not log or send to Sentry
             raise
-        except Exception as exc:
-            if isinstance(exc, HTTPException):
-                status = exc.status_code
-            else:
-                status = 500
-            record_response(status)
+        except HTTPException as exc:
+            # HTTPException: Remaining 5xx (or maybe 2xx) errors from Pyramid
+            # Log, and maybe send to Sentry
+            record_response(exc.status_code)
+            if full_logs:
+                registry.raven_client.captureException()
+            raise
+        except Exception:
+            # Any other exception, treat as 500 Internal Server Error
+            # Treat as 500 Internal Server Error, log and send to Sentry
+            record_response(500)
             registry.raven_client.captureException()
             raise
 
