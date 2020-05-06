@@ -179,9 +179,11 @@ def configure_stats():
 
 
 def log_tween_factory(handler, registry):
-    """A logging tween, doing automatic statsd and raven collection."""
+    """A logging tween, handling collection of stats, exceptions, and a request log."""
 
     def log_tween(request):
+        structlog.threadlocal.clear_threadlocal()
+
         if request.path in registry.skip_logging or request.path.startswith("/static"):
             # shortcut handling for static assets
             try:
@@ -199,13 +201,23 @@ def log_tween_factory(handler, registry):
             "path:%s" % request.path.replace("/", ".").lstrip(".").replace("@", "-"),
             "method:%s" % request.method.lower(),
         ]
+        structlog.threadlocal.bind_threadlocal(
+            http_method=request.method, http_path=request.path
+        )
 
         def record_response(status_code):
             duration = time.time() - start
             duration_ms = int(round(duration * 1000))
+            duration_s = round(duration, 3)
 
             METRICS.timing("request.timing", duration_ms, tags=statsd_tags)
             METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
+            logger = structlog.get_logger("canonical-log-line")
+            logger.info(
+                f"{request.method} {request.path} - {status_code}",
+                http_status=status_code,
+                duration_s=duration_s,
+            )
 
         try:
             response = handler(request)
