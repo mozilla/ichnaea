@@ -200,33 +200,30 @@ def log_tween_factory(handler, registry):
             "method:%s" % request.method.lower(),
         ]
 
-        def timer_send():
-            duration = int(round((time.time() - start) * 1000))
-            METRICS.timing("request.timing", duration, tags=statsd_tags)
+        def record_response(status_code):
+            duration = time.time() - start
+            duration_ms = int(round(duration * 1000))
 
-        def counter_send(status_code):
+            METRICS.timing("request.timing", duration_ms, tags=statsd_tags)
             METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
 
         try:
             response = handler(request)
-            timer_send()
-            counter_send(response.status_code)
+            record_response(response.status_code)
             return response
         except (BaseClientError, HTTPRedirection) as exc:
             # don't capture exceptions
-            timer_send()
-            counter_send(exc.status_code)
+            record_response(exc.status_code)
             raise
         except HTTPClientError:
             # ignore general client side errors
             raise
         except Exception as exc:
-            timer_send()
             if isinstance(exc, HTTPException):
                 status = exc.status_code
             else:
                 status = 500
-            counter_send(status)
+            record_response(status)
             registry.raven_client.captureException()
             raise
 
