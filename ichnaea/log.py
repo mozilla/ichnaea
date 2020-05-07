@@ -193,7 +193,7 @@ def log_tween_factory(handler, registry):
         )
         # Skip detailed logging and capturing for static assets, either in
         # /static or paths like /robots.txt
-        full_logs = not (
+        is_static_content = (
             request.path in registry.skip_logging or request.path.startswith("/static")
         )
 
@@ -205,7 +205,7 @@ def log_tween_factory(handler, registry):
             """
             duration = time.time() - start
 
-            if full_logs:
+            if not is_static_content:
                 # Emit a request.timing and a request metric
                 duration_ms = int(round(duration * 1000))
                 # Convert a URI to to a statsd acceptable metric
@@ -224,7 +224,7 @@ def log_tween_factory(handler, registry):
                     tags=statsd_tags + [generate_tag("status", str(status_code))],
                 )
 
-            if local_dev_env or full_logs:
+            if local_dev_env or not is_static_content:
                 # Emit a canonical-log-line
                 duration_s = round(duration, 3)
                 logger = structlog.get_logger("canonical-log-line")
@@ -252,7 +252,7 @@ def log_tween_factory(handler, registry):
             # HTTPException: Remaining 5xx (or maybe 2xx) errors from Pyramid
             # Log, and maybe send to Sentry
             record_response(exc.status_code)
-            if full_logs:
+            if not is_static_content:
                 registry.raven_client.captureException()
             raise
         except Exception:
