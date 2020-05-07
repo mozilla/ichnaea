@@ -207,7 +207,7 @@ def log_tween_factory(handler, registry):
 
             if not is_static_content:
                 # Emit a request.timing and a request metric
-                duration_ms = int(round(duration * 1000))
+                duration_ms = round(duration * 1000)
                 # Convert a URI to to a statsd acceptable metric
                 stats_path = (
                     request.path.replace("/", ".").lstrip(".").replace("@", "-")
