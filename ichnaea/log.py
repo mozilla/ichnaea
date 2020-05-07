@@ -5,6 +5,7 @@ import logging.config
 import time
 
 import markus
+from markus.utils import generate_tag
 from pyramid.httpexceptions import HTTPException, HTTPClientError, HTTPRedirection
 from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
@@ -207,14 +208,21 @@ def log_tween_factory(handler, registry):
             if full_logs:
                 # Emit a request.timing and a request metric
                 duration_ms = int(round(duration * 1000))
+                # Convert a URI to to a statsd acceptable metric
+                stats_path = (
+                    request.path.replace("/", ".").lstrip(".").replace("@", "-")
+                )
+                # Use generate_tag to lowercase, truncate to 200 characters
                 statsd_tags = [
-                    # Convert a URI to a statsd acceptable metric name
-                    "path:%s"
-                    % request.path.replace("/", ".").lstrip(".").replace("@", "-"),
-                    "method:%s" % request.method.lower(),
+                    # Homepage is ".homepage", would otherwise be empty string / True
+                    generate_tag("path", stats_path or ".homepage"),
+                    generate_tag("method", request.method),  # GET -> get, POST -> post
                 ]
                 METRICS.timing("request.timing", duration_ms, tags=statsd_tags)
-                METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
+                METRICS.incr(
+                    "request",
+                    tags=statsd_tags + [generate_tag("status", str(status_code))],
+                )
 
             if local_dev_env or full_logs:
                 # Emit a canonical-log-line

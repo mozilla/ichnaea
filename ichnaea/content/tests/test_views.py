@@ -90,7 +90,7 @@ class TestFunctionalContent(object):
     @pytest.mark.parametrize(
         "path,status,metric_path,db_calls",
         (
-            ("/", 200, "", 0),
+            ("/", 200, ".homepage", 0),
             ("/apple-touch-icon-precomposed.png", 200, None, 0),
             ("/api", 200, "api", 0),
             ("/contact", 200, "contact", 0),
