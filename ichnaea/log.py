@@ -250,10 +250,9 @@ def log_tween_factory(handler, registry):
             raise
         except HTTPException as exc:
             # HTTPException: Remaining 5xx (or maybe 2xx) errors from Pyramid
-            # Log, and maybe send to Sentry
+            # Log and send to Sentry
             record_response(exc.status_code)
-            if not is_static_content:
-                registry.raven_client.captureException()
+            registry.raven_client.captureException()
             raise
         except Exception:
             # Any other exception, treat as 500 Internal Server Error
