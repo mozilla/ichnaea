@@ -5,7 +5,6 @@ import gc
 import warnings
 
 from alembic.config import main as alembic_main
-from markus.testing import MetricsMock
 from maxminddb.const import MODE_AUTO
 import pytest
 from sqlalchemy import event, inspect, text
@@ -28,6 +27,11 @@ from ichnaea.queue import DataQueue
 from ichnaea.taskapp.app import celery_app
 from ichnaea.taskapp.config import init_worker, shutdown_worker as shutdown_celery
 from ichnaea.webapp.config import main, shutdown_worker as shutdown_app
+
+# Enable pytest assertion rewriting
+pytest.register_assert_rewrite("markus.testing")
+from markus.testing import MetricsMock  # noqa: E402
+
 
 # Module global to hold active session, used by factory-boy
 SESSION = {}

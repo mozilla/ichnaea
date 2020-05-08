@@ -87,36 +87,40 @@ class TestContentViews(object):
 
 
 class TestFunctionalContent(object):
-    def test_content(self, app, session_tracker, metricsmock):
-        app.get("/", status=200)
-        app.get("/apple-touch-icon-precomposed.png", status=200)
-        app.get("/api", status=200)
-        app.get("/contact", status=200)
-        app.get("/favicon.ico", status=200)
-        app.get("/map", status=200)
-        app.get("/nobody-is-home", status=404)
-        app.get("/optout", status=200)
-        app.get("/privacy", status=200)
-        app.get("/robots.txt", status=200)
-        app.get("/static/css/images/icons-000000@2x.png", status=200)
-        app.get("/terms", status=200)
-        session_tracker(0)
-        app.get("/stats/regions", status=200)
-        session_tracker(1)
-        app.get("/stats", status=200)
-        session_tracker(8)
-        assert metricsmock.has_record(
-            "incr", "request", value=1, tags=["path:", "method:get", "status:200"]
-        )
-        assert metricsmock.has_record(
-            "incr", "request", value=1, tags=["path:map", "method:get", "status:200"]
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=["path:", "method:get"]
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=["path:map", "method:get"]
-        )
+    @pytest.mark.parametrize(
+        "path,status,metric_path,db_calls",
+        (
+            ("/", 200, ".homepage", 0),
+            ("/apple-touch-icon-precomposed.png", 200, None, 0),
+            ("/api", 200, "api", 0),
+            ("/contact", 200, "contact", 0),
+            ("/favicon.ico", 200, None, 0),
+            ("/map", 200, "map", 0),
+            ("/nobody-is-home", 404, None, 0),
+            ("/optout", 200, "optout", 0),
+            ("/privacy", 200, "privacy", 0),
+            ("/robots.txt", 200, None, 0),
+            ("/static/css/images/icons-000000@2x.png", 200, None, 0),
+            ("/terms", 200, "terms", 0),
+            ("/stats/regions", 200, "stats.regions", 1),
+            ("/stats", 200, "stats", 7),
+        ),
+    )
+    def test_content(
+        self, path, status, metric_path, db_calls, app, session_tracker, metricsmock
+    ):
+        app.get(path, status=status)  # Fails if status doesn't match (WebTest.get)
+        session_tracker(db_calls)  # Fails if number of database calls doesn't match
+        if metric_path is None:
+            # Assert no request metrics emitted
+            metricsmock.assert_not_incr("request.timing")
+            metricsmock.assert_not_incr("request")
+        else:
+            # Assert specific request metrics emitted
+            tags = [f"path:{metric_path}", "method:get"]
+            metricsmock.assert_timing_once("request.timing", tags=tags)
+            tags.append(f"status:{status}")
+            metricsmock.assert_incr_once("request", tags=tags)
 
     @config_override(ASSET_BUCKET="bucket", ASSET_URL="http://127.0.0.1:9/foo")
     def test_downloads(self, app):

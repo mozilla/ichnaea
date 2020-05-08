@@ -5,6 +5,7 @@ import logging.config
 import time
 
 import markus
+from markus.utils import generate_tag
 from pyramid.httpexceptions import HTTPException, HTTPClientError, HTTPRedirection
 from raven import Client as RavenClient
 from raven.transport.gevent import GeventedHTTPTransport
@@ -179,54 +180,84 @@ def configure_stats():
 
 
 def log_tween_factory(handler, registry):
-    """A logging tween, doing automatic statsd and raven collection."""
+    """A logging tween, handling collection of stats, exceptions, and a request log."""
+
+    local_dev_env = settings("local_dev_env")
 
     def log_tween(request):
-        if request.path in registry.skip_logging or request.path.startswith("/static"):
-            # shortcut handling for static assets
-            try:
-                return handler(request)
-            except HTTPException:
-                # don't capture exceptions for normal responses
-                raise
-            except Exception:
-                registry.raven_client.captureException()
-                raise
-
+        """Time a request, emit metrics and log results, with exception handling."""
         start = time.time()
-        statsd_tags = [
-            # Convert a URI to a statsd acceptable metric name
-            "path:%s" % request.path.replace("/", ".").lstrip(".").replace("@", "-"),
-            "method:%s" % request.method.lower(),
-        ]
+        structlog.threadlocal.clear_threadlocal()
+        structlog.threadlocal.bind_threadlocal(
+            http_method=request.method, http_path=request.path
+        )
+        # Skip detailed logging and capturing for static assets, either in
+        # /static or paths like /robots.txt
+        is_static_content = (
+            request.path in registry.skip_logging or request.path.startswith("/static")
+        )
 
-        def timer_send():
-            duration = int(round((time.time() - start) * 1000))
-            METRICS.timing("request.timing", duration, tags=statsd_tags)
+        def record_response(status_code):
+            """Time request, (maybe) emit metrics, and (maybe) log this request.
 
-        def counter_send(status_code):
-            METRICS.incr("request", tags=statsd_tags + ["status:%s" % status_code])
+            For static assets, metrics are skipped, and logs are skipped unless
+            we're in the development environment.
+            """
+            duration = time.time() - start
+
+            if not is_static_content:
+                # Emit a request.timing and a request metric
+                duration_ms = round(duration * 1000)
+                # Convert a URI to to a statsd acceptable metric
+                stats_path = (
+                    request.path.replace("/", ".").lstrip(".").replace("@", "-")
+                )
+                # Use generate_tag to lowercase, truncate to 200 characters
+                statsd_tags = [
+                    # Homepage is ".homepage", would otherwise be empty string / True
+                    generate_tag("path", stats_path or ".homepage"),
+                    generate_tag("method", request.method),  # GET -> get, POST -> post
+                ]
+                METRICS.timing("request.timing", duration_ms, tags=statsd_tags)
+                METRICS.incr(
+                    "request",
+                    tags=statsd_tags + [generate_tag("status", str(status_code))],
+                )
+
+            if local_dev_env or not is_static_content:
+                # Emit a canonical-log-line
+                duration_s = round(duration, 3)
+                logger = structlog.get_logger("canonical-log-line")
+                logger.info(
+                    f"{request.method} {request.path} - {status_code}",
+                    http_status=status_code,
+                    duration_s=duration_s,
+                )
 
         try:
             response = handler(request)
-            timer_send()
-            counter_send(response.status_code)
+            record_response(response.status_code)
             return response
         except (BaseClientError, HTTPRedirection) as exc:
-            # don't capture exceptions
-            timer_send()
-            counter_send(exc.status_code)
+            # BaseClientError: 4xx error raise by Ichnaea API, other Ichnaea code
+            # HTTPRedirection: 3xx redirect from Pyramid
+            # Log, but do not send these exceptions to Sentry
+            record_response(exc.status_code)
             raise
         except HTTPClientError:
-            # ignore general client side errors
+            # HTTPClientError: 4xx error from Pyramid
+            # Do not log or send to Sentry
             raise
-        except Exception as exc:
-            timer_send()
-            if isinstance(exc, HTTPException):
-                status = exc.status_code
-            else:
-                status = 500
-            counter_send(status)
+        except HTTPException as exc:
+            # HTTPException: Remaining 5xx (or maybe 2xx) errors from Pyramid
+            # Log and send to Sentry
+            record_response(exc.status_code)
+            registry.raven_client.captureException()
+            raise
+        except Exception:
+            # Any other exception, treat as 500 Internal Server Error
+            # Treat as 500 Internal Server Error, log and send to Sentry
+            record_response(500)
             registry.raven_client.captureException()
             raise
 
