@@ -9,6 +9,9 @@ from maxminddb.const import MODE_AUTO
 import pytest
 from sqlalchemy import event, inspect, text
 from sqlalchemy.exc import ProgrammingError
+import structlog
+from structlog.testing import LogCapture
+from structlog.threadlocal import merge_threadlocal
 import webtest
 
 from ichnaea.api.key import API_CACHE
@@ -522,3 +525,21 @@ def backoff_sleep_mock():
     """
     with mock.patch("backoff._sync.time.sleep") as mocked_sleep:
         yield mocked_sleep
+
+
+class SingleLogCapture(LogCapture):
+    """Capturing processor with helper method for single log entries."""
+
+    @property
+    def entry(self):
+        """Assert there is a single log entry and return it."""
+        assert len(self.entries) == 1
+        return self.entries[0]
+
+
+@pytest.fixture
+def logs():
+    """Capture list of logs in logs.entries."""
+    captured_logs = SingleLogCapture()
+    structlog.configure(processors=[merge_threadlocal, captured_logs])
+    yield captured_logs

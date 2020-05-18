@@ -107,12 +107,20 @@ class TestFunctionalContent(object):
         ),
     )
     def test_content(
-        self, path, status, metric_path, db_calls, app, session_tracker, metricsmock
+        self,
+        path,
+        status,
+        metric_path,
+        db_calls,
+        app,
+        session_tracker,
+        metricsmock,
+        logs,
     ):
         app.get(path, status=status)  # Fails if status doesn't match (WebTest.get)
         session_tracker(db_calls)  # Fails if number of database calls doesn't match
         if metric_path is None:
-            # Assert no request metrics emitted
+            # Assert no request metrics emitted for static assets, skip_logging views
             metricsmock.assert_not_incr("request.timing")
             metricsmock.assert_not_incr("request")
         else:
@@ -121,6 +129,22 @@ class TestFunctionalContent(object):
             metricsmock.assert_timing_once("request.timing", tags=tags)
             tags.append(f"status:{status}")
             metricsmock.assert_incr_once("request", tags=tags)
+        if status == 404:
+            # App logging skipped for framework 404s on missing views.
+            # App 404s like geolocate misses are logged, see API tests
+            assert logs.entries == []
+        else:
+            assert len(logs.entries) == 1
+            log = logs.entries[0]
+            expected_log = {
+                "duration_s": log["duration_s"],
+                "event": f"GET {path} - {status}",
+                "http_method": "GET",
+                "http_path": path,
+                "http_status": status,
+                "log_level": "info",
+            }
+            assert log == expected_log
 
     @config_override(ASSET_BUCKET="bucket", ASSET_URL="http://127.0.0.1:9/foo")
     def test_downloads(self, app):

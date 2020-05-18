@@ -133,31 +133,34 @@ class BaseSubmitTest(object):
             "request", tags=[self.metric_path, "method:post", "status:503"]
         )
 
-    def test_log_api_key_none(self, app, redis, metricsmock):
+    def test_log_api_key_none(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key=None)
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
+        assert logs.entry["api_key"] == "none"
 
-    def test_log_api_key_invalid(self, app, redis, metricsmock):
+    def test_log_api_key_invalid(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="invalid_key")
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
+        assert logs.entry["api_key"] == "none"
 
-    def test_log_api_key_unknown(self, app, redis, metricsmock):
+    def test_log_api_key_unknown(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="abcdefg")
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
+        assert logs.entry["api_key"] == "invalid"
 
-    def test_log_stats(self, app, redis, metricsmock):
+    def test_log_stats(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="test")
         metricsmock.assert_incr_once("data.batch.upload", tags=["key:test"])
@@ -174,6 +177,17 @@ class BaseSubmitTest(object):
         assert [k.decode("ascii") for k in redis.keys("apiuser:*")] == [
             "apiuser:submit:test:%s" % today.strftime("%Y-%m-%d")
         ]
+        expected_entry = {
+            "api_key": "test",
+            "api_path": self.metric_path.split(":")[1],
+            "duration_s": logs.entry["duration_s"],
+            "event": f"POST {self.url} - {self.status}",
+            "http_method": "POST",
+            "http_path": self.url,
+            "http_status": self.status,
+            "log_level": "info",
+        }
+        assert logs.entry == expected_entry
 
     def test_options(self, app):
         res = app.options(self.url, status=200)

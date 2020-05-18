@@ -278,7 +278,7 @@ class BaseLocateTest(object):
 class CommonLocateTest(BaseLocateTest):
     """Common tests for geolocate and region APIs."""
 
-    def test_get(self, app, data_queues, metricsmock):
+    def test_get(self, app, data_queues, metricsmock, logs):
         """A GET returns an IP-based location."""
         res = self._call(app, ip=self.test_ip, method="get", status=200)
         self.check_response(data_queues, res, "ok")
@@ -291,16 +291,49 @@ class CommonLocateTest(BaseLocateTest):
             "request.timing", tags=[self.metric_path, "method:get"]
         )
 
-    def test_options(self, app):
+        expected_entry = {
+            # accuracy is low for region API fixture, and medium for geolocate
+            # see bound_model_accuracy and related tests for direct calculation
+            "accuracy": logs.entry["accuracy"],
+            "accuracy_min": "low",
+            "api_key": "test",
+            "api_path": self.metric_path.split(":")[1],
+            "api_type": self.metric_type,
+            "blue": 0,
+            "blue_valid": 0,
+            "cell": 0,
+            "cell_valid": 0,
+            "duration_s": logs.entry["duration_s"],
+            "event": f"GET {self.url} - 200",
+            "fallback_allowed": False,
+            "has_geoip": True,
+            "has_ip": True,
+            "http_method": "GET",
+            "http_path": self.url,
+            "http_status": 200,
+            "log_level": "info",
+            "region": "GB",
+            "result_status": "hit",
+            "source_geoip_accuracy": logs.entry["accuracy"],
+            "source_geoip_accuracy_min": "low",
+            "source_geoip_status": "hit",
+            "wifi": 0,
+            "wifi_valid": 0,
+        }
+        assert logs.entry == expected_entry
+
+    def test_options(self, app, logs):
         """An OPTIONS request works, as required for CORS"""
         res = self._call(app, method="options", status=200)
         assert res.headers["Access-Control-Allow-Origin"] == "*"
         assert res.headers["Access-Control-Max-Age"] == "2592000"
+        assert logs.entry["http_method"] == "OPTIONS"
 
     @pytest.mark.parametrize("method", ("delete", "patch", "put"))
-    def test_unsupported_methods(self, app, method):
+    def test_unsupported_methods(self, app, method, logs):
         """Other HTTP methods are not allowed, and are not logged by app."""
         self._call(app, method=method, status=405)
+        assert logs.entries == []
 
     def test_empty_body(self, app, data_queues, redis):
         """A POST with an empty body returns an IP-based lookup."""
@@ -384,7 +417,7 @@ class CommonLocateTest(BaseLocateTest):
         )
         assert redis.keys("apiuser:*") == []
 
-    def test_invalid_api_key(self, app, data_queues, redis, metricsmock):
+    def test_invalid_api_key(self, app, data_queues, redis, metricsmock, logs):
         """An invalid API key is sanitized to the same as no key."""
         res = self._call(app, api_key="invalid_key", ip=self.test_ip, status=400)
         self.check_response(data_queues, res, "invalid_key")
@@ -392,8 +425,9 @@ class CommonLocateTest(BaseLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
+        assert logs.entry["api_key"] == "none"
 
-    def test_unknown_api_key(self, app, data_queues, redis, metricsmock):
+    def test_unknown_api_key(self, app, data_queues, redis, metricsmock, logs):
         """A unknown API key is an error, and increments an "invalid" metric."""
         res = self._call(app, api_key="abcdefg", ip=self.test_ip, status=400)
         self.check_response(data_queues, res, "invalid_key")
@@ -401,8 +435,9 @@ class CommonLocateTest(BaseLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
+        assert logs.entry["api_key"] == "invalid"
 
-    def test_gzip(self, app, data_queues):
+    def test_gzip(self, app, data_queues, logs):
         """A gzip-encoded body is uncompressed first."""
         wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
@@ -411,6 +446,7 @@ class CommonLocateTest(BaseLocateTest):
         headers = {"Content-Encoding": "gzip"}
         res = self._call(app, body=body, headers=headers, method="post", status=404)
         self.check_response(data_queues, res, "not_found")
+        assert logs.entry["wifi"] == logs.entry["wifi_valid"] == 2
 
     def test_truncated_gzip(self, app, data_queues):
         """An incomplete gzip-encoded body is an error."""

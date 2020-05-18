@@ -36,7 +36,7 @@ class RegionBase(BaseLocateTest):
 
 
 class TestView(RegionBase, CommonLocateTest):
-    def test_geoip(self, app, data_queues, metricsmock):
+    def test_geoip(self, app, data_queues, metricsmock, logs):
         """GeoIP can be used to determine the region."""
         res = self._call(app, ip=self.test_ip)
         self.check_response(data_queues, res, "ok")
@@ -45,14 +45,44 @@ class TestView(RegionBase, CommonLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
+        expected_entry = {
+            "accuracy": "low",
+            "accuracy_min": "low",
+            "api_key": "test",
+            "api_path": "v1.country",
+            "api_type": "region",
+            "blue": 0,
+            "blue_valid": 0,
+            "cell": 0,
+            "cell_valid": 0,
+            "duration_s": logs.entry["duration_s"],
+            "event": "POST /v1/country - 200",
+            "fallback_allowed": False,
+            "has_geoip": True,
+            "has_ip": True,
+            "http_method": "POST",
+            "http_path": "/v1/country",
+            "http_status": 200,
+            "log_level": "info",
+            "region": "GB",
+            "result_status": "hit",
+            "source_geoip_accuracy": "low",
+            "source_geoip_accuracy_min": "low",
+            "source_geoip_status": "hit",
+            "wifi": 0,
+            "wifi_valid": 0,
+        }
+        assert logs.entry == expected_entry
 
-    def test_geoip_miss(self, app, data_queues, metricsmock):
+    def test_geoip_miss(self, app, data_queues, metricsmock, logs):
         """GeoIP fails on some IPs, such as localhost."""
         res = self._call(app, ip="127.0.0.1", status=404)
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:404"]
         )
+        assert logs.entry["source_geoip_accuracy"] is None
+        assert logs.entry["source_geoip_status"] == "miss"
 
     def test_incomplete_request(self, app, data_queues):
         res = self._call(app, body={"wifiAccessPoints": []}, ip=self.test_ip)

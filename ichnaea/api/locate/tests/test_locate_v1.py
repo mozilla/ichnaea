@@ -94,7 +94,7 @@ class LocateV1Base(BaseLocateTest):
 
 
 class TestView(LocateV1Base, CommonLocateTest):
-    def test_api_key_limit(self, app, data_queues, redis, session):
+    def test_api_key_limit(self, app, data_queues, redis, session, logs):
         """When daily API limit is reached, a 403 is returned."""
         api_key = ApiKeyFactory(maxreq=5)
         session.flush()
@@ -108,7 +108,19 @@ class TestView(LocateV1Base, CommonLocateTest):
         res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
         self.check_response(data_queues, res, "limit_exceeded")
 
-    def test_api_key_blocked(self, app, data_queues, session):
+        expected_entry = {
+            "api_key": api_key.valid_key,
+            "api_path": self.metric_path.split(":")[1],
+            "duration_s": logs.entry["duration_s"],
+            "event": f"POST {self.url} - 403",
+            "http_method": "POST",
+            "http_path": self.url,
+            "http_status": 403,
+            "log_level": "info",
+        }
+        assert logs.entry == expected_entry
+
+    def test_api_key_blocked(self, app, data_queues, session, logs):
         """A 400 is returned when a key is blocked from locate APIs."""
         api_key = ApiKeyFactory(allow_locate=False, allow_region=False)
         session.flush()
@@ -116,7 +128,11 @@ class TestView(LocateV1Base, CommonLocateTest):
         res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
         self.check_response(data_queues, res, "invalid_key")
 
-    def test_blue_not_found(self, app, data_queues, metricsmock):
+        log = logs.entry
+        assert log["api_key"] == "invalid"
+        assert log["api_key"] != api_key.valid_key
+
+    def test_blue_not_found(self, app, data_queues, metricsmock, logs):
         """A failed Bluetooth-based lookup emits several metrics."""
         blues = BlueShardFactory.build_batch(2)
 
@@ -142,8 +158,9 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
+        assert logs.entry["blue"] == logs.entry["blue_valid"] == 2
 
-    def test_cell_not_found(self, app, data_queues, metricsmock):
+    def test_cell_not_found(self, app, data_queues, metricsmock, logs):
         """A failed cell-based lookup emits several metrics."""
         cell = CellShardFactory.build()
 
@@ -173,15 +190,19 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
         )
+        assert logs.entry["cell"] == logs.entry["cell_valid"] == 1
 
-    def test_cell_invalid_lac(self, app, data_queues):
+    def test_cell_invalid_lac(self, app, data_queues, logs):
         """A valid CID with and invalid LAC is not an error."""
         cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
 
-    def test_cell_lte_radio(self, app, session, metricsmock):
+        assert logs.entry["cell"] == 1
+        assert logs.entry["cell_valid"] == 0
+
+    def test_cell_lte_radio(self, app, session, metricsmock, logs):
         """A known LTE station can be used for lookups."""
         cell = CellShardFactory(radio=Radio.lte)
         session.flush()
@@ -195,9 +216,10 @@ class TestView(LocateV1Base, CommonLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
+        assert logs.entry["cell"] == logs.entry["cell_valid"] == 1
 
     @pytest.mark.parametrize("fallback", ("explicit", "default", "ipf"))
-    def test_cellarea(self, app, session, metricsmock, fallback):
+    def test_cellarea(self, app, session, metricsmock, fallback, logs):
         """
         A unknown cell in a known cell area can be a hit, with fallback enabled.
 
@@ -239,8 +261,10 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
+        assert logs.entry["cell"] == 1
+        assert logs.entry["cell_valid"] == 0
 
-    def test_cellarea_without_lacf(self, app, data_queues, session, metricsmock):
+    def test_cellarea_without_lacf(self, app, data_queues, session, metricsmock, logs):
         """The cell location area fallback can be disabled."""
         cell = CellAreaFactory()
         session.flush()
@@ -257,7 +281,10 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
 
-    def test_wifi_not_found(self, app, data_queues, metricsmock):
+        assert logs.entry["cell"] == 1
+        assert logs.entry["cell_valid"] == 0
+
+    def test_wifi_not_found(self, app, data_queues, metricsmock, logs):
         """A failed WiFi-based lookup emits several metrics."""
         wifis = WifiShardFactory.build_batch(2)
 
@@ -283,8 +310,9 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
+        assert logs.entry["wifi"] == logs.entry["wifi_valid"] == 2
 
-    def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
+    def test_ip_fallback_disabled(self, app, data_queues, metricsmock, logs):
         """The IP-based location fallback can be disabled."""
         res = self._call(
             app, body={"fallbacks": {"ipf": 0}}, ip=self.test_ip, status=404
@@ -296,9 +324,11 @@ class TestView(LocateV1Base, CommonLocateTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
+        assert logs.entry["has_geoip"]
+        assert "source_geoip_status" not in logs.entry
 
     @pytest.mark.parametrize("with_ip", [True, False])
-    def test_fallback(self, app, session, metricsmock, with_ip):
+    def test_fallback(self, app, session, metricsmock, with_ip, logs):
         """
         An external location provider can be used to improve results.
 
@@ -362,6 +392,14 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
         )
+
+        log = logs.entry
+        assert log["cell"] == log["cell_valid"] == 2
+        assert log["wifi"] == log["wifi_valid"] == 3
+        assert log["fallback_allowed"]
+        assert log["source_fallback_accuracy"] == "high"
+        assert log["source_fallback_accuracy_min"] == "high"
+        assert log["source_fallback_status"] == "hit"
 
     def test_store_sample_disabled(self, app, data_queues, session):
         """No requests are processed when store_sample_locate=0."""
@@ -695,7 +733,7 @@ class TestView(LocateV1Base, CommonLocateTest):
 
 
 class TestError(LocateV1Base, BaseLocateTest):
-    def test_apikey_error(self, app, data_queues, raven, session, restore_db):
+    def test_apikey_error(self, app, data_queues, raven, session, restore_db, logs):
         cells = CellShardFactory.build_batch(2)
         wifis = WifiShardFactory.build_batch(2)
 
@@ -706,9 +744,28 @@ class TestError(LocateV1Base, BaseLocateTest):
         self.check_response(data_queues, res, "ok", fallback="ipf")
         raven.check([("ProgrammingError", 1)])
         self.check_queue(data_queues, 0)
+        expected_entry = {
+            "api_type": "locate",
+            "blue": 0,
+            "blue_valid": 0,
+            "cell": 2,
+            "cell_valid": 2,
+            "duration_s": logs.entry["duration_s"],
+            "event": "POST /v1/geolocate - 200",
+            "has_geoip": True,
+            "has_ip": True,
+            "http_method": "POST",
+            "http_path": "/v1/geolocate",
+            "http_status": 200,
+            "log_level": "info",
+            "region": "GB",
+            "wifi": 2,
+            "wifi_valid": 2,
+        }
+        assert logs.entry == expected_entry
 
     def test_database_error(
-        self, app, data_queues, raven, session, metricsmock, restore_db
+        self, app, data_queues, raven, session, metricsmock, restore_db, logs
     ):
         cells = [
             CellShardFactory.build(radio=Radio.gsm),
@@ -743,3 +800,35 @@ class TestError(LocateV1Base, BaseLocateTest):
             )
 
         raven.check([("ProgrammingError", 3)])
+        expected_entry = {
+            "accuracy": "medium",
+            "accuracy_min": "high",
+            "api_key": "test",
+            "api_path": "v1.geolocate",
+            "api_type": "locate",
+            "blue": 0,
+            "blue_valid": 0,
+            "cell": 3,
+            "cell_valid": 3,
+            "duration_s": logs.entry["duration_s"],
+            "event": "POST /v1/geolocate - 200",
+            "fallback_allowed": False,
+            "has_geoip": True,
+            "has_ip": True,
+            "http_method": "POST",
+            "http_path": "/v1/geolocate",
+            "http_status": 200,
+            "log_level": "info",
+            "region": "GB",
+            "result_status": "miss",
+            "source_geoip_accuracy": "medium",
+            "source_geoip_accuracy_min": "high",
+            "source_geoip_status": "miss",
+            "source_internal_accuracy": None,
+            "source_internal_accuracy_min": "high",
+            "source_internal_status": "miss",
+            "wifi": 2,
+            "wifi_valid": 2,
+        }
+
+        assert logs.entry == expected_entry
