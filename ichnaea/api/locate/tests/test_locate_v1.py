@@ -396,25 +396,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_inconsistent_cell_radio_type(self, app, session):
-        """TODO: Remove, tests FxOS bug #201, but incorrectly."""
-        cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
-        cell2 = CellShardFactory(
-            radio=Radio.gsm,
-            radius=35000,
-            samples=5,
-            lat=cell.lat + 0.0002,
-            lon=cell.lon,
-        )
-        session.flush()
-
-        query = self.model_query(cells=[cell, cell2])
-        query["radioType"] = Radio.lte.name
-        query["cellTowers"][0]["radio"] = "lte"
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell)
-
     def test_cdma_cell(self, app, session):
         """A CDMA radio is not an error, but the information is ignored."""
         cell = CellShardFactory(radio=Radio.gsm, radius=15000)
