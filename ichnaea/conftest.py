@@ -382,11 +382,8 @@ def metricsmock():
     Usage::
 
         def test_something(metricsmock):
-            assert metricsmock.has_record(
-                'incr',
-                stat='some.stat',
-                value=1
-            )
+            metricsmock.assert_incr_once("some.stat")
+            metricsmock.assert_incr_once("other.stat", tags=["tag:enum"])
 
     If you ever need to clear the records in the middle of a test, do::
 

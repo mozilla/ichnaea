@@ -13,7 +13,7 @@ from ichnaea import util
 class TestMonitorApiKeys:
     def test_monitor_api_keys_empty(self, celery, metricsmock):
         monitor_api_key_limits.delay().get()
-        assert not metricsmock.has_record("gauge", "api.limit")
+        metricsmock.assert_not_gauge("api.limit")
 
     def test_monitor_api_keys_one(self, celery, redis, metricsmock):
         today = util.utcnow().strftime("%Y%m%d")
@@ -21,8 +21,8 @@ class TestMonitorApiKeys:
         redis.incr(rate_key, 13)
 
         monitor_api_key_limits.delay().get()
-        assert metricsmock.has_record(
-            "gauge", "api.limit", tags=["key:no_key_1", "path:v1.geolocate"]
+        metricsmock.assert_gauge_once(
+            "api.limit", value=13, tags=["key:no_key_1", "path:v1.geolocate"]
         )
 
     def test_monitor_api_keys_multiple(self, celery, redis, metricsmock):
@@ -46,37 +46,17 @@ class TestMonitorApiKeys:
         redis.set("cache_something", "{}")
 
         monitor_api_key_limits.delay().get()
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "gauge", "api.limit", tags=["key:test", "path:v1.geolocate"]
-                )
-            )
-            == 1
+        metricsmock.assert_gauge_once(
+            "api.limit", value=13, tags=["key:test", "path:v1.geolocate"]
         )
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "gauge", "api.limit", tags=["key:test", "path:v1.search"]
-                )
-            )
-            == 1
+        metricsmock.assert_gauge_once(
+            "api.limit", value=11, tags=["key:test", "path:v1.search"]
         )
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "gauge", "api.limit", tags=["key:no_key_1", "path:v1.search"]
-                )
-            )
-            == 1
+        metricsmock.assert_gauge_once(
+            "api.limit", value=12, tags=["key:no_key_1", "path:v1.search"]
         )
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "gauge", "api.limit", tags=["key:no_key_2", "path:v1.geolocate"]
-                )
-            )
-            == 1
+        metricsmock.assert_gauge_once(
+            "api.limit", value=15, tags=["key:no_key_2", "path:v1.geolocate"]
         )
 
 
@@ -91,8 +71,8 @@ class TestMonitorAPIUsers:
 
     def test_empty(self, celery, metricsmock):
         monitor_api_users.delay().get()
-        assert not metricsmock.has_record("gauge", "submit.user")
-        assert not metricsmock.has_record("gauge", "locate.user")
+        metricsmock.assert_not_gauge("submit.user")
+        metricsmock.assert_not_gauge("locate.user")
 
     def test_one_day(self, celery, geoip_data, redis, metricsmock):
         bhutan_ip = geoip_data["Bhutan"]["ip"]
@@ -102,23 +82,23 @@ class TestMonitorAPIUsers:
         redis.pfadd("apiuser:locate:valid_key:" + self.today_str, bhutan_ip)
 
         monitor_api_users.delay().get()
-        assert metricsmock.has_record(
-            "gauge", "submit.user", value=2, tags=["key:test", "interval:1d"]
+        metricsmock.assert_gauge_once(
+            "submit.user", value=2, tags=["key:test", "interval:1d"]
         )
-        assert metricsmock.has_record(
-            "gauge", "submit.user", value=2, tags=["key:test", "interval:7d"]
+        metricsmock.assert_gauge_once(
+            "submit.user", value=2, tags=["key:test", "interval:7d"]
         )
-        assert metricsmock.has_record(
-            "gauge", "submit.user", value=1, tags=["key:valid_key", "interval:1d"]
+        metricsmock.assert_gauge_once(
+            "submit.user", value=1, tags=["key:valid_key", "interval:1d"]
         )
-        assert metricsmock.has_record(
-            "gauge", "submit.user", value=1, tags=["key:valid_key", "interval:7d"]
+        metricsmock.assert_gauge_once(
+            "submit.user", value=1, tags=["key:valid_key", "interval:7d"]
         )
-        assert metricsmock.has_record(
-            "gauge", "locate.user", value=1, tags=["key:valid_key", "interval:1d"]
+        metricsmock.assert_gauge_once(
+            "locate.user", value=1, tags=["key:valid_key", "interval:1d"]
         )
-        assert metricsmock.has_record(
-            "gauge", "locate.user", value=1, tags=["key:valid_key", "interval:7d"]
+        metricsmock.assert_gauge_once(
+            "locate.user", value=1, tags=["key:valid_key", "interval:7d"]
         )
 
     def test_many_days(self, celery, geoip_data, redis, metricsmock):
@@ -133,22 +113,12 @@ class TestMonitorAPIUsers:
         redis.pfadd("apiuser:submit:test:" + days_7, bhutan_ip)
 
         monitor_api_users.delay().get()
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "gauge", "submit.user", value=2, tags=["key:test", "interval:1d"]
-                )
-            )
-            == 1
+        metricsmock.assert_gauge_once(
+            "submit.user", value=2, tags=["key:test", "interval:1d"]
         )
         # We count unique IPs over the entire 7 day period, so it's just 3 uniques.
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "gauge", "submit.user", value=3, tags=["key:test", "interval:7d"]
-                )
-            )
-            == 1
+        metricsmock.assert_gauge_once(
+            "submit.user", value=3, tags=["key:test", "interval:7d"]
         )
 
         # the too old key was deleted manually
@@ -161,9 +131,7 @@ class TestMonitorQueueSize:
 
         monitor_queue_size.delay().get()
         for key, val in data.items():
-            assert metricsmock.has_record(
-                "gauge", "queue", value=0, tags=["queue:" + key]
-            )
+            metricsmock.assert_gauge_once("queue", value=0, tags=["queue:" + key])
 
     def test_nonempty(self, celery, redis, metricsmock):
         data = {"export_queue_internal": 3, "export_queue_backup:abcd-ef-1234": 7}
@@ -175,9 +143,7 @@ class TestMonitorQueueSize:
 
         monitor_queue_size.delay().get()
         for key, val in data.items():
-            assert metricsmock.has_record(
-                "gauge", "queue", value=val, tags=["queue:" + key]
-            )
+            metricsmock.assert_gauge_once("queue", value=val, tags=["queue:" + key])
 
 
 class TestSentryTest:

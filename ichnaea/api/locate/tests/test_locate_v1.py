@@ -110,16 +110,11 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
         self.check_queue(data_queues, 1)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -128,10 +123,8 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
         items = data_queues["update_incoming"].dequeue()
@@ -203,22 +196,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
         self.check_queue(data_queues, 1)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -227,14 +212,12 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:medium", "status:hit"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -306,22 +289,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
         self.check_queue(data_queues, 1)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -330,14 +305,12 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -487,20 +460,12 @@ class TestError(LocateV1Base, BaseLocateTest):
         res = self._call(app, body=query, ip=self.test_ip)
         self.check_response(data_queues, res, "ok", fallback="ipf")
         self.check_queue(data_queues, 0)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
         if self.apikey_metrics:
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".result",
-                value=1,
                 tags=[
                     "key:test",
                     "fallback_allowed:false",

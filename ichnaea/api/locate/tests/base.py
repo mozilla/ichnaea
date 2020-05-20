@@ -291,14 +291,12 @@ class CommonLocateTest(BaseLocateTest):
         res = self._call(app, ip=self.test_ip, method="get", status=200)
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:get", "status:200"],
+
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:get", "status:200"]
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:get"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:get"]
         )
 
     def test_options(self, app):
@@ -330,26 +328,20 @@ class CommonLocateTest(BaseLocateTest):
         res = self._call(app, ip=self.test_ip, status=200)
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
         if self.apikey_metrics:
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".query",
-                value=1,
                 tags=["key:test", "blue:none", "cell:none", "wifi:none"],
             )
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".result",
-                value=1,
                 tags=[
                     "key:test",
                     "fallback_allowed:false",
@@ -358,10 +350,8 @@ class CommonLocateTest(BaseLocateTest):
                     "source:geoip",
                 ],
             )
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".source",
-                value=1,
                 tags=["key:test", "source:geoip", "accuracy:low", "status:hit"],
             )
 
@@ -369,11 +359,8 @@ class CommonLocateTest(BaseLocateTest):
         res = self._call(app, "\xae", method="post", status=400)
         detail = "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
         self.check_response(data_queues, res, "parse_error", details={"decode": detail})
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
 
     def test_error_no_mapping(self, app, data_queues):
@@ -398,11 +385,8 @@ class CommonLocateTest(BaseLocateTest):
     ):
         res = self._call(app, api_key=None, ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:none"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
 
@@ -411,11 +395,8 @@ class CommonLocateTest(BaseLocateTest):
     ):
         res = self._call(app, api_key="invalid_key", ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:none"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
 
@@ -431,11 +412,8 @@ class CommonLocateTest(BaseLocateTest):
     ):
         res = self._call(app, api_key="abcdefg", ip=self.test_ip, status=status)
         self.check_response(data_queues, res, response)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:" + metric_key],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
 
@@ -507,43 +485,27 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(app, body=query, status=self.not_found.code)
         self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "request",
-            value=1,
             tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".query",
-            value=1,
             tags=["key:test", "geoip:false", "blue:many", "cell:none", "wifi:none"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "accuracy:high",
-                "fallback_allowed:false",
-                "status:miss",
-            ],
+            tags=["key:test", "accuracy:high", "fallback_allowed:false", "status:miss"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_cell_not_found(self, app, data_queues, metricsmock):
@@ -552,28 +514,19 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query, status=self.not_found.code)
         self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "request",
-            value=1,
             tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".query",
-            value=1,
             tags=["key:test", "geoip:false", "blue:none", "cell:one", "wifi:none"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -581,14 +534,12 @@ class CommonPositionTest(BaseLocateTest):
                 "status:miss",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_cell_invalid_lac(self, app, data_queues):
@@ -604,17 +555,11 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
 
     def test_cellarea(self, app, session, metricsmock):
@@ -624,28 +569,18 @@ class CommonPositionTest(BaseLocateTest):
         query = self.model_query(cells=[cell])
         res = self._call(app, body=query)
         self.check_model_response(res, cell, fallback="lacf")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".query",
-            value=1,
             tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -654,11 +589,8 @@ class CommonPositionTest(BaseLocateTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
 
     def test_cellarea_with_lacf(self, app, session, metricsmock):
@@ -670,28 +602,18 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(app, body=query)
         self.check_model_response(res, cell, fallback="lacf")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".query",
-            value=1,
             tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -700,10 +622,8 @@ class CommonPositionTest(BaseLocateTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
@@ -716,17 +636,12 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(app, body=query, status=self.not_found.code)
         self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "request",
-            value=1,
             tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
 
     def test_cellarea_with_different_fallback(self, app, session, metricsmock):
@@ -738,22 +653,14 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(app, body=query)
         self.check_model_response(res, cell, fallback="lacf")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -770,43 +677,27 @@ class CommonPositionTest(BaseLocateTest):
 
         res = self._call(app, body=query, status=self.not_found.code)
         self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "request",
-            value=1,
             tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".query",
-            value=1,
             tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:many"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "accuracy:high",
-                "fallback_allowed:false",
-                "status:miss",
-            ],
+            tags=["key:test", "accuracy:high", "fallback_allowed:false", "status:miss"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
@@ -817,20 +708,15 @@ class CommonPositionTest(BaseLocateTest):
             status=self.not_found.code,
         )
         self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "request",
-            value=1,
             tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_fallback(self, app, session, metricsmock):
@@ -855,28 +741,14 @@ class CommonPositionTest(BaseLocateTest):
             assert send_json["cellTowers"][0]["radioType"] == "wcdma"
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:fall"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:fall"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:fall", "geoip:false", "blue:none", "cell:many", "wifi:many"],
-        )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:fall",
                 "fallback_allowed:true",
@@ -885,20 +757,16 @@ class CommonPositionTest(BaseLocateTest):
                 "source:fallback",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:fall", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_fallback_used_with_geoip(self, app, session, metricsmock):
@@ -919,22 +787,14 @@ class CommonPositionTest(BaseLocateTest):
             assert len(send_json["wifiAccessPoints"]) == 3
 
         self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:fall"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:fall"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:fall",
                 "fallback_allowed:true",
@@ -943,14 +803,12 @@ class CommonPositionTest(BaseLocateTest):
                 "source:fallback",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_store_sample(self, app, data_queues, session):

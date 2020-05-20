@@ -29,10 +29,8 @@ class TestRegionSource(BaseSourceTest):
         assert best_result.score == station_score(blue1, now) + station_score(
             blue2, now
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
@@ -53,10 +51,8 @@ class TestRegionSource(BaseSourceTest):
         results = source.search(query)
         self.check_model_results(results, [region])
         assert results[0].score == 1.0
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
@@ -75,10 +71,8 @@ class TestRegionSource(BaseSourceTest):
             if result.region_code == "GB":
                 score += area_score(area, now)
             assert result.score == score
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
@@ -121,10 +115,8 @@ class TestRegionSource(BaseSourceTest):
         assert best_result.score == station_score(wifi1, now) + station_score(
             wifi2, now
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 

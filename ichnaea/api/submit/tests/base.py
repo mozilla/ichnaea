@@ -128,67 +128,47 @@ class BaseSubmitTest(object):
 
         assert mock_queue.called
         raven.check([("ServiceUnavailable", 1)])
-        assert not metricsmock.has_record("incr", "data.batch.upload")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:503"],
+        metricsmock.assert_not_incr("data.batch.upload")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:503"]
         )
 
     def test_log_api_key_none(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key=None)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:none"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
 
     def test_log_api_key_invalid(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="invalid_key")
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:none"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
 
     def test_log_api_key_unknown(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="abcdefg")
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:invalid"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
 
     def test_log_stats(self, app, redis, metricsmock):
         cell, query = self._one_cell_query()
         self._post(app, [query], api_key="test")
-        assert metricsmock.has_record(
-            "incr", "data.batch.upload", value=1, tags=["key:test"]
+        metricsmock.assert_incr_once("data.batch.upload", tags=["key:test"])
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:%s" % self.status]
         )
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:%s" % self.status],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:post"]
         )
         today = util.utcnow().date()
         assert [k.decode("ascii") for k in redis.keys("apiuser:*")] == [
