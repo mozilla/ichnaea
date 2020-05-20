@@ -45,9 +45,6 @@ class TestView(RegionBase, CommonLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
-        )
 
     def test_geoip_miss(self, app, data_queues, metricsmock):
         """GeoIP fails on some IPs, such as localhost."""
@@ -55,9 +52,6 @@ class TestView(RegionBase, CommonLocateTest):
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:404"]
-        )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_incomplete_request(self, app, data_queues):

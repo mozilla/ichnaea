@@ -336,9 +336,6 @@ class CommonLocateTest(BaseLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
-        )
         if self.apikey_metrics:
             metricsmock.assert_incr_once(
                 self.metric_type + ".query",
@@ -511,9 +508,6 @@ class CommonPositionTest(BaseLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
-        )
 
     def test_cell_not_found(self, app, data_queues, metricsmock):
         """A failed cell-based lookup emits several metrics."""
@@ -545,9 +539,6 @@ class CommonPositionTest(BaseLocateTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
-        )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_cell_invalid_lac(self, app, data_queues):
@@ -661,9 +652,6 @@ class CommonPositionTest(BaseLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
-        )
 
     def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
         """The IP-based location fallback can be disabled."""
@@ -680,9 +668,6 @@ class CommonPositionTest(BaseLocateTest):
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
-        )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     @pytest.mark.parametrize("with_ip", [True, False])
@@ -749,9 +734,6 @@ class CommonPositionTest(BaseLocateTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".source",
             tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
-        )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
         )
 
     def test_store_sample_disabled(self, app, data_queues, session):

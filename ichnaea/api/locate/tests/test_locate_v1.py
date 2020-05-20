@@ -218,9 +218,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:medium", "status:hit"],
         )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
-        )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
             {
@@ -312,9 +309,6 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
-        )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
