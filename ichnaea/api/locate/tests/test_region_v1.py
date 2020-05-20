@@ -37,6 +37,7 @@ class RegionBase(BaseLocateTest):
 
 class TestView(RegionBase, CommonLocateTest):
     def test_geoip(self, app, data_queues, metricsmock):
+        """GeoIP can be used to determine the region."""
         res = self._call(app, ip=self.test_ip)
         self.check_response(data_queues, res, "ok")
         assert res.headers["Access-Control-Allow-Origin"] == "*"
@@ -49,6 +50,7 @@ class TestView(RegionBase, CommonLocateTest):
         )
 
     def test_geoip_miss(self, app, data_queues, metricsmock):
+        """GeoIP fails on some IPs, such as localhost."""
         res = self._call(app, ip="127.0.0.1", status=404)
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(

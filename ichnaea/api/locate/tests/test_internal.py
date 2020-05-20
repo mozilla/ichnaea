@@ -12,6 +12,7 @@ class TestRegionSource(BaseSourceTest):
     api_type = "region"
 
     def test_blue(self, geoip_db, http_session, session, source, metricsmock):
+        """Bluetooth stations can be used to determine the region."""
         now = util.utcnow()
         region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
         blue1 = BlueShardFactory(samples=10)
@@ -35,6 +36,7 @@ class TestRegionSource(BaseSourceTest):
         )
 
     def test_blue_miss(self, geoip_db, http_session, session, source):
+        """Unknown Bluetooth stations fail to determine the region."""
         blues = BlueShardFactory.build_batch(2, samples=10)
         session.flush()
 

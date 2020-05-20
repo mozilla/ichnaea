@@ -91,6 +91,7 @@ class LocateV1Base(BaseLocateTest):
 
 class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
     def test_blue(self, app, data_queues, session, metricsmock):
+        """Bluetooth can be used for location."""
         blue = BlueShardFactory()
         offset = 0.00001
         blues = [
@@ -184,6 +185,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             )
 
     def test_cell(self, app, data_queues, session, metricsmock):
+        """Cell stations can be used for location."""
         cell = CellShardFactory(radio=Radio.lte)
         session.flush()
 
@@ -249,6 +251,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ]
 
     def test_partial_cell(self, app, data_queues, session):
+        """A partial cell is ignored for location."""
         cell = CellShardFactory()
         session.flush()
 
@@ -267,6 +270,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_queue(data_queues, 1)
 
     def test_wifi(self, app, data_queues, session, metricsmock):
+        """WiFi can be used for location."""
         wifi = WifiShardFactory()
         offset = 0.00001
         wifis = [
@@ -348,11 +352,15 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ]
 
     def test_cell_mcc_mnc_strings(self, app, session):
-        # mcc and mnc are officially defined as strings, where '01' is
-        # different from '1'. In practice many systems ours included treat
-        # them as integers, so both of these are encoded as 1 instead.
-        # Some clients sends us these values as strings, some as integers,
-        # so we want to make sure we support both.
+        """
+        Mobile country and network codes can be formatted as strings.
+
+        mcc and mnc are officially defined as strings, where '01' is
+        different from '1'. In practice many systems ours included treat
+        them as integers, so both of these are encoded as 1 instead.
+        Some clients sends us these values as strings, some as integers,
+        so we want to make sure we support both.
+        """
         cell = CellShardFactory(mnc=1)
         session.flush()
 
@@ -364,7 +372,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_cell_radiotype_in_celltowers(self, app, session):
-        # This test covers an extension to the geolocate API
+        """The geolocate API has a extension radioType for cellTowers."""
         cell = CellShardFactory()
         session.flush()
 
@@ -375,6 +383,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio(self, app, session):
+        """A radioType in a cellTower entry overrides the global radioType"""
         cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
         cell2 = CellShardFactory(
             radio=Radio.gsm,
@@ -394,6 +403,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio_type(self, app, session):
+        """TODO: Remove, tests FxOS bug #201, but incorrectly."""
         cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
         cell2 = CellShardFactory(
             radio=Radio.gsm,
@@ -412,8 +422,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_cdma_cell(self, app, session):
-        # Specifying a CDMA radio type works,
-        # but the information is ignored.
+        """A CDMA radio is not an error, but the information is ignored."""
         cell = CellShardFactory(radio=Radio.gsm, radius=15000)
         cell2 = CellShardFactory(
             radio=Radio.gsm, radius=35000, lat=cell.lat + 0.0002, lon=cell.lon
