@@ -306,10 +306,10 @@ class CommonLocateTest(BaseLocateTest):
         assert res.headers["Access-Control-Allow-Origin"] == "*"
         assert res.headers["Access-Control-Max-Age"] == "2592000"
 
-    def test_unsupported_methods(self, app):
-        self._call(app, method="delete", status=405)
-        self._call(app, method="patch", status=405)
-        self._call(app, method="put", status=405)
+    @pytest.mark.parametrize("method", ("delete", "patch", "put"))
+    def test_unsupported_methods(self, app, method):
+        """Other HTTP methods are not allowed, and are not logged by app."""
+        self._call(app, method=method, status=405)
 
     def test_empty_body(self, app, data_queues, redis):
         """A POST with an empty body returns an IP-based lookup."""
@@ -572,44 +572,23 @@ class CommonPositionTest(BaseLocateTest):
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
 
-    def test_cellarea(self, app, session, metricsmock):
+    @pytest.mark.parametrize("fallback", ("explicit", "default", "ipf"))
+    def test_cellarea(self, app, session, metricsmock, fallback):
+        """
+        A unknown cell in a known cell area can be a hit, with fallback enabled.
+
+        The cell location area fallback (lacf) is on by default, or can be
+        explicitly enabled.
+        """
         cell = CellAreaFactory()
         session.flush()
 
         query = self.model_query(cells=[cell])
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback="lacf")
-        metricsmock.assert_incr_once(
-            "request", tags=[self.metric_path, "method:post", "status:200"]
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".query",
-            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".result",
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-                "source:internal",
-            ],
-        )
-        metricsmock.assert_incr_once(
-            "request", tags=[self.metric_path, "method:post", "status:200"]
-        )
-
-    def test_cellarea_with_lacf(self, app, session, metricsmock):
-        cell = CellAreaFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query["fallbacks"] = {"lacf": True}
-
+        if fallback == "explicit":
+            query["fallbacks"] = {"lacf": True}
+        elif fallback == "ipf":
+            # Enabling IP fallback leaves lac fallback at default
+            query["fallbacks"] = {"ipf": True}
         res = self._call(app, body=query)
         self.check_model_response(res, cell, fallback="lacf")
         metricsmock.assert_incr_once(
@@ -653,32 +632,6 @@ class CommonPositionTest(BaseLocateTest):
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
-        )
-
-    def test_cellarea_with_different_fallback(self, app, session, metricsmock):
-        cell = CellAreaFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query["fallbacks"] = {"ipf": True}
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback="lacf")
-        metricsmock.assert_incr_once(
-            "request", tags=[self.metric_path, "method:post", "status:200"]
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".result",
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-                "source:internal",
-            ],
         )
 
     def test_wifi_not_found(self, app, data_queues, metricsmock):
@@ -732,10 +685,15 @@ class CommonPositionTest(BaseLocateTest):
             "request.timing", tags=[self.metric_path, "method:post"]
         )
 
-    def test_fallback(self, app, session, metricsmock):
-        # this tests a cell + wifi based query which gets a cell based
-        # internal result and continues on to the fallback to get a
-        # better wifi based result
+    @pytest.mark.parametrize("with_ip", [True, False])
+    def test_fallback(self, app, session, metricsmock, with_ip):
+        """
+        An external location provider can be used to improve results.
+
+        A cell + wifi based query which gets a cell based internal result and
+        continues on to the fallback to get a better wifi based result.
+        The fallback may or may not include IP-based lookup data.
+        """
         cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
         wifis = WifiShardFactory.build_batch(3)
         ApiKeyFactory(valid_key="fall", allow_fallback=True)
@@ -746,7 +704,11 @@ class CommonPositionTest(BaseLocateTest):
             mock.register_uri("POST", requests_mock.ANY, json=response_result)
 
             query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, api_key="fall", body=query)
+            if with_ip:
+                ip = self.test_ip
+            else:
+                ip = None
+            res = self._call(app, api_key="fall", body=query, ip=ip)
 
             send_json = mock.request_history[0].json()
             assert len(send_json["cellTowers"]) == 2
@@ -760,6 +722,16 @@ class CommonPositionTest(BaseLocateTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:fall"]
         )
+        if with_ip:
+            metricsmock.assert_incr_once(
+                self.metric_type + ".query",
+                tags=["key:fall", "blue:none", "cell:many", "wifi:many"],
+            )
+        else:
+            metricsmock.assert_incr_once(
+                self.metric_type + ".query",
+                tags=["key:fall", "geoip:false", "blue:none", "cell:many", "wifi:many"],
+            )
         metricsmock.assert_incr_once(
             self.metric_type + ".result",
             tags=[
@@ -773,48 +745,6 @@ class CommonPositionTest(BaseLocateTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".source",
             tags=["key:fall", "source:internal", "accuracy:high", "status:miss"],
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".source",
-            tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
-        )
-        metricsmock.assert_timing_once(
-            "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_fallback_used_with_geoip(self, app, session, metricsmock):
-        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
-        wifis = WifiShardFactory.build_batch(3)
-        ApiKeyFactory(valid_key="fall", allow_fallback=True)
-        session.flush()
-
-        with requests_mock.Mocker() as mock:
-            response_result = {"location": {"lat": 1.0, "lng": 1.0}, "accuracy": 100.0}
-            mock.register_uri("POST", requests_mock.ANY, json=response_result)
-
-            query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, api_key="fall", body=query, ip=self.test_ip)
-
-            send_json = mock.request_history[0].json()
-            assert len(send_json["cellTowers"]) == 2
-            assert len(send_json["wifiAccessPoints"]) == 3
-
-        self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        metricsmock.assert_incr_once(
-            "request", tags=[self.metric_path, "method:post", "status:200"]
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".request", tags=[self.metric_path, "key:fall"]
-        )
-        metricsmock.assert_incr_once(
-            self.metric_type + ".result",
-            tags=[
-                "key:fall",
-                "fallback_allowed:true",
-                "accuracy:high",
-                "status:hit",
-                "source:fallback",
-            ],
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".source",

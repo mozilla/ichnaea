@@ -661,47 +661,30 @@ class TestCache(QueryTest):
         metricsmock.assert_incr_once(
             "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
-
-    def test_get_mixed(self, cache, metricsmock):
-        blues = BlueShardFactory.build_batch(2)
-        cells = CellShardFactory.build_batch(1)
-        wifis = WifiShardFactory.build_batch(2)
-
-        query = self._query(
-            cell=self.cell_model_query(cells), wifi=self.wifi_model_query(wifis)
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:inconsistent"]
         )
-        assert cache.get(query) is None
 
-        query = self._query(
-            blue=self.blue_model_query(blues), cell=self.cell_model_query(cells)
+    @pytest.mark.parametrize(
+        "mix1,mix2", [("cell", "wifi"), ("blue", "cell"), ("blue", "wifi")]
+    )
+    def test_get_mixed(self, cache, metricsmock, mix1, mix2):
+        """A fallback query with mixed station types is not cached."""
+        kwargs = {}
+        mix = set((mix1, mix2))
+        assert len(mix) == 2
+        if "cell" in mix:
+            kwargs["cell"] = self.cell_model_query(CellShardFactory.build_batch(1))
+        if "blue" in mix:
+            kwargs["blue"] = self.blue_model_query(BlueShardFactory.build_batch(2))
+        if "wifi" in mix:
+            kwargs["wifi"] = self.wifi_model_query(WifiShardFactory.build_batch(2))
+
+        query = self._query(**kwargs)
+        assert cache.get(query) is None
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:bypassed"]
         )
-        assert cache.get(query) is None
-
-        query = self._query(
-            blue=self.blue_model_query(blues), wifi=self.wifi_model_query(wifis)
-        )
-        assert cache.get(query) is None
-
-        assert metricsmock.get_records() == [
-            (
-                "incr",
-                "locate.fallback.cache",
-                1,
-                [self.fallback_tag, "status:bypassed"],
-            ),
-            (
-                "incr",
-                "locate.fallback.cache",
-                1,
-                [self.fallback_tag, "status:bypassed"],
-            ),
-            (
-                "incr",
-                "locate.fallback.cache",
-                1,
-                [self.fallback_tag, "status:bypassed"],
-            ),
-        ]
 
 
 class BaseFallbackTest(object):
