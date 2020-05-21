@@ -154,14 +154,22 @@ class BaseAPIView(BaseView):
                     api_key_db_fail=True,
                 )
 
-        if api_key is not None and api_key.allowed(self.view_type):
+        if api_key is not None:
             valid_key = api_key.valid_key
-            self.log_count(valid_key)
+            if api_key.allowed(self.view_type):
+                self.log_count(valid_key)
 
-            # Potentially avoid overhead of Redis connection.
-            if self.ip_log_and_rate_limit:
-                if self.log_ip_and_rate_limited(valid_key, api_key.maxreq):
-                    raise self.prepare_exception(DailyLimitExceeded())
+                # Potentially avoid overhead of Redis connection.
+                if self.ip_log_and_rate_limit:
+                    if self.log_ip_and_rate_limited(valid_key, api_key.maxreq):
+                        raise self.prepare_exception(DailyLimitExceeded())
+            else:
+                self.log_count("invalid")
+                # Switch "invalid" with real key, add "api_key_allowed"
+                bind_threadlocal(api_key=valid_key, api_key_allowed=False)
+
+                if self.error_on_invalidkey:
+                    raise self.prepare_exception(InvalidAPIKey())
 
         elif skip_check:
             pass

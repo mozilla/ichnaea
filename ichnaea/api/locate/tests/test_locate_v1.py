@@ -130,8 +130,8 @@ class TestView(LocateV1Base, CommonLocateTest):
         self.check_response(data_queues, res, "invalid_key")
 
         log = logs.entry
-        assert log["api_key"] == "invalid"
-        assert log["api_key"] != api_key.valid_key
+        assert log["api_key"] == api_key.valid_key
+        assert not log["api_key_allowed"]
 
     def test_blue_not_found(self, app, data_queues, metricsmock, logs):
         """A failed Bluetooth-based lookup emits several metrics."""
