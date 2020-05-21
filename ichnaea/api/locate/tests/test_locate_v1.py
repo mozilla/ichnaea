@@ -122,11 +122,10 @@ class TestView(LocateV1Base, CommonLocateTest):
 
         query = self.model_query(blues=blues)
 
-        res = self._call(app, body=query, status=self.not_found.code)
+        res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
-            "request",
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
+            "request", tags=[self.metric_path, "method:post", "status:404"]
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
@@ -149,11 +148,10 @@ class TestView(LocateV1Base, CommonLocateTest):
         cell = CellShardFactory.build()
 
         query = self.model_query(cells=[cell])
-        res = self._call(app, body=query, status=self.not_found.code)
+        res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
-            "request",
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
+            "request", tags=[self.metric_path, "method:post", "status:404"]
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
@@ -180,7 +178,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         """A valid CID with and invalid LAC is not an error."""
         cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
         query = self.model_query(cells=[cell])
-        res = self._call(app, body=query, status=self.not_found.code)
+        res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
 
     def test_cell_lte_radio(self, app, session, metricsmock):
@@ -250,11 +248,10 @@ class TestView(LocateV1Base, CommonLocateTest):
         query = self.model_query(cells=[cell])
         query["fallbacks"] = {"lacf": False}
 
-        res = self._call(app, body=query, status=self.not_found.code)
+        res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
-            "request",
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
+            "request", tags=[self.metric_path, "method:post", "status:404"]
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
@@ -266,11 +263,10 @@ class TestView(LocateV1Base, CommonLocateTest):
 
         query = self.model_query(wifis=wifis)
 
-        res = self._call(app, body=query, status=self.not_found.code)
+        res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
-            "request",
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
+            "request", tags=[self.metric_path, "method:post", "status:404"]
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
@@ -291,15 +287,11 @@ class TestView(LocateV1Base, CommonLocateTest):
     def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
         """The IP-based location fallback can be disabled."""
         res = self._call(
-            app,
-            body={"fallbacks": {"ipf": 0}},
-            ip=self.test_ip,
-            status=self.not_found.code,
+            app, body={"fallbacks": {"ipf": 0}}, ip=self.test_ip, status=404
         )
         self.check_response(data_queues, res, "not_found")
         metricsmock.assert_incr_once(
-            "request",
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
+            "request", tags=[self.metric_path, "method:post", "status:404"]
         )
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]

@@ -153,7 +153,6 @@ class BaseLocateTest(object):
     apikey_metrics = True
     metric_path = None
     metric_type = None
-    not_found = LocationNotFound
     test_ip = GEOIP_DATA["London"]["ip"]
 
     @property
@@ -215,7 +214,7 @@ class BaseLocateTest(object):
         elif status == "invalid_key":
             assert response.json == InvalidAPIKey().json_body()
         elif status == "not_found":
-            assert response.json == self.not_found().json_body()
+            assert response.json == LocationNotFound().json_body()
         elif status == "parse_error":
             assert response.json == ParseError(details).json_body()
         elif status == "limit_exceeded":
@@ -410,9 +409,7 @@ class CommonLocateTest(BaseLocateTest):
 
         body = util.encode_gzip(json.dumps(query).encode())
         headers = {"Content-Encoding": "gzip"}
-        res = self._call(
-            app, body=body, headers=headers, method="post", status=self.not_found.code
-        )
+        res = self._call(app, body=body, headers=headers, method="post", status=404)
         self.check_response(data_queues, res, "not_found")
 
     def test_truncated_gzip(self, app, data_queues):
