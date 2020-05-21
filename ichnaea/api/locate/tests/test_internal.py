@@ -12,6 +12,7 @@ class TestRegionSource(BaseSourceTest):
     api_type = "region"
 
     def test_blue(self, geoip_db, http_session, session, source, metricsmock):
+        """Bluetooth stations can be used to determine the region."""
         now = util.utcnow()
         region = GEOCODER.regions_for_mcc(235, metadata=True)[0]
         blue1 = BlueShardFactory(samples=10)
@@ -29,14 +30,13 @@ class TestRegionSource(BaseSourceTest):
         assert best_result.score == station_score(blue1, now) + station_score(
             blue2, now
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
     def test_blue_miss(self, geoip_db, http_session, session, source):
+        """Unknown Bluetooth stations fail to determine the region."""
         blues = BlueShardFactory.build_batch(2, samples=10)
         session.flush()
 
@@ -53,10 +53,8 @@ class TestRegionSource(BaseSourceTest):
         results = source.search(query)
         self.check_model_results(results, [region])
         assert results[0].score == 1.0
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
@@ -75,10 +73,8 @@ class TestRegionSource(BaseSourceTest):
             if result.region_code == "GB":
                 score += area_score(area, now)
             assert result.score == score
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 
@@ -121,10 +117,8 @@ class TestRegionSource(BaseSourceTest):
         assert best_result.score == station_score(wifi1, now) + station_score(
             wifi2, now
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.api_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
 

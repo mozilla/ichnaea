@@ -2,7 +2,6 @@ import json
 import operator
 
 import pytest
-import requests_mock
 
 from ichnaea.api.exceptions import (
     DailyLimitExceeded,
@@ -23,15 +22,8 @@ from ichnaea.api.locate.constants import (
 from ichnaea.api.locate.query import Query
 from ichnaea.api.locate.result import Position, Region
 from ichnaea.conftest import GEOIP_DATA
-from ichnaea.models import BlueShard, CellArea, CellShard, WifiShard, Radio
-from ichnaea.tests.factories import (
-    ApiKeyFactory,
-    BlueShardFactory,
-    CellAreaFactory,
-    CellShardFactory,
-    KeyFactory,
-    WifiShardFactory,
-)
+from ichnaea.models import BlueShard, CellArea, CellShard, WifiShard
+from ichnaea.tests.factories import KeyFactory, WifiShardFactory
 from ichnaea import util
 
 _sentinel = object()
@@ -161,7 +153,6 @@ class BaseLocateTest(object):
     apikey_metrics = True
     metric_path = None
     metric_type = None
-    not_found = LocationNotFound
     test_ip = GEOIP_DATA["London"]["ip"]
 
     @property
@@ -223,7 +214,7 @@ class BaseLocateTest(object):
         elif status == "invalid_key":
             assert response.json == InvalidAPIKey().json_body()
         elif status == "not_found":
-            assert response.json == self.not_found().json_body()
+            assert response.json == LocationNotFound().json_body()
         elif status == "parse_error":
             assert response.json == ParseError(details).json_body()
         elif status == "limit_exceeded":
@@ -285,33 +276,34 @@ class BaseLocateTest(object):
 
 
 class CommonLocateTest(BaseLocateTest):
-    # tests for all locate API's incl. region
+    """Common tests for geolocate and region APIs."""
 
     def test_get(self, app, data_queues, metricsmock):
+        """A GET returns an IP-based location."""
         res = self._call(app, ip=self.test_ip, method="get", status=200)
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:get", "status:200"],
+
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:get", "status:200"]
         )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:get"]
+        metricsmock.assert_timing_once(
+            "request.timing", tags=[self.metric_path, "method:get"]
         )
 
     def test_options(self, app):
+        """An OPTIONS request works, as required for CORS"""
         res = self._call(app, method="options", status=200)
         assert res.headers["Access-Control-Allow-Origin"] == "*"
         assert res.headers["Access-Control-Max-Age"] == "2592000"
 
-    def test_unsupported_methods(self, app):
-        self._call(app, method="delete", status=405)
-        self._call(app, method="patch", status=405)
-        self._call(app, method="put", status=405)
+    @pytest.mark.parametrize("method", ("delete", "patch", "put"))
+    def test_unsupported_methods(self, app, method):
+        """Other HTTP methods are not allowed, and are not logged by app."""
+        self._call(app, method=method, status=405)
 
     def test_empty_body(self, app, data_queues, redis):
+        """A POST with an empty body returns an IP-based lookup."""
         res = self._call(app, "", ip=self.test_ip, method="post", status=200)
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
@@ -327,29 +319,21 @@ class CommonLocateTest(BaseLocateTest):
             assert 7 * 24 * 3600 < ttl <= 8 * 24 * 3600
 
     def test_empty_json(self, app, data_queues, metricsmock):
+        """A POST with empty JSON returns an IP-based lookup."""
         res = self._call(app, ip=self.test_ip, status=200)
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
         if self.apikey_metrics:
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".query",
-                value=1,
                 tags=["key:test", "blue:none", "cell:none", "wifi:none"],
             )
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".result",
-                value=1,
                 tags=[
                     "key:test",
                     "fallback_allowed:false",
@@ -358,25 +342,22 @@ class CommonLocateTest(BaseLocateTest):
                     "source:geoip",
                 ],
             )
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".source",
-                value=1,
                 tags=["key:test", "source:geoip", "accuracy:low", "status:hit"],
             )
 
     def test_error_no_json(self, app, data_queues, metricsmock):
+        """A POST with invalid JSON is an error."""
         res = self._call(app, "\xae", method="post", status=400)
         detail = "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
         self.check_response(data_queues, res, "parse_error", details={"decode": detail})
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
 
     def test_error_no_mapping(self, app, data_queues):
+        """A POST with list JSON is an error."""
         res = self._call(app, [1], status=400)
         detail = {
             "": (
@@ -388,69 +369,51 @@ class CommonLocateTest(BaseLocateTest):
             data_queues, res, "parse_error", details={"validation": detail}
         )
 
-    def test_error_invalid_key(self, app, data_queues):
+    def test_invalid_data_is_empty(self, app, data_queues):
+        """POST data with bad keys looks like empty data after sanitization."""
         res = self._call(app, {"invalid": 0}, ip=self.test_ip, status=200)
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
 
-    def test_no_api_key(
-        self, app, data_queues, redis, metricsmock, status=400, response="invalid_key"
-    ):
-        res = self._call(app, api_key=None, ip=self.test_ip, status=status)
-        self.check_response(data_queues, res, response)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:none"],
+    def test_no_api_key(self, app, data_queues, redis, metricsmock):
+        """Omitting the API key is a 400 error."""
+        res = self._call(app, api_key=None, ip=self.test_ip, status=400)
+        self.check_response(data_queues, res, "invalid_key")
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
 
-    def test_invalid_api_key(
-        self, app, data_queues, redis, metricsmock, status=400, response="invalid_key"
-    ):
-        res = self._call(app, api_key="invalid_key", ip=self.test_ip, status=status)
-        self.check_response(data_queues, res, response)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:none"],
+    def test_invalid_api_key(self, app, data_queues, redis, metricsmock):
+        """An invalid API key is sanitized to the same as no key."""
+        res = self._call(app, api_key="invalid_key", ip=self.test_ip, status=400)
+        self.check_response(data_queues, res, "invalid_key")
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
 
-    def test_unknown_api_key(
-        self,
-        app,
-        data_queues,
-        redis,
-        metricsmock,
-        status=400,
-        response="invalid_key",
-        metric_key="invalid",
-    ):
-        res = self._call(app, api_key="abcdefg", ip=self.test_ip, status=status)
-        self.check_response(data_queues, res, response)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:" + metric_key],
+    def test_unknown_api_key(self, app, data_queues, redis, metricsmock):
+        """A unknown API key is an error, and increments an "invalid" metric."""
+        res = self._call(app, api_key="abcdefg", ip=self.test_ip, status=400)
+        self.check_response(data_queues, res, "invalid_key")
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
 
     def test_gzip(self, app, data_queues):
+        """A gzip-encoded body is uncompressed first."""
         wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
 
         body = util.encode_gzip(json.dumps(query).encode())
         headers = {"Content-Encoding": "gzip"}
-        res = self._call(
-            app, body=body, headers=headers, method="post", status=self.not_found.code
-        )
+        res = self._call(app, body=body, headers=headers, method="post", status=404)
         self.check_response(data_queues, res, "not_found")
 
     def test_truncated_gzip(self, app, data_queues):
+        """An incomplete gzip-encoded body is an error."""
         wifis = WifiShardFactory.build_batch(2)
         query = self.model_query(wifis=wifis)
 
@@ -464,6 +427,7 @@ class CommonLocateTest(BaseLocateTest):
         self.check_response(data_queues, res, "parse_error", details={"decode": detail})
 
     def test_bad_encoding(self, app, data_queues):
+        """A badly encoded body is an error."""
         body = b'{"comment": "R\xe9sum\xe9 from 1990", "items": []}'
         assert "Résumé" in body.decode("iso8859-1")
         with pytest.raises(UnicodeDecodeError):
@@ -475,490 +439,3 @@ class CommonLocateTest(BaseLocateTest):
             " continuation byte"
         )
         self.check_response(data_queues, res, "parse_error", details={"decode": detail})
-
-
-class CommonPositionTest(BaseLocateTest):
-    # tests for only the locate_v1 and locate_v2 API's
-
-    def test_api_key_limit(self, app, data_queues, redis, session):
-        api_key = ApiKeyFactory(maxreq=5)
-        session.flush()
-
-        # exhaust today's limit
-        dstamp = util.utcnow().strftime("%Y%m%d")
-        path = self.metric_path.split(":")[-1]
-        key = "apilimit:%s:%s:%s" % (api_key.valid_key, path, dstamp)
-        redis.incr(key, 10)
-
-        res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
-        self.check_response(data_queues, res, "limit_exceeded")
-
-    def test_api_key_blocked(self, app, data_queues, session):
-        api_key = ApiKeyFactory(allow_locate=False, allow_region=False)
-        session.flush()
-
-        res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
-        self.check_response(data_queues, res, "invalid_key")
-
-    def test_blue_not_found(self, app, data_queues, metricsmock):
-        blues = BlueShardFactory.build_batch(2)
-
-        query = self.model_query(blues=blues)
-
-        res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:test", "geoip:false", "blue:many", "cell:none", "wifi:none"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "accuracy:high",
-                "fallback_allowed:false",
-                "status:miss",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_cell_not_found(self, app, data_queues, metricsmock):
-        cell = CellShardFactory.build()
-
-        query = self.model_query(cells=[cell])
-        res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:test", "geoip:false", "blue:none", "cell:one", "wifi:none"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:medium",
-                "status:miss",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_cell_invalid_lac(self, app, data_queues):
-        cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
-        query = self.model_query(cells=[cell])
-        res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, "not_found")
-
-    def test_cell_lte_radio(self, app, session, metricsmock):
-        cell = CellShardFactory(radio=Radio.lte)
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-
-    def test_cellarea(self, app, session, metricsmock):
-        cell = CellAreaFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback="lacf")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-                "source:internal",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
-        )
-
-    def test_cellarea_with_lacf(self, app, session, metricsmock):
-        cell = CellAreaFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query["fallbacks"] = {"lacf": True}
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback="lacf")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-                "source:internal",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
-        )
-
-    def test_cellarea_without_lacf(self, app, data_queues, session, metricsmock):
-        cell = CellAreaFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query["fallbacks"] = {"lacf": False}
-
-        res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-
-    def test_cellarea_with_different_fallback(self, app, session, metricsmock):
-        cell = CellAreaFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        query["fallbacks"] = {"ipf": True}
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell, fallback="lacf")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:low",
-                "status:hit",
-                "source:internal",
-            ],
-        )
-
-    def test_wifi_not_found(self, app, data_queues, metricsmock):
-        wifis = WifiShardFactory.build_batch(2)
-
-        query = self.model_query(wifis=wifis)
-
-        res = self._call(app, body=query, status=self.not_found.code)
-        self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:many"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:test",
-                "accuracy:high",
-                "fallback_allowed:false",
-                "status:miss",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
-        res = self._call(
-            app,
-            body={"fallbacks": {"ipf": 0}},
-            ip=self.test_ip,
-            status=self.not_found.code,
-        )
-        self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:%s" % self.not_found.code],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_fallback(self, app, session, metricsmock):
-        # this tests a cell + wifi based query which gets a cell based
-        # internal result and continues on to the fallback to get a
-        # better wifi based result
-        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
-        wifis = WifiShardFactory.build_batch(3)
-        ApiKeyFactory(valid_key="fall", allow_fallback=True)
-        session.flush()
-
-        with requests_mock.Mocker() as mock:
-            response_result = {"location": {"lat": 1.0, "lng": 1.0}, "accuracy": 100}
-            mock.register_uri("POST", requests_mock.ANY, json=response_result)
-
-            query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, api_key="fall", body=query)
-
-            send_json = mock.request_history[0].json()
-            assert len(send_json["cellTowers"]) == 2
-            assert len(send_json["wifiAccessPoints"]) == 3
-            assert send_json["cellTowers"][0]["radioType"] == "wcdma"
-
-        self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:fall"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".query",
-            value=1,
-            tags=["key:fall", "geoip:false", "blue:none", "cell:many", "wifi:many"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:fall",
-                "fallback_allowed:true",
-                "accuracy:high",
-                "status:hit",
-                "source:fallback",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:fall", "source:internal", "accuracy:high", "status:miss"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_fallback_used_with_geoip(self, app, session, metricsmock):
-        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
-        wifis = WifiShardFactory.build_batch(3)
-        ApiKeyFactory(valid_key="fall", allow_fallback=True)
-        session.flush()
-
-        with requests_mock.Mocker() as mock:
-            response_result = {"location": {"lat": 1.0, "lng": 1.0}, "accuracy": 100.0}
-            mock.register_uri("POST", requests_mock.ANY, json=response_result)
-
-            query = self.model_query(cells=cells, wifis=wifis)
-            res = self._call(app, api_key="fall", body=query, ip=self.test_ip)
-
-            send_json = mock.request_history[0].json()
-            assert len(send_json["cellTowers"]) == 2
-            assert len(send_json["wifiAccessPoints"]) == 3
-
-        self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:fall"],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".result",
-            value=1,
-            tags=[
-                "key:fall",
-                "fallback_allowed:true",
-                "accuracy:high",
-                "status:hit",
-                "source:fallback",
-            ],
-        )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".source",
-            value=1,
-            tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
-        )
-
-    def test_store_sample(self, app, data_queues, session):
-        api_key = ApiKeyFactory(store_sample_locate=0)
-        cell = CellShardFactory()
-        session.flush()
-
-        query = self.model_query(cells=[cell])
-        res = self._call(app, body=query, api_key=api_key.valid_key, status=200)
-        self.check_model_response(res, cell)
-        self.check_queue(data_queues, 0)

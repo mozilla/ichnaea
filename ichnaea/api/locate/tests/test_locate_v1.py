@@ -1,5 +1,6 @@
 import colander
 import pytest
+import requests_mock
 from sqlalchemy import text
 
 from ichnaea.api.locate.constants import (
@@ -8,14 +9,17 @@ from ichnaea.api.locate.constants import (
     WIFI_MIN_ACCURACY,
 )
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
-from ichnaea.api.locate.tests.base import (
-    BaseLocateTest,
-    CommonLocateTest,
-    CommonPositionTest,
-)
+from ichnaea.api.locate.tests.base import BaseLocateTest, CommonLocateTest
 from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import ApiKey, CellArea, Radio
-from ichnaea.tests.factories import BlueShardFactory, CellShardFactory, WifiShardFactory
+from ichnaea.tests.factories import (
+    ApiKeyFactory,
+    BlueShardFactory,
+    CellAreaFactory,
+    CellShardFactory,
+    WifiShardFactory,
+)
+from ichnaea import util
 
 
 class TestSchema(object):
@@ -89,8 +93,289 @@ class LocateV1Base(BaseLocateTest):
             assert data["fallback"] == fallback
 
 
-class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
+class TestView(LocateV1Base, CommonLocateTest):
+    def test_api_key_limit(self, app, data_queues, redis, session):
+        """When daily API limit is reached, a 403 is returned."""
+        api_key = ApiKeyFactory(maxreq=5)
+        session.flush()
+
+        # exhaust today's limit
+        dstamp = util.utcnow().strftime("%Y%m%d")
+        path = self.metric_path.split(":")[-1]
+        key = "apilimit:%s:%s:%s" % (api_key.valid_key, path, dstamp)
+        redis.incr(key, 10)
+
+        res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=403)
+        self.check_response(data_queues, res, "limit_exceeded")
+
+    def test_api_key_blocked(self, app, data_queues, session):
+        """A 400 is returned when a key is blocked from locate APIs."""
+        api_key = ApiKeyFactory(allow_locate=False, allow_region=False)
+        session.flush()
+
+        res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
+        self.check_response(data_queues, res, "invalid_key")
+
+    def test_blue_not_found(self, app, data_queues, metricsmock):
+        """A failed Bluetooth-based lookup emits several metrics."""
+        blues = BlueShardFactory.build_batch(2)
+
+        query = self.model_query(blues=blues)
+
+        res = self._call(app, body=query, status=404)
+        self.check_response(data_queues, res, "not_found")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:404"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".query",
+            tags=["key:test", "geoip:false", "blue:many", "cell:none", "wifi:none"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".result",
+            tags=["key:test", "accuracy:high", "fallback_allowed:false", "status:miss"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".source",
+            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
+        )
+
+    def test_cell_not_found(self, app, data_queues, metricsmock):
+        """A failed cell-based lookup emits several metrics."""
+        cell = CellShardFactory.build()
+
+        query = self.model_query(cells=[cell])
+        res = self._call(app, body=query, status=404)
+        self.check_response(data_queues, res, "not_found")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:404"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".query",
+            tags=["key:test", "geoip:false", "blue:none", "cell:one", "wifi:none"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".result",
+            tags=[
+                "key:test",
+                "fallback_allowed:false",
+                "accuracy:medium",
+                "status:miss",
+            ],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".source",
+            tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
+        )
+
+    def test_cell_invalid_lac(self, app, data_queues):
+        """A valid CID with and invalid LAC is not an error."""
+        cell = CellShardFactory.build(radio=Radio.wcdma, lac=0, cid=1)
+        query = self.model_query(cells=[cell])
+        res = self._call(app, body=query, status=404)
+        self.check_response(data_queues, res, "not_found")
+
+    def test_cell_lte_radio(self, app, session, metricsmock):
+        """A known LTE station can be used for lookups."""
+        cell = CellShardFactory(radio=Radio.lte)
+        session.flush()
+
+        query = self.model_query(cells=[cell])
+        res = self._call(app, body=query)
+        self.check_model_response(res, cell)
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
+        )
+
+    @pytest.mark.parametrize("fallback", ("explicit", "default", "ipf"))
+    def test_cellarea(self, app, session, metricsmock, fallback):
+        """
+        A unknown cell in a known cell area can be a hit, with fallback enabled.
+
+        The cell location area fallback (lacf) is on by default, or can be
+        explicitly enabled.
+        """
+        cell = CellAreaFactory()
+        session.flush()
+
+        query = self.model_query(cells=[cell])
+        if fallback == "explicit":
+            query["fallbacks"] = {"lacf": True}
+        elif fallback == "ipf":
+            # Enabling IP fallback leaves lac fallback at default
+            query["fallbacks"] = {"ipf": True}
+        res = self._call(app, body=query)
+        self.check_model_response(res, cell, fallback="lacf")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".query",
+            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:none"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".result",
+            tags=[
+                "key:test",
+                "fallback_allowed:false",
+                "accuracy:low",
+                "status:hit",
+                "source:internal",
+            ],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".source",
+            tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
+        )
+
+    def test_cellarea_without_lacf(self, app, data_queues, session, metricsmock):
+        """The cell location area fallback can be disabled."""
+        cell = CellAreaFactory()
+        session.flush()
+
+        query = self.model_query(cells=[cell])
+        query["fallbacks"] = {"lacf": False}
+
+        res = self._call(app, body=query, status=404)
+        self.check_response(data_queues, res, "not_found")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:404"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+
+    def test_wifi_not_found(self, app, data_queues, metricsmock):
+        """A failed WiFi-based lookup emits several metrics."""
+        wifis = WifiShardFactory.build_batch(2)
+
+        query = self.model_query(wifis=wifis)
+
+        res = self._call(app, body=query, status=404)
+        self.check_response(data_queues, res, "not_found")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:404"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".query",
+            tags=["key:test", "geoip:false", "blue:none", "cell:none", "wifi:many"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".result",
+            tags=["key:test", "accuracy:high", "fallback_allowed:false", "status:miss"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".source",
+            tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
+        )
+
+    def test_ip_fallback_disabled(self, app, data_queues, metricsmock):
+        """The IP-based location fallback can be disabled."""
+        res = self._call(
+            app, body={"fallbacks": {"ipf": 0}}, ip=self.test_ip, status=404
+        )
+        self.check_response(data_queues, res, "not_found")
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:404"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
+        )
+
+    @pytest.mark.parametrize("with_ip", [True, False])
+    def test_fallback(self, app, session, metricsmock, with_ip):
+        """
+        An external location provider can be used to improve results.
+
+        A cell + wifi based query which gets a cell based internal result and
+        continues on to the fallback to get a better wifi based result.
+        The fallback may or may not include IP-based lookup data.
+        """
+        cells = CellShardFactory.create_batch(2, radio=Radio.wcdma)
+        wifis = WifiShardFactory.build_batch(3)
+        ApiKeyFactory(valid_key="fall", allow_fallback=True)
+        session.flush()
+
+        with requests_mock.Mocker() as mock:
+            response_result = {"location": {"lat": 1.0, "lng": 1.0}, "accuracy": 100}
+            mock.register_uri("POST", requests_mock.ANY, json=response_result)
+
+            query = self.model_query(cells=cells, wifis=wifis)
+            if with_ip:
+                ip = self.test_ip
+            else:
+                ip = None
+            res = self._call(app, api_key="fall", body=query, ip=ip)
+
+            send_json = mock.request_history[0].json()
+            assert len(send_json["cellTowers"]) == 2
+            assert len(send_json["wifiAccessPoints"]) == 3
+            assert send_json["cellTowers"][0]["radioType"] == "wcdma"
+
+        self.check_model_response(res, None, lat=1.0, lon=1.0, accuracy=100)
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:fall"]
+        )
+        if with_ip:
+            metricsmock.assert_incr_once(
+                self.metric_type + ".query",
+                tags=["key:fall", "blue:none", "cell:many", "wifi:many"],
+            )
+        else:
+            metricsmock.assert_incr_once(
+                self.metric_type + ".query",
+                tags=["key:fall", "geoip:false", "blue:none", "cell:many", "wifi:many"],
+            )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".result",
+            tags=[
+                "key:fall",
+                "fallback_allowed:true",
+                "accuracy:high",
+                "status:hit",
+                "source:fallback",
+            ],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".source",
+            tags=["key:fall", "source:internal", "accuracy:high", "status:miss"],
+        )
+        metricsmock.assert_incr_once(
+            self.metric_type + ".source",
+            tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
+        )
+
+    def test_store_sample_disabled(self, app, data_queues, session):
+        """No requests are processed when store_sample_locate=0."""
+        api_key = ApiKeyFactory(store_sample_locate=0)
+        cell = CellShardFactory()
+        session.flush()
+
+        query = self.model_query(cells=[cell])
+        res = self._call(app, body=query, api_key=api_key.valid_key, status=200)
+        self.check_model_response(res, cell)
+        self.check_queue(data_queues, 0)
+
     def test_blue(self, app, data_queues, session, metricsmock):
+        """Bluetooth can be used for location."""
         blue = BlueShardFactory()
         offset = 0.00001
         blues = [
@@ -110,16 +395,11 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, blue, lat=blue.lat + 0.0000035)
         self.check_queue(data_queues, 1)
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -128,10 +408,8 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
         items = data_queues["update_incoming"].dequeue()
@@ -191,6 +469,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
             )
 
     def test_cell(self, app, data_queues, session, metricsmock):
+        """Cell stations can be used for location."""
         cell = CellShardFactory(radio=Radio.lte)
         session.flush()
 
@@ -203,22 +482,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
         self.check_queue(data_queues, 1)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -227,14 +498,9 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:medium", "status:hit"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -266,6 +532,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ]
 
     def test_partial_cell(self, app, data_queues, session):
+        """A partial cell is ignored for location."""
         cell = CellShardFactory()
         session.flush()
 
@@ -284,6 +551,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_queue(data_queues, 1)
 
     def test_wifi(self, app, data_queues, session, metricsmock):
+        """WiFi can be used for location."""
         wifi = WifiShardFactory()
         offset = 0.00001
         wifis = [
@@ -306,22 +574,14 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, wifi, lat=wifi.lat + 0.000005)
         self.check_queue(data_queues, 1)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert metricsmock.has_record(
-            "incr",
-            self.metric_type + ".request",
-            value=1,
-            tags=[self.metric_path, "key:test"],
+        metricsmock.assert_incr_once(
+            self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -330,14 +590,9 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
                 "source:internal",
             ],
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             self.metric_type + ".source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
         )
         items = data_queues["update_incoming"].dequeue()
         assert items == [
@@ -375,11 +630,15 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         ]
 
     def test_cell_mcc_mnc_strings(self, app, session):
-        # mcc and mnc are officially defined as strings, where '01' is
-        # different from '1'. In practice many systems ours included treat
-        # them as integers, so both of these are encoded as 1 instead.
-        # Some clients sends us these values as strings, some as integers,
-        # so we want to make sure we support both.
+        """
+        Mobile country and network codes can be formatted as strings.
+
+        mcc and mnc are officially defined as strings, where '01' is
+        different from '1'. In practice many systems ours included treat
+        them as integers, so both of these are encoded as 1 instead.
+        Some clients sends us these values as strings, some as integers,
+        so we want to make sure we support both.
+        """
         cell = CellShardFactory(mnc=1)
         session.flush()
 
@@ -391,7 +650,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_cell_radiotype_in_celltowers(self, app, session):
-        # This test covers an extension to the geolocate API
+        """The geolocate API has a extension radioType for cellTowers."""
         cell = CellShardFactory()
         session.flush()
 
@@ -402,6 +661,7 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         self.check_model_response(res, cell)
 
     def test_inconsistent_cell_radio(self, app, session):
+        """A radioType in a cellTower entry overrides the global radioType"""
         cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
         cell2 = CellShardFactory(
             radio=Radio.gsm,
@@ -420,27 +680,8 @@ class TestView(LocateV1Base, CommonLocateTest, CommonPositionTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
-    def test_inconsistent_cell_radio_type(self, app, session):
-        cell = CellShardFactory(radio=Radio.wcdma, radius=15000, samples=10)
-        cell2 = CellShardFactory(
-            radio=Radio.gsm,
-            radius=35000,
-            samples=5,
-            lat=cell.lat + 0.0002,
-            lon=cell.lon,
-        )
-        session.flush()
-
-        query = self.model_query(cells=[cell, cell2])
-        query["radioType"] = Radio.lte.name
-        query["cellTowers"][0]["radio"] = "lte"
-
-        res = self._call(app, body=query)
-        self.check_model_response(res, cell)
-
     def test_cdma_cell(self, app, session):
-        # Specifying a CDMA radio type works,
-        # but the information is ignored.
+        """A CDMA radio is not an error, but the information is ignored."""
         cell = CellShardFactory(radio=Radio.gsm, radius=15000)
         cell2 = CellShardFactory(
             radio=Radio.gsm, radius=35000, lat=cell.lat + 0.0002, lon=cell.lon
@@ -487,20 +728,12 @@ class TestError(LocateV1Base, BaseLocateTest):
         res = self._call(app, body=query, ip=self.test_ip)
         self.check_response(data_queues, res, "ok", fallback="ipf")
         self.check_queue(data_queues, 0)
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
         if self.apikey_metrics:
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 self.metric_type + ".result",
-                value=1,
                 tags=[
                     "key:test",
                     "fallback_allowed:false",

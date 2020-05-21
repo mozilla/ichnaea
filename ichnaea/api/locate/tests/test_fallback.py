@@ -527,16 +527,8 @@ class TestCache(QueryTest):
         blues = BlueShardFactory.build_batch(2)
         query = self._query(blue=self.blue_model_query(blues))
         assert cache.get(query) is None
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:miss"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:miss"]
         )
 
     def test_set_blue(self, cache, metricsmock):
@@ -546,32 +538,16 @@ class TestCache(QueryTest):
         result = ExternalResult(blue.lat, blue.lon, blue.radius, None)
         cache.set(query, result)
         assert cache.get(query) == result
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:hit"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
 
     def test_get_cell(self, cache, metricsmock):
         cells = CellShardFactory.build_batch(1)
         query = self._query(cell=self.cell_model_query(cells))
         assert cache.get(query) is None
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:miss"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:miss"]
         )
 
     def test_set_cell(self, cache, redis, metricsmock):
@@ -583,32 +559,16 @@ class TestCache(QueryTest):
         assert len(keys) == 1
         assert 50 < redis.ttl(keys[0]) <= 60
         assert cache.get(query) == result
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:hit"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
 
     def test_get_cell_unwiredlabs(self, unwiredlabs_cache, metricsmock):
         cells = CellShardFactory.build_batch(1)
         query = self._query(api_key=UNWIREDLABS_KEY, cell=self.cell_model_query(cells))
         assert unwiredlabs_cache.get(query) is None
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=["fallback_name:labs", "status:miss"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=["fallback_name:labs", "status:miss"]
         )
 
     def test_set_cell_unwiredlabs(self, unwiredlabs_cache, redis, metricsmock):
@@ -620,16 +580,8 @@ class TestCache(QueryTest):
         assert len(keys) == 1
         assert 50 < redis.ttl(keys[0]) <= 60
         assert unwiredlabs_cache.get(query) == result
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=["fallback_name:labs", "status:hit"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=["fallback_name:labs", "status:hit"]
         )
 
     def test_set_cell_not_found(self, cache, redis, metricsmock):
@@ -641,48 +593,24 @@ class TestCache(QueryTest):
         assert len(keys) == 1
         assert redis.get(keys[0]) == b'"404"'
         assert cache.get(query) == result
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:hit"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
 
     def test_get_cell_multi(self, cache, metricsmock):
         cells = CellShardFactory.build_batch(2)
         query = self._query(cell=self.cell_model_query(cells))
         assert cache.get(query) is None
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:bypassed"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:bypassed"]
         )
 
     def test_get_wifi(self, cache, metricsmock):
         wifis = WifiShardFactory.build_batch(2)
         query = self._query(wifi=self.wifi_model_query(wifis))
         assert cache.get(query) is None
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:miss"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:miss"]
         )
 
     def test_set_wifi(self, cache, metricsmock):
@@ -692,16 +620,8 @@ class TestCache(QueryTest):
         result = ExternalResult(wifi.lat, wifi.lon, wifi.radius, None)
         cache.set(query, result)
         assert cache.get(query) == result
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:hit"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
 
     def test_set_wifi_inconsistent(self, cache, metricsmock):
@@ -738,70 +658,33 @@ class TestCache(QueryTest):
         # check combined query, inconsistent result
         query = self._query(wifi=self.wifi_model_query(wifis1 + wifis2 + wifis3))
         assert cache.get(query) is None
-
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:hit"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr",
-                    "locate.fallback.cache",
-                    value=1,
-                    tags=[self.fallback_tag, "status:inconsistent"],
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:inconsistent"]
         )
 
-    def test_get_mixed(self, cache, metricsmock):
-        blues = BlueShardFactory.build_batch(2)
-        cells = CellShardFactory.build_batch(1)
-        wifis = WifiShardFactory.build_batch(2)
+    @pytest.mark.parametrize(
+        "mix1,mix2", [("cell", "wifi"), ("blue", "cell"), ("blue", "wifi")]
+    )
+    def test_get_mixed(self, cache, metricsmock, mix1, mix2):
+        """A fallback query with mixed station types is not cached."""
+        kwargs = {}
+        mix = set((mix1, mix2))
+        assert len(mix) == 2
+        if "cell" in mix:
+            kwargs["cell"] = self.cell_model_query(CellShardFactory.build_batch(1))
+        if "blue" in mix:
+            kwargs["blue"] = self.blue_model_query(BlueShardFactory.build_batch(2))
+        if "wifi" in mix:
+            kwargs["wifi"] = self.wifi_model_query(WifiShardFactory.build_batch(2))
 
-        query = self._query(
-            cell=self.cell_model_query(cells), wifi=self.wifi_model_query(wifis)
-        )
+        query = self._query(**kwargs)
         assert cache.get(query) is None
-
-        query = self._query(
-            blue=self.blue_model_query(blues), cell=self.cell_model_query(cells)
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:bypassed"]
         )
-        assert cache.get(query) is None
-
-        query = self._query(
-            blue=self.blue_model_query(blues), wifi=self.wifi_model_query(wifis)
-        )
-        assert cache.get(query) is None
-
-        assert metricsmock.get_records() == [
-            (
-                "incr",
-                "locate.fallback.cache",
-                1,
-                [self.fallback_tag, "status:bypassed"],
-            ),
-            (
-                "incr",
-                "locate.fallback.cache",
-                1,
-                [self.fallback_tag, "status:bypassed"],
-            ),
-            (
-                "incr",
-                "locate.fallback.cache",
-                1,
-                [self.fallback_tag, "status:bypassed"],
-            ),
-        ]
 
 
 class BaseFallbackTest(object):
@@ -856,14 +739,11 @@ class BaseFallbackTest(object):
             request_json = mock_request.request_history[0].json()
 
         self._check_success_fallbacks(request_json)
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.cache",
-            value=1,
-            tags=[self.fallback_tag, "status:miss"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:miss"]
         )
-        assert metricsmock.has_record(
-            "timing", "locate.fallback.lookup.timing", tags=[self.fallback_tag]
+        metricsmock.assert_timing_once(
+            "locate.fallback.lookup.timing", tags=[self.fallback_tag]
         )
 
     def test_cache_empty_result(
@@ -884,16 +764,11 @@ class BaseFallbackTest(object):
             self.check_model_results(results, None)
 
             assert mock_request.call_count == 1
-            assert metricsmock.has_record(
-                "incr",
-                "locate.fallback.cache",
-                value=1,
-                tags=[self.fallback_tag, "status:miss"],
+            metricsmock.assert_incr_once(
+                "locate.fallback.cache", tags=[self.fallback_tag, "status:miss"]
             )
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 "locate.fallback.lookup",
-                value=1,
                 tags=[self.fallback_tag, "status:%s" % self.fallback_not_found_status],
             )
             metricsmock.clear_records()
@@ -903,11 +778,8 @@ class BaseFallbackTest(object):
             self.check_model_results(results, None)
 
             assert mock_request.call_count == 1
-            assert metricsmock.has_record(
-                "incr",
-                "locate.fallback.cache",
-                value=1,
-                tags=[self.fallback_tag, "status:hit"],
+            metricsmock.assert_incr_once(
+                "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
             )
 
 
@@ -980,11 +852,8 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             self.check_model_results(results, None)
 
         raven.check([("HTTPError", 1)])
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.lookup",
-            value=1,
-            tags=[self.fallback_tag, "status:403"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.lookup", tags=[self.fallback_tag, "status:403"]
         )
 
     def test_404_response(
@@ -1005,11 +874,8 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             self.check_model_results(results, None)
 
         raven.check([("HTTPError", 0)])
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.lookup",
-            value=1,
-            tags=[self.fallback_tag, "status:404"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.lookup", tags=[self.fallback_tag, "status:404"]
         )
 
     def test_500_response(
@@ -1025,14 +891,11 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             self.check_model_results(results, None)
 
         raven.check([("HTTPError", 1)])
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.lookup",
-            value=1,
-            tags=[self.fallback_tag, "status:500"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.lookup", tags=[self.fallback_tag, "status:500"]
         )
-        assert metricsmock.has_record(
-            "timing", "locate.fallback.lookup.timing", tags=[self.fallback_tag]
+        metricsmock.assert_timing_once(
+            "locate.fallback.lookup.timing", tags=[self.fallback_tag]
         )
 
     def test_api_key_disallows(self, geoip_db, http_session, session, source):
@@ -1187,11 +1050,8 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             assert mock_request.called
 
         raven.check([("RedisError", 1)])
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.cache",
-            value=1,
-            tags=[self.fallback_tag, "status:failure"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:failure"]
         )
 
     def test_set_cache_redis_failure(
@@ -1221,11 +1081,8 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             assert mock_request.called
 
         raven.check([("RedisError", 1)])
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.cache",
-            value=1,
-            tags=[self.fallback_tag, "status:miss"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:miss"]
         )
 
     def test_cache_single_cell(
@@ -1245,20 +1102,14 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             assert results.best().score == 5.0
 
             assert mock_request.call_count == 1
-            assert metricsmock.has_record(
-                "incr",
-                "locate.fallback.cache",
-                value=1,
-                tags=["fallback_name:fall", "status:miss"],
+            metricsmock.assert_incr_once(
+                "locate.fallback.cache", tags=["fallback_name:fall", "status:miss"]
             )
-            assert metricsmock.has_record(
-                "incr",
-                "locate.fallback.lookup",
-                value=1,
-                tags=["fallback_name:fall", "status:200"],
+            metricsmock.assert_incr_once(
+                "locate.fallback.lookup", tags=["fallback_name:fall", "status:200"]
             )
-            assert metricsmock.has_record(
-                "timing", "locate.fallback.lookup.timing", tags=["fallback_name:fall"]
+            metricsmock.assert_timing_once(
+                "locate.fallback.lookup.timing", tags=["fallback_name:fall"]
             )
             metricsmock.clear_records()
 
@@ -1269,16 +1120,11 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             assert results.best().score == 5.0
 
             assert mock_request.call_count == 1
-            assert metricsmock.has_record(
-                "incr",
-                "locate.fallback.cache",
-                value=1,
-                tags=["fallback_name:fall", "status:hit"],
+            metricsmock.assert_incr_once(
+                "locate.fallback.cache", tags=["fallback_name:fall", "status:hit"]
             )
-            assert metricsmock.has_record(
-                "incr",
+            metricsmock.assert_incr_once(
                 "locate.source",
-                value=1,
                 tags=["key:test", "source:fallback", "accuracy:medium", "status:hit"],
             )
 
@@ -1302,11 +1148,8 @@ class TestDefaultFallback(BaseFallbackTest, BaseSourceTest):
             assert mock_redis_client.mget.called
             assert not mock_redis_client.mset.called
 
-        assert metricsmock.has_record(
-            "incr",
-            "locate.fallback.cache",
-            value=1,
-            tags=[self.fallback_tag, "status:hit"],
+        metricsmock.assert_incr_once(
+            "locate.fallback.cache", tags=[self.fallback_tag, "status:hit"]
         )
 
 

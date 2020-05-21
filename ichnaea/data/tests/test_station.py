@@ -120,18 +120,15 @@ class TestDatabaseErrors(BaseStationTest):
         self.check_statcounter(redis, StatKey.unique_cell, 0)
 
         # Assert generated metrics are correct
-        assert metricsmock.has_record(
-            "incr", "data.observation.insert", value=1, tags=["type:cell"]
+        metricsmock.assert_incr_once(
+            "data.observation.insert", value=1, tags=["type:cell"]
         )
-        assert metricsmock.has_record(
-            "incr", "data.station.confirm", value=1, tags=["type:cell"]
+        metricsmock.assert_incr_once(
+            "data.station.confirm", value=1, tags=["type:cell"]
         )
-        assert metricsmock.has_record("timing", "task", tags=["task:data.update_cell"])
-        assert metricsmock.has_record(
-            "incr",
-            "data.station.dberror",
-            value=1,
-            tags=["type:cell", "errno:%s" % errno],
+        metricsmock.assert_timing_once("task", tags=["task:data.update_cell"])
+        metricsmock.assert_incr_once(
+            "data.station.dberror", tags=["type:cell", "errno:%s" % errno]
         )
 
 
@@ -274,22 +271,10 @@ class StationTest(BaseStationTest):
         self.check_blocked(station, None)
         self.check_dates(station, self.today, self.today, self.today)
 
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr", "data.observation.insert", value=5, tags=[self.type_tag]
-                )
-            )
-            == 1
+        metricsmock.assert_incr_once(
+            "data.observation.insert", value=5, tags=[self.type_tag]
         )
-        assert (
-            len(
-                metricsmock.filter_records(
-                    "incr", "data.station.new", value=1, tags=[self.type_tag]
-                )
-            )
-            == 1
-        )
+        metricsmock.assert_incr_once("data.station.new", value=1, tags=[self.type_tag])
 
     @pytest.mark.parametrize("source", (ReportSource.gnss, ReportSource.query))
     def test_new_block(self, celery, session, source):

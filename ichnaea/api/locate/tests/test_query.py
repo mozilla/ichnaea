@@ -355,11 +355,8 @@ class TestQueryStats(QueryTest):
 
     def test_empty(self, geoip_db, metricsmock):
         self._make_query(geoip_db, ip=self.london_ip)
-        assert metricsmock.has_record(
-            "incr",
-            "locate.query",
-            value=1,
-            tags=["key:test", "blue:none", "cell:none", "wifi:none"],
+        metricsmock.assert_incr_once(
+            "locate.query", tags=["key:test", "blue:none", "cell:none", "wifi:none"]
         )
 
     def test_one(self, geoip_db, metricsmock):
@@ -370,14 +367,9 @@ class TestQueryStats(QueryTest):
         self._make_query(
             geoip_db, blue=blues, cell=cells, wifi=wifis, ip=self.london_ip
         )
-        assert metricsmock.get_records() == [
-            (
-                "incr",
-                "locate.query",
-                1,
-                ["key:test", "blue:one", "cell:one", "wifi:one"],
-            )
-        ]
+        metricsmock.assert_incr_once(
+            "locate.query", tags=["key:test", "blue:one", "cell:one", "wifi:one"]
+        )
 
     def test_many(self, geoip_db, metricsmock):
         blues = BlueShardFactory.build_batch(2)
@@ -387,14 +379,9 @@ class TestQueryStats(QueryTest):
         self._make_query(
             geoip_db, blue=blues, cell=cells, wifi=wifis, ip=self.london_ip
         )
-        assert metricsmock.get_records() == [
-            (
-                "incr",
-                "locate.query",
-                1,
-                ["key:test", "blue:many", "cell:many", "wifi:many"],
-            )
-        ]
+        metricsmock.assert_incr_once(
+            "locate.query", tags=["key:test", "blue:many", "cell:many", "wifi:many"]
+        )
 
 
 class TestResultStats(QueryTest):
@@ -446,10 +433,8 @@ class TestResultStats(QueryTest):
         self._make_query(
             geoip_db, self._make_region_result(), api_type="region", ip=self.london_ip
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "region.result",
-            value=1,
             tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:hit"],
         )
 
@@ -464,19 +449,15 @@ class TestResultStats(QueryTest):
 
     def test_none(self, geoip_db, metricsmock):
         self._make_query(geoip_db, None, ip=self.london_ip)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:miss"],
         )
 
     def test_low_miss(self, geoip_db, metricsmock):
         self._make_query(geoip_db, self._make_result(), ip=self.london_ip)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:miss"],
         )
 
@@ -484,20 +465,16 @@ class TestResultStats(QueryTest):
         self._make_query(
             geoip_db, self._make_result(accuracy=25000.0), ip=self.london_ip
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=["key:test", "fallback_allowed:false", "accuracy:low", "status:hit"],
         )
 
     def test_medium_miss(self, geoip_db, metricsmock):
         cells = CellShardFactory.build_batch(1)
         self._make_query(geoip_db, self._make_result(), cell=cells)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -509,10 +486,8 @@ class TestResultStats(QueryTest):
     def test_medium_miss_low(self, geoip_db, metricsmock):
         cells = CellShardFactory.build_batch(1)
         self._make_query(geoip_db, self._make_result(accuracy=50000.1), cell=cells)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -524,10 +499,8 @@ class TestResultStats(QueryTest):
     def test_medium_hit(self, geoip_db, metricsmock):
         cells = CellShardFactory.build_batch(1)
         self._make_query(geoip_db, self._make_result(accuracy=50000.0), cell=cells)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -539,25 +512,16 @@ class TestResultStats(QueryTest):
     def test_high_miss(self, geoip_db, metricsmock):
         wifis = WifiShardFactory.build_batch(2)
         self._make_query(geoip_db, self._make_result(accuracy=2500.0), wifi=wifis)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:high", "status:miss"],
         )
 
     def test_high_hit(self, geoip_db, metricsmock):
         wifis = WifiShardFactory.build_batch(2)
         self._make_query(geoip_db, self._make_result(accuracy=500.0), wifi=wifis)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=["key:test", "fallback_allowed:false", "accuracy:high", "status:hit"],
         )
 
@@ -566,16 +530,9 @@ class TestResultStats(QueryTest):
         self._make_query(
             geoip_db, self._make_result(accuracy=2001.0), wifi=wifis, ip=self.london_ip
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
-            tags=[
-                "key:test",
-                "fallback_allowed:false",
-                "accuracy:high",
-                "status:miss",
-            ],
+            tags=["key:test", "fallback_allowed:false", "accuracy:high", "status:miss"],
         )
 
     def test_mixed_hit(self, geoip_db, metricsmock):
@@ -583,10 +540,8 @@ class TestResultStats(QueryTest):
         self._make_query(
             geoip_db, self._make_result(accuracy=500.0), cell=cells, ip=self.london_ip
         )
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.result",
-            value=1,
             tags=[
                 "key:test",
                 "fallback_allowed:false",
@@ -636,10 +591,8 @@ class TestSourceStats(QueryTest):
         wifis = WifiShardFactory.build_batch(2)
         results = self._make_results(accuracy=100.0)
         self._make_query(geoip_db, DataSource.internal, results, wifi=wifis)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:hit"],
         )
 
@@ -647,10 +600,8 @@ class TestSourceStats(QueryTest):
         wifis = WifiShardFactory.build_batch(2)
         results = self._make_results(accuracy=10000.0)
         self._make_query(geoip_db, DataSource.geoip, results, wifi=wifis)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.source",
-            value=1,
             tags=["key:test", "source:geoip", "accuracy:high", "status:miss"],
         )
 
@@ -658,9 +609,7 @@ class TestSourceStats(QueryTest):
         wifis = WifiShardFactory.build_batch(2)
         results = PositionResultList()
         self._make_query(geoip_db, DataSource.internal, results, wifi=wifis)
-        assert metricsmock.has_record(
-            "incr",
+        metricsmock.assert_incr_once(
             "locate.source",
-            value=1,
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )

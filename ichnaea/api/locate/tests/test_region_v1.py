@@ -37,31 +37,21 @@ class RegionBase(BaseLocateTest):
 
 class TestView(RegionBase, CommonLocateTest):
     def test_geoip(self, app, data_queues, metricsmock):
+        """GeoIP can be used to determine the region."""
         res = self._call(app, ip=self.test_ip)
         self.check_response(data_queues, res, "ok")
         assert res.headers["Access-Control-Allow-Origin"] == "*"
         assert res.headers["Access-Control-Max-Age"] == "2592000"
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:200"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:200"]
         )
 
     def test_geoip_miss(self, app, data_queues, metricsmock):
+        """GeoIP fails on some IPs, such as localhost."""
         res = self._call(app, ip="127.0.0.1", status=404)
         self.check_response(data_queues, res, "not_found")
-        assert metricsmock.has_record(
-            "incr",
-            "request",
-            value=1,
-            tags=[self.metric_path, "method:post", "status:404"],
-        )
-        assert metricsmock.has_record(
-            "timing", "request.timing", tags=[self.metric_path, "method:post"]
+        metricsmock.assert_incr_once(
+            "request", tags=[self.metric_path, "method:post", "status:404"]
         )
 
     def test_incomplete_request(self, app, data_queues):
