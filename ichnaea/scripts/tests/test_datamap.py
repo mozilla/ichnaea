@@ -76,8 +76,10 @@ class TestMap(object):
 
         assert rows == 18
         assert len(lines) == 18
-        assert set([round(float(l[0]), 2) for l in lines]) == set([-10.0, 0.0, 12.35])
-        assert set([round(float(l[1]), 2) for l in lines]) == set([-11.0, 12.35])
+        lats = [round(float(line[0]), 2) for line in lines]
+        longs = [round(float(line[1]), 2) for line in lines]
+        assert set(lats) == set([-10.0, 0.0, 12.35])
+        assert set(longs) == set([-11.0, 12.35])
 
     def test_main(self, raven):
         with util.selfdestruct_tempdir() as temp_dir:
