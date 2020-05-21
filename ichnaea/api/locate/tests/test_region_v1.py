@@ -10,6 +10,7 @@ class RegionBase(BaseLocateTest):
 
     url = "/v1/country"
     apikey_metrics = False
+    ip_log_and_rate_limit = False
     metric_path = "path:v1.country"
     metric_type = "region"
 

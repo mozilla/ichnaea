@@ -86,9 +86,17 @@ class BaseAPIView(BaseView):
                 pipe.expire(log_ip_key, 691200)  # 8 days
                 pipe.incr(rate_key, 1)
                 pipe.expire(rate_key, 90000)  # 25 hours
-                _, _, count, _ = pipe.execute()
-                if maxreq and count > maxreq:
-                    should_limit = True
+                ip_count, _, limit_count, _ = pipe.execute()
+                log_params = {
+                    "api_key_count": limit_count,
+                    "api_key_ip_count": ip_count,
+                }
+                if maxreq:
+                    should_limit = limit_count > maxreq
+                    log_params["rate_quota"] = maxreq
+                    log_params["rate_remaining"] = max(0, maxreq - limit_count)
+                    log_params["rate_allowed"] = not should_limit
+                bind_threadlocal(**log_params)
         except RedisError:
             self.raven_client.captureException()
 

@@ -278,6 +278,8 @@ class BaseLocateTest(object):
 class CommonLocateTest(BaseLocateTest):
     """Common tests for geolocate and region APIs."""
 
+    ip_log_and_rate_limit = True
+
     def test_get(self, app, data_queues, metricsmock, logs):
         """A GET returns an IP-based location."""
         res = self._call(app, ip=self.test_ip, method="get", status=200)
@@ -320,6 +322,8 @@ class CommonLocateTest(BaseLocateTest):
             "wifi": 0,
             "wifi_valid": 0,
         }
+        if self.ip_log_and_rate_limit:
+            expected_entry["api_key_count"] = expected_entry["api_key_ip_count"] = 1
         assert logs.entry == expected_entry
 
     def test_options(self, app, logs):
