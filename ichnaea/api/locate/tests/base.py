@@ -408,7 +408,7 @@ class CommonLocateTest(BaseLocateTest):
         self.check_response(data_queues, res, "ok")
         self.check_queue(data_queues, 0)
 
-    def test_no_api_key(self, app, data_queues, redis, metricsmock):
+    def test_no_api_key(self, app, data_queues, redis, metricsmock, logs):
         """Omitting the API key is a 400 error."""
         res = self._call(app, api_key=None, ip=self.test_ip, status=400)
         self.check_response(data_queues, res, "invalid_key")
@@ -416,6 +416,8 @@ class CommonLocateTest(BaseLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
+        assert logs.entry["api_key"] == "none"
+        assert "invalid_api_key" not in logs.entry
 
     def test_invalid_api_key(self, app, data_queues, redis, metricsmock, logs):
         """An invalid API key is sanitized to the same as no key."""
@@ -426,6 +428,7 @@ class CommonLocateTest(BaseLocateTest):
         )
         assert redis.keys("apiuser:*") == []
         assert logs.entry["api_key"] == "none"
+        assert logs.entry["invalid_api_key"] == "invalid_key"
 
     def test_unknown_api_key(self, app, data_queues, redis, metricsmock, logs):
         """A unknown API key is an error, and increments an "invalid" metric."""
@@ -436,6 +439,7 @@ class CommonLocateTest(BaseLocateTest):
         )
         assert redis.keys("apiuser:*") == []
         assert logs.entry["api_key"] == "invalid"
+        assert logs.entry["invalid_api_key"] == "abcdefg"
 
     def test_gzip(self, app, data_queues, logs):
         """A gzip-encoded body is uncompressed first."""

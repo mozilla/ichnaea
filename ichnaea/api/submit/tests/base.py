@@ -150,6 +150,7 @@ class BaseSubmitTest(object):
         )
         assert redis.keys("apiuser:*") == []
         assert logs.entry["api_key"] == "none"
+        assert logs.entry["invalid_api_key"] == "invalid_key"
 
     def test_log_api_key_unknown(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
@@ -159,6 +160,7 @@ class BaseSubmitTest(object):
         )
         assert redis.keys("apiuser:*") == []
         assert logs.entry["api_key"] == "invalid"
+        assert logs.entry["invalid_api_key"] == "abcdefg"
 
     def test_log_stats(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()

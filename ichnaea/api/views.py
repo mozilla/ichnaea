@@ -41,8 +41,13 @@ class BaseAPIView(BaseView):
             api_key_text = self.request.GET.get("key", None)
         except Exception:
             api_key_text = None
-        # Validate key and potentially return None
-        return validated_key(api_key_text)
+        if api_key_text:
+            # Validate key and potentially return None
+            valid_key = validated_key(api_key_text)
+            if valid_key is None:
+                bind_threadlocal(invalid_api_key=api_key_text)
+            return valid_key
+        return None
 
     def log_count(self, valid_key):
         METRICS.incr(
@@ -155,6 +160,7 @@ class BaseAPIView(BaseView):
         else:
             if api_key_text is not None:
                 self.log_count("invalid")
+                bind_threadlocal(invalid_api_key=api_key_text)
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 
