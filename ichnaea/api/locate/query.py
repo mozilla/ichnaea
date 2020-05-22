@@ -183,7 +183,7 @@ class Query(object):
         If the same Bluetooth network is supplied multiple times, this
         chooses only the best entry for each unique network.
 
-        If fewer than :data:`~ichnaea.api.locate.constants.MIN_BLUSS_IN_QUERY`
+        If fewer than :data:`~ichnaea.api.locate.constants.MIN_BLUES_IN_QUERY`
         unique valid Bluetooth networks are found, returns an empty list.
         """
         return self._blue

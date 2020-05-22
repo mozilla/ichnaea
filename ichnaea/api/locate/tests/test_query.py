@@ -331,6 +331,66 @@ class TestQuery(QueryTest):
         with pytest.raises(ValueError):
             Query(api_type="something")
 
+    def test_json(self):
+        """Test JSON with lots of data."""
+        blues = BlueShardFactory.build_batch(2)
+        cell = CellShardFactory.build(radio=Radio.lte)  # LTE always has timingAdvance
+        wifis = WifiShardFactory.build_batch(2)
+        query = Query(
+            blue=self.blue_model_query(blues),
+            cell=self.cell_model_query([cell]),
+            wifi=self.wifi_model_query(wifis),
+        )
+        assert query.json() == {
+            "bluetoothBeacons": [
+                {"age": 10, "macAddress": blues[0].mac, "signalStrength": -85},
+                {"age": 10, "macAddress": blues[1].mac, "signalStrength": -85},
+            ],
+            "cellTowers": [
+                {
+                    "age": 20,
+                    "cellId": cell.cid,
+                    "locationAreaCode": cell.lac,
+                    "mobileCountryCode": 234,
+                    "mobileNetworkCode": 30,
+                    "primaryScramblingCode": cell.psc,
+                    "radioType": cell.radio.name,
+                    "signalStrength": -90,
+                    "timingAdvance": 1,
+                }
+            ],
+            "fallbacks": {"ipf": True, "lacf": True},
+            "wifiAccessPoints": [
+                {
+                    "age": 30,
+                    "channel": 1,
+                    "frequency": 2412,
+                    "macAddress": wifis[0].mac,
+                    "signalStrength": -85,
+                    "signalToNoiseRatio": 13,
+                    "ssid": "wifi",
+                },
+                {
+                    "age": 30,
+                    "channel": 1,
+                    "frequency": 2412,
+                    "macAddress": wifis[1].mac,
+                    "signalStrength": -85,
+                    "signalToNoiseRatio": 13,
+                    "ssid": "wifi",
+                },
+            ],
+        }
+
+    def test_json_below_data_thresholds(self):
+        """Test JSON with less data than the privacy threshholds."""
+        blue = BlueShardFactory.build()
+        wifi = WifiShardFactory.build()
+        query = Query(
+            blue=self.blue_model_query([blue]), wifi=self.wifi_model_query([wifi]),
+        )
+        assert query.json() == {"fallbacks": {"ipf": True, "lacf": True}}
+
 
 class TestQueryStats(QueryTest):
     def _make_query(
