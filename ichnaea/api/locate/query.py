@@ -93,7 +93,6 @@ class Query(object):
         self.api_type = api_type
 
         bind_threadlocal(
-            api_type=api_type,
             region=self.region,
             blue=len(blue or []),
             blue_valid=len(self.blue),

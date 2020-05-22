@@ -111,6 +111,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         expected_entry = {
             "api_key": api_key.valid_key,
             "api_path": self.metric_path.split(":")[1],
+            "api_type": self.metric_type,
             "duration_s": logs.entry["duration_s"],
             "event": f"POST {self.url} - 403",
             "http_method": "POST",
@@ -745,7 +746,6 @@ class TestError(LocateV1Base, BaseLocateTest):
         raven.check([("ProgrammingError", 1)])
         self.check_queue(data_queues, 0)
         expected_entry = {
-            "api_type": "locate",
             "blue": 0,
             "blue_valid": 0,
             "cell": 2,

@@ -182,6 +182,7 @@ class BaseSubmitTest(object):
         expected_entry = {
             "api_key": "test",
             "api_path": self.metric_path.split(":")[1],
+            "api_type": "submit",
             "duration_s": logs.entry["duration_s"],
             "event": f"POST {self.url} - {self.status}",
             "http_method": "POST",

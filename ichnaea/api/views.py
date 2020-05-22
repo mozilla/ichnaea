@@ -54,7 +54,9 @@ class BaseAPIView(BaseView):
             self.view_type + ".request",
             tags=["path:" + self.metric_path, "key:" + valid_key],
         )
-        bind_threadlocal(api_path=self.metric_path, api_key=valid_key)
+        bind_threadlocal(
+            api_key=valid_key, api_path=self.metric_path, api_type=self.view_type
+        )
 
     def log_ip_and_rate_limited(self, valid_key, maxreq):
         # Log IP
