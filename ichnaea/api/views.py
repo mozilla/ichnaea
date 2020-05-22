@@ -147,6 +147,12 @@ class BaseAPIView(BaseView):
                 # if we cannot connect to backend DB, skip api key check
                 skip_check = True
                 self.raven_client.captureException()
+                bind_threadlocal(
+                    api_key=api_key_text,
+                    api_path=self.metric_path,
+                    api_type=self.view_type,
+                    api_key_db_fail=True,
+                )
 
         if api_key is not None and api_key.allowed(self.view_type):
             valid_key = api_key.valid_key

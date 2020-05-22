@@ -746,6 +746,10 @@ class TestError(LocateV1Base, BaseLocateTest):
         raven.check([("ProgrammingError", 1)])
         self.check_queue(data_queues, 0)
         expected_entry = {
+            "api_key": "test",
+            "api_key_db_fail": True,
+            "api_path": "v1.geolocate",
+            "api_type": "locate",
             "blue": 0,
             "blue_valid": 0,
             "cell": 2,
