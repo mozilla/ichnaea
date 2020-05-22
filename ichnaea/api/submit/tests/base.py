@@ -184,6 +184,8 @@ class BaseSubmitTest(object):
             "api_key_count": 1,
             "api_key_repeat_ip": False,
             "api_path": self.metric_path.split(":")[1],
+            "api_repeat_request": False,
+            "api_request_sig": logs.only_entry["api_request_sig"],
             "api_type": "submit",
             "duration_s": logs.only_entry["duration_s"],
             "event": f"POST {self.url} - {self.status}",

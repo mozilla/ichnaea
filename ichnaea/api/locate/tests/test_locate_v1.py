@@ -737,6 +737,63 @@ class TestView(LocateV1Base, CommonLocateTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
+    @pytest.mark.parametrize("with_radio", ("cell", None))
+    def test_signature(self, app, session, redis, with_radio, logs):
+        """Identical requests have the same signature, repeats are noticed."""
+        if with_radio == "cell":
+            cell = CellShardFactory(radio=Radio.lte)
+            query = self.model_query(cells=[cell])
+            cell2 = CellShardFactory(radio=Radio.lte)
+            query2 = self.model_query(cells=[cell2])
+        else:
+            # IP-based lookup
+            query = {}
+            query2 = {"fallbacks": {"ipf": True}}
+
+        # Make two identical calls
+        self._call(app, api_key="test", body=query, ip=self.test_ip)
+        self._call(app, api_key="test", body=query, ip=self.test_ip)
+
+        # Different body
+        self._call(app, api_key="test", body=query2, ip=self.test_ip)
+
+        # Switch the IP address
+        other_ip = "81.2.69.143"
+        assert other_ip != self.test_ip
+        self._call(app, api_key="test", body=query, ip=other_ip)
+
+        # Switch the API key
+        other_key = ApiKeyFactory()
+        session.flush()
+        self._call(app, api_key=other_key.valid_key, body=query, ip=self.test_ip)
+
+        log1, log2, log_new_body, log_new_ip, log_new_key = logs.entries
+
+        # First two calls have identical signatures
+        assert log1["api_request_sig"] == log2["api_request_sig"]
+        seen_sigs = set([log1["api_request_sig"]])
+        assert not log1["api_key_repeat_ip"]
+        assert not log1["api_repeat_request"]
+        assert log2["api_key_repeat_ip"]
+        assert log2["api_repeat_request"]
+
+        # A different body has a different signature, but repeated IP
+        assert log_new_body["api_request_sig"] not in seen_sigs
+        seen_sigs.add(log_new_body["api_request_sig"])
+        assert log_new_body["api_key_repeat_ip"]
+        assert not log_new_body["api_repeat_request"]
+
+        # A different IP has a different signature
+        assert log_new_ip["api_request_sig"] not in seen_sigs
+        seen_sigs.add(log_new_ip["api_request_sig"])
+        assert not log_new_ip["api_key_repeat_ip"]
+        assert not log_new_ip["api_repeat_request"]
+
+        # A different API key has a different signature
+        assert log_new_key["api_request_sig"] not in seen_sigs
+        assert not log_new_key["api_key_repeat_ip"]
+        assert not log_new_key["api_repeat_request"]
+
 
 class TestError(LocateV1Base, BaseLocateTest):
     def test_apikey_error(self, app, data_queues, raven, session, restore_db, logs):
@@ -754,6 +811,8 @@ class TestError(LocateV1Base, BaseLocateTest):
             "api_key": "test",
             "api_key_db_fail": True,
             "api_path": "v1.geolocate",
+            "api_repeat_request": False,
+            "api_request_sig": logs.only_entry["api_request_sig"],
             "api_type": "locate",
             "blue": 0,
             "blue_valid": 0,
@@ -816,6 +875,8 @@ class TestError(LocateV1Base, BaseLocateTest):
             "api_key_count": 1,
             "api_key_repeat_ip": False,
             "api_path": "v1.geolocate",
+            "api_repeat_request": False,
+            "api_request_sig": logs.only_entry["api_request_sig"],
             "api_type": "locate",
             "blue": 0,
             "blue_valid": 0,

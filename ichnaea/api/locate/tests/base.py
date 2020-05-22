@@ -325,6 +325,8 @@ class CommonLocateTest(BaseLocateTest):
         if self.ip_log_and_rate_limit:
             expected_entry["api_key_count"] = 1
             expected_entry["api_key_repeat_ip"] = False
+            expected_entry["api_repeat_request"] = False
+            expected_entry["api_request_sig"] = logs.only_entry["api_request_sig"]
         assert logs.only_entry == expected_entry
 
     def test_options(self, app, logs):
