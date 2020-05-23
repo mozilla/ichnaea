@@ -164,7 +164,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert logs.entry["blue"] == logs.entry["blue_valid"] == 2
+        assert logs.entry["blue_valid"] == 2
 
     def test_cell_not_found(self, app, data_queues, metricsmock, logs):
         """A failed cell-based lookup emits several metrics."""
@@ -196,7 +196,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
         )
-        assert logs.entry["cell"] == logs.entry["cell_valid"] == 1
+        assert logs.entry["cell_valid"] == 1
 
     def test_cell_invalid_lac(self, app, data_queues, logs):
         """A valid CID with and invalid LAC is not an error."""
@@ -222,7 +222,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert logs.entry["cell"] == logs.entry["cell_valid"] == 1
+        assert logs.entry["cell_valid"] == 1
 
     @pytest.mark.parametrize("fallback", ("explicit", "default", "ipf"))
     def test_cellarea(self, app, session, metricsmock, fallback, logs):
@@ -316,7 +316,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert logs.entry["wifi"] == logs.entry["wifi_valid"] == 2
+        assert logs.entry["wifi_valid"] == 2
 
     def test_ip_fallback_disabled(self, app, data_queues, metricsmock, logs):
         """The IP-based location fallback can be disabled."""
@@ -400,8 +400,8 @@ class TestView(LocateV1Base, CommonLocateTest):
         )
 
         log = logs.entry
-        assert log["cell"] == log["cell_valid"] == 2
-        assert log["wifi"] == log["wifi_valid"] == 3
+        assert log["cell_valid"] == 2
+        assert log["wifi_valid"] == 3
         assert log["fallback_allowed"]
         assert log["source_fallback_accuracy"] == "high"
         assert log["source_fallback_accuracy_min"] == "high"

@@ -454,7 +454,7 @@ class CommonLocateTest(BaseLocateTest):
         headers = {"Content-Encoding": "gzip"}
         res = self._call(app, body=body, headers=headers, method="post", status=404)
         self.check_response(data_queues, res, "not_found")
-        assert logs.entry["wifi"] == logs.entry["wifi_valid"] == 2
+        assert logs.entry["wifi_valid"] == 2
 
     def test_truncated_gzip(self, app, data_queues):
         """An incomplete gzip-encoded body is an error."""
