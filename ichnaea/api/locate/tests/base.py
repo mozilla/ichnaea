@@ -323,7 +323,8 @@ class CommonLocateTest(BaseLocateTest):
             "wifi_valid": 0,
         }
         if self.ip_log_and_rate_limit:
-            expected_entry["api_key_count"] = expected_entry["api_key_ip_count"] = 1
+            expected_entry["api_key_count"] = 1
+            expected_entry["api_key_repeat_ip"] = False
         assert logs.entry == expected_entry
 
     def test_options(self, app, logs):

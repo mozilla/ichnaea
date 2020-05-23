@@ -111,7 +111,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         expected_entry = {
             "api_key": api_key.valid_key,
             "api_key_count": 11,
-            "api_key_ip_count": 1,
+            "api_key_repeat_ip": False,
             "api_path": self.metric_path.split(":")[1],
             "api_type": self.metric_type,
             "duration_s": logs.entry["duration_s"],
@@ -814,7 +814,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             "accuracy_min": "high",
             "api_key": "test",
             "api_key_count": 1,
-            "api_key_ip_count": 1,
+            "api_key_repeat_ip": False,
             "api_path": "v1.geolocate",
             "api_type": "locate",
             "blue": 0,
