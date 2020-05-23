@@ -296,7 +296,7 @@ class CommonLocateTest(BaseLocateTest):
         expected_entry = {
             # accuracy is low for region API fixture, and medium for geolocate
             # see bound_model_accuracy and related tests for direct calculation
-            "accuracy": logs.entry["accuracy"],
+            "accuracy": logs.only_entry["accuracy"],
             "accuracy_min": "low",
             "api_key": "test",
             "api_path": self.metric_path.split(":")[1],
@@ -305,7 +305,7 @@ class CommonLocateTest(BaseLocateTest):
             "blue_valid": 0,
             "cell": 0,
             "cell_valid": 0,
-            "duration_s": logs.entry["duration_s"],
+            "duration_s": logs.only_entry["duration_s"],
             "event": f"GET {self.url} - 200",
             "fallback_allowed": False,
             "has_geoip": True,
@@ -316,7 +316,7 @@ class CommonLocateTest(BaseLocateTest):
             "log_level": "info",
             "region": "GB",
             "result_status": "hit",
-            "source_geoip_accuracy": logs.entry["accuracy"],
+            "source_geoip_accuracy": logs.only_entry["accuracy"],
             "source_geoip_accuracy_min": "low",
             "source_geoip_status": "hit",
             "wifi": 0,
@@ -325,14 +325,14 @@ class CommonLocateTest(BaseLocateTest):
         if self.ip_log_and_rate_limit:
             expected_entry["api_key_count"] = 1
             expected_entry["api_key_repeat_ip"] = False
-        assert logs.entry == expected_entry
+        assert logs.only_entry == expected_entry
 
     def test_options(self, app, logs):
         """An OPTIONS request works, as required for CORS"""
         res = self._call(app, method="options", status=200)
         assert res.headers["Access-Control-Allow-Origin"] == "*"
         assert res.headers["Access-Control-Max-Age"] == "2592000"
-        assert logs.entry["http_method"] == "OPTIONS"
+        assert logs.only_entry["http_method"] == "OPTIONS"
 
     @pytest.mark.parametrize("method", ("delete", "patch", "put"))
     def test_unsupported_methods(self, app, method, logs):
@@ -421,8 +421,8 @@ class CommonLocateTest(BaseLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
-        assert logs.entry["api_key"] == "none"
-        assert "invalid_api_key" not in logs.entry
+        assert logs.only_entry["api_key"] == "none"
+        assert "invalid_api_key" not in logs.only_entry
 
     def test_invalid_api_key(self, app, data_queues, redis, metricsmock, logs):
         """An invalid API key is sanitized to the same as no key."""
@@ -432,8 +432,8 @@ class CommonLocateTest(BaseLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
-        assert logs.entry["api_key"] == "none"
-        assert logs.entry["invalid_api_key"] == "invalid_key"
+        assert logs.only_entry["api_key"] == "none"
+        assert logs.only_entry["invalid_api_key"] == "invalid_key"
 
     def test_unknown_api_key(self, app, data_queues, redis, metricsmock, logs):
         """A unknown API key is an error, and increments an "invalid" metric."""
@@ -443,8 +443,8 @@ class CommonLocateTest(BaseLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
-        assert logs.entry["api_key"] == "invalid"
-        assert logs.entry["invalid_api_key"] == "abcdefg"
+        assert logs.only_entry["api_key"] == "invalid"
+        assert logs.only_entry["invalid_api_key"] == "abcdefg"
 
     def test_gzip(self, app, data_queues, logs):
         """A gzip-encoded body is uncompressed first."""
@@ -455,7 +455,7 @@ class CommonLocateTest(BaseLocateTest):
         headers = {"Content-Encoding": "gzip"}
         res = self._call(app, body=body, headers=headers, method="post", status=404)
         self.check_response(data_queues, res, "not_found")
-        assert logs.entry["wifi_valid"] == 2
+        assert logs.only_entry["wifi_valid"] == 2
 
     def test_truncated_gzip(self, app, data_queues):
         """An incomplete gzip-encoded body is an error."""

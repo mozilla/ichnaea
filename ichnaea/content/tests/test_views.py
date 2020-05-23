@@ -134,17 +134,15 @@ class TestFunctionalContent(object):
             # App 404s like geolocate misses are logged, see API tests
             assert logs.entries == []
         else:
-            assert len(logs.entries) == 1
-            log = logs.entries[0]
             expected_log = {
-                "duration_s": log["duration_s"],
+                "duration_s": logs.only_entry["duration_s"],
                 "event": f"GET {path} - {status}",
                 "http_method": "GET",
                 "http_path": path,
                 "http_status": status,
                 "log_level": "info",
             }
-            assert log == expected_log
+            assert logs.only_entry == expected_log
 
     @config_override(ASSET_BUCKET="bucket", ASSET_URL="http://127.0.0.1:9/foo")
     def test_downloads(self, app):

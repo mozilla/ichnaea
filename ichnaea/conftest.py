@@ -531,7 +531,7 @@ class SingleLogCapture(LogCapture):
     """Capturing processor with helper method for single log entries."""
 
     @property
-    def entry(self):
+    def only_entry(self):
         """Assert there is a single log entry and return it."""
         assert len(self.entries) == 1
         return self.entries[0]

@@ -140,7 +140,7 @@ class BaseSubmitTest(object):
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
-        assert logs.entry["api_key"] == "none"
+        assert logs.only_entry["api_key"] == "none"
 
     def test_log_api_key_invalid(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
@@ -149,8 +149,8 @@ class BaseSubmitTest(object):
             self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         )
         assert redis.keys("apiuser:*") == []
-        assert logs.entry["api_key"] == "none"
-        assert logs.entry["invalid_api_key"] == "invalid_key"
+        assert logs.only_entry["api_key"] == "none"
+        assert logs.only_entry["invalid_api_key"] == "invalid_key"
 
     def test_log_api_key_unknown(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
@@ -159,8 +159,8 @@ class BaseSubmitTest(object):
             self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         )
         assert redis.keys("apiuser:*") == []
-        assert logs.entry["api_key"] == "invalid"
-        assert logs.entry["invalid_api_key"] == "abcdefg"
+        assert logs.only_entry["api_key"] == "invalid"
+        assert logs.only_entry["invalid_api_key"] == "abcdefg"
 
     def test_log_stats(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
@@ -185,14 +185,14 @@ class BaseSubmitTest(object):
             "api_key_repeat_ip": False,
             "api_path": self.metric_path.split(":")[1],
             "api_type": "submit",
-            "duration_s": logs.entry["duration_s"],
+            "duration_s": logs.only_entry["duration_s"],
             "event": f"POST {self.url} - {self.status}",
             "http_method": "POST",
             "http_path": self.url,
             "http_status": self.status,
             "log_level": "info",
         }
-        assert logs.entry == expected_entry
+        assert logs.only_entry == expected_entry
 
     def test_options(self, app):
         res = app.options(self.url, status=200)

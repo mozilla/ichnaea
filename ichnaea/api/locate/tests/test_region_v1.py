@@ -56,7 +56,7 @@ class TestView(RegionBase, CommonLocateTest):
             "blue_valid": 0,
             "cell": 0,
             "cell_valid": 0,
-            "duration_s": logs.entry["duration_s"],
+            "duration_s": logs.only_entry["duration_s"],
             "event": "POST /v1/country - 200",
             "fallback_allowed": False,
             "has_geoip": True,
@@ -73,7 +73,7 @@ class TestView(RegionBase, CommonLocateTest):
             "wifi": 0,
             "wifi_valid": 0,
         }
-        assert logs.entry == expected_entry
+        assert logs.only_entry == expected_entry
 
     def test_geoip_miss(self, app, data_queues, metricsmock, logs):
         """GeoIP fails on some IPs, such as localhost."""
@@ -82,8 +82,8 @@ class TestView(RegionBase, CommonLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:404"]
         )
-        assert logs.entry["source_geoip_accuracy"] is None
-        assert logs.entry["source_geoip_status"] == "miss"
+        assert logs.only_entry["source_geoip_accuracy"] is None
+        assert logs.only_entry["source_geoip_status"] == "miss"
 
     def test_incomplete_request(self, app, data_queues):
         res = self._call(app, body={"wifiAccessPoints": []}, ip=self.test_ip)

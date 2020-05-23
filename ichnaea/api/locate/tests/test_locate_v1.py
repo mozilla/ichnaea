@@ -114,7 +114,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             "api_key_repeat_ip": False,
             "api_path": self.metric_path.split(":")[1],
             "api_type": self.metric_type,
-            "duration_s": logs.entry["duration_s"],
+            "duration_s": logs.only_entry["duration_s"],
             "event": f"POST {self.url} - 403",
             "http_method": "POST",
             "http_path": self.url,
@@ -124,7 +124,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             "rate_quota": 5,
             "rate_remaining": 0,
         }
-        assert logs.entry == expected_entry
+        assert logs.only_entry == expected_entry
 
     def test_api_key_blocked(self, app, data_queues, session, logs):
         """A 400 is returned when a key is blocked from locate APIs."""
@@ -134,7 +134,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         res = self._call(app, api_key=api_key.valid_key, ip=self.test_ip, status=400)
         self.check_response(data_queues, res, "invalid_key")
 
-        log = logs.entry
+        log = logs.only_entry
         assert log["api_key"] == api_key.valid_key
         assert not log["api_key_allowed"]
 
@@ -164,7 +164,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert logs.entry["blue_valid"] == 2
+        assert logs.only_entry["blue_valid"] == 2
 
     def test_cell_not_found(self, app, data_queues, metricsmock, logs):
         """A failed cell-based lookup emits several metrics."""
@@ -196,7 +196,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:medium", "status:miss"],
         )
-        assert logs.entry["cell_valid"] == 1
+        assert logs.only_entry["cell_valid"] == 1
 
     def test_cell_invalid_lac(self, app, data_queues, logs):
         """A valid CID with and invalid LAC is not an error."""
@@ -205,8 +205,8 @@ class TestView(LocateV1Base, CommonLocateTest):
         res = self._call(app, body=query, status=404)
         self.check_response(data_queues, res, "not_found")
 
-        assert logs.entry["cell"] == 1
-        assert logs.entry["cell_valid"] == 0
+        assert logs.only_entry["cell"] == 1
+        assert logs.only_entry["cell_valid"] == 0
 
     def test_cell_lte_radio(self, app, session, metricsmock, logs):
         """A known LTE station can be used for lookups."""
@@ -222,7 +222,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         metricsmock.assert_incr_once(
             "request", tags=[self.metric_path, "method:post", "status:200"]
         )
-        assert logs.entry["cell_valid"] == 1
+        assert logs.only_entry["cell_valid"] == 1
 
     @pytest.mark.parametrize("fallback", ("explicit", "default", "ipf"))
     def test_cellarea(self, app, session, metricsmock, fallback, logs):
@@ -267,8 +267,8 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:low", "status:hit"],
         )
-        assert logs.entry["cell"] == 1
-        assert logs.entry["cell_valid"] == 0
+        assert logs.only_entry["cell"] == 1
+        assert logs.only_entry["cell_valid"] == 0
 
     def test_cellarea_without_lacf(self, app, data_queues, session, metricsmock, logs):
         """The cell location area fallback can be disabled."""
@@ -287,8 +287,8 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
 
-        assert logs.entry["cell"] == 1
-        assert logs.entry["cell_valid"] == 0
+        assert logs.only_entry["cell"] == 1
+        assert logs.only_entry["cell_valid"] == 0
 
     def test_wifi_not_found(self, app, data_queues, metricsmock, logs):
         """A failed WiFi-based lookup emits several metrics."""
@@ -316,7 +316,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             self.metric_type + ".source",
             tags=["key:test", "source:internal", "accuracy:high", "status:miss"],
         )
-        assert logs.entry["wifi_valid"] == 2
+        assert logs.only_entry["wifi_valid"] == 2
 
     def test_ip_fallback_disabled(self, app, data_queues, metricsmock, logs):
         """The IP-based location fallback can be disabled."""
@@ -330,8 +330,8 @@ class TestView(LocateV1Base, CommonLocateTest):
         metricsmock.assert_incr_once(
             self.metric_type + ".request", tags=[self.metric_path, "key:test"]
         )
-        assert logs.entry["has_geoip"]
-        assert "source_geoip_status" not in logs.entry
+        assert logs.only_entry["has_geoip"]
+        assert "source_geoip_status" not in logs.only_entry
 
     @pytest.mark.parametrize("with_ip", [True, False])
     def test_fallback(self, app, session, metricsmock, with_ip, logs):
@@ -399,7 +399,7 @@ class TestView(LocateV1Base, CommonLocateTest):
             tags=["key:fall", "source:fallback", "accuracy:high", "status:hit"],
         )
 
-        log = logs.entry
+        log = logs.only_entry
         assert log["cell_valid"] == 2
         assert log["wifi_valid"] == 3
         assert log["fallback_allowed"]
@@ -759,7 +759,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             "blue_valid": 0,
             "cell": 2,
             "cell_valid": 2,
-            "duration_s": logs.entry["duration_s"],
+            "duration_s": logs.only_entry["duration_s"],
             "event": "POST /v1/geolocate - 200",
             "has_geoip": True,
             "has_ip": True,
@@ -771,7 +771,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             "wifi": 2,
             "wifi_valid": 2,
         }
-        assert logs.entry == expected_entry
+        assert logs.only_entry == expected_entry
 
     def test_database_error(
         self, app, data_queues, raven, session, metricsmock, restore_db, logs
@@ -821,7 +821,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             "blue_valid": 0,
             "cell": 3,
             "cell_valid": 3,
-            "duration_s": logs.entry["duration_s"],
+            "duration_s": logs.only_entry["duration_s"],
             "event": "POST /v1/geolocate - 200",
             "fallback_allowed": False,
             "has_geoip": True,
@@ -841,5 +841,4 @@ class TestError(LocateV1Base, BaseLocateTest):
             "wifi": 2,
             "wifi_valid": 2,
         }
-
-        assert logs.entry == expected_entry
+        assert logs.only_entry == expected_entry
