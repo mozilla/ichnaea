@@ -7,7 +7,9 @@ import json
 import colander
 from ipaddress import ip_address
 import markus
+from pymysql.err import DatabaseError
 from redis import RedisError
+from sqlalchemy.exc import DBAPIError
 from structlog.threadlocal import bind_threadlocal
 
 from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
@@ -151,7 +153,7 @@ class BaseAPIView(BaseView):
         if api_key_text is not None:
             try:
                 api_key = get_key(self.request.db_session, api_key_text)
-            except Exception:
+            except (DatabaseError, DBAPIError):
                 # if we cannot connect to backend DB, skip api key check
                 skip_check = True
                 self.raven_client.captureException()
