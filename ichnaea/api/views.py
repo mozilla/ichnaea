@@ -121,23 +121,6 @@ class BaseAPIView(BaseView):
             # Use str(), since repr() includes the full source bytes
             raise self.prepare_exception(ParseError({"decode": str(exc)}))
 
-        if self.ip_log_and_rate_limit:
-            # Count unique daily requests
-            siggen = sha512(content.encode())
-            client_addr = self.request.client_addr or "127.0.0.1"
-            siggen.update(client_addr.encode())
-            siggen.update(self.request.url.encode())  # Includes the API key if given
-            signature = siggen.hexdigest()
-            today = util.utcnow().date().isoformat()
-            key = f"apirequest:{today}"
-            with self.redis_client.pipeline() as pipe:
-                pipe.pfadd(key, signature)
-                pipe.expire(key, 90000)  # 25 hours
-                new_request, _ = pipe.execute()
-            bind_threadlocal(
-                api_repeat_request=not new_request, api_request_sig=signature[:8]
-            )
-
         request_data = {}
         if content:
             try:
@@ -154,6 +137,25 @@ class BaseAPIView(BaseView):
 
         if request_content and errors:
             raise self.prepare_exception(ParseError(errors))
+
+        if self.ip_log_and_rate_limit and validated_data and not errors:
+            # Count unique daily requests
+            valid_data = self.schema.serialize(validated_data)
+            valid_content = json.dumps(valid_data, sort_keys=True)
+            siggen = sha512(valid_content.encode())
+            client_addr = self.request.client_addr or "127.0.0.1"
+            siggen.update(client_addr.encode())
+            siggen.update(self.request.url.encode())  # Includes the API key if given
+            signature = siggen.hexdigest()
+            today = util.utcnow().date().isoformat()
+            key = f"apirequest:{today}"
+            with self.redis_client.pipeline() as pipe:
+                pipe.pfadd(key, signature)
+                pipe.expire(key, 90000)  # 25 hours
+                new_request, _ = pipe.execute()
+            bind_threadlocal(
+                api_repeat_request=not new_request, api_request_sig=signature[:8]
+            )
 
         return validated_data
 

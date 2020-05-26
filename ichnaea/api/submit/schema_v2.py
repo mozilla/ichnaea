@@ -26,7 +26,7 @@ class SubmitV2Schema(OptionalMappingSchema):
         class SequenceItem(ReportSchema):
 
             cellTowers = CellTowersV2Schema(missing=())
-            position = PositionSchema(missing=None)
+            position = PositionSchema(missing=colander.drop)
 
 
 SUBMIT_V2_SCHEMA = SubmitV2Schema()

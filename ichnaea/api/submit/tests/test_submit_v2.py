@@ -293,3 +293,11 @@ class TestView(BaseSubmitTest):
             ],
         )
         assert self.queue(celery).size() == 3
+        item1, item2, item3 = self.queue(celery).dequeue()
+        assert set(item1["report"]["position"].keys()) == {
+            "latitude",
+            "longitude",
+            "accuracy",
+        }
+        assert set(item2["report"]["position"].keys()) == {"accuracy"}
+        assert "position" not in item3["report"]

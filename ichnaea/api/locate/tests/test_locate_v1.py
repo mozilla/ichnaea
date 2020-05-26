@@ -741,21 +741,30 @@ class TestView(LocateV1Base, CommonLocateTest):
     def test_signature(self, app, session, redis, with_radio, logs):
         """Identical requests have the same signature, repeats are noticed."""
         if with_radio == "cell":
-            cell = CellShardFactory(radio=Radio.lte)
-            query = self.model_query(cells=[cell])
+            cell1 = CellShardFactory(radio=Radio.lte)
             cell2 = CellShardFactory(radio=Radio.lte)
-            query2 = self.model_query(cells=[cell2])
+            query = self.model_query(cells=[cell1, cell2])
+            query_same = self.model_query(cells=[cell1, cell2])
+            query_same["fallbacks"] = {"lacf": True}
+            # Because lists are not sorted, although query_diff has the same
+            # data as query, it counts as a different query
+            # TODO: sort lists of cell, wifi, and bluetooth in schema serialization
+            query_diff = self.model_query(cells=[cell2, cell1])
         else:
             # IP-based lookup
             query = {}
-            query2 = {"fallbacks": {"ipf": True}}
+            query_same = {"fallbacks": {"ipf": True}}
+            query_diff = {"fallbacks": {"lacf": False}}
 
         # Make two identical calls
         self._call(app, api_key="test", body=query, ip=self.test_ip)
         self._call(app, api_key="test", body=query, ip=self.test_ip)
 
-        # Different body
-        self._call(app, api_key="test", body=query2, ip=self.test_ip)
+        # Different content, but validates to the same query
+        self._call(app, api_key="test", body=query_same, ip=self.test_ip)
+
+        # Different content, same IP
+        self._call(app, api_key="test", body=query_diff, ip=self.test_ip)
 
         # Switch the IP address
         other_ip = "81.2.69.143"
@@ -767,7 +776,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         session.flush()
         self._call(app, api_key=other_key.valid_key, body=query, ip=self.test_ip)
 
-        log1, log2, log_new_body, log_new_ip, log_new_key = logs.entries
+        log1, log2, log_same, log_new_body, log_new_ip, log_new_key = logs.entries
 
         # First two calls have identical signatures
         assert log1["api_request_sig"] == log2["api_request_sig"]
@@ -776,6 +785,11 @@ class TestView(LocateV1Base, CommonLocateTest):
         assert not log1["api_repeat_request"]
         assert log2["api_key_repeat_ip"]
         assert log2["api_repeat_request"]
+
+        # A query that is the same after schema validation has same signature
+        assert log_same["api_request_sig"] == log1["api_request_sig"]
+        assert log_same["api_key_repeat_ip"]
+        assert log_same["api_repeat_request"]
 
         # A different body has a different signature, but repeated IP
         assert log_new_body["api_request_sig"] not in seen_sigs
