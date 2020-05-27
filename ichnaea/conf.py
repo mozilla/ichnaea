@@ -112,6 +112,12 @@ class AppConfig(RequiredConfigMixin):
         doc="absolute path to mmdb file for GeoIP lookups",
     )
 
+    required_config.add_option(
+        "secret_key",
+        default="default for development, change in production",
+        doc="a unique passphrase used for cryptographic signing",
+    )
+
     def __init__(self, config):
         self.raw_config = config
         self.config = config.with_options(self)

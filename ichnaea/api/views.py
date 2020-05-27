@@ -15,6 +15,7 @@ from structlog.threadlocal import bind_threadlocal
 
 from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
 from ichnaea.api.key import get_key, Key, validated_key
+from ichnaea.conf import settings
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea import util
 from ichnaea.webapp.view import BaseView
@@ -158,6 +159,7 @@ class BaseAPIView(BaseView):
             client_addr = self.request.client_addr or "127.0.0.1"
             siggen.update(client_addr.encode())
             siggen.update(self.request.url.encode())  # Includes the API key if given
+            siggen.update(settings("secret_key").encode())
             signature = siggen.hexdigest()
             today = util.utcnow().date().isoformat()
             key = f"apirequest:{today}"
