@@ -743,17 +743,19 @@ class TestView(LocateV1Base, CommonLocateTest):
         if with_radio == "cell":
             cell1 = CellShardFactory(radio=Radio.lte)
             cell2 = CellShardFactory(radio=Radio.lte)
+            cell3 = CellShardFactory(radio=Radio.lte)
             query = self.model_query(cells=[cell1, cell2])
-            query_same = self.model_query(cells=[cell1, cell2])
-            query_same["fallbacks"] = {"lacf": True}
-            # Because lists are not sorted, although query_diff has the same
-            # data as query, it counts as a different query
-            # TODO: sort lists of cell, wifi, and bluetooth in schema serialization
-            query_diff = self.model_query(cells=[cell2, cell1])
+            # The same stations in a different order is the same query
+            query_same = self.model_query(cells=[cell2, cell1])
+            # Different stations make a different query
+            query_diff = self.model_query(cells=[cell1, cell3])
         else:
+            assert with_radio is None
             # IP-based lookup
             query = {}
+            # Explicitly setting a value to the default is the same query
             query_same = {"fallbacks": {"ipf": True}}
+            # Changing a setting from the default is a different query
             query_diff = {"fallbacks": {"lacf": False}}
 
         # Make two identical calls

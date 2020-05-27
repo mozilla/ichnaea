@@ -140,8 +140,20 @@ class BaseAPIView(BaseView):
 
         if self.ip_log_and_rate_limit and validated_data and not errors:
             # Count unique daily requests
+
+            def superflatten(data):
+                """Sort lists of dicts in request data."""
+                if isinstance(data, dict):
+                    return repr(
+                        sorted([(key, superflatten(val)) for key, val in data.items()])
+                    )
+                if isinstance(data, (list, tuple)):
+                    return repr(sorted([superflatten(item) for item in data]))
+                return repr(data)
+
             valid_data = self.schema.serialize(validated_data)
-            valid_content = json.dumps(valid_data, sort_keys=True)
+            flatter_data = superflatten(valid_data)
+            valid_content = json.dumps(flatter_data, sort_keys=True)
             siggen = sha512(valid_content.encode())
             client_addr = self.request.client_addr or "127.0.0.1"
             siggen.update(client_addr.encode())
