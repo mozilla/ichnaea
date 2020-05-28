@@ -1,6 +1,7 @@
 from contextlib import contextmanager
 from datetime import datetime
 import gzip
+from hashlib import sha512
 from itertools import zip_longest
 import json
 import os
@@ -12,6 +13,7 @@ import zlib
 
 from pytz import UTC
 
+from ichnaea.conf import settings
 from ichnaea.exceptions import GZIPDecodeError
 
 HERE = os.path.dirname(__file__)
@@ -112,3 +114,19 @@ def print_table(table, delimiter=" | ", stream_write=sys.stdout.write):
             )
             + "\n"
         )
+
+
+def generate_signature(reason, *parts):
+    """
+    Generate a salted signature for a set of strings.
+
+    :arg reason A short "why" string used to salt the hash
+    :arg parts A list of strings to add to the signature
+    """
+    siggen = sha512()
+    for part in parts:
+        if part:
+            siggen.update(part.encode())
+    siggen.update(reason.encode())
+    siggen.update(settings("secret_key").encode())
+    return siggen.hexdigest()

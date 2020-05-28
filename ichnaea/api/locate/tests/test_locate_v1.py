@@ -737,6 +737,44 @@ class TestView(LocateV1Base, CommonLocateTest):
         res = self._call(app, body=query)
         self.check_model_response(res, cell)
 
+    def test_signature(self, app, session, redis, logs):
+        """Identical requests have the same signature, repeats are noticed."""
+
+        # Make two identical calls
+        self._call(app, api_key="test", ip=self.test_ip)
+        self._call(app, api_key="test", ip=self.test_ip)
+
+        # Switch the IP address
+        other_ip = "81.2.69.143"
+        assert other_ip != self.test_ip
+        self._call(app, api_key="test", ip=other_ip)
+
+        # Switch the API key
+        other_key = ApiKeyFactory()
+        session.flush()
+        self._call(app, api_key=other_key.valid_key, ip=self.test_ip)
+
+        log1, log2, log_new_ip, log_new_key = logs.entries
+
+        # First two calls have identical signatures
+        assert log1["api_response_sig"] == log2["api_response_sig"]
+        seen_sigs = set([log1["api_response_sig"]])
+        assert not log1["api_key_repeat_ip"]
+        assert not log1["api_repeat_response"]
+        assert log2["api_key_repeat_ip"]
+        assert log2["api_repeat_response"]
+
+        # A different IP has a different signature
+        assert log_new_ip["api_response_sig"] not in seen_sigs
+        seen_sigs.add(log_new_ip["api_response_sig"])
+        assert not log_new_ip["api_key_repeat_ip"]
+        assert not log_new_ip["api_repeat_response"]
+
+        # A different API key has a different signature
+        assert log_new_key["api_response_sig"] not in seen_sigs
+        assert not log_new_key["api_key_repeat_ip"]
+        assert not log_new_key["api_repeat_response"]
+
 
 class TestError(LocateV1Base, BaseLocateTest):
     def test_apikey_error(self, app, data_queues, raven, session, restore_db, logs):
@@ -750,16 +788,19 @@ class TestError(LocateV1Base, BaseLocateTest):
         self.check_response(data_queues, res, "ok", fallback="ipf")
         raven.check([("ProgrammingError", 1)])
         self.check_queue(data_queues, 0)
+        log = logs.only_entry
         expected_entry = {
             "api_key": "test",
             "api_key_db_fail": True,
             "api_path": "v1.geolocate",
+            "api_repeat_response": False,
+            "api_response_sig": log["api_response_sig"],
             "api_type": "locate",
             "blue": 0,
             "blue_valid": 0,
             "cell": 2,
             "cell_valid": 2,
-            "duration_s": logs.only_entry["duration_s"],
+            "duration_s": log["duration_s"],
             "event": "POST /v1/geolocate - 200",
             "has_geoip": True,
             "has_ip": True,
@@ -771,7 +812,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             "wifi": 2,
             "wifi_valid": 2,
         }
-        assert logs.only_entry == expected_entry
+        assert log == expected_entry
 
     def test_database_error(
         self, app, data_queues, raven, session, metricsmock, restore_db, logs
@@ -809,6 +850,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             )
 
         raven.check([("ProgrammingError", 3)])
+        log = logs.only_entry
         expected_entry = {
             "accuracy": "medium",
             "accuracy_min": "high",
@@ -816,12 +858,14 @@ class TestError(LocateV1Base, BaseLocateTest):
             "api_key_count": 1,
             "api_key_repeat_ip": False,
             "api_path": "v1.geolocate",
+            "api_repeat_response": False,
+            "api_response_sig": log["api_response_sig"],
             "api_type": "locate",
             "blue": 0,
             "blue_valid": 0,
             "cell": 3,
             "cell_valid": 3,
-            "duration_s": logs.only_entry["duration_s"],
+            "duration_s": log["duration_s"],
             "event": "POST /v1/geolocate - 200",
             "fallback_allowed": False,
             "has_geoip": True,
@@ -841,4 +885,4 @@ class TestError(LocateV1Base, BaseLocateTest):
             "wifi": 2,
             "wifi_valid": 2,
         }
-        assert logs.only_entry == expected_entry
+        assert log == expected_entry

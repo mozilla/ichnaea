@@ -3,6 +3,8 @@ from datetime import datetime
 import pytest
 from pytz import UTC
 
+from everett.manager import config_override
+
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea import util
 
@@ -38,3 +40,18 @@ class TestUtil(object):
             util.decode_gzip(self.gzip_foo[:1])
         with pytest.raises(GZIPDecodeError):
             util.decode_gzip(self.gzip_foo[:5])
+
+    @pytest.mark.parametrize(
+        "secret_key,reason,parts,expected_prefix",
+        (
+            ("SECRET", "test", "", "f9723a3fe9f622fe"),
+            ("SECRET", "test", "1,2,3", "e7af0dfc087777b5"),
+            ("SECRET", "other-test", "1,2,3", "f182772afe6e6c7e"),
+            ("NEW_SECRET", "test", "1,2,3", "7be3eced09a73d2f"),
+        ),
+    )
+    def test_generate_signature(self, secret_key, reason, parts, expected_prefix):
+        with config_override(SECRET_KEY=secret_key):
+            sig = util.generate_signature(reason, *parts.split(","))
+            assert len(sig) == 128
+            assert sig[:16] == expected_prefix

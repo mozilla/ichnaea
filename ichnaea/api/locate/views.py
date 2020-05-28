@@ -2,10 +2,15 @@
 Implementation of locate specific HTTP service views.
 """
 
+import json
+
+from structlog.threadlocal import bind_threadlocal
+
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.query import Query
 from ichnaea.api.views import BaseAPIView
+from ichnaea.util import generate_signature, utcnow
 
 
 class BaseLocateView(BaseAPIView):
@@ -70,6 +75,24 @@ class LocateV1View(BasePositionView):
 
         if result["fallback"]:
             response["fallback"] = result["fallback"]
+
+        # Create a signature of the response, and look for unique responses
+        response_content = json.dumps(response, sort_keys=True)
+        response_sig = generate_signature(
+            "response-sig",
+            response_content,
+            self.request.client_addr,
+            self.request.url,  # Includes the API, API key
+        )
+        today = utcnow().date().isoformat()
+        key = f"response-sig:{today}"
+        with self.redis_client.pipeline() as pipe:
+            pipe.pfadd(key, response_sig)
+            pipe.expire(key, 90000)  # 25 hours
+            new_response, _ = pipe.execute()
+        bind_threadlocal(
+            api_repeat_response=not new_response, api_response_sig=response_sig[:8]
+        )
 
         return response
 
