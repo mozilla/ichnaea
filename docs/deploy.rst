@@ -137,6 +137,7 @@ for example called `env.txt`:
     DB_PASSWORD=secret
     GEOIP_PATH=/app/geoip/GeoLite2-City.mmdb
     REDIS_HOST=domain.name.for.redis
+    SECRET_KEY=change_this_value_or_it_will_not_be_secret
 
 You can use either a single database user with DDL/DML privileges
 (`DB_USER` / `DB_PASSWORD`) or separate users for DDL, read-write and
