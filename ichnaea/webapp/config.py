@@ -11,6 +11,7 @@ from ichnaea.api.locate.searcher import (
     configure_region_searcher,
 )
 from ichnaea.cache import configure_redis
+from ichnaea.conf import check_config
 from ichnaea.content.views import configure_content
 from ichnaea.db import configure_db, db_session, db_worker_session, ping_session
 from ichnaea.geoip import configure_geoip
@@ -53,6 +54,7 @@ def main(
     configure_logging()
 
     config = Configurator()
+    check_config()
 
     # add support for pt templates
     config.include("pyramid_chameleon")
