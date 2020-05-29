@@ -34,8 +34,8 @@ class TestContentViews(object):
         assert result["page_title"] == "Overview"
         assert result["map_image_url"] == "http://127.0.0.1:9/static/tiles/0/0/0@2x.png"
         assert result["map_image_base_url"] == (
-            "https://a.tiles.mapbox.com/v4/mapbox.dark/"
-            "0/0/0@2x.png?access_token=pk.123456"
+            "https://api.mapbox.com/styles/v1/mapbox/dark-v10/tiles"
+            "/256/0/0/0@2x?access_token=pk.123456"
         )
 
     def test_map(self, views):

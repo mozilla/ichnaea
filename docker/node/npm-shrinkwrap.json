@@ -4,6 +4,18 @@
   "lockfileVersion": 1,
   "requires": true,
   "dependencies": {
+    "@mapbox/corslite": {
+      "version": "0.0.7",
+      "resolved": "https://registry.npmjs.org/@mapbox/corslite/-/corslite-0.0.7.tgz",
+      "integrity": "sha1-KfW2oYi6lG5RS98LZAHtT74To54=",
+      "dev": true
+    },
+    "@mapbox/sanitize-caja": {
+      "version": "0.1.4",
+      "resolved": "https://registry.npmjs.org/@mapbox/sanitize-caja/-/sanitize-caja-0.1.4.tgz",
+      "integrity": "sha1-GzyoIg0TK3axIZtl+acZ++/jWDc=",
+      "dev": true
+    },
     "balanced-match": {
       "version": "1.0.0",
       "resolved": "https://registry.npmjs.org/balanced-match/-/balanced-match-1.0.0.tgz",
@@ -50,12 +62,6 @@
       "version": "0.0.1",
       "resolved": "https://registry.npmjs.org/concat-map/-/concat-map-0.0.1.tgz",
       "integrity": "sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=",
-      "dev": true
-    },
-    "corslite": {
-      "version": "0.0.7",
-      "resolved": "https://registry.npmjs.org/corslite/-/corslite-0.0.7.tgz",
-      "integrity": "sha1-jkUdtTIKdVbeHveNm9NWY0MHdyE=",
       "dev": true
     },
     "datatables": {
@@ -140,15 +146,15 @@
       "dev": true
     },
     "mapbox.js": {
-      "version": "3.2.1",
-      "resolved": "https://registry.npmjs.org/mapbox.js/-/mapbox.js-3.2.1.tgz",
-      "integrity": "sha512-7HPYeqtpD8d+1NqwZhcwys4Hvacyxd/skLD+snIJ0Cfdf9A5HQx+qwnyf02scQ0O4hh49R4kilsoZMyywBiCFg==",
+      "version": "3.3.1",
+      "resolved": "https://registry.npmjs.org/mapbox.js/-/mapbox.js-3.3.1.tgz",
+      "integrity": "sha512-Vbco0r4DlQ4TOPZoj7Vl+rgZGie7ZWe3JL43fLzCnH3tC2AevqUFl5+mY8W+rwtd1oVsgfnNbIt4ZY4d9KkvBw==",
       "dev": true,
       "requires": {
-        "corslite": "0.0.7",
+        "@mapbox/corslite": "0.0.7",
+        "@mapbox/sanitize-caja": "^0.1.4",
         "leaflet": "1.4.0",
-        "mustache": "3.0.1",
-        "sanitize-caja": "0.1.4"
+        "mustache": "3.0.1"
       }
     },
     "minimatch": {
@@ -179,12 +185,6 @@
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/path-is-absolute/-/path-is-absolute-1.0.1.tgz",
       "integrity": "sha1-F0uSaHNVNP+8es5r9TpanhtcX18=",
-      "dev": true
-    },
-    "sanitize-caja": {
-      "version": "0.1.4",
-      "resolved": "https://registry.npmjs.org/sanitize-caja/-/sanitize-caja-0.1.4.tgz",
-      "integrity": "sha1-eAPo5FK447rLNC29k624hazQeK8=",
       "dev": true
     },
     "source-map": {
