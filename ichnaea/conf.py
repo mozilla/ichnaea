@@ -112,6 +112,12 @@ class AppConfig(RequiredConfigMixin):
         doc="absolute path to mmdb file for GeoIP lookups",
     )
 
+    required_config.add_option(
+        "secret_key",
+        default="default for development, change in production",
+        doc="a unique passphrase used for cryptographic signing",
+    )
+
     def __init__(self, config):
         self.raw_config = config
         self.config = config.with_options(self)
@@ -132,3 +138,35 @@ def build_config_manager():
 
 
 settings = build_config_manager()
+
+
+def is_dev_config():
+    """Return True if this appears to be the dev environment."""
+    dev_redis_uri = "redis://redis:6379/0"
+    redis_uri = settings("redis_uri")
+    return redis_uri == dev_redis_uri
+
+
+def check_config():
+    """If not in the dev environment, ensure settings are non-development."""
+    if is_dev_config():
+        return
+
+    issues = []
+
+    # These values should be non-empty and non-default
+    should_be_set = {"secret_key"}
+    for name in should_be_set:
+        default = settings.config.options.options[name].default
+        value = settings(name)
+        if value == default:
+            issues.append(f"{name} has the default value '{value}'")
+        elif not value:
+            issues.append(f"{name} is not set")
+
+    if issues:
+        message = (
+            "redis_url has a non-development value, but there are issues"
+            " with settings: " + ", ".join(issues)
+        )
+        raise RuntimeError(message)

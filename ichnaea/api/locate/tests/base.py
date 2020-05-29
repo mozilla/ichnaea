@@ -293,6 +293,7 @@ class CommonLocateTest(BaseLocateTest):
             "request.timing", tags=[self.metric_path, "method:get"]
         )
 
+        log = logs.only_entry
         expected_entry = {
             # accuracy is low for region API fixture, and medium for geolocate
             # see bound_model_accuracy and related tests for direct calculation
@@ -305,7 +306,7 @@ class CommonLocateTest(BaseLocateTest):
             "blue_valid": 0,
             "cell": 0,
             "cell_valid": 0,
-            "duration_s": logs.only_entry["duration_s"],
+            "duration_s": log["duration_s"],
             "event": f"GET {self.url} - 200",
             "fallback_allowed": False,
             "has_geoip": True,
@@ -316,16 +317,18 @@ class CommonLocateTest(BaseLocateTest):
             "log_level": "info",
             "region": "GB",
             "result_status": "hit",
-            "source_geoip_accuracy": logs.only_entry["accuracy"],
+            "source_geoip_accuracy": log["accuracy"],
             "source_geoip_accuracy_min": "low",
             "source_geoip_status": "hit",
             "wifi": 0,
             "wifi_valid": 0,
         }
-        if self.ip_log_and_rate_limit:
+        if self.metric_type == "locate":
             expected_entry["api_key_count"] = 1
             expected_entry["api_key_repeat_ip"] = False
-        assert logs.only_entry == expected_entry
+            expected_entry["api_repeat_response"] = False
+            expected_entry["api_response_sig"] = log["api_response_sig"]
+        assert log == expected_entry
 
     def test_options(self, app, logs):
         """An OPTIONS request works, as required for CORS"""
