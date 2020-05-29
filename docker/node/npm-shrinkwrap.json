@@ -53,9 +53,9 @@
       "dev": true
     },
     "corslite": {
-      "version": "0.0.6",
-      "resolved": "https://registry.npmjs.org/corslite/-/corslite-0.0.6.tgz",
-      "integrity": "sha1-YilU4UwzhSEjxMaPo97/qeLRyJY=",
+      "version": "0.0.7",
+      "resolved": "https://registry.npmjs.org/corslite/-/corslite-0.0.7.tgz",
+      "integrity": "sha1-jkUdtTIKdVbeHveNm9NWY0MHdyE=",
       "dev": true
     },
     "datatables": {
@@ -109,16 +109,10 @@
       "integrity": "sha512-k/vGaX4/Yla3WzyMCvTQOXYeIHvqOKtnqBduzTHpzpQZzAskKMhZ2K+EnBiSM9zGSoIFeMpXKxa4dYeZIQqewQ==",
       "dev": true
     },
-    "isarray": {
-      "version": "0.0.1",
-      "resolved": "https://registry.npmjs.org/isarray/-/isarray-0.0.1.tgz",
-      "integrity": "sha1-ihis/Kmo9Bd+Cav8YDiTmwXR7t8=",
-      "dev": true
-    },
     "jquery": {
-      "version": "3.5.0",
-      "resolved": "https://registry.npmjs.org/jquery/-/jquery-3.5.0.tgz",
-      "integrity": "sha512-Xb7SVYMvygPxbFMpTFQiHh1J7HClEaThguL15N/Gg37Lri/qKyhRGZYzHRyLH8Stq3Aow0LsHO2O2ci86fCrNQ==",
+      "version": "3.5.1",
+      "resolved": "https://registry.npmjs.org/jquery/-/jquery-3.5.1.tgz",
+      "integrity": "sha512-XwIBPqcMn57FxfT+Go5pzySnm4KWkT1Tv7gjrpT1srtf8Weynl6R273VJ5GjkRb51IzMp5nbaPjJXMWeju2MKg==",
       "dev": true
     },
     "jquery-flot": {
@@ -128,9 +122,9 @@
       "dev": true
     },
     "leaflet": {
-      "version": "1.0.2",
-      "resolved": "https://registry.npmjs.org/leaflet/-/leaflet-1.0.2.tgz",
-      "integrity": "sha1-+k+8t4RJRPwr+wvPnKDeoTRjyiE=",
+      "version": "1.4.0",
+      "resolved": "https://registry.npmjs.org/leaflet/-/leaflet-1.4.0.tgz",
+      "integrity": "sha512-x9j9tGY1+PDLN9pcWTx9/y6C5nezoTMB8BLK5jTakx+H7bPlnbCHfi9Hjg+Qt36sgDz/cb9lrSpNQXmk45Tvhw==",
       "dev": true
     },
     "leaflet-hash": {
@@ -146,15 +140,14 @@
       "dev": true
     },
     "mapbox.js": {
-      "version": "3.1.1",
-      "resolved": "https://registry.npmjs.org/mapbox.js/-/mapbox.js-3.1.1.tgz",
-      "integrity": "sha1-Tr5BvYm1M/UH+zRV9PSQ5BfqHo8=",
+      "version": "3.2.1",
+      "resolved": "https://registry.npmjs.org/mapbox.js/-/mapbox.js-3.2.1.tgz",
+      "integrity": "sha512-7HPYeqtpD8d+1NqwZhcwys4Hvacyxd/skLD+snIJ0Cfdf9A5HQx+qwnyf02scQ0O4hh49R4kilsoZMyywBiCFg==",
       "dev": true,
       "requires": {
-        "corslite": "0.0.6",
-        "isarray": "0.0.1",
-        "leaflet": "1.0.2",
-        "mustache": "2.2.1",
+        "corslite": "0.0.7",
+        "leaflet": "1.4.0",
+        "mustache": "3.0.1",
         "sanitize-caja": "0.1.4"
       }
     },
@@ -168,9 +161,9 @@
       }
     },
     "mustache": {
-      "version": "2.2.1",
-      "resolved": "https://registry.npmjs.org/mustache/-/mustache-2.2.1.tgz",
-      "integrity": "sha1-LEDKIcJ49TFQaCvPkJDkGjM5uHY=",
+      "version": "3.0.1",
+      "resolved": "https://registry.npmjs.org/mustache/-/mustache-3.0.1.tgz",
+      "integrity": "sha512-jFI/4UVRsRYdUbuDTKT7KzfOp7FiD5WzYmmwNwXyUVypC0xjoTL78Fqc0jHUPIvvGD+6DQSPHIt1NE7D1ArsqA==",
       "dev": true
     },
     "once": {

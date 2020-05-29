@@ -6,7 +6,6 @@ WORKDIR /app
 
 RUN apt-get update && apt-get --no-install-recommends install -y \
     bzip2 \
-    git \
     make \
     && apt-get -y clean \
     && rm -rf /var/lib/apt/lists/*
@@ -25,8 +24,7 @@ RUN npm dedupe
 RUN npm shrinkwrap
 
 WORKDIR /node/node_modules/mapbox.js
-RUN npm install && \
-    make
+RUN npm install
 
 ENV PATH=$PATH:/node/node_modules/.bin/
 

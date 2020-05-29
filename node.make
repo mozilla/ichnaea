@@ -38,7 +38,6 @@ css: shrinkwrap
 	mkdir -p $(CSS_ROOT)/images/
 	cp $(NODE_MODULES)/mapbox.js/dist/images/*.png $(CSS_ROOT)/images/
 	cp $(NODE_MODULES)/mapbox.js/dist/images/*.svg $(CSS_ROOT)/images/
-	cp $(NODE_MODULES)/mapbox.js/dist/images/images/* $(CSS_ROOT)/images/
 	cp $(NODE_MODULES)/font-awesome/fonts/* $(FONT_ROOT)/
 
 js: shrinkwrap
