@@ -84,8 +84,8 @@ gevent==1.4.0 \
 gunicorn==20.0.4 \
     --hash=sha256:1904bb2b8a43658807108d59c3f3d56c2b6121a701161de0ddf9ad140073c626 \
     --hash=sha256:cd4a810dd51bf497552cf3f863b575dabd73d6ad6a91075b65936b151cbf4f9c
-maxminddb==1.5.2 \
-    --hash=sha256:d0ce131d901eb11669996b49a59f410efd3da2c6dbe2c0094fe2fef8d85b6336
+maxminddb==1.5.4 \
+    --hash=sha256:f4d28823d9ca23323d113dc7af8db2087aa4f657fafc64ff8f7a8afda871425b
 mobile-codes==0.7 \
     --hash=sha256:24f86a85cc98afae2e991307b15414c6870db83db35d9878ea49c6c945717a71
 ndg-httpsclient==0.5.1 \
