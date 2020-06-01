@@ -368,9 +368,9 @@ text-unidecode==1.3 \
 entrypoints==0.3 \
     --hash=sha256:589f874b313739ad35be6e0cd7efde2a4e9b6fea91edcc34e58ecbb8dbe56d19 \
     --hash=sha256:c70dd71abe5a8c85e55e12c19bd91ccfeec11a6e99044204511f9ed547d48451
-soupsieve==2.0 \
-    --hash=sha256:fcd71e08c0aee99aca1b73f45478549ee7e7fc006d51b37bec9e9def7dc22b69 \
-    --hash=sha256:e914534802d7ffd233242b785229d5ba0766a7f487385e3f714446a07bf540ae
+soupsieve==2.0.1 \
+    --hash=sha256:1634eea42ab371d3d346309b93df7870a88610f0725d47528be902a0d95ecc55 \
+    --hash=sha256:a59dc181727e95d25f781f0eb4fd1825ff45590ec8ff49eadfd7f1a537cc0232
 hiredis==1.0.1 \
     --hash=sha256:01b577f84c20ecc9c07fc4c184231b08e3c3942de096fa99978e053de231c423 \
     --hash=sha256:01ff0900134166961c9e339df77c33b72f7edc5cb41739f0babcd9faa345926e \
