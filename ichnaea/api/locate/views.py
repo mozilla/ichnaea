@@ -49,7 +49,7 @@ class BaseLocateView(BaseAPIView):
         if not result:
             raise self.prepare_exception(self.not_found())
 
-        return self.prepare_response(result)
+        return self.prepare_response(result, api_key)
 
 
 class BasePositionView(BaseLocateView):
@@ -67,7 +67,7 @@ class LocateV1View(BasePositionView):
     route = "/v1/geolocate"
     schema = LOCATE_V1_SCHEMA
 
-    def prepare_response(self, result):
+    def prepare_response(self, result, api_key):
         response = {
             "location": {"lat": result["lat"], "lng": result["lon"]},
             "accuracy": result["accuracy"],
@@ -85,7 +85,7 @@ class LocateV1View(BasePositionView):
             self.request.url,  # Includes the API, API key
         )
         today = utcnow().date().isoformat()
-        key = f"response-sig:{today}"
+        key = f"response-sig:{self.view_type}:{api_key.valid_key}:{today}"
         with self.redis_client.pipeline() as pipe:
             pipe.pfadd(key, response_sig)
             pipe.expire(key, 90000)  # 25 hours
@@ -107,7 +107,7 @@ class RegionV1View(LocateV1View):
     searcher = "region_searcher"
     view_type = "region"
 
-    def prepare_response(self, result):
+    def prepare_response(self, result, api_key):
         response = {
             "country_code": result["region_code"],
             "country_name": result["region_name"],
