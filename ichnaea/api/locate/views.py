@@ -91,7 +91,7 @@ class LocateV1View(BasePositionView):
             pipe.expire(key, 90000)  # 25 hours
             new_response, _ = pipe.execute()
         bind_threadlocal(
-            api_repeat_response=not new_response, api_response_sig=response_sig[:8]
+            api_repeat_response=not new_response, api_response_sig=response_sig[:16]
         )
 
         return response
