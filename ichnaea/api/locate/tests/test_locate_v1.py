@@ -111,7 +111,6 @@ class TestView(LocateV1Base, CommonLocateTest):
         expected_entry = {
             "api_key": api_key.valid_key,
             "api_key_count": 11,
-            "api_key_repeat_ip": False,
             "api_path": self.metric_path.split(":")[1],
             "api_type": self.metric_type,
             "duration_s": logs.only_entry["duration_s"],
@@ -738,7 +737,7 @@ class TestView(LocateV1Base, CommonLocateTest):
         self.check_model_response(res, cell)
 
     def test_signature(self, app, session, redis, logs):
-        """Identical requests have the same signature, repeats are noticed."""
+        """Identical requests have the same signature."""
 
         # Make two identical calls
         self._call(app, api_key="test", ip=self.test_ip)
@@ -759,21 +758,13 @@ class TestView(LocateV1Base, CommonLocateTest):
         # First two calls have identical signatures
         assert log1["api_response_sig"] == log2["api_response_sig"]
         seen_sigs = set([log1["api_response_sig"]])
-        assert not log1["api_key_repeat_ip"]
-        assert not log1["api_repeat_response"]
-        assert log2["api_key_repeat_ip"]
-        assert log2["api_repeat_response"]
 
         # A different IP has a different signature
         assert log_new_ip["api_response_sig"] not in seen_sigs
         seen_sigs.add(log_new_ip["api_response_sig"])
-        assert not log_new_ip["api_key_repeat_ip"]
-        assert not log_new_ip["api_repeat_response"]
 
         # A different API key has a different signature
         assert log_new_key["api_response_sig"] not in seen_sigs
-        assert not log_new_key["api_key_repeat_ip"]
-        assert not log_new_key["api_repeat_response"]
 
 
 class TestError(LocateV1Base, BaseLocateTest):
@@ -793,7 +784,6 @@ class TestError(LocateV1Base, BaseLocateTest):
             "api_key": "test",
             "api_key_db_fail": True,
             "api_path": "v1.geolocate",
-            "api_repeat_response": False,
             "api_response_sig": log["api_response_sig"],
             "api_type": "locate",
             "blue": 0,
@@ -856,9 +846,7 @@ class TestError(LocateV1Base, BaseLocateTest):
             "accuracy_min": "high",
             "api_key": "test",
             "api_key_count": 1,
-            "api_key_repeat_ip": False,
             "api_path": "v1.geolocate",
-            "api_repeat_response": False,
             "api_response_sig": log["api_response_sig"],
             "api_type": "locate",
             "blue": 0,

@@ -182,7 +182,6 @@ class BaseSubmitTest(object):
         expected_entry = {
             "api_key": "test",
             "api_key_count": 1,
-            "api_key_repeat_ip": False,
             "api_path": self.metric_path.split(":")[1],
             "api_type": "submit",
             "duration_s": logs.only_entry["duration_s"],

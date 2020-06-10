@@ -10,7 +10,7 @@ from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
 from ichnaea.api.locate.query import Query
 from ichnaea.api.views import BaseAPIView
-from ichnaea.util import generate_signature, utcnow
+from ichnaea.util import generate_signature
 
 
 class BaseLocateView(BaseAPIView):
@@ -84,15 +84,7 @@ class LocateV1View(BasePositionView):
             self.request.client_addr,
             self.request.url,  # Includes the API, API key
         )
-        today = utcnow().date().isoformat()
-        key = f"response-sig:{self.view_type}:{api_key.valid_key}:{today}"
-        with self.redis_client.pipeline() as pipe:
-            pipe.pfadd(key, response_sig)
-            pipe.expire(key, 90000)  # 25 hours
-            new_response, _ = pipe.execute()
-        bind_threadlocal(
-            api_repeat_response=not new_response, api_response_sig=response_sig[:16]
-        )
+        bind_threadlocal(api_response_sig=response_sig[:16])
 
         return response
 

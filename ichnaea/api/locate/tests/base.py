@@ -325,8 +325,6 @@ class CommonLocateTest(BaseLocateTest):
         }
         if self.metric_type == "locate":
             expected_entry["api_key_count"] = 1
-            expected_entry["api_key_repeat_ip"] = False
-            expected_entry["api_repeat_response"] = False
             expected_entry["api_response_sig"] = log["api_response_sig"]
         assert log == expected_entry
 
