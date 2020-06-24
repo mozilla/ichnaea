@@ -88,10 +88,9 @@ class BaseAPIView(BaseView):
                 pipe.expire(log_ip_key, 691200)  # 8 days
                 pipe.incr(rate_key, 1)
                 pipe.expire(rate_key, 90000)  # 25 hours
-                new_ip, _, limit_count, _ = pipe.execute()
+                _, _, limit_count, _ = pipe.execute()
             log_params = {
                 "api_key_count": limit_count,
-                "api_key_repeat_ip": new_ip == 0,
             }
             if maxreq:
                 should_limit = limit_count > maxreq
