@@ -124,7 +124,7 @@ Task Worker
 
 The asynchronous task worker uses a Python framework called Celery. You can use
 the `Celery monitoring guide
-<https://celery.readthedocs.io/en/latest/userguide/monitoring.html>`_ for more
+<https://docs.celeryproject.org/en/latest/userguide/monitoring.html>`_ for more
 detailed information.
 
 A basic test is to call the ``inspect stats`` commands. Open a shell container

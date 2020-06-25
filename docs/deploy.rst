@@ -178,8 +178,9 @@ It works both with the commerically available and Open-Source GeoLite
 databases in binary format.
 
 You can download the
-`GeoLite database <https://dev.maxmind.com/geoip/geoip2/geolite2/>`_ from
-https://geolite.maxmind.com/download/geoip/database/GeoLite2-City.tar.gz
+`GeoLite database <https://dev.maxmind.com/geoip/geoip2/geolite2/>`_ 
+for free from MaxMind after
+`signing up for a GeoLite2 account <https://www.maxmind.com/en/geolite2/signup>`_.
 
 Download and untar the downloaded file. Put the `GeoLite2-City.mmdb`
 into a directory accessible to docker (for example `/opt/geoip`).

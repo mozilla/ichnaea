@@ -16,7 +16,7 @@ sys.modules['shapely'] = mock.MagicMock()
 
 
 project = 'Ichnaea'
-copyright = '2013-2019, Mozilla'
+copyright = '2013-2020, Mozilla'
 
 # The short X.Y version.
 version = '2.0'
