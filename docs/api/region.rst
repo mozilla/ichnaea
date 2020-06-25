@@ -9,7 +9,7 @@ Region: /v1/country
 Bluetooth, cell, or WiFi networks the IP address used to access the service.
 
 The responses use region codes and names from the `GENC dataset
-<http://www.gwg.nga.mil/ccwg.php>`_, which is mostly compatible with the ISO
+<https://nsgreg.nga.mil/genc/discovery>`_, which is mostly compatible with the ISO
 3166 standard.
 
 .. Note::

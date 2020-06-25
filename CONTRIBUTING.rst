@@ -4,7 +4,10 @@ How to contribute
 
 We gladly accept outside contributions.
 
-We use our `Github issue tracker <https://github.com/mozilla/ichnaea/issues>`_
+We use
+`Bugzilla <https://bugzilla.mozilla.org/buglist.cgi?product=Location&component=General&bug_status=__open__>`_
+and our
+`Github issue tracker <https://github.com/mozilla/ichnaea/issues>`_
 for both discussions and talking about new features or bugs. You can
 also fork the project and send us a pull request.
 
@@ -32,5 +35,5 @@ Legal
 
 Currently we don't have any legal contributor agreement, so code
 ownership stays with the original authors. The project is licensed
-under the `Apache License Version 2
-<https://github.com/mozilla/ichnaea/blob/master/LICENSE>`_.
+under the
+`Apache License Version 2 <https://github.com/mozilla/ichnaea/blob/main/LICENSE>`_.

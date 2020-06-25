@@ -27,8 +27,8 @@ TASK_QUEUES = (
 def configure_celery(celery_app):
     """
     Configure the celery app stored in :data:`ichnaea.taskapp.app.celery_app`.
-    This is executed both inside the master worker process and once in
-    each forked worker process.
+    This is executed both inside the supervisor worker process and once in
+    each child / thread worker process.
 
     This parses the application ini and reads in the
     :mod:`ichnaea.taskapp.settings`.

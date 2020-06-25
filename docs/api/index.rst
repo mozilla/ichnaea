@@ -20,8 +20,7 @@ about the accuracy of the results or the availability of the service.
 Please make sure that you actually need the raw API access to
 perform geolocation lookups. If you just need to get location data
 from your web application, you can directly use the
-`HTML5 API
-<https://developer.mozilla.org/en-US/docs/Web/API/Geolocation/Using_geolocation>`_.
+`HTML5 API <https://developer.mozilla.org/en-US/docs/Web/API/Geolocation_API>`_.
 
 To apply for an API key, please
 `fill out this form

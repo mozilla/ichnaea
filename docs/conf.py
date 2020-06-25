@@ -16,7 +16,7 @@ sys.modules['shapely'] = mock.MagicMock()
 
 
 project = 'Ichnaea'
-copyright = '2013-2019, Mozilla'
+copyright = '2013-2020, Mozilla'
 
 # The short X.Y version.
 version = '2.0'
@@ -28,7 +28,6 @@ exclude_patterns = ['_build', '.DS_Store', 'Thumbs.db']
 html_static_path = []
 html_theme = 'sphinx_rtd_theme'
 html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
-master_doc = 'index'
 modindex_common_prefix = ['ichnaea.']
 pygments_style = 'sphinx'
 source_suffix = '.rst'
@@ -46,4 +45,4 @@ def linkcode_resolve(domain, info):
     if not info['module']:
         return None
     filename = info['module'].replace('.', '/')
-    return "https://github.com/mozilla/ichnaea/tree/master/%s.py" % filename
+    return "https://github.com/mozilla/ichnaea/tree/main/%s.py" % filename

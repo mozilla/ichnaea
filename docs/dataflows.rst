@@ -52,7 +52,7 @@ Data flow:
 
 3. The Celery scheduler schedules the ``update_incoming`` task every 
    X seconds--see task definition in `ichnaea/data/tasks.py
-   <https://github.com/mozilla/ichnaea/blob/master/ichnaea/data/tasks.py>`_.
+   <https://github.com/mozilla/ichnaea/blob/main/ichnaea/data/tasks.py>`_.
 
 4. A Celery worker executes the ``update_incoming`` task.
 

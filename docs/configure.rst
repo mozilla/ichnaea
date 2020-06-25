@@ -107,10 +107,10 @@ Mapbox
 The web site content uses Mapbox to generate tiles. In order to do this,
 it requires a Mapbox API token.
 
-You can create an account on their site: https://mapbox.com/
+You can create an account on their site: https://www.mapbox.com
 
 After you have an account, you can create an API token at:
-https://accounts.mapbox.com/
+https://account.mapbox.com
 
 Set the ``MAP_TOKEN`` configuration value to your API token.
 
