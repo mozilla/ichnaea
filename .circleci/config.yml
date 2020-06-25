@@ -92,14 +92,14 @@ jobs:
               if [ -n "${CIRCLE_TAG}" ]; then
                 export DOCKER_TAG="${CIRCLE_TAG}"
               fi
-              # push on master or git tag
-              if [ "${CIRCLE_BRANCH}" == "master" ] || [ -n "${CIRCLE_TAG}" ]; then
+              # push on main or git tag
+              if [ "${CIRCLE_BRANCH}" == "main" ] || [ -n "${CIRCLE_TAG}" ]; then
                 echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
                 docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
                 retry docker push "mozilla/location:${DOCKER_TAG}"
 
-                # push `latest` on master only
-                if [ "${CIRCLE_BRANCH}" == "master" ]; then
+                # push `latest` on main only
+                if [ "${CIRCLE_BRANCH}" == "main" ]; then
                   docker tag "local/ichnaea_app" "mozilla/location:latest"
                   retry docker push "mozilla/location:latest"
                 fi
