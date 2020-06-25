@@ -32,5 +32,5 @@ Legal
 
 Currently we don't have any legal contributor agreement, so code
 ownership stays with the original authors. The project is licensed
-under the `Apache License Version 2
-<https://github.com/mozilla/ichnaea/blob/master/LICENSE>`_.
+under the
+`Apache License Version 2 <https://github.com/mozilla/ichnaea/blob/main/LICENSE>`_.
