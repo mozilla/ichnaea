@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sphinx_rtd_theme
 import sys
 from unittest import mock
 
@@ -26,12 +25,19 @@ release = '2.0'
 autoclass_content = 'class'
 exclude_patterns = ['_build', '.DS_Store', 'Thumbs.db']
 html_static_path = []
-html_theme = 'sphinx_rtd_theme'
-html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 modindex_common_prefix = ['ichnaea.']
 pygments_style = 'sphinx'
 source_suffix = '.rst'
 templates_path = ['_templates']
+
+# Use default theme if we are in ReadTheDocs
+on_rtd = os.environ.get('READTHEDOCS') == 'True'
+if on_rtd:
+    html_theme = 'default'
+else:
+    import sphinx_rtd_theme
+    html_theme = 'sphinx_rtd_theme'
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 
 extensions = [
     'sphinx.ext.linkcode',
