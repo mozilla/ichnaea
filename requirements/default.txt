@@ -1,4 +1,8 @@
+# Requirements for production and development
+
 -c constraints.txt
+-r docs.txt
+-r shared.txt
 
 alembic==1.4.2 \
     --hash=sha256:035ab00497217628bf5d0be82d664d8713ab13d37b630084da8e1f98facf4dbf
@@ -11,9 +15,6 @@ boto3==1.13.20 \
 celery[redis]==4.4.2 \
     --hash=sha256:5b4b37e276033fe47575107a2775469f0b721646a08c96ec2c61531e4fe45f2a \
     --hash=sha256:108a0bf9018a871620936c33a3ee9f6336a89f8ef0a0f567a9001f4aa361415f
-certifi==2020.4.5.1 \
-    --hash=sha256:1d987a998c75633c40847cc966fcf5904906c920a7f17ef374f5aa4282abd304 \
-    --hash=sha256:51fcb31174be6e6664c5f69e3e1691a2d72a1a12e90f872cbdb1567eb47b6519
 Click==7.1.2 \
     --hash=sha256:dacca89f4bfadd5de3d7489b7c8a566eee0d3676333fbb50030263894c38c0dc \
     --hash=sha256:d2b5255c7c6349bc1bd1e59e08cd12acbbd63ce649f2588755783aa94dfb6b1a
@@ -136,9 +137,6 @@ raven==6.10.0 \
 redis[hiredis]==3.5.3 \
     --hash=sha256:432b788c4530cfe16d8d943a09d40ca6c16149727e4afe8c2c9d5580c59d9f24 \
     --hash=sha256:0e7e0cfca8660dea8b7d5cd8c4f6c5e29e11f31158c0b0ae91a397f00e5a05a2
-requests[security]==2.23.0 \
-    --hash=sha256:43999036bfa82904b6af1d99e4882b560e5e2c68e5c4b0aa03b655f3d7d73fee \
-    --hash=sha256:b3f43d496c6daba4493e7c431722aeb7dbc6288f52a6e04e7b6023b0247817e6
 requests-mock==1.8.0 \
     --hash=sha256:11215c6f4df72702aa357f205cf1e537cffd7392b3e787b58239bde5fb3db53b \
     --hash=sha256:e68f46844e4cee9d447150343c9ae875f99fa8037c6dcf5f15bf1fe9ab43d226
@@ -192,12 +190,6 @@ Shapely[vectorized]==1.7.0 \
     --hash=sha256:f7eb83fb36755edcbeb76fb367104efdf980307536c38ef610cb2e1a321defe0 \
     --hash=sha256:3793b09cbd86fe297193b365cbaf58b2f7d1ddeb273213185b2ddbab360e54ae \
     --hash=sha256:e21a9fe1a416463ff11ae037766fe410526c95700b9e545372475d2361cc951e
-Sphinx==3.0.4 \
-    --hash=sha256:779a519adbd3a70fc7c468af08c5e74829868b0a5b34587b33340e010291856c \
-    --hash=sha256:ea64df287958ee5aac46be7ac2b7277305b0381d213728c3a49d8bb9b8415807
-sphinx-rtd-theme==0.4.3 \
-    --hash=sha256:00cf895504a7895ee433807c62094cf1e95f065843bf3acd17037c3e9a2becd4 \
-    --hash=sha256:728607e34d60456d736cc7991fd236afb828b21b82f956c5ea75f94c8414040a
 SQLAlchemy==1.3.17 \
     --hash=sha256:fe01bac7226499aedf472c62fa3b85b2c619365f3f14dd222ffe4f3aa91e5f98 \
     --hash=sha256:b50f45d0e82b4562f59f0e0ca511f65e412f2a97d790eea5f60e34e5f1aabc9a \
@@ -230,9 +222,6 @@ SQLAlchemy==1.3.17 \
 WebTest==2.0.35 \
     --hash=sha256:44ddfe99b5eca4cf07675e7222c81dd624d22f9a26035d2b93dc8862dc1153c6 \
     --hash=sha256:aac168b5b2b4f200af4e35867cf316712210e3d5db81c1cbdff38722647bb087
-everett==1.0.2 \
-    --hash=sha256:66c7991c056fd9b1de54c29e2b5004a30209530faef698d6ecfbf24bfbbdd1fb \
-    --hash=sha256:8a5ee8cdde0ed6b3bbb63249e0e0703d4ad91921107ff198e0868ffce5f7b6bc
 black==19.10b0 \
     --hash=sha256:1b30e59be925fafc1ee4565e5e08abef6b03fe455102883820fe5ee2e4734e0b \
     --hash=sha256:c2edb73a08e9e0e6f65a0e6af18b059b8b1cdd5bef997d7a0b181df93dc81539
