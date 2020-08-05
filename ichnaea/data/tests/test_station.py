@@ -257,17 +257,17 @@ class StationTest(BaseStationTest):
 
         self.check_areas(celery, [obs])
         station = self.get_station(session, obs)
-        assert round(station.lat, 7) == round(obs.lat - 0.00004, 7)
-        assert round(station.max_lat, 7) == round(obs.lat + 0.0001, 7)
-        assert round(station.min_lat, 7) == round(obs.lat - 0.0003, 7)
-        assert round(station.lon, 7) == round(obs.lon - 0.00004, 7)
-        assert round(station.max_lon, 7) == round(obs.lon + 0.0002, 7)
-        assert round(station.min_lon, 7) == round(obs.lon - 0.0004, 7)
+        assert station.lat == pytest.approx(obs.lat - 0.00004)
+        assert station.max_lat == pytest.approx(obs.lat + 0.0001)
+        assert station.min_lat == pytest.approx(obs.lat - 0.0003)
+        assert station.lon == pytest.approx(obs.lon - 0.00004)
+        assert station.max_lon == pytest.approx(obs.lon + 0.0002)
+        assert station.min_lon == pytest.approx(obs.lon - 0.0004)
         assert station.radius == 38
         assert station.region == "GB"
         assert station.samples == 5
         assert station.source == source
-        assert round(station.weight, 2) == 5.0
+        assert station.weight == pytest.approx(5.0)
         self.check_blocked(station, None)
         self.check_dates(station, self.today, self.today, self.today)
 
@@ -320,7 +320,7 @@ class StationTest(BaseStationTest):
         assert station.lat == obs.lat
         assert station.max_lat == obs.lat
         assert station.min_lat == obs.lat
-        assert station.lon == obs.lon
+        assert station.lon == pytest.approx(obs.lon)
         assert station.max_lon == obs.lon
         assert station.min_lon == obs.lon
         assert station.radius == 0
@@ -504,14 +504,14 @@ class StationTest(BaseStationTest):
         assert station.lat == obs.lat
         assert station.max_lat == obs.lat
         assert station.min_lat == obs.lat
-        assert station.lon == obs.lon
+        assert station.lon == pytest.approx(obs.lon)
         assert station.max_lon == obs.lon
         assert station.min_lon == obs.lon
         assert station.radius == 0
         assert station.region == "GB"
         assert station.samples == 3
         assert station.source == ReportSource.gnss
-        assert round(station.weight, 2) == 3.0
+        assert station.weight == pytest.approx(3.0)
 
     @pytest.mark.parametrize("obs_source", (ReportSource.gnss, ReportSource.query))
     @pytest.mark.parametrize("station_source", (ReportSource.gnss, ReportSource.query))
@@ -539,7 +539,7 @@ class StationTest(BaseStationTest):
         assert station.lat == obs.lat
         assert station.max_lat == obs.lat
         assert station.min_lat == obs.lat
-        assert station.lon == obs.lon
+        assert station.lon == pytest.approx(obs.lon)
         assert station.max_lon == obs.lon
         assert station.min_lon == obs.lon
         assert station.radius == 0
@@ -605,13 +605,13 @@ class TestBlue(StationMacTest):
         assert station.lat == lat
         assert station.max_lat == lat
         assert station.min_lat == lat
-        assert round(station.lon, 7) == round(lon - 0.0000305, 7)
+        assert station.lon == pytest.approx(lon - 0.0000305)
         assert station.max_lon == lon
-        assert round(station.min_lon, 7) == round(lon - 0.0002, 7)
+        assert station.min_lon == pytest.approx(lon - 0.0002)
         assert station.radius == 12
         assert station.samples == 4
         assert station.source == source
-        assert round(station.weight, 2) == 3.96
+        assert station.weight == pytest.approx(3.957107)
 
 
 class TestWifi(StationMacTest):
@@ -693,16 +693,16 @@ class TestWifi(StationMacTest):
         self.queue_and_update(celery, obs)
 
         station = self.get_station(session, station)
-        assert station.lat == lat
+        assert station.lat == pytest.approx(lat)
         assert station.max_lat == lat
         assert station.min_lat == lat
-        assert round(station.lon, 7) == round(lon - 0.0019971, 7)
+        assert station.lon == pytest.approx(lon - 0.0019971)
         assert station.max_lon == lon
-        assert round(station.min_lon, 7) == round(lon - 0.006, 7)
+        assert station.min_lon == pytest.approx(lon - 0.006)
         assert station.radius == 278
         assert station.samples == 6
         assert station.source == source
-        assert round(station.weight, 2) == 16.11
+        assert station.weight == pytest.approx(16.10707)
 
     def test_region(self, celery, session):
         obs = []
@@ -797,13 +797,13 @@ class TestCell(StationTest):
         obs = obs[0]
         self.check_areas(celery, [obs])
         station = self.get_station(session, station)
-        assert station.lat == lat
+        assert station.lat == pytest.approx(lat)
         assert station.max_lat == lat
         assert station.min_lat == lat
-        assert round(station.lon, 7) == round(lon - 0.0015793, 7)
+        assert station.lon == pytest.approx(lon - 0.0015793)
         assert station.max_lon == lon
-        assert round(station.min_lon, 7) == round(lon - 0.004, 7)
+        assert station.min_lon == pytest.approx(lon - 0.004)
         assert station.radius == 168
         assert station.samples == 3
         assert station.source == source
-        assert round(station.weight, 3) == 9.245
+        assert station.weight == pytest.approx(9.2452954)
