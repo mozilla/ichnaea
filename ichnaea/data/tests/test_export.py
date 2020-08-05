@@ -3,6 +3,7 @@ import time
 from unittest import mock
 
 import boto3
+import pytest
 import requests_mock
 
 from ichnaea.data.export import DummyExporter, InternalTransform
@@ -537,8 +538,8 @@ class TestInternal(BaseExportTest):
         blues = session.query(shard).all()
         assert len(blues) == 1
         blue = blues[0]
-        assert blue.lat == position["latitude"]
-        assert blue.lon == position["longitude"]
+        assert blue.lat == pytest.approx(position["latitude"])
+        assert blue.lon == pytest.approx(position["longitude"])
         assert blue.mac == blue_data["macAddress"]
         assert blue.samples == 1
 
@@ -578,8 +579,8 @@ class TestInternal(BaseExportTest):
         assert len(cells) == 1
         cell = cells[0]
 
-        assert cell.lat == position["latitude"]
-        assert cell.lon == position["longitude"]
+        assert cell.lat == pytest.approx(position["latitude"])
+        assert cell.lon == pytest.approx(position["longitude"])
         assert cell.radio.name == cell_data["radioType"]
         assert cell.mcc == cell_data["mobileCountryCode"]
         assert cell.mnc == cell_data["mobileNetworkCode"]
@@ -627,8 +628,8 @@ class TestInternal(BaseExportTest):
         wifis = session.query(shard).all()
         assert len(wifis) == 1
         wifi = wifis[0]
-        assert wifi.lat == position["latitude"]
-        assert wifi.lon == position["longitude"]
+        assert wifi.lat == pytest.approx(position["latitude"])
+        assert wifi.lon == pytest.approx(position["longitude"])
         assert wifi.mac == wifi_data["macAddress"]
         assert wifi.samples == 1
 
