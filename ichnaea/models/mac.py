@@ -89,8 +89,7 @@ class MacColumn(TypeDecorator):
 
 
 class MacNode(ValidatorNode):
-    """A node containing a valid mac address, ex: 01005e901000.
-    """
+    """A node containing a valid mac address, ex: 01005e901000."""
 
     def preparer(self, cstruct):
         # Remove ':' '-' ',' from a wifi BSSID
