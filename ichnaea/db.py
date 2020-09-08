@@ -245,7 +245,7 @@ def drop_db(uri=None):
     db_to_drop = sa_url.database
     sa_url.database = None
     engine = create_engine(sa_url)
-    engine.execute("DROP DATABASE {}".format(db_to_drop))
+    engine.execute("DROP DATABASE IF EXISTS {}".format(db_to_drop))
 
 
 def retry_on_mysql_lock_fail(metric=None, metric_tags=None):

@@ -8,7 +8,7 @@ Use this only in a local dev environment.
 import argparse
 import sys
 
-from sqlalchemy.exc import InternalError, ProgrammingError
+from sqlalchemy.exc import ProgrammingError
 
 from ichnaea.db import drop_db, create_db, get_sqlalchemy_url
 
@@ -29,11 +29,7 @@ def drop_database():
     """Drop an existing database."""
     db_url = get_sqlalchemy_url()
     print("Dropping database %s...." % db_url)
-    try:
-        drop_db(uri=db_url)
-    except InternalError:
-        print("Database does not exist.")
-        return 1
+    drop_db(uri=db_url)
     print("Done.")
 
 
