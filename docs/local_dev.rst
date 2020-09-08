@@ -87,6 +87,9 @@ Setup Quickstart
 At this point, you should have a basic functional Ichnaea development
 environment that has no geo data in it.
 
+To see what else you can do, run::
+
+        $ make
 
 .. _localdev-updating:
 
