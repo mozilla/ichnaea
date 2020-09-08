@@ -9,14 +9,14 @@ import numpy
 numpy_include = numpy.get_include()
 ext_modules = [
     Extension(
-        name='geocalc',
-        sources=['geocalc.c'],
+        name="geocalc",
+        sources=["geocalc.c"],
         include_dirs=[numpy_include],
     ),
 ]
 
 setup(
-    name='geocalc',
+    name="geocalc",
     license="Apache 2.0",
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
@@ -27,7 +27,7 @@ setup(
         "Programming Language :: Python :: Implementation :: CPython",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application"
+        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
     ],
     packages=find_packages(),
     include_package_data=True,

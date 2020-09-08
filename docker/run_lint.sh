@@ -13,6 +13,7 @@
 set -e
 
 BLACKARGS=("--line-length=88" "--target-version=py37" bin docker ichnaea)
+DIRS="ichnaea bin geocalclib docs"
 
 if [[ $1 == "--fix" ]]; then
     echo ">>> black fix"
@@ -21,8 +22,8 @@ if [[ $1 == "--fix" ]]; then
 else
     echo ">>> flake8 ($(python --version))"
     cd /app
-    flake8
+    flake8 ${DIRS}
 
     echo ">>> black"
-    black --check "${BLACKARGS[@]}"
+    black --check "${BLACKARGS[@]}" ${DIRS}
 fi
