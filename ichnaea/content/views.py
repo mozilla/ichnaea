@@ -17,6 +17,7 @@ from pyramid.renderers import get_renderer
 from pyramid.response import FileResponse
 from pyramid.response import Response
 from pyramid.view import view_config
+from pyramid.httpexceptions import HTTPNotFound
 
 from ichnaea.conf import settings
 from ichnaea.content.stats import global_stats, histogram, regions
@@ -305,6 +306,12 @@ class ContentViews(object):
                 "Developer Terms of Service:" " Mozilla Location Service Query API"
             )
         }
+
+    @view_config(context=HTTPNotFound)
+    def default_not_found(exc):
+        response = Response("<h1>404 Not Found</h1>")
+        response.status_int = 404
+        return response
 
 
 def favicon_view(request):
