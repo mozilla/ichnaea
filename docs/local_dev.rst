@@ -48,14 +48,14 @@ Setup Quickstart
 
 3. (*Optional/Advanced*) Set UID and GID for Docker container user.
 
-   If you're on Linux or you want to set the UID/GID of the app user that
-   runs in the Docker containers, run::
+   If you're on Linux, you will need to set the UID/GID of the app user that
+   runs in the Docker containers to match your UID/GID.  Run::
 
        $ make my.env
 
-   Then edit the file and set the ``ICHNAEA_UID`` and ``ICHNAEA_GID``
-   variables. These will get used when creating the app user in the base
-   image.
+   Then run ``id`` to get your UID/GID.  edit the file and set the
+   ``ICHNAEA_UID`` and ``ICHNAEA_GID`` variables. These will get used when
+   creating the app user in the base image.
 
    If you ever want different values, change them in ``my.env`` and re-run
    ``make build``.
