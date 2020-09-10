@@ -1,0 +1,6 @@
+# Defaults for assigning reviews
+# See https://docs.github.com/en/github/creating-cloning-and-archiving-repositories/about-code-owners
+# and http://code.v.igoro.us/posts/2019/07/codeowners.html
+
+# The default owner
+*       @jwhitlock
