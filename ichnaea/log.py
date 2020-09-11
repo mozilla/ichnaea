@@ -133,7 +133,7 @@ RAVEN_TRANSPORTS = {
 }
 
 
-def configure_raven(transport=None, _client=None):
+def configure_raven(transport=None, tags={}, _client=None):
     """Configure and return a :class:`raven.Client` instance.
 
     :param transport: The transport to use, one of the
@@ -151,7 +151,7 @@ def configure_raven(transport=None, _client=None):
     klass = DebugRavenClient if not dsn else RavenClient
     info = version_info()
     release = info.get("version") or info.get("commit") or "unknown"
-    client = klass(dsn=dsn, transport=transport, release=release)
+    client = klass(dsn=dsn, transport=transport, release=release, tags=tags)
     return client
 
 

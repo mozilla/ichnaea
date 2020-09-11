@@ -35,7 +35,7 @@ def cmd_clitest(ctx):
     msg = "Testing Sentry configuration via cli (%s)" % str(datetime.datetime.now())
     click.echo(click.style("Using message: %s" % msg, fg="green"))
     click.echo(click.style("Building Raven client...", fg="green"))
-    client = configure_raven(transport="sync")
+    client = configure_raven(transport="sync", tags={'node': 'sentry_test'})
     click.echo(click.style("Sending message...", fg="green"))
     client.captureMessage(msg)
 
