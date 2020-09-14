@@ -93,7 +93,7 @@ def init_worker(
     celery_app.db = configure_db("rw", _db=_db)
 
     celery_app.raven_client = raven_client = configure_raven(
-        transport="threaded", _client=_raven_client
+        transport="threaded", tags={"app": "taskapp"}, _client=_raven_client
     )
 
     celery_app.redis_client = redis_client = configure_redis(_client=_redis_client)

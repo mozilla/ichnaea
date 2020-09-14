@@ -375,7 +375,9 @@ def main(argv, _raven_client=None, _bucketname=None):
 
     args = parser.parse_args(argv[1:])
     if args.create:
-        raven_client = configure_raven(transport="sync", _client=_raven_client)
+        raven_client = configure_raven(
+            transport="sync", tags={"app": "datamap"}, _client=_raven_client
+        )
 
         configure_stats()
 
