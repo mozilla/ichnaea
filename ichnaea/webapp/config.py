@@ -72,7 +72,7 @@ def main(
     registry.db = configure_db("ro", _db=_db)
 
     registry.raven_client = raven_client = configure_raven(
-        transport="gevent", tags={"node": "webapp"}, _client=_raven_client
+        transport="gevent", tags={"app": "webapp"}, _client=_raven_client
     )
 
     registry.redis_client = redis_client = configure_redis(_client=_redis_client)
