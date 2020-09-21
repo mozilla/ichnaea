@@ -12,46 +12,47 @@ Ichnaea provides two classes of runtime data:
 Structured logs were added in 2020, and the migration of data from metrics to
 logs is not complete. For more information, see the Implementation_ section.
 
-These are the metrics emitted by Ichnaea:
+Metrics are emitted by the web / API application, the async task application,
+and the datamaps script:
 
-================================ ======= =======================================================
-Metric Name                      Type    Tags
-================================ ======= =======================================================
-`api.limit`_                     gauge   key, path
-`data.batch.upload`_             counter key
-`data.export.batch`_             counter key
-`data.export.upload`_            counter key, status
-`data.export.upload.timing`_     timer   key
-`data.observation.drop`_         counter type, key
-`data.observation.insert`_       counter type
-`data.observation.upload`_       counter type, key
-`data.report.drop`_              counter key
-`data.report.upload`_            counter key
-`data.station.blocklist`_        counter type
-`data.station.confirm`_          counter type
-`data.station.dberror`_          counter type, errno
-`data.station.new`_              counter type
-`datamaps`_                      timer   func, count
-`datamaps.dberror`_              counter errno
-`locate.fallback.cache`_         counter fallback_name, status
-`locate.fallback.lookup`_        counter fallback_name, status
-`locate.fallback.lookup.timing`_ timer   fallback_name, status
-`locate.query`_                  counter key, geoip, blue, cell, wifi
-`locate.request`_                counter key, path
-`locate.result`_                 counter key, accuracy, status, source, fallback_allowed
-`locate.source`_                 counter key, accuracy, status, source
-`locate.user`_                   gauge   key, interval
-`queue`_                         gauge   queue
-`region.query`_                  counter key, geoip, blue, cell, wifi
-`region.request`_                counter key, path
-`region.result`_                 counter key, accuracy, status, source, fallback_allowed
-`region.user`_                   gauge   key, interval
-`request`_                       counter path, method, status
-`request.timing`_                timer   path, method
-`submit.request`_                counter key, path
-`submit.user`_                   gauge   key, interval
-`task`_                          timer   task
-================================ ======= =======================================================
+================================ ======== ======= =======================================================
+Metric Name                      App      Type    Tags
+================================ ======== ======= =======================================================
+`api.limit`_                     task     gauge   key, path
+`data.batch.upload`_             web      counter key
+`data.export.batch`_             task     counter key
+`data.export.upload`_            task     counter key, status
+`data.export.upload.timing`_     task     timer   key
+`data.observation.drop`_         task     counter type, key
+`data.observation.insert`_       task     counter type
+`data.observation.upload`_       task     counter type, key
+`data.report.drop`_              task     counter key
+`data.report.upload`_            task     counter key
+`data.station.blocklist`_        task     counter type
+`data.station.confirm`_          task     counter type
+`data.station.dberror`_          task     counter type, errno
+`data.station.new`_              task     counter type
+`datamaps`_                      datamaps timer   func, count
+`datamaps.dberror`_              datamaps counter errno
+`locate.fallback.cache`_         web      counter fallback_name, status
+`locate.fallback.lookup`_        web      counter fallback_name, status
+`locate.fallback.lookup.timing`_ web      timer   fallback_name, status
+`locate.query`_                  web      counter key, geoip, blue, cell, wifi
+`locate.request`_                web      counter key, path
+`locate.result`_                 web      counter key, accuracy, status, source, fallback_allowed
+`locate.source`_                 web      counter key, accuracy, status, source
+`locate.user`_                   task     gauge   key, interval
+`queue`_                         task     gauge   queue
+`region.query`_                  web      counter key, geoip, blue, cell, wifi
+`region.request`_                web      counter key, path
+`region.result`_                 web      counter key, accuracy, status, source, fallback_allowed
+`region.user`_                   task     gauge   key, interval
+`request`_                       web      counter path, method, status
+`request.timing`_                web      timer   path, method
+`submit.request`_                web      counter key, path
+`submit.user`_                   task     gauge   key, interval
+`task`_                          task     timer   task
+================================ ======== ======= =======================================================
 
 Web Application Metrics
 =======================
