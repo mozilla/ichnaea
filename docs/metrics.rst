@@ -12,7 +12,7 @@ Ichnaea provides two classes of runtime data:
 Structured logs were added in 2020, and the migration of data from metrics to
 logs is not complete. For more information, see the Implementation_ section.
 
-Metrics are emitted by the web / API application, the async task application,
+Metrics are emitted by the web / API application, the backend task application,
 and the datamaps script:
 
 ================================ ======== ======= =======================================================
@@ -71,10 +71,11 @@ some static content like ``robots.txt``.
 Additionally, invalid requests (HTTP status in the ``4xx`` range) do not omit this
 metric, unless they are API endpoints.
 
-The request path, like ``/stats/regions``, is normalized to tag-safe characters
-and included as the ``path`` tag. The initial slash is dropped, and remaining
-slashes are replaced with periods, so ``/stats/regions`` becomes ``stats.regions``.
-The homepage, ``/`` is normalized as ``.homepage``, to avoid an empty tag value.
+The ``path`` tag is the request path, like ``/stats/regions``, but normalized
+to tag-safe characters.  The initial slash is dropped, and remaining slashes
+are replaced with periods, so ``/stats/regions`` becomes ``stats.regions``.
+The homepage, ``/`` is normalized as ``.homepage``, to avoid an empty tag
+value.
 
 Tags:
 
@@ -120,7 +121,7 @@ Tags:
 
 Related structured log data:
 
-* `api_key`_: same value as tag ``key`` for valid keys
+* `api_key`_: The same value as tag ``key`` for valid keys
 
 locate.query
 ^^^^^^^^^^^^
@@ -132,8 +133,8 @@ contained in the request body.
 Tags:
 
 * ``key``: The API key, often a UUID
-* ``geoip``: omitted when there is GeoIP data for the client IP (common case),
-  ``false`` if there was no GeoIP data
+* ``geoip``: ``false`` if there was no GeoIOP data, and omitted when there is
+  GeoIP data for the client IP (the common case)
 * ``blue``: Count of valid Bluetooth :term:`stations` in the request, ``none``, ``one``
   or ``many``
 * ``cell``: Count of valid cell :term:`stations` in the request, ``none``, ``one``, or
@@ -146,7 +147,7 @@ Tags:
 
 Related structured log data:
 
-* `api_key`_: same value as tag ``key``
+* `api_key`_: The same value as tag ``key``
 * `has_geoip`_: Always set, ``False`` when ``geoip`` is ``false``
 * `blue`_: Count of Bluetooth stations, as a number instead of text like ``many``
 * `cell`_: Count of Cell stations
@@ -165,11 +166,11 @@ Tags:
 
 Related structured log data:
 
-* `api_key`_: same value as tag ``key``, except that instead of ``invalid``,
+* `api_key`_: The same value as tag ``key``, except that instead of ``invalid``,
   the request key is used, and ``api_key_allowed=False``
 * `api_key_allowed`_: ``False`` when the key is not allowed to use the API
-* `api_path`_: same value as tag ``path``
-* `api_type`_: value set to ``locate``
+* `api_path`_: The same value as tag ``path``
+* `api_type`_: The value ``locate``
 
 locate.result
 ^^^^^^^^^^^^^
@@ -201,26 +202,26 @@ Tags:
 
 * ``source``: The source that provided the hit:
 
-  - omitted when ``status=miss``
   - ``internal``: Our crowd-sourced network data
   - ``geoip``: The MaxMind GeoIP database
   - ``fallback``: An optional external fallback provider
+  - Omitted when ``status=miss``
 
 * ``fallback_allowed``:
 
-  - omitted if the external fallback provider was not allowed
   - ``true`` if the external fallback provider was allowed
+  - Omitted if the external fallback provider was not allowed
 
 .. versionchanged:: 2020.04.16
    Removed the ``region`` tag
 
 Related structured log data:
 
-* :ref:`accuracy <accuracy_metric>`: accuracy level of the result, ``high``,
+* :ref:`accuracy <accuracy_metric>`: The accuracy level of the result, ``high``,
   ``medium``, or ``low``
-* `accuracy_min`_: same value as tag ``accuracy``
-* `api_key`_: same value as tag ``key``
-* `result_status`_: same value as tag ``status``
+* `accuracy_min`_: The same value as tag ``accuracy``
+* `api_key`_: The same value as tag ``key``
+* `result_status`_: The same value as tag ``status``
 
 locate.source
 ^^^^^^^^^^^^^
@@ -247,8 +248,8 @@ Tags (similar to `locate.result`_) :
 
 * ``status``: Could we provide a location estimate?
 
-  - ``hit`` if we can provide a location with the expected accuracy,
-  - ``miss`` if we can not provide a location with the expected accuracy
+  - ``hit``: We can provide a location with the expected accuracy,
+  - ``miss``: We can not provide a location with the expected accuracy
 
 * ``source``: The source that was processed:
 
@@ -258,27 +259,27 @@ Tags (similar to `locate.result`_) :
 
 * ``fallback_allowed``:
 
-  - omitted if the external fallback provider was not allowed
   - ``true`` if the external fallback provider was allowed
+  - Omitted if the external fallback provider was not allowed
 
 .. versionchanged:: 2020.04.16
    Removed the ``region`` tag
 
 Related structured log data:
 
-* `api_key`_: same value as tag ``key``
-* `source_internal_accuracy`_: accuracy level of the internal source
-* `source_internal_accuracy_min`_: required accuracy level of the internal source,
-  same value as tag ``accuracy`` when ``source=internal``
-* `source_internal_status`_: same value as tag ``status`` when ``source=internal``
-* `source_geoip_accuracy`_: accuracy level of the GeoIP source
-* `source_geoip_accuracy_min`_: required accuracy level of the GeoIP source,
+* `api_key`_: The same value as tag ``key``
+* `source_internal_accuracy`_: The accuracy level of the internal source
+* `source_internal_accuracy_min`_: The required accuracy level of the internal
+  source, same value as tag ``accuracy`` when ``source=internal``
+* `source_internal_status`_: The same value as tag ``status`` when ``source=internal``
+* `source_geoip_accuracy`_: The accuracy level of the GeoIP source
+* `source_geoip_accuracy_min`_: The required accuracy level of the GeoIP source,
   same value as tag ``accuracy`` when ``source=geoip``
-* `source_geoip_status`_: same value as tag ``status`` when ``source=geoip``
-* `source_fallback_accuracy`_: accuracy level of the external fallback source
-* `source_fallback_accuracy_min`_: required accuracy level of the fallback source,
+* `source_geoip_status`_: The same value as tag ``status`` when ``source=geoip``
+* `source_fallback_accuracy`_: The accuracy level of the external fallback source
+* `source_fallback_accuracy_min`_: The required accuracy level of the fallback source,
   same value as tag ``accuracy`` when ``source=fallback``
-* `source_fallback_status`_: same value as tag ``status`` when ``source=fallback``
+* `source_fallback_status`_: The same value as tag ``status`` when ``source=fallback``
 
 region.query
 ^^^^^^^^^^^^
@@ -448,19 +449,19 @@ API Metrics
 If a request is an API call, additional data can be added to the log:
 
 * ``accuracy``: The accuracy of the result, ``high``, ``medium``, or ``low``.
-* ``accuracy_min``: Minimum required accuracy of the result for a hit, ``high``,
+* ``accuracy_min``: The minimum required accuracy of the result for a hit, ``high``,
   ``medium``, or ``low``.
 * ``api_key``: An API key that has an entry in the API key table, often a UUID,
   or ``none`` if omitted. Same as statsd tag ``key``, except that known but
-  disallowed API keys at the key value, rather than ``invalid``.
+  disallowed API keys are the key value, rather than ``invalid``.
 * ``api_key_allowed``: ``False`` if a known API key is not allowed to call the
   API, omitted otherwise.
 * ``api_key_db_fail``: ``True`` when a database error prevented checking the
   API key. Omitted when the check is successful.
 * ``api_path``: The normalized API path, like ``v1.geolocate`` and
-  ``v2.geosubmit``. Same as statsd tag ``path``.
-* ``api_response_sig``: A de-identified hash to identify repeated geolocate
-  requests getting the same response.
+  ``v2.geosubmit``. Same as statsd tag ``path`` when an API is called.
+* ``api_response_sig``: A hash to identify repeated geolocate requests getting
+  the same response without identifying the client.
 * ``api_type``: The API type, ``locate``, ``submit``, or ``region``.
 * ``blue``: The count of Bluetooth radios in the request.
 * ``blue_valid``: The count of valid Bluetooth radios in the request.
@@ -471,35 +472,36 @@ If a request is an API call, additional data can be added to the log:
 * ``has_geoip``: ``True`` if there is GeoIP data for the client IP, otherwise
   ``False``.
 * ``has_ip``: ``True`` if the client IP was available, otherwise ``False``.
-* ``invalid_api_key``: The invalid API key (not in API table), omitted if valid or empty.
+* ``invalid_api_key``: The invalid API key not found in API table, omitted if known or empty.
 * ``rate_allowed``: ``True`` if allowed, ``False`` if not allowed due to rate
   limit, or omitted if the API is not rate-limited.
-* ``rate_quota``: Daily rate limit, or omitted if API is not rate-limited.
-* ``rate_remaining``: Remaining API calls to hit limit, 0 if none remaining, or
+* ``rate_quota``: The daily rate limit, or omitted if API is not rate-limited.
+* ``rate_remaining``: The remaining API calls to hit limit, 0 if none remaining, or
   omitted if the API is not rate-limited.
-* ``region``: The ISO region code for the IP address, ``null`` if none
+* ``region``: The ISO region code for the IP address, ``null`` if none.
 * ``result_status``: ``hit`` if an accurate estimate could be made, ``miss`` if
-  it could not
-* ``source_fallback_accuracy`: accuracy level of the external fallback source,
-  ``high``, ``medium``, or ``low``
-* ``source_fallback_accuracy_min``: required accuracy level of the fallback source
+  it could not.
+* ``source_fallback_accuracy``: The accuracy level of the external fallback
+  source, ``high``, ``medium``, or ``low``.
+* ``source_fallback_accuracy_min``: The required accuracy level of the fallback source.
 * ``source_fallback_status``: ``hit`` if the fallback source provided an accurate
-  estimate, ``miss`` if it did not
-* ``source_internal_accuracy``: accuracy level of the internal source (Bluetooth,
-  WiFi, and cell data compared against the database), ``high``, ``medium``, or ``low``
-* ``source_internal_accuracy_min``: required accuracy level of the internal source
+  estimate, ``miss`` if it did not.
+* ``source_internal_accuracy``: The accuracy level of the internal source (Bluetooth,
+  WiFi, and cell data compared against the database), ``high``, ``medium``, or ``low``.
+* ``source_internal_accuracy_min``: The required accuracy level of the internal source.
 * ``source_internal_status``: ``hit`` if the internal check provided an accurate
-  estimate, ``miss`` if it did not
-* ``source_geoip_accuracy``: accuracy level of the GeoIP source, ``high``,
-  ``medium``, or ``low``
-* ``source_geoip_accuracy_min``: required accuracy level of the GeoIP source
+  estimate, ``miss`` if it did not.
+* ``source_geoip_accuracy``: The accuracy level of the GeoIP source, ``high``,
+  ``medium``, or ``low``.
+* ``source_geoip_accuracy_min``: The required accuracy level of the GeoIP source.
 * ``source_geoip_status``: ``hit`` if the GeoIP database provided an accurate
-  estimate, ``miss`` if it did not
-* ``wifi``: The count of WiFi radios in the request
-* ``wifi_valid``: The count of valid WiFi radios in the request
+  estimate, ``miss`` if it did not.
+* ``wifi``: The count of WiFi radios in the request.
+* ``wifi_valid``: The count of valid WiFi radios in the request.
 
 Some of this data is duplicated in metrics:
 
+* `api.limit`_
 * `locate.query`_
 * `locate.request`_
 * `locate.result`_
@@ -637,8 +639,9 @@ Tags:
   data.export.batch_. Unlike that metric, ``internal`` is not used.
 * ``status``: The status of the export, which varies by type of export:
 
-  - ``backup`` (S3): ``success`` or ``failure``
-  - ``tostage`` (Submission API): HTTP code, usually ``200`` for success, ``400`` for failure.
+  - ``backup``: ``success`` or ``failure`` storing the report to S3
+  - ``tostage``: HTTP code returned by the submission API, usually ``200`` for
+    success or ``400`` for failure.
 
 data.export.upload.timing
 ^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -665,8 +668,8 @@ data.observation.upload
 ^^^^^^^^^^^^^^^^^^^^^^^
 ``data.observation.upload`` is a counter of the number of Bluetooth, cell or
 WiFi :term:`observations` entering the data processing pipeline, before
-normalization and blocked station processing have been applied. This count is
-taken after a batch of :term:`reports` are decomposed into observations.
+normalization and blocked station processing. This count is taken after a batch
+of :term:`reports` are decomposed into observations.
 
 The tags (``key`` and ``type``) are the same as `data.observation.drop`_.
 
@@ -712,8 +715,8 @@ data.station.blocklist
 :term:`stations` that are blocked from being used to estimate positions.
 These are added because there are multiple valid :term:`observations` at
 sufficiently different locations, supporting the theory that it is a
-mobile station (such as a picocell or mobile hotspot on a public transit
-vehicle), or was recently moved (a WiFi base station that moved with the
+mobile station (such as a picocell or a mobile hotspot on public transit),
+or was recently moved (such as a WiFi base station that moved with the
 owner to a new home).
 
 Tags:
@@ -742,9 +745,9 @@ Sentry.
 Tags:
 
 * ``errno``: The error number, which can be found in the 
-  `MySQL Server Error Reference`_.
+  `MySQL Server Error Reference`_
 * ``type``: The :term:`station`, one of ``blue``, ``cell``, or ``wifi``,
-  or the aggregate station type ``cellarea``.
+  or the aggregate station type ``cellarea``
 
 .. _`MySQL Server Error Reference`: https://dev.mysql.com/doc/refman/5.7/en/server-error-reference.html
 
@@ -806,7 +809,7 @@ are used to implement the data pipeline and monitoring tasks.
 Tags:
 
 * ``task``: The task name, such as ``data.export_reports`` or
-  ``data.update_statcounter``.
+  ``data.update_statcounter``
 
 Datamaps Metrics
 ================
@@ -843,8 +846,8 @@ Implementation
 Ichnaea emits statsd-compatible metrics using markus_, if the ``STATSD_HOST``
 is configured (see :ref:`the config section <config>`). Metrics use the the
 tags extension, which add queryable dimensions to the metrics. In development,
-the metrics are displayed with the logs. In production, metrics are stored in
-an InfluxDB_ database, and can be displayed as graphs with Grafana_.
+the metrics are displayed with the logs. In production, the metrics are stored
+in an InfluxDB_ database, and can be displayed as graphs with Grafana_.
 
 .. _markus: https://markus.readthedocs.io/en/latest/
 .. _InfluxDB: https://docs.influxdata.com/influxdb/v1.8/
@@ -871,7 +874,8 @@ Metric tag values are limited to avoid high cardinality issues. For example,
 rather than storing the number of WiFi stations, the ``wifi`` tag of the
 `locate.query`_ metric has the values ``none``, ``one``, and ``many``. The
 region, such as ``US`` or ``DE``, was once stored as a tag, but this can have
-almost 250 values.
+almost 250 values, causing MLS to have the highest processing load across
+Mozilla projects.
 
 BigQuery easily handles high-cardinality data, so structured logs can contain
 precise values, such as the actual number of WiFi stations provided, and more
