@@ -3,6 +3,9 @@ jobs:
   build:
     docker:
       - image: mozilla/cidockerbases:docker-latest
+        auth:
+          username: $DOCKER_USER
+          password: $DOCKER_PASS
     working_directory: /
 
     steps:
@@ -65,12 +68,6 @@ jobs:
             name: Push to Dockerhub
             working_directory: /ichnaea
             command: |
-              # Quit early if docker credentials are not defined
-              if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
-                echo "Skipping Push to Dockerhub, credentials not available."
-                exit 0
-              fi
-
               function retry {
                 set +e
                 local n=0
@@ -95,7 +92,6 @@ jobs:
               fi
               # push on main or git tag
               if [ "${CIRCLE_BRANCH}" == "main" ] || [ -n "${CIRCLE_TAG}" ]; then
-                echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
                 docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
                 retry docker push "mozilla/location:${DOCKER_TAG}"
 
