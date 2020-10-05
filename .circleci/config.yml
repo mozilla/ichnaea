@@ -47,6 +47,15 @@ jobs:
                docker-compose --version
 
         - run:
+            name: Login to Dockerhub
+            command: |
+                if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+                  echo "Skipping Login to Dockerhub, credentials not available."
+                else
+                  echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+                fi
+
+        - run:
             name: Build Docker images
             working_directory: /ichnaea
             command: |
@@ -100,6 +109,8 @@ jobs:
                   docker tag "local/ichnaea_app" "mozilla/location:latest"
                   retry docker push "mozilla/location:latest"
                 fi
+              else
+                echo "Skipping Push to Dockerhub, not main or tag."
               fi
 
 workflows:
