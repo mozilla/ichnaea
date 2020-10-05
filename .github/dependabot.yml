@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: monthly
+    reviewers:
+      - jwhitlock
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    reviewers:
+      - jwhitlock
