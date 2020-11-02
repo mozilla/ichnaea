@@ -9,7 +9,7 @@
     "participate": {
         "home": "https://location.services.mozilla.com/",
         "docs": "https://ichnaea.readthedocs.io/",
-        "mailing-list": "https://groups.google.com/group/mozilla.dev.geolocation"
+        "mailing-list": "https://discourse.mozilla.org/c/location/506"
     },
     "bugs": {
         "list": "https://github.com/mozilla/ichnaea/issues",

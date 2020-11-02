@@ -18,7 +18,6 @@ setup(
     long_description=long_description,
     url='https://github.com/mozilla/ichnaea',
     author='Mozilla',
-    author_email='dev-geolocation@lists.mozilla.org',
     license="Apache 2.0",
     classifiers=[
         "License :: OSI Approved :: Apache Software License",
