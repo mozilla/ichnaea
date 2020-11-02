@@ -9,7 +9,11 @@
     "participate": {
         "home": "https://location.services.mozilla.com/",
         "docs": "https://ichnaea.readthedocs.io/",
-        "mailing-list": "https://discourse.mozilla.org/c/location/506"
+        "mailing-list": "https://discourse.mozilla.org/c/location/506",
+        "chat": {
+            "url": "https://chat.mozilla.org/#/room/#location:mozilla.org",
+            "contacts": ["jwhitlock"]
+        }
     },
     "bugs": {
         "list": "https://github.com/mozilla/ichnaea/issues",
