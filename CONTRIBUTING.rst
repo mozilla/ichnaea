@@ -5,11 +5,11 @@ How to contribute
 We gladly accept outside contributions.
 
 We use
-`Bugzilla <https://bugzilla.mozilla.org/buglist.cgi?product=Location&component=General&bug_status=__open__>`_
-and our
 `Github issue tracker <https://github.com/mozilla/ichnaea/issues>`_
-for both discussions and talking about new features or bugs. You can
-also fork the project and send us a pull request.
+for both discussions and talking about new features or bugs. For
+confidential issues or security bugs, please use
+`Bugzilla <https://bugzilla.mozilla.org/buglist.cgi?product=Location&component=General&bug_status=__open__>`_.
+You can also fork the project and send us a pull request.
 
 If you have a more general topic to discuss, the
 `Location category
