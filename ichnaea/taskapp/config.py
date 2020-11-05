@@ -17,7 +17,6 @@ TASK_QUEUES = (
     Queue("celery_content", routing_key="celery_content"),
     Queue("celery_default", routing_key="celery_default"),
     Queue("celery_export", routing_key="celery_export"),
-    Queue("celery_incoming", routing_key="celery_incoming"),
     Queue("celery_monitor", routing_key="celery_monitor"),
     Queue("celery_reports", routing_key="celery_reports"),
     Queue("celery_wifi", routing_key="celery_wifi"),

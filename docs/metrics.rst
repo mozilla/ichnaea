@@ -778,7 +778,6 @@ queues are:
 * ``celery_default`` - A generic task queue
 * ``celery_export`` - Tasks exporting data, either public cell data or the
   `Data Pipeline <Data Pipeline Metrics - Gather and Export>`_
-* ``celery_incoming`` - Unused
 * ``celery_monitor`` - Tasks updating metrics gauges for this metric and
   `API Monitoring Metrics`_
 * ``celery_reports`` - Tasks handling batches of submission reports or location
