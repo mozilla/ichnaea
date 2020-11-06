@@ -36,10 +36,13 @@ RUN apt-key add /tmp/mysql_pubkey.asc && \
 RUN apt-get update && \
     apt-get -y install --no-install-recommends \
     file \
-    gcc \
     g++ \
+    gcc \
+    gfortran \
+    libatlas-base-dev \
     libffi-dev \
     libgeos-dev \
+    liblapack-dev \
     libmysqlclient-dev \
     libpng-dev \
     libprotobuf-dev \
