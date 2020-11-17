@@ -25,7 +25,7 @@ class CellAreaUpdater(object):
         areaids = self.queue.dequeue()
         self.update_areas(areaids)
         if self.queue.ready():
-            self.task.apply_countdown()
+            self.task.apply_async()
 
     @retry_on_mysql_lock_fail(
         metric="data.station.dberror", metric_tags=["type:cellarea"]

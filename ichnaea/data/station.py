@@ -558,7 +558,7 @@ class StationUpdater(object):
             self.emit_stats(pipe, stats)
 
         if self.data_queue.ready():
-            self.task.apply_countdown(kwargs={"shard_id": self.shard_id})
+            self.task.apply_async(kwargs={"shard_id": self.shard_id})
 
     def update_observations(self, sharded_observations):
         """Update the station data based on per-shard observations."""
