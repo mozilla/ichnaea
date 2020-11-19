@@ -109,16 +109,20 @@ class Key(object):
             and self.fallback_ratelimit_interval
         )
 
-    def store_sample(self, api_type):
+    def store_sample(self, api_type, global_locate_sample_rate=100.0):
         """
         Determine if an API request should result in the data to be
         stored for further processing.
 
         This allows one to store only some percentage of the incoming
         locate or submit requests for a given API key.
+
+        A global_locate_sample_rate, 0.0 to 100.0, is used to further
+        reduce samples when the backend is overloaded.
         """
         if api_type == "locate":
-            sample_rate = float(self.store_sample_locate or 0.0) / 100.0
+            sample_rate = (self.store_sample_locate or 0.0) / 100.0
+            sample_rate *= global_locate_sample_rate / 100.0
         elif api_type == "submit":
             sample_rate = float(self.store_sample_submit or 0.0) / 100.0
         else:

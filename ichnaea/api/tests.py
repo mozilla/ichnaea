@@ -3,6 +3,7 @@ import time
 from unittest import mock
 
 import colander
+import pytest
 from pyramid.request import Request
 
 from ichnaea.api.key import get_key, Key
@@ -68,6 +69,13 @@ class TestKey(object):
         assert key.store_sample("locate") is False
         assert key.store_sample("submit") is True
 
+        # A global_locate_sample_rate can turn off samples
+        assert key.store_sample("locate", global_locate_sample_rate=0.0) is False
+
+        # And can raise a sample rate
+        key = KeyFactory(store_sample_locate=50, store_sample_submit=None)
+        assert key.store_sample("locate", global_locate_sample_rate=200.0) is True
+
     @mock.patch("ichnaea.api.key.random")
     def test_store_sample_mock_random(self, mock_random):
         key = KeyFactory(store_sample_locate=50)
@@ -79,6 +87,29 @@ class TestKey(object):
         assert key.store_sample("locate") is False
         mock_random.return_value = 0.9
         assert key.store_sample("locate") is False
+
+    @pytest.mark.parametrize(
+        "global_rate, q1, q2, q3, q4",
+        [
+            (100.0, 0.1, 0.5, 0.501, 0.7),
+            (50.0, 0.1, 0.25, 0.251, 0.5),
+            (1.0, 0.004, 0.005, 0.006, 1.0),
+        ],
+    )
+    @mock.patch("ichnaea.api.key.random")
+    def test_store_sample_mock_random_with_global_rate(
+        self, mock_random, global_rate, q1, q2, q3, q4
+    ):
+        assert 0.0 < (q3 - q2) < 0.1
+        key = KeyFactory(store_sample_locate=50)
+        mock_random.return_value = q1
+        assert key.store_sample("locate", global_rate) is True
+        mock_random.return_value = q2
+        assert key.store_sample("locate", global_rate) is True
+        mock_random.return_value = q3
+        assert key.store_sample("locate", global_rate) is False
+        mock_random.return_value = q4
+        assert key.store_sample("locate", global_rate) is False
 
     def test_can_fallback(self):
         def one(**kw):
