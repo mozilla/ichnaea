@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, random
 
 from repoze import lru
 from sqlalchemy import select
@@ -118,15 +118,15 @@ class Key(object):
         locate or submit requests for a given API key.
         """
         if api_type == "locate":
-            sample_rate = self.store_sample_locate
+            sample_rate = float(self.store_sample_locate or 0.0) / 100.0
         elif api_type == "submit":
-            sample_rate = self.store_sample_submit
+            sample_rate = float(self.store_sample_submit or 0.0) / 100.0
         else:
             return False
 
-        if sample_rate is None or sample_rate <= 0:
+        if sample_rate <= 0.0:
             return False
 
-        if sample_rate >= randint(1, 100):
+        if sample_rate >= random():
             return True
         return False

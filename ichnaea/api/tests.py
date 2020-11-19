@@ -1,5 +1,6 @@
 import json
 import time
+from unittest import mock
 
 import colander
 from pyramid.request import Request
@@ -67,12 +68,17 @@ class TestKey(object):
         assert key.store_sample("locate") is False
         assert key.store_sample("submit") is True
 
+    @mock.patch("ichnaea.api.key.random")
+    def test_store_sample_mock_random(self, mock_random):
         key = KeyFactory(store_sample_locate=50)
-        results = []
-        for i in range(20):
-            results.append(key.store_sample("locate"))
-        assert True in results
-        assert False in results
+        mock_random.return_value = 0.1
+        assert key.store_sample("locate") is True
+        mock_random.return_value = 0.5
+        assert key.store_sample("locate") is True
+        mock_random.return_value = 0.51
+        assert key.store_sample("locate") is False
+        mock_random.return_value = 0.9
+        assert key.store_sample("locate") is False
 
     def test_can_fallback(self):
         def one(**kw):
