@@ -67,7 +67,7 @@ build_deps: build_datamaps build_libmaxmind
 
 build_python_deps:
 	$(PIP) install --no-cache-dir --disable-pip-version-check --require-hashes \
-	    -r requirements/default.txt
+	    -r requirements/dev.txt
 	$(PIP) check --disable-pip-version-check
 
 build_geocalc:

@@ -104,16 +104,15 @@ the main branch::
 
     $ git pull
 
+The actual command depends on what you're working on and the state of your copy of
+the repository.
 
-It depends on what you're working on and the state of things.
-
-After you do that, you'll need to update other things.
+After you have the latest code, you'll need to update other things.
 
 If there were changes to the requirements files or setup scripts, you'll need to
 build new images::
 
     $ make build
-
 
 If there were changes to the database tables, you'll need to wipe the MySQL
 database and Redis::
