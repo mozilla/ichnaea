@@ -1,0 +1,22 @@
+# Requirements shared between prod and docs
+
+# Python configuration library
+# Code: https://github.com/willkg/everett
+# Changes: https://github.com/willkg/everett/blob/main/HISTORY.rst
+# Docs: https://everett.readthedocs.io
+everett==1.0.2
+
+# Timezone calculations and the Olson timezone database
+# Code: https://launchpad.net/pytz#
+# Docs: https://pythonhosted.org/pytz/
+pytz==2020.1
+
+# User-friendly HTTP client
+# Code: https://github.com/urllib3/urllib3
+# Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
+# Docs: https://urllib3.readthedocs.io/en/latest/
+urllib3[secure]==1.25.10
+
+#TODO: Unpin these with the December update
+certifi==2020.6.20
+cryptography==3.2

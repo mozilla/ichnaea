@@ -1,0 +1,3 @@
+# Mark files that are generated as linguist-generated to encourage GitHub
+# to not count them and not show their diffs in PRs
+requirements/*.txt linguist-generated=true
