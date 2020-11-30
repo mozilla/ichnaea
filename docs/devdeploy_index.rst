@@ -9,6 +9,7 @@ Ichnaea.
    :maxdepth: 1
 
    local_dev
+   python_requirements
    debug
    configure
    deploy

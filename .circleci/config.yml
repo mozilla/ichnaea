@@ -62,12 +62,6 @@ jobs:
                 make build
 
         - run:
-            name: Verify requirements
-            working_directory: /ichnaea
-            command: |
-                docker run --user root local/ichnaea_app shell ./docker/regenerate_requirements.sh --verify
-
-        - run:
             name: Run linting
             working_directory: /ichnaea
             command: |

@@ -45,8 +45,7 @@ default:
 	@echo "  buildjs          - generate js static assets"
 	@echo "  buildcss         - generate css static assets"
 	@echo "  update-vendored  - re-download vendor source and test data"
-	@echo "  reqs-regen       - regenerate requirements"
-	@echo "  reqs-verify      - check that requirements are generated"
+	@echo "  update-reqs      - regenerate Python requirements"
 	@echo ""
 	@echo "  help             - see this text"
 	@echo ""
@@ -139,10 +138,6 @@ stop: my.env
 update-vendored: my.env
 	${DC} run --rm --no-deps app shell make -f docker.make update_vendored
 
-.PHONY: reqs-regen
-reqs-regen: my.env
-	${DC} run --rm --no-deps app shell ./docker/regenerate_requirements.sh
-
-.PHONY: reqs-verify
-reqs-verify: my.env
-	${DC} run --rm --no-deps app shell ./docker/regenerate_requirements.sh --verify
+.PHONY: update-reqs
+update-reqs: my.env
+	${DC} run --rm --no-deps app shell ./docker/run_update_requirements.sh
