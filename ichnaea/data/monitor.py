@@ -63,19 +63,19 @@ class ApiUsers:
 
 
 class QueueSize:
-    """Generate gauge metrics for all queue sizes.
+    """Generate gauge metrics for queue sizes.
 
-    This covers the export queues, the celery task queues, and the
-    data queues.
+    This covers the celery task queues and the data queues.
 
+    There are dynamically created export queues, with names like
+    "export_queue_internal", or maybe "queue_export_internal", which are no
+    longer monitored. See ichnaea/models/config.py for queue generation.
     """
 
     def __init__(self, task):
         self.task = task
 
     def __call__(self):
-        keys = self.task.redis_client.scan_iter(match="export_queue_*", count=100)
-        export_queues = set([key.decode("utf-8") for key in keys])
-        for name in export_queues | self.task.app.all_queues:
+        for name in self.task.app.all_queues:
             value = self.task.redis_client.llen(name)
             METRICS.gauge("queue", value, tags=["queue:" + name])

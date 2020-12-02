@@ -134,7 +134,7 @@ class TestMonitorQueueSize:
             metricsmock.assert_gauge_once("queue", value=0, tags=["queue:" + key])
 
     def test_nonempty(self, celery, redis, metricsmock):
-        data = {"export_queue_internal": 3, "export_queue_backup:abcd-ef-1234": 7}
+        data = {}
         for name in celery.all_queues:
             data[name] = random.randint(1, 10)
 
