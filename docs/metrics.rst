@@ -777,6 +777,8 @@ queues are:
 
 * ``celery_blue``, ``celery_cell``, ``celery_wifi`` - A task to process a chunk
   of :term:`observation` data
+* ``celery_content`` - Tasks that update website content, like the datamaps and
+  statistics
 * ``celery_default`` - A generic task queue
 * ``celery_export`` - Tasks exporting data, either public cell data or the
   `Data Pipeline <Data Pipeline Metrics - Gather and Export>`_
@@ -793,14 +795,20 @@ processed.  Data queues have names that mirror the shared database tables:
 * ``update_cell_gsm``, ``update_cell_lte``, and ``update_cell_wcdma`` -
   Observations of cell stations
 * ``update_cell_area`` - Aggregated observations of cell towers
+  ``data_type: cellarea``
 * ``update_datamap_ne``, ``update_datamap_nw``, ``update_datamap_se``, and
   ``update_datamap_sw`` - Approximate locations for the contribution map
+* ``update_incoming`` - Incoming reports from geolocate and submission APIs
 * ``update_wifi_0`` through ``update_wifi_f`` (16 total) - Observations of
   WiFi stations
 
 Tags:
 
 * ``queue``: The name of the task or data queue
+* ``queue_type``: ``task`` or ``data``
+* ``data_type``: For data queues, ``bluetooth``, ``cell``, ``cellarea``,
+  ``datamap``, ``report`` (queue ``update_incoming``), or ``wifi``. Omitted for
+  task queues.
 
 task
 ^^^^

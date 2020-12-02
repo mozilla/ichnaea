@@ -126,12 +126,66 @@ class TestMonitorAPIUsers:
 
 
 class TestMonitorQueueSize:
-    def test_empty_queues(self, celery, redis, metricsmock):
-        data = {name: 0 for name in celery.all_queues}
+    expected_queues = {
+        "celery_blue": ["task"],
+        "celery_cell": ["task"],
+        "celery_content": ["task"],
+        "celery_default": ["task"],
+        "celery_export": ["task"],
+        "celery_monitor": ["task"],
+        "celery_reports": ["task"],
+        "celery_wifi": ["task"],
+        "update_blue_0": ["data", "bluetooth"],
+        "update_blue_1": ["data", "bluetooth"],
+        "update_blue_2": ["data", "bluetooth"],
+        "update_blue_3": ["data", "bluetooth"],
+        "update_blue_4": ["data", "bluetooth"],
+        "update_blue_5": ["data", "bluetooth"],
+        "update_blue_6": ["data", "bluetooth"],
+        "update_blue_7": ["data", "bluetooth"],
+        "update_blue_8": ["data", "bluetooth"],
+        "update_blue_9": ["data", "bluetooth"],
+        "update_blue_a": ["data", "bluetooth"],
+        "update_blue_b": ["data", "bluetooth"],
+        "update_blue_c": ["data", "bluetooth"],
+        "update_blue_d": ["data", "bluetooth"],
+        "update_blue_e": ["data", "bluetooth"],
+        "update_blue_f": ["data", "bluetooth"],
+        "update_cell_gsm": ["data", "cell"],
+        "update_cell_lte": ["data", "cell"],
+        "update_cell_wcdma": ["data", "cell"],
+        "update_cellarea": ["data", "cellarea"],
+        "update_datamap_ne": ["data", "datamap"],
+        "update_datamap_nw": ["data", "datamap"],
+        "update_datamap_se": ["data", "datamap"],
+        "update_datamap_sw": ["data", "datamap"],
+        "update_incoming": ["data", "report"],
+        "update_wifi_0": ["data", "wifi"],
+        "update_wifi_1": ["data", "wifi"],
+        "update_wifi_2": ["data", "wifi"],
+        "update_wifi_3": ["data", "wifi"],
+        "update_wifi_4": ["data", "wifi"],
+        "update_wifi_5": ["data", "wifi"],
+        "update_wifi_6": ["data", "wifi"],
+        "update_wifi_7": ["data", "wifi"],
+        "update_wifi_8": ["data", "wifi"],
+        "update_wifi_9": ["data", "wifi"],
+        "update_wifi_a": ["data", "wifi"],
+        "update_wifi_b": ["data", "wifi"],
+        "update_wifi_c": ["data", "wifi"],
+        "update_wifi_d": ["data", "wifi"],
+        "update_wifi_e": ["data", "wifi"],
+        "update_wifi_f": ["data", "wifi"],
+    }
 
+    def test_empty_queues(self, celery, redis, metricsmock):
         monitor_queue_size.delay().get()
-        for key, val in data.items():
-            metricsmock.assert_gauge_once("queue", value=0, tags=["queue:" + key])
+        for name in celery.all_queues:
+            spec = self.expected_queues[name]
+            expected_tags = [f"queue:{name}", f"queue_type:{spec[0]}"]
+            if spec[0] == "data":
+                expected_tags.append(f"data_type:{spec[1]}")
+            metricsmock.assert_gauge_once("queue", value=0, tags=expected_tags)
 
     def test_nonempty(self, celery, redis, metricsmock):
         data = {}
@@ -143,7 +197,11 @@ class TestMonitorQueueSize:
 
         monitor_queue_size.delay().get()
         for key, val in data.items():
-            metricsmock.assert_gauge_once("queue", value=val, tags=["queue:" + key])
+            spec = self.expected_queues[key]
+            expected_tags = [f"queue:{key}", f"queue_type:{spec[0]}"]
+            if spec[0] == "data":
+                expected_tags.append(f"data_type:{spec[1]}")
+            metricsmock.assert_gauge_once("queue", value=val, tags=expected_tags)
 
 
 class TestSentryTest:

@@ -42,23 +42,27 @@ def configure_data(redis_client):
     data_queues = {
         # *_incoming need to be the exact same as in webapp.config
         "update_incoming": DataQueue(
-            "update_incoming", redis_client, batch=5000, compress=True
+            "update_incoming", redis_client, "report", batch=5000, compress=True
         )
     }
     for key in ("update_cellarea",):
-        data_queues[key] = DataQueue(key, redis_client, batch=100, json=False)
+        data_queues[key] = DataQueue(
+            key, redis_client, "cellarea", batch=100, json=False
+        )
     for shard_id in BlueShard.shards().keys():
         key = "update_blue_" + shard_id
-        data_queues[key] = DataQueue(key, redis_client, batch=500)
+        data_queues[key] = DataQueue(key, redis_client, "bluetooth", batch=500)
     for shard_id in DataMap.shards().keys():
         key = "update_datamap_" + shard_id
-        data_queues[key] = DataQueue(key, redis_client, batch=500, json=False)
+        data_queues[key] = DataQueue(
+            key, redis_client, "datamap", batch=500, json=False
+        )
     for shard_id in CellShard.shards().keys():
         key = "update_cell_" + shard_id
-        data_queues[key] = DataQueue(key, redis_client, batch=500)
+        data_queues[key] = DataQueue(key, redis_client, "cell", batch=500)
     for shard_id in WifiShard.shards().keys():
         key = "update_wifi_" + shard_id
-        data_queues[key] = DataQueue(key, redis_client, batch=500)
+        data_queues[key] = DataQueue(key, redis_client, "wifi", batch=500)
     return data_queues
 
 
@@ -102,11 +106,12 @@ def init_worker(
     celery_app.geoip_db = configure_geoip(raven_client=raven_client, _client=_geoip_db)
 
     # configure data queues and build set of all queues
-    all_queues = set([q.name for q in TASK_QUEUES])
+    all_queues = {q.name: {"queue_type": "task"} for q in TASK_QUEUES}
     celery_app.data_queues = data_queues = configure_data(redis_client)
-    celery_app.all_queues = all_queues.union(
-        set([queue.key for queue in data_queues.values() if queue.key])
+    all_queues.update(
+        {queue.key: queue.tags for queue in data_queues.values() if queue.key}
     )
+    celery_app.all_queues = all_queues
 
 
 def shutdown_worker(celery_app):

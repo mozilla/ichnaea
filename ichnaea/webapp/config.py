@@ -88,7 +88,7 @@ def main(
     # Needs to be the exact same as the *_incoming entries in taskapp.config.
     registry.data_queues = data_queues = {
         "update_incoming": DataQueue(
-            "update_incoming", redis_client, batch=100, compress=True
+            "update_incoming", redis_client, "report", batch=100, compress=True
         )
     }
 

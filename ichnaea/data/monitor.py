@@ -76,6 +76,13 @@ class QueueSize:
         self.task = task
 
     def __call__(self):
-        for name in self.task.app.all_queues:
-            value = self.task.redis_client.llen(name)
-            METRICS.gauge("queue", value, tags=["queue:" + name])
+        names = list(self.task.app.all_queues.keys())
+        with self.task.redis_client.pipeline() as pipe:
+            for name in names:
+                pipe.llen(name)
+            values = pipe.execute()
+        for name, value in zip(names, values):
+            tags_list = ["queue:" + name]
+            for tag_name, tag_val in self.task.app.all_queues[name].items():
+                tags_list.append(f"{tag_name}:{tag_val}")
+            METRICS.gauge("queue", value, tags=tags_list)

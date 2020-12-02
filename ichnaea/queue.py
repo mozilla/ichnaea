@@ -20,12 +20,15 @@ class DataQueue(object):
     queue_ttl = 86400  # Maximum TTL value for the Redis list.
     queue_max_age = 3600  # Maximum age that data can sit in the queue.
 
-    def __init__(self, key, redis_client, batch=0, compress=False, json=True):
+    def __init__(
+        self, key, redis_client, data_type, batch=0, compress=False, json=True
+    ):
         self.key = key
         self.redis_client = redis_client
         self.batch = batch
         self.compress = compress
         self.json = json
+        self.tags = {"queue_type": "data", "data_type": data_type}
 
     def dequeue(self, batch=None):
         """

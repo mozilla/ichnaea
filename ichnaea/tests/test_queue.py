@@ -5,7 +5,9 @@ from ichnaea.queue import DataQueue
 
 class TestDataQueue(object):
     def _make_queue(self, redis, batch=0, compress=False, json=True):
-        return DataQueue(uuid4().hex, redis, batch=batch, compress=compress, json=json)
+        return DataQueue(
+            uuid4().hex, redis, "data", batch=batch, compress=compress, json=json
+        )
 
     def test_objects(self, redis):
         queue = self._make_queue(redis)

@@ -326,7 +326,7 @@ def session_tracker(session):
 def data_queues(redis_client):
     data_queues = {
         "update_incoming": DataQueue(
-            "update_incoming", redis_client, batch=100, compress=True
+            "update_incoming", redis_client, "report", batch=100, compress=True
         )
     }
     yield data_queues
