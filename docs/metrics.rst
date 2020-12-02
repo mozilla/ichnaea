@@ -763,6 +763,8 @@ Tags:
 Backend Monitoring Metrics
 --------------------------
 
+.. _queue-metric:
+
 queue
 ^^^^^
 ``queue`` is a gauge that reports the current size of task and data queues.
