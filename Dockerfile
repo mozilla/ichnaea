@@ -63,7 +63,7 @@ COPY ./vendor /app/vendor/
 RUN make -f docker.make build_deps
 
 # Install Python libraries.
-COPY ./requirements/*.txt /app/requirements/
+COPY requirements.txt /app/requirements.txt
 RUN make -f docker.make build_python_deps
 
 # Install geocalc.

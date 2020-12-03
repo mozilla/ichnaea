@@ -13,22 +13,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-REQS=(
-  shared
-  docs
-  prod
-  dev
-)
 export CUSTOM_COMPILE_COMMAND="make update-reqs"
-
 cd /app
-
-compile() {
-    REQ_PATH=$1
-    echo ">>> pip-compile ${REQ_PATH}"
-    pip-compile --quiet --generate-hashes ${REQ_PATH}
-}
-
-for REQ in "${REQS[@]}"; do
-    compile requirements/${REQ}.in
-done
+echo ">>> pip-compile --quiet --generate-hashes requirements.in"
+pip-compile --quiet --generate-hashes requirements.in
