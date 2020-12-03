@@ -277,24 +277,3 @@ sphinx-rtd-theme==0.5.0
 # Changes: https://github.com/Pylons/webtest/blob/master/CHANGELOG.rst
 # Docs: https://docs.pylonsproject.org/projects/webtest/en/latest/
 WebTest==2.0.35
-
-# TODO: Unpin these with the December updates
-Babel==2.8.0
-Faker==4.14.2
-PasteDeploy==2.1.0
-aiohttp==3.6.2
-amqp==5.0.1
-attrs==20.2.0
-botocore==1.18.11
-certifi==2020.6.20
-cffi==1.14.3
-cryptography==3.2
-iniconfig==1.0.1
-multidict==4.7.6
-packaging==20.4
-pathspec==0.8.0
-prompt-toolkit==3.0.7
-pyopenssl==19.1.0
-regex==2020.9.27
-yarl==1.6.0
-zope.interface==5.1.2
