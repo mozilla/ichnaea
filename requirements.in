@@ -1,6 +1,6 @@
+#
 # Requirements for running production
-
--r shared.txt
+#
 
 # Database migrations tool
 # Code: https://github.com/sqlalchemy/alembic
@@ -14,13 +14,7 @@ alembic==1.4.3
 # Docs: https://github.com/litl/backoff#readme
 backoff==1.10.0
 
-# Low-level interface to Amazon Web Services
-# Code: https://github.com/boto/botocore
-# Changes: https://github.com/boto/botocore/blob/develop/CHANGELOG.rst
-# Docs: https://github.com/boto/botocore#readme
-botocore==1.18.11
-
-# Amazon Web Services SDK
+# Amazon Web Services SDK, requires the matching release of botocore
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
@@ -49,6 +43,12 @@ colander==1.8.2
 # Changes: https://python-dockerflow.readthedocs.io/en/latest/changelog.html
 # Docs: https://python-dockerflow.readthedocs.io/en/latest/
 dockerflow==2020.6.0
+
+# Python configuration library
+# Code: https://github.com/willkg/everett
+# Changes: https://github.com/willkg/everett/blob/main/HISTORY.rst
+# Docs: https://everett.readthedocs.io
+everett==1.0.2
 
 # Geopolitical Entities, Names, and Codes (GENC)
 # Code: https://github.com/hannosch/genc
@@ -129,6 +129,11 @@ pyramid==1.10.4
 # Docs: https://docs.pylonsproject.org/projects/pyramid_chameleon/en/latest/
 pyramid-chameleon==0.3
 
+# Timezone calculations and the Olson timezone database
+# Code: https://launchpad.net/pytz#
+# Docs: https://pythonhosted.org/pytz/
+pytz==2020.1
+
 # Legacy client library for Sentry crash reporting server
 # TODO: Replace with sentry-sdk (issue #882)
 # Code: https://github.com/getsentry/raven-python
@@ -148,12 +153,6 @@ redis[hiredis]==3.5.3
 # Changes: https://github.com/repoze/repoze.lru/blob/master/CHANGES.rst
 # Docs: https://github.com/repoze/repoze.lru/blob/master/docs/narr.rst
 repoze.lru==0.7
-
-# Structured logging
-# Code: https://github.com/hynek/structlog
-# Changes: https://www.structlog.org/en/stable/changelog.html
-# Docs: https://www.structlog.org/en/stable/
-structlog==20.1.0
 
 # Python HTTP Requests for Humans™
 # Code: https://github.com/psf/requests
@@ -191,12 +190,90 @@ Shapely[vectorized]==1.7.1
 # Docs: https://docs.sqlalchemy.org/en/13/
 SQLAlchemy==1.3.20
 
-# TODO: Unpin with December updates
-aiohttp==3.6.2
-amqp==5.0.1
-attrs==20.2.0
-multidict==4.7.6
-PasteDeploy==2.1.0
-prompt-toolkit==3.0.7
-yarl==1.6.0
-zope.interface==5.1.2
+# Structured logging
+# Code: https://github.com/hynek/structlog
+# Changes: https://www.structlog.org/en/stable/changelog.html
+# Docs: https://www.structlog.org/en/stable/
+structlog==20.1.0
+
+# User-friendly HTTP client
+# Code: https://github.com/urllib3/urllib3
+# Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
+# Docs: https://urllib3.readthedocs.io/en/latest/
+urllib3[secure]==1.25.10
+
+#
+# Requirements for developement
+#
+
+# An uncompromising Python code formatter
+# Code: https://github.com/psf/black
+# Changes: https://github.com/psf/black/blob/master/CHANGES.md
+# Docs: https://black.readthedocs.io/en/stable/
+black==20.8b1
+
+# Cross-platform colored terminal text, used for structlog output
+# Code: https://github.com/tartley/colorama
+# Changes: https://github.com/tartley/colorama/blob/master/CHANGELOG.rst
+# Docs: https://github.com/tartley/colorama#readme
+colorama==0.4.3
+
+# Compiler for writing C extensions for Python
+# Code: https://github.com/cython/cython
+# Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
+# Docs: https://cython.readthedocs.io/en/latest/
+Cython==0.29.21
+
+# Generate test fixtures
+# Code: https://github.com/FactoryBoy/factory_boy/
+# Changes: https://factoryboy.readthedocs.io/en/stable/changelog.html
+# Docs: https://factoryboy.readthedocs.io/en/stable/
+factory-boy==3.0.1
+
+# Run a collection of style and quality tools
+# Code: https://gitlab.com/pycqa/flake8
+# Changes: https://flake8.pycqa.org/en/latest/release-notes/index.html
+# Docs: https://flake8.pycqa.org/en/latest/index.html
+flake8==3.8.4
+
+# pip-compile (to build reqs) and pip-sync (to update)
+# Code: https://github.com/jazzband/pip-tools/
+# Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
+# Docs: https://github.com/jazzband/pip-tools#readme
+pip-tools==5.3.1
+
+# Test framework
+# Code: https://github.com/pytest-dev/pytest
+# Changes: https://docs.pytest.org/en/stable/changelog.html
+# Docs: https://docs.pytest.org/en/stable/
+pytest==6.1.1
+
+# Code coverage plugin for pytest
+# Code: https://github.com/pytest-dev/pytest-cov
+# Changes: https://pytest-cov.readthedocs.io/en/latest/changelog.html
+# Docs: https://pytest-cov.readthedocs.io/en/latest/
+pytest-cov==2.10.1
+
+# Mocked responses for the requests library
+# Code: https://github.com/jamielennox/requests-mock
+# Changes: https://requests-mock.readthedocs.io/en/latest/release-notes.html
+# Docs: https://requests-mock.readthedocs.io/en/latest/
+requests-mock==1.8.0
+
+# Documentation builder
+# Code: https://github.com/sphinx-doc/sphinx/
+# Changes: https://www.sphinx-doc.org/en/master/changes.html
+# Docs: https://www.sphinx-doc.org/en/master/
+Sphinx==3.2.1
+
+# ReadTheDocs theme for Sphinx
+# Code: https://github.com/readthedocs/sphinx_rtd_theme
+# Changes: https://sphinx-rtd-theme.readthedocs.io/en/stable/changelog.html
+# Docs: https://sphinx-rtd-theme.readthedocs.io/en/stable/
+sphinx-rtd-theme==0.5.0
+
+# Wrap a WSGI application without starting an HTTP server
+# Code: https://github.com/Pylons/webtest
+# Changes: https://github.com/Pylons/webtest/blob/master/CHANGELOG.rst
+# Docs: https://docs.pylonsproject.org/projects/webtest/en/latest/
+WebTest==2.0.35
