@@ -184,6 +184,12 @@ setproctitle==1.2.1
 # Docs: https://shapely.readthedocs.io/en/latest/
 Shapely[vectorized]==1.7.1
 
+# Implementation of a PID controller
+# Code: https://github.com/m-lundberg/simple-pid
+# Changes: https://github.com/m-lundberg/simple-pid/blob/master/CHANGELOG.md
+# Docs: https://simple-pid.readthedocs.io/en/latest/index.html
+simple-pid
+
 # Database toolkit
 # Code: https://github.com/sqlalchemy/sqlalchemy
 # Changes: https://docs.sqlalchemy.org/en/13/changelog/index.html
