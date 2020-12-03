@@ -1,0 +1,300 @@
+#
+# Requirements for running production
+#
+
+# Database migrations tool
+# Code: https://github.com/sqlalchemy/alembic
+# Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
+# Docs: https://alembic.sqlalchemy.org/
+alembic==1.4.3
+
+# Configurable backoff and retry algorithms
+# Code: https://github.com/litl/backoff
+# Changes: https://github.com/litl/backoff/blob/master/CHANGELOG.md
+# Docs: https://github.com/litl/backoff#readme
+backoff==1.10.0
+
+# Amazon Web Services SDK, requires the matching release of botocore
+# Code: https://github.com/boto/boto3
+# Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
+# Docs: https://aws.amazon.com/sdk-for-python/
+boto3==1.15.11
+
+# Distributed Task Queue
+# Code: https://github.com/celery/celery
+# Changes: https://docs.celeryproject.org/en/stable/changelog.html
+# Docs: https://docs.celeryproject.org/en/stable/index.html
+celery[redis]==5.0.0
+
+# Command line interface toolkit
+# Code: https://github.com/pallets/click
+# Changes: https://click.palletsprojects.com/en/7.x/changelog/
+# Docs: https://click.palletsprojects.com/en/7.x/
+Click==7.1.2
+
+# Schema-based serialization and deserialization library
+# Code: https://github.com/Pylons/colander
+# Changes: https://docs.pylonsproject.org/projects/colander/en/latest/changes.html
+# Docs: https://docs.pylonsproject.org/projects/colander/en/latest/
+colander==1.8.2
+
+# Mozilla's Dockerflow pattern implementor
+# Code: https://github.com/mozilla-services/python-dockerflow
+# Changes: https://python-dockerflow.readthedocs.io/en/latest/changelog.html
+# Docs: https://python-dockerflow.readthedocs.io/en/latest/
+dockerflow==2020.6.0
+
+# Python configuration library
+# Code: https://github.com/willkg/everett
+# Changes: https://github.com/willkg/everett/blob/main/HISTORY.rst
+# Docs: https://everett.readthedocs.io
+everett==1.0.2
+
+# Geopolitical Entities, Names, and Codes (GENC)
+# Code: https://github.com/hannosch/genc
+# Changes: https://github.com/hannosch/genc/blob/master/CHANGES.rst
+# Docs: https://github.com/hannosch/genc#readme
+genc==0.2
+
+# MaxMind GeoIP2 Python API
+# Code: https://github.com/maxmind/GeoIP2-python
+# Changes: https://github.com/maxmind/GeoIP2-python/blob/master/HISTORY.rst
+# Docs: https://geoip2.readthedocs.io/en/latest/
+geoip2==4.1.0
+
+# Coroutine-based concurrency library
+# Code: https://github.com/gevent/gevent
+# Changes: http://www.gevent.org/changelog.html
+# Docs: http://www.gevent.org/contents.html
+gevent==20.9.0
+
+# "Green Unicorn", a WSGI HTTP Server
+# Code: https://github.com/benoitc/gunicorn
+# Changes: https://docs.gunicorn.org/en/stable/news.html
+# Docs: https://docs.gunicorn.org/en/stable/
+gunicorn==20.0.4
+
+# Generates metrics with multiple backend support
+# Code: https://github.com/willkg/markus
+# Changes: https://github.com/willkg/markus/blob/main/HISTORY.rst
+# Docs: http://markus.readthedocs.io/en/latest/
+markus[datadog]==2.2.0
+
+# Python MaxMind DB reader extension
+# Code: https://github.com/maxmind/MaxMind-DB-Reader-python
+# Changes: https://github.com/maxmind/MaxMind-DB-Reader-python/blob/master/HISTORY.rst
+# Docs: https://maxminddb.readthedocs.io/en/latest/
+maxminddb==2.0.2
+
+# Mobile Country Codes (unmaintained)
+# TODO: Absorb into repo (issue #1421)
+# Code: https://github.com/andymckay/mobile-codes
+# Changes: https://github.com/andymckay/mobile-codes/blob/master/CHANGES.rst
+# Docs: https://github.com/andymckay/mobile-codes#readme
+mobile-codes==0.7
+
+# More algorithms like Python's itertools
+# Code: https://github.com/more-itertools/more-itertools
+# Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
+# Docs: https://more-itertools.readthedocs.io/en/stable/
+more-itertools==8.5.0
+
+# HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
+# Code: https://github.com/cedadev/ndg_httpsclient/
+# Changes: https://github.com/cedadev/ndg_httpsclient/#releases
+# Docs: https://github.com/cedadev/ndg_httpsclient/#readme
+ndg-httpsclient==0.5.1
+
+# Scientific computing with Python
+# Code: https://github.com/numpy/numpy
+# Changes: https://numpy.org/doc/stable/release.html
+# Docs: https://numpy.org/doc/stable/
+numpy==1.19.2
+
+# Pure Python MySQL Client
+# Code: https://github.com/PyMySQL/PyMySQL
+# Changes: https://github.com/PyMySQL/PyMySQL/blob/master/CHANGELOG.md
+# Docs: https://pymysql.readthedocs.io/en/latest/
+PyMySQL==0.10.1
+
+# A Python web framework
+# Code: https://github.com/Pylons/pyramid
+# Changes: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/whatsnew-1.10.html#
+# Docs: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/
+pyramid==1.10.4
+
+# Pyramid bindings for Chameleon, an HTML/XML template engine
+# Code: https://github.com/Pylons/pyramid_chameleon
+# Changes: https://github.com/Pylons/pyramid_chameleon/blob/master/CHANGES.txt
+# Docs: https://docs.pylonsproject.org/projects/pyramid_chameleon/en/latest/
+pyramid-chameleon==0.3
+
+# Timezone calculations and the Olson timezone database
+# Code: https://launchpad.net/pytz#
+# Docs: https://pythonhosted.org/pytz/
+pytz==2020.1
+
+# Legacy client library for Sentry crash reporting server
+# TODO: Replace with sentry-sdk (issue #882)
+# Code: https://github.com/getsentry/raven-python
+# Changes: https://github.com/getsentry/raven-python/blob/master/CHANGELOG.md
+# Docs: https://docs.sentry.io/clients/python/
+raven==6.10.0
+
+# Python wrapper for a minimalistic C client for Redis
+# Code: https://github.com/andymccurdy/redis-py
+# Changes: https://github.com/andymccurdy/redis-py/blob/master/CHANGES
+# Docs: https://github.com/andymccurdy/redis-py#readme
+redis[hiredis]==3.5.3
+
+# Tiny LRU cache
+# TODO: Replace with local memory cache (issue #919)
+# Code: https://github.com/repoze/repoze.lru
+# Changes: https://github.com/repoze/repoze.lru/blob/master/CHANGES.rst
+# Docs: https://github.com/repoze/repoze.lru/blob/master/docs/narr.rst
+repoze.lru==0.7
+
+# Python HTTP Requests for Humans™
+# Code: https://github.com/psf/requests
+# Changes: https://github.com/psf/requests/blob/master/HISTORY.md
+# Docs: https://requests.readthedocs.io/en/master/
+requests[security]==2.24.0
+
+# R-Tree spatial index for Python GIS, requires libspatialindex
+# Code: https://github.com/Toblerity/Rtree
+# Changes: https://rtree.readthedocs.io/en/latest/changes.html
+# Docs: https://rtree.readthedocs.io/en/latest/
+Rtree==0.9.4
+
+# Toolkit for mathematics, science, and engineering
+# Code: https://github.com/scipy/scipy
+# Changes: https://docs.scipy.org/doc/scipy/reference/release.html
+# Docs: https://docs.scipy.org/doc/scipy/reference/
+scipy==1.5.2
+
+# Customize the process title, used by gunicorn
+# Code: https://github.com/dvarrazzo/py-setproctitle
+# Changes: https://github.com/dvarrazzo/py-setproctitle/blob/master/HISTORY.rst
+# Docs: https://github.com/dvarrazzo/py-setproctitle#readme
+setproctitle==1.1.10
+
+# Manipulate and analyze geometric objects
+# Code: https://github.com/Toblerity/Shapely
+# Changes: https://github.com/Toblerity/Shapely/blob/master/CHANGES.txt
+# Docs: https://shapely.readthedocs.io/en/latest/
+Shapely[vectorized]==1.7.1
+
+# Database toolkit
+# Code: https://github.com/sqlalchemy/sqlalchemy
+# Changes: https://docs.sqlalchemy.org/en/13/changelog/index.html
+# Docs: https://docs.sqlalchemy.org/en/13/
+SQLAlchemy==1.3.20
+
+# Structured logging
+# Code: https://github.com/hynek/structlog
+# Changes: https://www.structlog.org/en/stable/changelog.html
+# Docs: https://www.structlog.org/en/stable/
+structlog==20.1.0
+
+# User-friendly HTTP client
+# Code: https://github.com/urllib3/urllib3
+# Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
+# Docs: https://urllib3.readthedocs.io/en/latest/
+urllib3[secure]==1.25.10
+
+#
+# Requirements for developement
+#
+
+# An uncompromising Python code formatter
+# Code: https://github.com/psf/black
+# Changes: https://github.com/psf/black/blob/master/CHANGES.md
+# Docs: https://black.readthedocs.io/en/stable/
+black==20.8b1
+
+# Cross-platform colored terminal text, used for structlog output
+# Code: https://github.com/tartley/colorama
+# Changes: https://github.com/tartley/colorama/blob/master/CHANGELOG.rst
+# Docs: https://github.com/tartley/colorama#readme
+colorama==0.4.3
+
+# Compiler for writing C extensions for Python
+# Code: https://github.com/cython/cython
+# Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
+# Docs: https://cython.readthedocs.io/en/latest/
+Cython==0.29.21
+
+# Generate test fixtures
+# Code: https://github.com/FactoryBoy/factory_boy/
+# Changes: https://factoryboy.readthedocs.io/en/stable/changelog.html
+# Docs: https://factoryboy.readthedocs.io/en/stable/
+factory-boy==3.0.1
+
+# Run a collection of style and quality tools
+# Code: https://gitlab.com/pycqa/flake8
+# Changes: https://flake8.pycqa.org/en/latest/release-notes/index.html
+# Docs: https://flake8.pycqa.org/en/latest/index.html
+flake8==3.8.4
+
+# pip-compile (to build reqs) and pip-sync (to update)
+# Code: https://github.com/jazzband/pip-tools/
+# Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
+# Docs: https://github.com/jazzband/pip-tools#readme
+pip-tools==5.3.1
+
+# Test framework
+# Code: https://github.com/pytest-dev/pytest
+# Changes: https://docs.pytest.org/en/stable/changelog.html
+# Docs: https://docs.pytest.org/en/stable/
+pytest==6.1.1
+
+# Code coverage plugin for pytest
+# Code: https://github.com/pytest-dev/pytest-cov
+# Changes: https://pytest-cov.readthedocs.io/en/latest/changelog.html
+# Docs: https://pytest-cov.readthedocs.io/en/latest/
+pytest-cov==2.10.1
+
+# Mocked responses for the requests library
+# Code: https://github.com/jamielennox/requests-mock
+# Changes: https://requests-mock.readthedocs.io/en/latest/release-notes.html
+# Docs: https://requests-mock.readthedocs.io/en/latest/
+requests-mock==1.8.0
+
+# Documentation builder
+# Code: https://github.com/sphinx-doc/sphinx/
+# Changes: https://www.sphinx-doc.org/en/master/changes.html
+# Docs: https://www.sphinx-doc.org/en/master/
+Sphinx==3.2.1
+
+# ReadTheDocs theme for Sphinx
+# Code: https://github.com/readthedocs/sphinx_rtd_theme
+# Changes: https://sphinx-rtd-theme.readthedocs.io/en/stable/changelog.html
+# Docs: https://sphinx-rtd-theme.readthedocs.io/en/stable/
+sphinx-rtd-theme==0.5.0
+
+# Wrap a WSGI application without starting an HTTP server
+# Code: https://github.com/Pylons/webtest
+# Changes: https://github.com/Pylons/webtest/blob/master/CHANGELOG.rst
+# Docs: https://docs.pylonsproject.org/projects/webtest/en/latest/
+WebTest==2.0.35
+
+# TODO: Unpin these with the December updates
+Babel==2.8.0
+Faker==4.14.2
+PasteDeploy==2.1.0
+aiohttp==3.6.2
+amqp==5.0.1
+attrs==20.2.0
+botocore==1.18.11
+certifi==2020.6.20
+cffi==1.14.3
+cryptography==3.2
+iniconfig==1.0.1
+multidict==4.7.6
+packaging==20.4
+pathspec==0.8.0
+prompt-toolkit==3.0.7
+pyopenssl==19.1.0
+regex==2020.9.27
+yarl==1.6.0
+zope.interface==5.1.2
