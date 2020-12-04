@@ -18,13 +18,13 @@ backoff==1.10.0
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.15.11
+boto3==1.16.30
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
 # Changes: https://docs.celeryproject.org/en/stable/changelog.html
 # Docs: https://docs.celeryproject.org/en/stable/index.html
-celery[redis]==5.0.0
+celery[redis]==5.0.3
 
 # Command line interface toolkit
 # Code: https://github.com/pallets/click
@@ -36,19 +36,19 @@ Click==7.1.2
 # Code: https://github.com/Pylons/colander
 # Changes: https://docs.pylonsproject.org/projects/colander/en/latest/changes.html
 # Docs: https://docs.pylonsproject.org/projects/colander/en/latest/
-colander==1.8.2
+colander==1.8.3
 
 # Mozilla's Dockerflow pattern implementor
 # Code: https://github.com/mozilla-services/python-dockerflow
 # Changes: https://python-dockerflow.readthedocs.io/en/latest/changelog.html
 # Docs: https://python-dockerflow.readthedocs.io/en/latest/
-dockerflow==2020.6.0
+dockerflow==2020.10.0
 
 # Python configuration library
 # Code: https://github.com/willkg/everett
 # Changes: https://github.com/willkg/everett/blob/main/HISTORY.rst
 # Docs: https://everett.readthedocs.io
-everett==1.0.2
+everett==1.0.3
 
 # Geopolitical Entities, Names, and Codes (GENC)
 # Code: https://github.com/hannosch/genc
@@ -84,7 +84,7 @@ markus[datadog]==2.2.0
 # Code: https://github.com/maxmind/MaxMind-DB-Reader-python
 # Changes: https://github.com/maxmind/MaxMind-DB-Reader-python/blob/master/HISTORY.rst
 # Docs: https://maxminddb.readthedocs.io/en/latest/
-maxminddb==2.0.2
+maxminddb==2.0.3
 
 # Mobile Country Codes (unmaintained)
 # TODO: Absorb into repo (issue #1421)
@@ -97,7 +97,7 @@ mobile-codes==0.7
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.5.0
+more-itertools==8.6.0
 
 # HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
 # Code: https://github.com/cedadev/ndg_httpsclient/
@@ -107,9 +107,9 @@ ndg-httpsclient==0.5.1
 
 # Scientific computing with Python
 # Code: https://github.com/numpy/numpy
-# Changes: https://numpy.org/doc/stable/release.html
+# Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.19.2
+numpy==1.19.4
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -121,7 +121,7 @@ PyMySQL==0.10.1
 # Code: https://github.com/Pylons/pyramid
 # Changes: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/whatsnew-1.10.html#
 # Docs: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/
-pyramid==1.10.4
+pyramid==1.10.5
 
 # Pyramid bindings for Chameleon, an HTML/XML template engine
 # Code: https://github.com/Pylons/pyramid_chameleon
@@ -132,7 +132,7 @@ pyramid-chameleon==0.3
 # Timezone calculations and the Olson timezone database
 # Code: https://launchpad.net/pytz#
 # Docs: https://pythonhosted.org/pytz/
-pytz==2020.1
+pytz==2020.4
 
 # Legacy client library for Sentry crash reporting server
 # TODO: Replace with sentry-sdk (issue #882)
@@ -158,7 +158,7 @@ repoze.lru==0.7
 # Code: https://github.com/psf/requests
 # Changes: https://github.com/psf/requests/blob/master/HISTORY.md
 # Docs: https://requests.readthedocs.io/en/master/
-requests[security]==2.24.0
+requests==2.25.0
 
 # R-Tree spatial index for Python GIS, requires libspatialindex
 # Code: https://github.com/Toblerity/Rtree
@@ -170,13 +170,13 @@ Rtree==0.9.4
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.5.2
+scipy==1.5.4
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
 # Changes: https://github.com/dvarrazzo/py-setproctitle/blob/master/HISTORY.rst
 # Docs: https://github.com/dvarrazzo/py-setproctitle#readme
-setproctitle==1.1.10
+setproctitle==1.2.1
 
 # Manipulate and analyze geometric objects
 # Code: https://github.com/Toblerity/Shapely
@@ -200,7 +200,7 @@ structlog==20.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.25.10
+urllib3[secure]==1.26.2
 
 #
 # Requirements for developement
