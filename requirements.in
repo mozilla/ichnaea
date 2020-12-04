@@ -216,7 +216,7 @@ black==20.8b1
 # Code: https://github.com/tartley/colorama
 # Changes: https://github.com/tartley/colorama/blob/master/CHANGELOG.rst
 # Docs: https://github.com/tartley/colorama#readme
-colorama==0.4.3
+colorama==0.4.4
 
 # Compiler for writing C extensions for Python
 # Code: https://github.com/cython/cython
@@ -228,7 +228,7 @@ Cython==0.29.21
 # Code: https://github.com/FactoryBoy/factory_boy/
 # Changes: https://factoryboy.readthedocs.io/en/stable/changelog.html
 # Docs: https://factoryboy.readthedocs.io/en/stable/
-factory-boy==3.0.1
+factory-boy==3.1.0
 
 # Run a collection of style and quality tools
 # Code: https://gitlab.com/pycqa/flake8
@@ -240,13 +240,13 @@ flake8==3.8.4
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==5.3.1
+pip-tools==5.4.0
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
 # Changes: https://docs.pytest.org/en/stable/changelog.html
 # Docs: https://docs.pytest.org/en/stable/
-pytest==6.1.1
+pytest==6.1.2
 
 # Code coverage plugin for pytest
 # Code: https://github.com/pytest-dev/pytest-cov
@@ -264,7 +264,7 @@ requests-mock==1.8.0
 # Code: https://github.com/sphinx-doc/sphinx/
 # Changes: https://www.sphinx-doc.org/en/master/changes.html
 # Docs: https://www.sphinx-doc.org/en/master/
-Sphinx==3.2.1
+Sphinx==3.3.1
 
 # ReadTheDocs theme for Sphinx
 # Code: https://github.com/readthedocs/sphinx_rtd_theme
