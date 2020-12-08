@@ -42,7 +42,14 @@ Metric Name                      App      Type    Tags
 `locate.result`_                 web      counter key, accuracy, status, source, fallback_allowed
 `locate.source`_                 web      counter key, accuracy, status, source
 `locate.user`_                   task     gauge   key, interval
-`queue`_                         task     gauge   queue
+`queue`_                         task     gauge   data_type, queue, queue_type
+`rate_control.locate`_           task     gauge
+`rate_control.locate.dterm`_     task     gauge
+`rate_control.locate.iterm`_     task     gauge
+`rate_control.locate.kd`_        task     gauge
+`rate_control.locate.ki`_        task     gauge
+`rate_control.locate.kp`_        task     gauge
+`rate_control.locate.pterm`_     task     gauge
 `region.query`_                  web      counter key, geoip, blue, cell, wifi
 `region.request`_                web      counter key, path
 `region.result`_                 web      counter key, accuracy, status, source, fallback_allowed
@@ -700,6 +707,8 @@ future location estimates.
 The data pipeline has not been converted to structured logging. As data moves
 through the pipeline, these metrics are emitted:
 
+.. _data.observation.insert-metric:
+
 data.observation.insert
 ^^^^^^^^^^^^^^^^^^^^^^^
 ``data.observation.insert`` is a counter of the Bluetooth, cell, or WiFi
@@ -819,6 +828,60 @@ Tags:
 
 * ``task``: The task name, such as ``data.export_reports`` or
   ``data.update_statcounter``
+
+.. _rate-control-metrics:
+
+Rate Control Metrics
+--------------------
+
+The optional `rate controller <rate-control>`_ can be used to dynamically set
+the global locate sample rate and prevent the data queues from growing without
+bounds. There are several metrics emitted to monitor the rate controller.
+
+rate_control.locate
+^^^^^^^^^^^^^^^^^^^
+``rate_control.locate`` is a gauge that reports the current setting of the
+`global locate sample rate <global-rate-control>`_, which may be unset (100.0),
+manually set, or set by the rate controller.
+
+rate_control.locate.target
+^^^^^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.target`` is a gauge that reports the current target queue
+size of the rate controller. It is emitted when the rate controller is enabled.
+
+rate_control.locate.kp
+^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.kp`` is a gauge that reports the current value of
+K\ :sub:`p`, the proportional gain. It is emitted when the rate controller is enabled.
+
+rate_control.locate.ki
+^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.ki`` is a gauge that reports the current value of
+K\ :sub:`i`, the integral gain. It is emitted when the rate controller is enabled.
+
+rate_control.locate.kd
+^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.kd`` is a gauge that reports the current value of K\
+:sub:`d`, the derivative gain. It is emitted when the rate controller is
+enabled.
+
+rate_control.locate.pterm
+^^^^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.pterm`` is a gauge that reports the current value of of
+the proportional term of the rate controller. It is emitted when the rate
+controller is enabled.
+
+rate_control.locate.iterm
+^^^^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.pterm`` is a gauge that reports the current value of of
+the integral term of the rate controller. It is emitted when the rate
+controller is enabled.
+
+rate_control.locate.dterm
+^^^^^^^^^^^^^^^^^^^^^^^^^
+``rate_control.locate.dterm`` is a gauge that reports the current value of of
+the derivative term of the rate controller. It is emitted when the rate
+controller is enabled.
 
 Datamaps Metrics
 ================

@@ -72,6 +72,8 @@ An administrator can use these to limit the observations from large API users,
 or to ignore traffic from questionable API users. The default is 100% for new
 keys.
 
+.. global-rate-control:
+
 Global Rate Control
 ===================
 The Redis key ``global_locate_sample_rate`` is a number (stored as a string)
@@ -86,3 +88,74 @@ backend to process a large backlog of observations. If unset, the default
 global rate is 100%.
 
 There is no global control for submissions.
+
+.. rate_control:
+
+Automated Rate Control (Beta)
+=============================
+Optionally, an automated rate control can set the global locate sample rate
+based on the run during the queue monitoring task, based on the size of the
+data queues.
+
+To enable the rate controller:
+
+1. Set the Redis key ``rate_controller_target`` to the desired maximum queue
+   size. A suggested value is 5-10 minutes of maximum observation processing,
+   as seen by looking at the
+   `data.observation.insert metric <data.observation.insert-metric>`_.
+2. Set the Redis key ``rate_controller_enabled`` to "1" to enable the rate
+   controller, and "0" to disable it.
+
+The rate controller runs once a minute, at the same time that
+`queue metrics <queue-metric>`_ are emitted. If the backlog exceeds the
+target, the sample rate in the Redis key ``global_locate_sample_rate`` is
+reduced proportionately, reducing the number of observations that are added
+in the future. When the queue size is back below the target rate,
+the sample rate returns to 100%.
+
+.. Source document:
+.. https://docs.google.com/spreadsheets/d/1FQMB6tof7atdrWY_hqwL5t-PBjVklktjF56u8ZJ1lZw/edit?usp=sharing
+
+.. figure:: images/backlog_with_rate_control.svg
+   :width: 700px
+   :height: 430px
+   :align: center
+   :alt: The backlog reaches a maximum around the target, and clears more quickly when the input reduces
+
+In our simulation, a sample rate of 90% - 100% was sufficient to keep the queue
+sizes from increasing much past the target. This means that most observations
+will be processed, even during busy periods.
+
+.. Source document:
+.. https://docs.google.com/spreadsheets/d/1FQMB6tof7atdrWY_hqwL5t-PBjVklktjF56u8ZJ1lZw/edit?usp=sharing
+
+.. figure:: images/sample_rate_during_backlog.svg
+   :width: 700px
+   :height: 430px
+   :align: center
+   :alt: The sample rate drops to around 90% during peaks, and to 50% during an input spike.
+
+The rate controller is a general proportional-integral-derivative controller
+(`PID controller`_), provided by `simple-pid`_.  The input is the queue size in
+observations, and the output is divided by the target, then limited to the
+range 0.0 to 1.0 to generate the sample rate.
+
+.. _`PID controller`: https://en.wikipedia.org/wiki/PID_controller
+.. _`simple-pid`: https://simple-pid.readthedocs.io/en/latest/
+
+The gain parameters are stored in Redis keys, and can be adjusted:
+
+* K\ :sub:`p` (Redis key ``rate_controller_kp``, default 8.0) - The
+  proportional gain. Values between 1.0 and 10.0 work well in simulation. The
+  higher, the more aggressive the rate will drop when then target is exceeded.
+* K\ :sub:`i` (Redis key ``rate_controller_ki``, default 0.0) - The integral
+  gain. The integral collects the accumulated "error" from the target. It tends
+  to cause the queue size to overshoot the target, then the rate to go to 0% to
+  recover. 0.0 is recommended.
+* K\ :sub:`d` (Redis key ``rate_controller-kd``, default 0.0) - The derivative
+  gain. The derivative measures the change since the last reading. In
+  simulation, this had little noticable effect, and may require a value about
+  50.0 to see any changes.
+
+The `rate controller metrics <rate-controller-metrics>`_ can be used to monitor
+the rate controller.

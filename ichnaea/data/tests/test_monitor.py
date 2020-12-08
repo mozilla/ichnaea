@@ -238,12 +238,12 @@ class TestMonitorQueueSizeAndRateControl:
         metricsmock.assert_gauge_once("rate_control.locate.kp", value=1)
         metricsmock.assert_gauge_once("rate_control.locate.ki", value=0.002)
         metricsmock.assert_gauge_once("rate_control.locate.kd", value=0.2)
-        metricsmock.assert_gauge_once("rate_control.locate.p_term", value=1000)
+        metricsmock.assert_gauge_once("rate_control.locate.pterm", value=1000)
         metricsmock.assert_gauge_once(
-            "rate_control.locate.i_term", value=state["i_term"]
+            "rate_control.locate.iterm", value=state["i_term"]
         )
         metricsmock.assert_gauge_once(
-            "rate_control.locate.d_term", value=state["d_term"]
+            "rate_control.locate.dterm", value=state["d_term"]
         )
         metricsmock.assert_gauge_once("rate_control.locate", value=100.0)
 

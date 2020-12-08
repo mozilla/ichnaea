@@ -123,9 +123,9 @@ class QueueSizeAndRateControl:
             METRICS.gauge("rate_control.locate.kd", self.rc_kd)
 
             p_term, i_term, d_term = self.rc_controller.components
-            METRICS.gauge("rate_control.locate.p_term", p_term)
-            METRICS.gauge("rate_control.locate.i_term", i_term)
-            METRICS.gauge("rate_control.locate.d_term", d_term)
+            METRICS.gauge("rate_control.locate.pterm", p_term)
+            METRICS.gauge("rate_control.locate.iterm", i_term)
+            METRICS.gauge("rate_control.locate.dterm", d_term)
 
         # Emit the current (controlled or manual) global rate
         METRICS.gauge("rate_control.locate", self.rate)
