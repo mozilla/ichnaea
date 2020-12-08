@@ -147,13 +147,17 @@ class QueueSizeAndRateControl:
         except (TypeError, ValueError):
             self.rate = 100.0
 
-        def load_param(param_type, name, raw_value, range_check):
+        def load_param(param_type, name, raw_value, range_check, default=None):
             """
             Load and validate a parameter
 
             Reset invalid parameters in Redis
             Returns (value, is_valid)
             """
+            if raw_value is None and default is not None:
+                self.task.redis_client.set(name, default)
+                raw_value = default
+
             try:
                 val = param_type(raw_value)
                 if not range_check(val):
@@ -162,7 +166,7 @@ class QueueSizeAndRateControl:
             except (TypeError, ValueError):
                 log_fmt = "Redis key '%s' has invalid value %r, disabling rate control."
                 LOGGER.warning(log_fmt, name, raw_value)
-                self.task.redis_client.set(name, 0)
+                self.task.redis_client.set(name, default or 0)
                 return None, False
 
         # Validate rate_controller_enabled, exit early if disabled
@@ -179,13 +183,13 @@ class QueueSizeAndRateControl:
             int, "rate_controller_target", rc_target, lambda x: x >= 0
         )
         self.rc_kp, valid[1] = load_param(
-            float, "rate_controller_kp", rc_kp, lambda x: x >= 0
+            float, "rate_controller_kp", rc_kp, lambda x: x >= 0, 8
         )
         self.rc_ki, valid[2] = load_param(
-            float, "rate_controller_ki", rc_ki, lambda x: x >= 0
+            float, "rate_controller_ki", rc_ki, lambda x: x >= 0, 0
         )
         self.rc_kd, valid[3] = load_param(
-            float, "rate_controller_kd", rc_kd, lambda x: x >= 0
+            float, "rate_controller_kd", rc_kd, lambda x: x >= 0, 0
         )
         if not all(valid):
             self.task.redis_client.set("rate_controller_enabled", 0)

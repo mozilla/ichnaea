@@ -252,13 +252,11 @@ class TestMonitorQueueSizeAndRateControl:
         (
             "rate_controller_enabled",
             "rate_controller_target",
-            "rate_controller_kp",
-            "rate_controller_ki",
-            "rate_controller_kd",
         ),
     )
     @pytest.mark.parametrize("value", (None, -1, "a string"))
     def test_rate_control_auto_disable(self, celery, redis, metricsmock, key, value):
+        """When some Redis values fail to validate, it disables the rate controller."""
         # TODO: check log entry when switched to structlog
         rc_params = {
             "rate_controller_target": 1000,
@@ -268,9 +266,9 @@ class TestMonitorQueueSizeAndRateControl:
             "rate_controller_enabled": 1,
         }
         rc_params[key] = value
-        for key, value in rc_params.items():
-            if value is not None:
-                redis.set(key, value)
+        for name, init in rc_params.items():
+            if init is not None:
+                redis.set(name, init)
 
         monitor_queue_size_and_rate_control.delay().get()
 
@@ -280,6 +278,46 @@ class TestMonitorQueueSizeAndRateControl:
         assert raw_state
         assert raw_state.decode("utf8") == "{}"
         metricsmock.assert_gauge_once("rate_control.locate", value=100.0)
+
+    @pytest.mark.parametrize(
+        "key, default",
+        (
+            ("rate_controller_kp", 8),
+            ("rate_controller_ki", 0),
+            ("rate_controller_kd", 0),
+        ),
+    )
+    @pytest.mark.parametrize("value", (None, -1, "a string"))
+    def test_rate_control_auto_default(
+        self, celery, redis, metricsmock, key, default, value
+    ):
+        """Some Redis values are initialized to defaults."""
+        # TODO: check log entry when switched to structlog
+        rc_params = {
+            "rate_controller_target": 1000,
+            "rate_controller_kp": 1,
+            "rate_controller_ki": 0.002,
+            "rate_controller_kd": 0.2,
+            "rate_controller_enabled": 1,
+        }
+        rc_params[key] = value
+        for name, init in rc_params.items():
+            if init is not None:
+                redis.set(name, init)
+
+        monitor_queue_size_and_rate_control.delay().get()
+        assert int(redis.get(key)) == default
+        raw_state = redis.get("rate_controller_state")
+        assert raw_state
+        if value is None:
+            # Set to default and loaded
+            assert int(redis.get("rate_controller_enabled")) == 1
+            assert json.loads(raw_state)
+        else:
+            # Set to 0 and disabled
+            assert int(redis.get("rate_controller_enabled")) == 0
+            metricsmock.assert_gauge_once("rate_control.locate", value=100.0)
+            assert raw_state.decode("utf8") == "{}"
 
     def test_rate_control_reload(self, celery, redis):
         redis.set("rate_controller_kp", 1.0)
