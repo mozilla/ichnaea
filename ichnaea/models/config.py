@@ -64,5 +64,10 @@ class ExportConfig(_Model):
 
     def queue(self, queue_key, redis_client):
         return DataQueue(
-            queue_key, redis_client, batch=self.batch, compress=False, json=True
+            queue_key,
+            redis_client,
+            "exports",
+            batch=self.batch,
+            compress=False,
+            json=True,
         )

@@ -78,8 +78,8 @@ def monitor_api_users(self):
     expires=57,
     _schedule=timedelta(seconds=60),
 )
-def monitor_queue_size(self):
-    monitor.QueueSize(self)()
+def monitor_queue_size_and_rate_control(self):
+    monitor.QueueSizeAndRateControl(self)()
 
 
 @celery_app.task(base=BaseTask, bind=True, queue="celery_monitor")

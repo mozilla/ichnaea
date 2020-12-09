@@ -13,6 +13,7 @@ Ichnaea.
    debug
    configure
    deploy
+   rate_control
    metrics
    architecture
    dataflows

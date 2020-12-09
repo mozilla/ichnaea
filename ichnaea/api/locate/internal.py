@@ -66,7 +66,12 @@ class InternalPositionSource(
             # which was already validated today
             return
 
-        if not query.api_key.store_sample("locate"):
+        raw_global_rate = self.redis_client.get("global_locate_sample_rate")
+        try:
+            global_rate = float(raw_global_rate)
+        except (TypeError, ValueError):
+            global_rate = 100.0
+        if not query.api_key.store_sample("locate", global_rate):
             # only store some percentage of the requests
             return
 
