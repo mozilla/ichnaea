@@ -104,7 +104,10 @@ request.timing
 ``request.timing`` is a timer for how long the HTTP request took to complete in
 milliseconds.
 
-The tags (``path``, ``method``, and ``status``) are the same as `request`_.
+Tags:
+
+The tags ``path`` and ``method`` are the same as `request`_. The tag ``status``
+is omitted.
 
 Related structured log data:
 
@@ -834,15 +837,16 @@ Tags:
 Rate Control Metrics
 --------------------
 
-The optional `rate controller <rate-control>`_ can be used to dynamically set
-the global locate sample rate and prevent the data queues from growing without
-bounds. There are several metrics emitted to monitor the rate controller.
+The optional :ref:`rate controller <auto-rate-controller>` can be used to
+dynamically set the global locate sample rate and prevent the data queues from
+growing without bounds. There are several metrics emitted to monitor the rate
+controller.
 
 rate_control.locate
 ^^^^^^^^^^^^^^^^^^^
 ``rate_control.locate`` is a gauge that reports the current setting of the
-`global locate sample rate <global-rate-control>`_, which may be unset (100.0),
-manually set, or set by the rate controller.
+:ref:`global locate sample rate <global-rate-control>`, which may be unset
+(100.0), manually set, or set by the rate controller.
 
 rate_control.locate.target
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
