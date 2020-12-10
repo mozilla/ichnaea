@@ -74,7 +74,7 @@ An administrator can use these to limit the observations from large API users,
 or to ignore traffic from questionable API users. The default is 100% (all
 locate and submission observations) for new API keys.
 
-.. global-rate-control:
+.. _global-rate-control:
 
 Global Rate Control
 ===================
@@ -85,13 +85,13 @@ applied as a multiple on any API key controls, so if an API has
 the effective sample rate for that API key is 30%.
 
 An administrator can use this control to globally limit observations from
-`geolocate <api_geolocate_latest>`_ calls. A temporary rate of 0% is an
+:ref:`geolocate <api_geolocate_latest>` calls. A temporary rate of 0% is an
 effective way to allow the backend to process a large backlog of observations.
 If unset, the default global rate is 100%.
 
 There is no global rate control for submissions.
 
-.. rate_control:
+.. _auto-rate-controller:
 
 Automated Rate Control (Beta)
 =============================
@@ -105,15 +105,15 @@ To enable the rate controller:
 1. Set the Redis key ``rate_controller_target`` to the desired maximum queue
    size, such as ``1000000`` for 1 million observations. A suggested value is
    5-10 minutes of maximum observation processing, as seen by summing the
-   `data.observation.insert metric <data.observation.insert-metric>`_ during
-   peak periods with a backlog.
+   :ref:`data.observation.insert metric <data.observation.insert-metric>`
+   during peak periods with a backlog.
 2. Set the Redis key ``rate_controller_enabled`` to ``1`` to enable or ``0``
    to disable the rate controller. If the rate controller is enabled without
    a target, it will be automatically disabled.
 
 The rate controller runs once a minute, at the same time that
-`queue metrics <queue-metric>`_ are emitted. The rate is adjusted during the
-peak traffic to keep the backlog near the target rate, and the backlog is
+:ref:`queue metrics <queue-metric>` are emitted. The rate is adjusted during
+the peak traffic to keep the backlog near the target rate, and the backlog is
 more quickly processed when the peak ends.
 
 .. Source document:
@@ -169,7 +169,7 @@ The gain parameters are stored in Redis keys, and can be adjusted:
   simulation, this had little noticable effect, and may require a value of
   50.0 or higher to see any changes.
 
-The rate controller emits several `metrics <rate-controller-metrics>`_.
+The rate controller emits several :ref:`metrics <rate-control-metrics>`.
 An administrator can use these metrics to monitor the rate controller, and to
 determine if backend resources should be increased or decreased based on
 long-term traffic trends.
