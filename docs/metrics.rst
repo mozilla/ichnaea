@@ -104,7 +104,10 @@ request.timing
 ``request.timing`` is a timer for how long the HTTP request took to complete in
 milliseconds.
 
-The tags (``path``, ``method``, and ``status``) are the same as `request`_.
+Tags:
+
+The tags ``path`` and ``method`` are the same as `request`_. The tag ``status``
+is omitted.
 
 Related structured log data:
 
