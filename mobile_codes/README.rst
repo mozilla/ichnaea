@@ -16,7 +16,9 @@ http://en.wikipedia.org/wiki/List_of_mobile_country_codes
 
 As well as the latest released listing from ITU:
 
-http://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.212B-2014-PDF-E.pdf
+As well as the `latest released listing from ITU <http://www.itu.int/pub/T-SP-E.212B>`_:
+
+https://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.212B-2018-PDF-E.pdf
 
 Note that MCC codes for a country can be:
 
@@ -66,3 +68,4 @@ Contributors
 * Andy McKay (`andymckay <https://github.com/andymckay>`_)
 * Hanno Schlichting (`hannosch <https://github.com/hannosch>`_)
 * Jared Kerim (jaredkerim)
+* szjozsef
