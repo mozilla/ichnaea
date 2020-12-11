@@ -216,7 +216,7 @@ def merge_wiki_itu():
         )
         country = None
         if cname != "":
-            country = country_list.get(cname)
+            country = country_list.get(cname, None)
         if country is not None:
             iso = country.alpha2
             if country_dict[iso] is not None:
@@ -317,7 +317,7 @@ def merge_wiki_itu():
             x_sorted = x_list[4]
         x_list[4] = x_sorted
         countries_sorted[key] = x_list
-    with open(os.path.join("mobile_codes", "json", "countries.json"), "w") as outfile:
+    with open(os.path.join("json", "countries.json"), "w") as outfile:
         json_string = json.dumps(list(countries_sorted.values()), ensure_ascii=True)
         # Should be a better way to obtain the desired custom pretty formatted json file, maybe with a custom class ...
         json_string = re.sub(r"\], \[", "],\n    [", json_string)
@@ -330,9 +330,7 @@ def merge_wiki_itu():
 
 
 def write_operators(operators):
-    with open(
-        os.path.join("mobile_codes", "json", "mnc_operators.json"), "w"
-    ) as outfile:
+    with open(os.path.join("json", "mnc_operators.json"), "w") as outfile:
         json_string = json.dumps(operators, ensure_ascii=True)
         # Should be a better way to obtain the desired custom pretty formatted json file, maybe with a custom class ...
         json_string = re.sub(r"\], \[", "],\n    [", json_string)
