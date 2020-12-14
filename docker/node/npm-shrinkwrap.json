@@ -165,9 +165,9 @@
       "dev": true
     },
     "leaflet.locatecontrol": {
-      "version": "0.61.0",
-      "resolved": "https://registry.npmjs.org/leaflet.locatecontrol/-/leaflet.locatecontrol-0.61.0.tgz",
-      "integrity": "sha1-3el6xNJyIYrBbOqlBVpOVzKNocY=",
+      "version": "0.72.0",
+      "resolved": "https://registry.npmjs.org/leaflet.locatecontrol/-/leaflet.locatecontrol-0.72.0.tgz",
+      "integrity": "sha512-enAf10UG9Z1bV0siTP/+vG/ZVncDqSA3V8c6iZ3s6KWL5Ngkk4A4mk9Ssefj46ey98I9HSYWqoS+k2Y7EaKjwQ==",
       "dev": true
     },
     "mapbox.js": {
