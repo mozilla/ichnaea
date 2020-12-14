@@ -9,7 +9,7 @@
   "license": "Apache-2.0",
   "devDependencies": {
     "clean-css": "~4.1",
-    "clean-css-cli": "~4.1",
+    "clean-css-cli": "~4.3",
     "datatables": "~1.10",
     "font-awesome": "~4.7",
     "jquery": "~3.5.0",
