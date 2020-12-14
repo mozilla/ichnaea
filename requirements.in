@@ -205,6 +205,12 @@ urllib3[secure]==1.26.2
 # Requirements for developement
 #
 
+# A screen scraping library, used in mobile-codes/parse.py
+# Code: https://code.launchpad.net/beautifulsoup/
+# Changes: https://bazaar.launchpad.net/%7Eleonardr/beautifulsoup/bs4/view/head:/CHANGELOG
+# Docs: https://www.crummy.com/software/BeautifulSoup/bs4/doc/
+beautifulsoup4
+
 # An uncompromising Python code formatter
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
@@ -234,6 +240,12 @@ factory-boy==3.1.0
 # Changes: https://flake8.pycqa.org/en/latest/release-notes/index.html
 # Docs: https://flake8.pycqa.org/en/latest/index.html
 flake8==3.8.4
+
+# ISO 3166-1 country definitions, used in mobile-codes/parse.py
+# Code: https://github.com/deactivated/python-iso3166
+# Changes: https://github.com/deactivated/python-iso3166/blob/master/CHANGES
+# Docs: https://github.com/deactivated/python-iso3166#readme
+iso3166
 
 # pip-compile (to build reqs) and pip-sync (to update)
 # Code: https://github.com/jazzband/pip-tools/

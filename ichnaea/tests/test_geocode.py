@@ -75,9 +75,9 @@ class TestRegionsForMcc(object):
         assert set([r.code for r in regions]) == set(["DE"])
 
     def test_multiple(self):
-        assert set(GEOCODER.regions_for_mcc(311)) == set(["GU", "US"])
+        assert set(GEOCODER.regions_for_mcc(311)) == {"AS", "GU", "US"}
         regions = GEOCODER.regions_for_mcc(311, metadata=True)
-        assert set([r.code for r in regions]) == set(["GU", "US"])
+        assert set([r.code for r in regions]) == {"AS", "GU", "US"}
 
     def test_filtered(self):
         # AX / Aland Islands is not in the GENC list

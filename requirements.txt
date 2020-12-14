@@ -79,7 +79,7 @@ beautifulsoup4==4.9.3 \
     --hash=sha256:4c98143716ef1cb40bf7f39a8e3eec8f8b009509e74904ba3a7b315431577e35 \
     --hash=sha256:84729e322ad1d5b4d25f805bfa05b902dd96450f43842c4e99067d5e1369eb25 \
     --hash=sha256:fff47e031e34ec82bf17e00da8f592fe7de69aeea38be00523c04623c04fb666 \
-    # via webtest
+    # via -r requirements.in, webtest
 billiard==3.6.3.0 \
     --hash=sha256:bff575450859a6e0fbc2f9877d9b715b0bbc07c3565bb7ed2280526a0cdf5ede \
     --hash=sha256:d91725ce6425f33a97dfa72fb6bfef0e47d4652acd98a032bd1a7fbf06d5fa6a \
@@ -421,6 +421,10 @@ iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32 \
     # via pytest
+iso3166==1.0.1 \
+    --hash=sha256:b07208703bd881a4f974e39fa013c4498dddd64913ada15f24be75d02ae68a44 \
+    --hash=sha256:b1e58dbcf50fbb2c9c418ec7a6057f0cdb30b8f822ac852f72e71ba769dae8c5 \
+    # via -r requirements.in
 iso8601==0.1.13 \
     --hash=sha256:694be0743e9f1535ea873bfc7bd6fb62380c62b75822761859428073a17fd39c \
     --hash=sha256:6f02f01dd13320a7f280e58516dc8d1950dfaf77527cc365a398cd9de4d3c692 \
