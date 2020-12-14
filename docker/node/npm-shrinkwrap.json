@@ -194,22 +194,10 @@
       "dev": true
     },
     "uglify-js": {
-      "version": "3.0.28",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.0.28.tgz",
-      "integrity": "sha512-0h/qGay016GG2lVav3Kz174F3T2Vjlz2v6HCt+WDQpoXfco0hWwF5gHK9yh88mUYvIC+N7Z8NT8WpjSp1yoqGA==",
-      "dev": true,
-      "requires": {
-        "commander": "~2.11.0",
-        "source-map": "~0.5.1"
-      },
-      "dependencies": {
-        "commander": {
-          "version": "2.11.0",
-          "resolved": "https://registry.npmjs.org/commander/-/commander-2.11.0.tgz",
-          "integrity": "sha512-b0553uYA5YAEGgyYIGYROzKQ7X5RAqedkfjiZxwi0kL1g3bOaBNNZfYkzt/CL0umgD5wc9Jec2FbB98CjkMRvQ==",
-          "dev": true
-        }
-      }
+      "version": "3.12.1",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.12.1.tgz",
+      "integrity": "sha512-o8lHP20KjIiQe5b/67Rh68xEGRrc2SRsCuuoYclXXoC74AfSRGblU1HKzJWH3HxPZ+Ort85fWHpSX7KwBUC9CQ==",
+      "dev": true
     },
     "wrappy": {
       "version": "1.0.2",
