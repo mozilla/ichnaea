@@ -9,16 +9,19 @@ class TestCountries:
         assert len(countries) == 1
         assert countries[0].mcc == "302"
 
-    def test_mcc_multiple_codes(self):
-        countries = mobile_codes.mcc("313")
+    def test_mcc_multiple_codes_one_country(self):
+        countries = mobile_codes.mcc("312")  # US-only MCC
         assert len(countries) == 1
-        assert countries[0].mcc == ["310", "311", "313", "316"]
+        assert countries[0].mcc == ["310", "311", "312", "313", "314", "315", "316"]
 
-        # We even get multiple countries with multiple MCC each
-        countries = mobile_codes.mcc("310")
-        assert len(countries) > 1
-        for country in countries:
-            assert len(country.mcc) > 1
+    def test_mcc_multiple_countries_one_code(self):
+        countries = mobile_codes.mcc("313")  # MCC used in US and Puerto Rico
+        assert len(countries) == 2
+        actual = {country.alpha2: country.mcc for country in countries}
+        assert actual == {
+            "PR": ["310", "313", "330"],
+            "US": ["310", "311", "312", "313", "314", "315", "316"],
+        }
 
     def test_mcc_multiple_countries(self):
         countries = mobile_codes.mcc("505")
@@ -105,16 +108,6 @@ class TestCountriesNoMCC:
     def test_numeric(self):
         country = mobile_codes.numeric("010")
         assert country.mcc is None
-
-
-class TestCountriesSpecialCases:
-    def test_puerto_rico(self):
-        # Allow mainland US 310 as a valid code for Puerto Rico.
-        # At least AT&T has cell networks with a mcc of 310 installed
-        # in Puerto Rico, see
-        # https://github.com/andymckay/mobile-codes/issues/10
-        country = mobile_codes.alpha2("PR")
-        assert country.mcc == ["310", "330"]
 
 
 class TestMNCOperators:
