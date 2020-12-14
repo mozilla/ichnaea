@@ -4,13 +4,10 @@
 import json
 import os
 import re
-import sys
 from collections import namedtuple, OrderedDict
 
 import iso3166
-import requests
 from bs4 import BeautifulSoup
-from requests.exceptions import HTTPError
 
 MNC_OPERATOR_FIELDS = ("mcc", "mnc", "brand", "operator")
 COUNTRY_FIELDS = ("name", "iso2", "iso3", "numeric", "mccs")
@@ -32,148 +29,111 @@ def _load_json(cache_key, json_path, wrapper):
     return _CACHE[cache_key]
 
 
-def parse_wikipedia():
+def parse_wikipedia(source_dir):
     operators = []
 
-    subpages = []
-    try:
-        response = requests.get(
-            "https://en.wikipedia.org/wiki/Mobile_country_code", timeout=30
-        )
-        response.raise_for_status()
-    except HTTPError as http_err:
-        print("HTTP error occurred: {}".format(http_err))
-        sys.exit(1)
-    except Exception as err:
-        print("Other error occurred: {}".format(err))
-        sys.exit(1)
-    else:
-        htmlfile = response.text
-    soup = BeautifulSoup(htmlfile, "html.parser")
-    for table in soup.find_all("table", class_="wikitable"):
-        for links in table.find_all("a", href=True):
-            if links.text.startswith("List of mobile network codes in"):
-                match = re.search("(.+?)#", links["href"])
-                if match:
-                    url = match.group(1)
-                    if url not in subpages:
-                        subpages.append(url)
-    subpages.sort()
-    wikifiles = len(subpages)
     i = 0
-    while i <= wikifiles:
-        if i > 0:
-            try:
-                response = requests.get(
-                    "https://en.wikipedia.org" + subpages[i - 1], timeout=30
-                )
-                response.raise_for_status()
-            except HTTPError as http_err:
-                print("HTTP error occurred: {}".format(http_err))
-                sys.exit(1)
-            except Exception as err:
-                print("Other error occurred: {}".format(err))
-                sys.exit(1)
-            else:
-                htmlfile = response.text
-            soup = BeautifulSoup(htmlfile, "html.parser")
-        for table in soup.find_all(
-            "table", class_="wikitable", attrs={"width": "100%"}
-        ):
-            hs = table.find_previous_sibling("h4")
-            iso = ""
-            if hs is not None:
-                hs = hs.find("span", class_="mw-headline")
-                if hs is not None:
-                    if hs.a is not None:
-                        i_tag = hs.a
-                        i_tag.decompose()
-                    iso = re.sub(
-                        r"\(.*\)",
-                        "",
-                        hs.text.strip()
-                        .strip("\n")
-                        .replace("\n", "")
-                        .replace("–", "")
-                        .replace(" ", ""),
-                    )
-                    if iso == "GE-AB":
-                        iso = "GE"
-                    if "-" in iso:
-                        print("Another iso with region code, please check !: " + iso)
-            for row in table.find_all("tr"):
-                mcc, mnc, brand, operator = row.find_all_next("td", limit=4)
-                if mcc.text in ["MCC", ""]:
-                    continue
-                if mcc.div is not None:
-                    i_tag = mcc.div
-                    i_tag.decompose()
-                if mcc.span is not None:
-                    i_tag = mcc.span
-                    i_tag.decompose()
-                mcc = mcc.text.strip().strip("\n").replace("\n", "")
-                if mnc.div is not None:
-                    i_tag = mnc.div
-                    i_tag.decompose()
-                if mnc.span is not None:
-                    i_tag = mnc.span
-                    i_tag.decompose()
-                mnc = mnc.text.strip().strip("\n").replace("\n", "")
-                if operator.div is not None:
-                    i_tag = operator.div
-                    i_tag.decompose()
-                if operator.span is not None:
-                    i_tag = operator.span
-                    i_tag.decompose()
-                operator = operator.text.strip().strip("\n").replace("\n", "")
-                if brand.div is not None:
-                    i_tag = brand.div
-                    i_tag.decompose()
-                if brand.span is not None:
-                    i_tag = brand.span
-                    i_tag.decompose()
-                brand = brand.text.strip().strip("\n").replace("\n", "")
-                operators.append(
-                    MNCOperatorISO(
-                        mcc=mcc, mnc=mnc, brand=brand, operator=operator, iso=iso
-                    )
-                )
+    with open(os.path.join(source_dir, "wiki_" + str(i)), "r") as infile:
+        htmlfile = infile.read()
+    while i <= 10:
+        fpath = os.path.join(source_dir, "wiki_" + str(i))
+        if os.path.isfile(fpath):
+            with open(fpath, "r") as infile:
+                htmlfile = infile.read()
+                soup = BeautifulSoup(htmlfile, "html.parser")
+                for table in soup.find_all(
+                    "table", class_="wikitable", attrs={"width": "100%"}
+                ):
+                    hs = table.find_previous_sibling("h4")
+                    iso = ""
+                    if hs is not None:
+                        hs = hs.find("span", class_="mw-headline")
+                        if hs is not None:
+                            if hs.a is not None:
+                                i_tag = hs.a
+                                i_tag.decompose()
+                            iso = re.sub(
+                                r"\(.*\)",
+                                "",
+                                hs.text.strip()
+                                .strip("\n")
+                                .replace("\n", "")
+                                .replace("–", "")
+                                .replace(" ", ""),
+                            )
+                            if iso == "GE-AB":
+                                iso = "GE"
+                            if "-" in iso:
+                                print(
+                                    "Another iso with region code, please check !: "
+                                    + iso
+                                )
+                    for row in table.find_all("tr"):
+                        mcc, mnc, brand, operator = row.find_all_next("td", limit=4)
+                        if mcc.text in ["MCC", ""]:
+                            continue
+                        if mcc.div is not None:
+                            i_tag = mcc.div
+                            i_tag.decompose()
+                        if mcc.span is not None:
+                            i_tag = mcc.span
+                            i_tag.decompose()
+                        mcc = mcc.text.strip().strip("\n").replace("\n", "")
+                        if mnc.div is not None:
+                            i_tag = mnc.div
+                            i_tag.decompose()
+                        if mnc.span is not None:
+                            i_tag = mnc.span
+                            i_tag.decompose()
+                        mnc = mnc.text.strip().strip("\n").replace("\n", "")
+                        if operator.div is not None:
+                            i_tag = operator.div
+                            i_tag.decompose()
+                        if operator.span is not None:
+                            i_tag = operator.span
+                            i_tag.decompose()
+                        operator = operator.text.strip().strip("\n").replace("\n", "")
+                        if brand.div is not None:
+                            i_tag = brand.div
+                            i_tag.decompose()
+                        if brand.span is not None:
+                            i_tag = brand.span
+                            i_tag.decompose()
+                        brand = brand.text.strip().strip("\n").replace("\n", "")
+                        operators.append(
+                            MNCOperatorISO(
+                                mcc=mcc,
+                                mnc=mnc,
+                                brand=brand,
+                                operator=operator,
+                                iso=iso,
+                            )
+                        )
+        else:
+            break
         i += 1
+
     return operators
 
 
-def parse_itu():
+def parse_itu(source_dir):
     # The itu.json file was created from the English word document: https://www.itu.int/dms_pub/itu-t/opb/sp/T-SP-E.212B-2018-MSW-E.docx
-    return _load_json(
-        "itu.json", os.path.join("source_data", "itu.json"), MNCOperatorITU
-    )
+    return _load_json("itu.json", os.path.join(source_dir, "itu.json"), MNCOperatorITU)
 
 
-def parse_mcc_mnc_table():
-    try:
-        response = requests.get(
-            "https://raw.githubusercontent.com/musalbas/mcc-mnc-table/master/mcc-mnc-table.json",
-            timeout=30,
-        )
-        response.raise_for_status()
-    except HTTPError as http_err:
-        print("HTTP error occurred: {}".format(http_err))
-        sys.exit(1)
-    except Exception as err:
-        print("Other error occurred: {}".format(err))
-        sys.exit(1)
-    else:
-        jsonfile = response.text
-    if len(jsonfile) > 0:
-        return json.loads(jsonfile)
+def parse_mcc_mnc_table(source_dir):
+    with open(os.path.join(source_dir, "mcc-mnc-table.json"), "r") as infile:
+        htmlfile = infile.read()
+    if len(htmlfile) > 0:
+        return json.loads(htmlfile)
     else:
         return {}
 
 
-def merge_wiki_itu():
-    wiki_operators = parse_wikipedia()
-    itu_operators = parse_itu()
-    mcc_mnc_operators = parse_mcc_mnc_table()
+def merge_wiki_itu(source_dir, json_dir):
+    wiki_operators = parse_wikipedia(source_dir)
+    itu_operators = parse_itu(source_dir)
+    mcc_mnc_operators = parse_mcc_mnc_table(source_dir)
     merged_operators = {}
     sorted_operators = OrderedDict()
     country_dict = {}
@@ -216,7 +176,7 @@ def merge_wiki_itu():
         )
         country = None
         if cname != "":
-            country = country_list.get(cname, None)
+            country = country_list.get(cname)
         if country is not None:
             iso = country.alpha2
             if country_dict[iso] is not None:
@@ -317,7 +277,7 @@ def merge_wiki_itu():
             x_sorted = x_list[4]
         x_list[4] = x_sorted
         countries_sorted[key] = x_list
-    with open(os.path.join("json", "countries.json"), "w") as outfile:
+    with open(os.path.join(json_dir, "countries.json"), "w") as outfile:
         json_string = json.dumps(list(countries_sorted.values()), ensure_ascii=True)
         # Should be a better way to obtain the desired custom pretty formatted json file, maybe with a custom class ...
         json_string = re.sub(r"\], \[", "],\n    [", json_string)
@@ -329,8 +289,8 @@ def merge_wiki_itu():
     return list(sorted_operators.values())
 
 
-def write_operators(operators):
-    with open(os.path.join("json", "mnc_operators.json"), "w") as outfile:
+def write_operators(operators, json_dir):
+    with open(os.path.join(json_dir, "mnc_operators.json"), "w") as outfile:
         json_string = json.dumps(operators, ensure_ascii=True)
         # Should be a better way to obtain the desired custom pretty formatted json file, maybe with a custom class ...
         json_string = re.sub(r"\], \[", "],\n    [", json_string)
@@ -340,4 +300,8 @@ def write_operators(operators):
 
 
 if __name__ == "__main__":
-    write_operators(merge_wiki_itu())
+    my_dir = os.path.dirname(os.path.abspath(__file__))
+    download_dir = os.path.join(my_dir, "source_data")
+    json_dir = os.path.join(my_dir, "json")
+    data = merge_wiki_itu(download_dir, json_dir)
+    write_operators(data, json_dir)
