@@ -33,12 +33,20 @@
       }
     },
     "clean-css": {
-      "version": "4.1.11",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-4.1.11.tgz",
-      "integrity": "sha1-Ls3xRaujj1R0DybO/Q/z4D4SXWo=",
+      "version": "4.2.3",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-4.2.3.tgz",
+      "integrity": "sha512-VcMWDN54ZN/DS+g58HYL5/n4Zrqe8vHJpGA8KdgUXFU4fuP/aHNw8eld9SyEIyabIMJX/0RaY/fplOo5hYLSFA==",
       "dev": true,
       "requires": {
-        "source-map": "0.5.x"
+        "source-map": "~0.6.0"
+      },
+      "dependencies": {
+        "source-map": {
+          "version": "0.6.1",
+          "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz",
+          "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==",
+          "dev": true
+        }
       }
     },
     "clean-css-cli": {
