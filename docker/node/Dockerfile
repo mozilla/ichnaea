@@ -18,7 +18,7 @@ WORKDIR /node
 
 CMD ["bash"]
 
-COPY ./package.json /node/package.json
+COPY ./package.json ./npm-shrinkwrap.json /node/
 RUN npm install --no-save -d /node
 RUN npm dedupe
 RUN npm shrinkwrap

@@ -33,21 +33,21 @@
       }
     },
     "clean-css": {
-      "version": "4.1.11",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-4.1.11.tgz",
-      "integrity": "sha1-Ls3xRaujj1R0DybO/Q/z4D4SXWo=",
+      "version": "4.2.3",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-4.2.3.tgz",
+      "integrity": "sha512-VcMWDN54ZN/DS+g58HYL5/n4Zrqe8vHJpGA8KdgUXFU4fuP/aHNw8eld9SyEIyabIMJX/0RaY/fplOo5hYLSFA==",
       "dev": true,
       "requires": {
-        "source-map": "0.5.x"
+        "source-map": "~0.6.0"
       }
     },
     "clean-css-cli": {
-      "version": "4.1.11",
-      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-4.1.11.tgz",
-      "integrity": "sha1-AcVonwW8USojKF8d79veALwR2Gw=",
+      "version": "4.3.0",
+      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-4.3.0.tgz",
+      "integrity": "sha512-8GHZfr+mG3zB/Lgqrr27qHBFsPSn0fyEI3f2rIZpxPxUbn2J6A8xyyeBRVTW8duDuXigN0s80vsXiXJOEFIO5Q==",
       "dev": true,
       "requires": {
-        "clean-css": "^4.1.9",
+        "clean-css": "^4.2.1",
         "commander": "2.x",
         "glob": "7.x"
       }
@@ -140,9 +140,9 @@
       "dev": true
     },
     "leaflet.locatecontrol": {
-      "version": "0.61.0",
-      "resolved": "https://registry.npmjs.org/leaflet.locatecontrol/-/leaflet.locatecontrol-0.61.0.tgz",
-      "integrity": "sha1-3el6xNJyIYrBbOqlBVpOVzKNocY=",
+      "version": "0.72.0",
+      "resolved": "https://registry.npmjs.org/leaflet.locatecontrol/-/leaflet.locatecontrol-0.72.0.tgz",
+      "integrity": "sha512-enAf10UG9Z1bV0siTP/+vG/ZVncDqSA3V8c6iZ3s6KWL5Ngkk4A4mk9Ssefj46ey98I9HSYWqoS+k2Y7EaKjwQ==",
       "dev": true
     },
     "mapbox.js": {
@@ -188,28 +188,16 @@
       "dev": true
     },
     "source-map": {
-      "version": "0.5.7",
-      "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.5.7.tgz",
-      "integrity": "sha1-igOdLRAh0i0eoUyA2OpGi6LvP8w=",
+      "version": "0.6.1",
+      "resolved": "https://registry.npmjs.org/source-map/-/source-map-0.6.1.tgz",
+      "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g==",
       "dev": true
     },
     "uglify-js": {
-      "version": "3.0.28",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.0.28.tgz",
-      "integrity": "sha512-0h/qGay016GG2lVav3Kz174F3T2Vjlz2v6HCt+WDQpoXfco0hWwF5gHK9yh88mUYvIC+N7Z8NT8WpjSp1yoqGA==",
-      "dev": true,
-      "requires": {
-        "commander": "~2.11.0",
-        "source-map": "~0.5.1"
-      },
-      "dependencies": {
-        "commander": {
-          "version": "2.11.0",
-          "resolved": "https://registry.npmjs.org/commander/-/commander-2.11.0.tgz",
-          "integrity": "sha512-b0553uYA5YAEGgyYIGYROzKQ7X5RAqedkfjiZxwi0kL1g3bOaBNNZfYkzt/CL0umgD5wc9Jec2FbB98CjkMRvQ==",
-          "dev": true
-        }
-      }
+      "version": "3.12.1",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.12.1.tgz",
+      "integrity": "sha512-o8lHP20KjIiQe5b/67Rh68xEGRrc2SRsCuuoYclXXoC74AfSRGblU1HKzJWH3HxPZ+Ort85fWHpSX7KwBUC9CQ==",
+      "dev": true
     },
     "wrappy": {
       "version": "1.0.2",
