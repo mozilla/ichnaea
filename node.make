@@ -8,7 +8,7 @@ NODE_ROOT = /node
 NODE_MODULES = $(NODE_ROOT)/node_modules
 
 CLEANCSS = cleancss -d
-UGLIFYJS = uglifyjs -c --stats
+UGLIFYJS = uglifyjs -c --timings
 
 .PHONY: all js css shrinkwrap
 
