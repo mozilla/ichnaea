@@ -66,11 +66,15 @@ class TestCountries:
     def test_countries_match_mnc_operators(self):
         operators = mobile_codes._mnc_operators()
         operator_mccs = set([o.mcc for o in operators])
-        # exclude test / worldwide mcc values
-        operator_mccs -= {"001", "901"}
-        # exclude:
-        # 312 - Northern Michigan University
-        operator_mccs -= {"312"}
+
+        # Exclude test MCCs
+        operator_mccs -= {"001", "999"}
+
+        # Exclude international operators
+        operator_mccs -= {"901", "902", "991"}
+
+        # Exclude FonePlus in British Indian Ocean Territory
+        operator_mccs.remove("995")
 
         countries = mobile_codes._countries()
         countries_mccs = []
