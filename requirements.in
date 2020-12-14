@@ -86,13 +86,6 @@ markus[datadog]==2.2.0
 # Docs: https://maxminddb.readthedocs.io/en/latest/
 maxminddb==2.0.3
 
-# Mobile Country Codes (unmaintained)
-# TODO: Absorb into repo (issue #1421)
-# Code: https://github.com/andymckay/mobile-codes
-# Changes: https://github.com/andymckay/mobile-codes/blob/master/CHANGES.rst
-# Docs: https://github.com/andymckay/mobile-codes#readme
-mobile-codes==0.7
-
 # More algorithms like Python's itertools
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
