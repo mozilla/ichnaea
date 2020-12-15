@@ -1,4 +1,4 @@
-FROM node:14-slim
+FROM node:15-slim
 
 # Note: This uses the node user (uid 1000) that comes with the image.
 
@@ -18,7 +18,7 @@ WORKDIR /node
 
 CMD ["bash"]
 
-COPY ./package.json ./npm-shrinkwrap.json /node/
+COPY --chown=node:node ./package.json ./npm-shrinkwrap.json /node/
 RUN npm install --no-save -d /node
 RUN npm dedupe
 RUN npm shrinkwrap
