@@ -67,7 +67,6 @@ build_deps: build_datamaps build_libmaxmind
 
 build_python_deps:
 	$(PIP) install --no-cache-dir --disable-pip-version-check --require-hashes \
-	    --use-feature=2020-resolver \
 	    -r requirements.txt
 	$(PIP) check --disable-pip-version-check
 
