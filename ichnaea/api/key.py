@@ -1,6 +1,7 @@
 from random import randint, random
 
-from repoze import lru
+from cachetools import cached, TTLCache
+from gevent.lock import RLock
 from sqlalchemy import select
 
 from ichnaea.models import ApiKey
@@ -10,7 +11,8 @@ _MARKER = object()
 
 # Five minutes +/- 10% cache timeout.
 API_CACHE_TIMEOUT = 300 + randint(-30, 30)
-API_CACHE = lru.ExpiringLRUCache(500, default_timeout=API_CACHE_TIMEOUT)
+API_CACHE = TTLCache(maxsize=500, ttl=API_CACHE_TIMEOUT)
+API_CACHE_LOCK = RLock()
 
 API_KEY_COLUMN_NAMES = (
     "valid_key",
@@ -29,20 +31,22 @@ API_KEY_COLUMN_NAMES = (
 )
 
 
+def _cache_key(session, valid_key):
+    return valid_key
+
+
+@cached(API_CACHE, key=_cache_key, lock=API_CACHE_LOCK)
 def get_key(session, valid_key):
-    value = API_CACHE.get(valid_key, _MARKER)
-    if value is _MARKER:
-        columns = ApiKey.__table__.c
-        fields = [getattr(columns, f) for f in API_KEY_COLUMN_NAMES]
-        row = (
-            session.execute(select(fields).where(columns.valid_key == valid_key))
-        ).fetchone()
-        if row is not None:
-            # Create Key from sqlalchemy.engine.result.RowProxy
-            value = Key(**dict(row.items()))
-        else:
-            value = None
-        API_CACHE.put(valid_key, value)
+    columns = ApiKey.__table__.c
+    fields = [getattr(columns, f) for f in API_KEY_COLUMN_NAMES]
+    row = (
+        session.execute(select(fields).where(columns.valid_key == valid_key))
+    ).fetchone()
+    if row is not None:
+        # Create Key from sqlalchemy.engine.result.RowProxy
+        value = Key(**dict(row.items()))
+    else:
+        value = None
     return value
 
 

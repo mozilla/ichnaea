@@ -14,7 +14,7 @@ from structlog.testing import LogCapture
 from structlog.threadlocal import merge_threadlocal
 import webtest
 
-from ichnaea.api.key import API_CACHE
+from ichnaea.api.key import API_CACHE, API_CACHE_LOCK
 from ichnaea.api.locate.searcher import (
     configure_position_searcher,
     configure_region_searcher,
@@ -250,7 +250,8 @@ def independent_session(db_independent_session):
             db_independent_session.session_factory.configure(
                 bind=db_independent_session.engine
             )
-    API_CACHE.clear()
+    with API_CACHE_LOCK:
+        API_CACHE.clear()
 
 
 @pytest.fixture
@@ -273,7 +274,8 @@ def shared_session(db_shared_session):
             session.close()
             db_shared_session.session_factory.remove()
             db_shared_session.has_session_fixture = False
-    API_CACHE.clear()
+    with API_CACHE_LOCK:
+        API_CACHE.clear()
 
 
 @pytest.fixture
