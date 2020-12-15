@@ -46,7 +46,6 @@ js: shrinkwrap
 
 	cp $(NODE_MODULES)/jquery/dist/jquery.js $(JS_ROOT)/jquery.js
 	$(UGLIFYJS) -o $(JS_ROOT)/bundle-base.js \
-		$(JS_ROOT)/ga.js \
 		$(JS_ROOT)/jquery.js
 
 	cp $(NODE_MODULES)/datatables/media/js/jquery.dataTables.js \
