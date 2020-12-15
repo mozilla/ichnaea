@@ -95,6 +95,10 @@ botocore==1.19.30 \
     --hash=sha256:70a8ec8d76096927b619a2f1f0dffe326fc9a4f9224afc6cf5d7ef2fd98a94a2 \
     --hash=sha256:822f9dd11f11c54b9c4666cfec9b7246a32990dbca1be27528a75a8dabed4dc2 \
     # via boto3, s3transfer
+cachetools==4.2.0 \
+    --hash=sha256:3796e1de094f0eaca982441c92ce96c68c89cced4cd97721ab297ea4b16db90e \
+    --hash=sha256:c6b07a6ded8c78bf36730b3dc452dfff7d95f2a12a2fed856b1a0cb13ca78c61 \
+    # via -r requirements.in
 celery[redis]==5.0.3 \
     --hash=sha256:2cc87518fdd41375c8f40e2b0b59391568a3fb0a0b5f859f7bedef9b37efbc90 \
     --hash=sha256:d7bcb0fca6fc94c41c946e8979c4c276a02cc7532c68757b43b25c2fa9eda68b \
@@ -727,10 +731,6 @@ regex==2020.11.13 \
     --hash=sha256:f7d29a6fc4760300f86ae329e3b6ca28ea9c20823df123a2ea8693e967b29917 \
     --hash=sha256:f8f295db00ef5f8bae530fc39af0b40486ca6068733fb860b42115052206466f \
     # via black
-repoze.lru==0.7 \
-    --hash=sha256:0429a75e19380e4ed50c0694e26ac8819b4ea7851ee1fc7583c8572db80aff77 \
-    --hash=sha256:f77bf0e1096ea445beadd35f3479c5cff2aa1efe604a133e67150bc8630a62ea \
-    # via -r requirements.in
 requests-mock==1.8.0 \
     --hash=sha256:11215c6f4df72702aa357f205cf1e537cffd7392b3e787b58239bde5fb3db53b \
     --hash=sha256:e68f46844e4cee9d447150343c9ae875f99fa8037c6dcf5f15bf1fe9ab43d226 \

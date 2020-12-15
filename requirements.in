@@ -140,12 +140,11 @@ raven==6.10.0
 # Docs: https://github.com/andymccurdy/redis-py#readme
 redis[hiredis]==3.5.3
 
-# Tiny LRU cache
-# TODO: Replace with local memory cache (issue #919)
-# Code: https://github.com/repoze/repoze.lru
-# Changes: https://github.com/repoze/repoze.lru/blob/master/CHANGES.rst
-# Docs: https://github.com/repoze/repoze.lru/blob/master/docs/narr.rst
-repoze.lru==0.7
+# Various memoizing collections and decorators, such as TTLCache
+# Code: https://github.com/tkem/cachetools
+# Changes: https://github.com/tkem/cachetools/blob/master/CHANGELOG.rst
+# Docs: https://cachetools.readthedocs.io/en/stable/
+cachetools
 
 # Python HTTP Requests for Humans™
 # Code: https://github.com/psf/requests
