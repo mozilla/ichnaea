@@ -44,6 +44,7 @@ default:
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
 	@echo "  buildjs          - generate js static assets"
 	@echo "  buildcss         - generate css static assets"
+	@echo "  clean-assets     - remove generated static assets"
 	@echo "  update-vendored  - re-download vendor source and test data"
 	@echo "  update-reqs      - regenerate Python requirements"
 	@echo ""
@@ -109,6 +110,10 @@ buildjs: my.env .docker-build
 .PHONY: buildcss
 buildcss: my.env .docker-build
 	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make css
+
+.PHONY: clean-assets
+clean-assets: my.env .docker-build
+	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make clean
 
 .PHONY: lint
 lint: my.env .docker-build

@@ -100,7 +100,7 @@ class TestFunctionalContent(object):
             ("/optout", 200, "optout", 0),
             ("/privacy", 200, "privacy", 0),
             ("/robots.txt", 200, None, 0),
-            ("/static/css/images/icons-000000@2x.png", 200, None, 0),
+            ("/static/images/mls-logo.png", 200, None, 0),
             ("/terms", 200, "terms", 0),
             ("/stats/regions", 200, "stats.regions", 1),
             ("/stats", 200, "stats", 7),

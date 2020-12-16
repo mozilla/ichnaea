@@ -33,11 +33,13 @@ TOUCHICON_PATH = os.path.join(IMAGE_PATH, "apple-touch-icon.png")
 CSP_BASE = "'self'"
 CSP_POLICY = """\
 default-src 'self';
-connect-src {base} api.mapbox.com;
+connect-src {base} {tiles} *.tiles.mapbox.com api.mapbox.com events.mapbox.com;
 font-src {base};
-img-src {base} {tiles} api.mapbox.com data:;
-script-src {base} data: 'unsafe-eval';
+img-src {base} {tiles} api.mapbox.com data: blob:;
+script-src {base} data: 'unsafe-eval' ;
 style-src {base};
+child-src blob: ;
+worker-src blob: ;
 """
 CSP_POLICY = CSP_POLICY.replace("\n", " ").strip()
 TILES_PATTERN = "{z}/{x}/{y}.png"

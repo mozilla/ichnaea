@@ -3,51 +3,48 @@ $(document).ready(function() {
     var mapTilesUrl = mapDOMElement.data('map_tiles_url');
     var mapToken = mapDOMElement.data('map_token');
 
-    // Restrict to typical Web Mercator bounds
-    var southWest = L.latLng(-85.0511, -210.0),
-        northEast = L.latLng(85.0511, 210.0),
-        bounds = L.latLngBounds(southWest, northEast);
-
     // Set public access token
-    L.mapbox.accessToken = mapToken
+    mapboxgl.accessToken = mapToken
 
-    var map = L.mapbox.map('map', 'mapbox.dark', {
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/dark-v10',
+        center: [9.0, 35.0],
+        hash: true,
         maxZoom: 12,
-        maxBounds: bounds
-    }).setView([35.0, 9.0], 2);
+        maxBounds: [[-210, -85.0511], [210, 85.0511]],
+    });
 
-    var hash = new L.Hash(map);
+    map.on('load', function() {
 
-    // add scale
-    L.control.scale({
-        'updateWhenIdle': true,
-        'imperial': false,
-        'maxWidth': 200
-    }).addTo(map);
+      map.addControl(new mapboxgl.NavigationControl(), 'top-left');
+      map.addControl(new mapboxgl.GeolocateControl(), 'top-left');
+      map.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
+      map.addControl(
+        new MapboxGeocoder({
+          accessToken: mapToken,
+          mapboxgl: mapboxgl,
+          zoom: 10,
+          collapsed: true,
+          types: 'country,region,postcode,place,locality'
+        }),
+        'top-left'
+      );
 
-    // add location control
-    L.control.locate({
-        setView: 'once',
-        showPopup: false,
-        locateOptions: {
-            enableHighAccuracy: true,
-            maximumAge: 3600000,
-            maxZoom: 10,
-            watch: false
-        }
-    }).addTo(map);
-
-    // add geocoding control
-    L.mapbox.geocoderControl('mapbox.places', {
-        'pointZoom': 10,
-        'queryOptions': {'types': 'country,region,postcode,place,locality'}
-    }).addTo(map);
-
-    // add tile layer
-    if (mapTilesUrl) {
-        L.tileLayer(mapTilesUrl, {
-            maxNativeZoom: 11
-        }).addTo(map);
-    }
+      if (mapTilesUrl) {
+        // Add contribution tiles source
+        map.addSource('contributions', {
+          type: 'raster',
+          tiles: [mapTilesUrl],
+          maxzoom: 11,
+          tileSize: 256
+        });
+        map.addLayer({
+          id: 'contributions-layer',
+          source: 'contributions',
+          type: 'raster'
+        });
+      }
+    });
 
 });

@@ -210,15 +210,25 @@ Then you can edit the file.
 Building Static Assets (CSS/JS)
 ===============================
 
-To build CSS files::
+To recreate the node container, applying changes in ``package.json``::
+
+    $ docker-compose build node
+
+or both node and app containers::
+
+    # make build
+
+To rebuild asset files from scratch::
+
+    $ make clean-assets buildcss buildjs
+
+To build changed CSS files::
 
     $ make buildcss
 
-
-To build JS files::
+To build changed JS files::
 
     $ make buildjs
-
 
 .. _localdev-testing:
 
