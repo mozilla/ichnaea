@@ -7,7 +7,7 @@ from unittest import mock
 
 import boto3
 import pytest
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from sqlalchemy import func
 
 from ichnaea.data.public import (
@@ -21,7 +21,7 @@ from ichnaea.taskapp.config import configure_data
 from ichnaea.tests.factories import CellShardFactory
 from ichnaea import util
 
-
+UTC = ZoneInfo("UTC")
 CELL_FIELDS = [
     "radio",
     "mcc",

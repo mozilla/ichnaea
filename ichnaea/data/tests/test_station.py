@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from pymysql.err import MySQLError
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from sqlalchemy.exc import InterfaceError
 
 from geocalc import destination
@@ -33,6 +33,8 @@ from ichnaea.tests.factories import (
 )
 from ichnaea.tests.test_db import RETRIABLES
 from ichnaea import util
+
+UTC = ZoneInfo("UTC")
 
 
 class BaseStationTest:

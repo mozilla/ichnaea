@@ -11,13 +11,14 @@ import sys
 import tempfile
 import zlib
 
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from ichnaea.conf import settings
 from ichnaea.exceptions import GZIPDecodeError
 
 HERE = os.path.dirname(__file__)
 APP_ROOT = os.path.dirname(HERE)
+UTC = ZoneInfo("UTC")
 
 
 @contextmanager
