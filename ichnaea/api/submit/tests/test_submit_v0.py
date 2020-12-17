@@ -1,8 +1,8 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import colander
 import pytest
-import pytz
 
 from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
@@ -197,7 +197,7 @@ class TestView(BaseSubmitTest):
         assert item["api_key"] == "test"
         report = item["report"]
         timestamp = datetime.utcfromtimestamp(report["timestamp"] / 1000.0)
-        timestamp = timestamp.replace(microsecond=0, tzinfo=pytz.UTC)
+        timestamp = timestamp.replace(microsecond=0, tzinfo=ZoneInfo("UTC"))
         assert timestamp == today
         position = report["position"]
         assert position["latitude"] == cell.lat
