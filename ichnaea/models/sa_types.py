@@ -1,8 +1,8 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import time
 
 from enum import IntEnum
-import pytz
 from sqlalchemy import String
 from sqlalchemy.dialects.mysql import DATETIME as DateTime, TINYINT as TinyInteger
 from sqlalchemy.types import TypeDecorator
@@ -66,5 +66,5 @@ class TZDateTime(TypeDecorator):
     def process_result_value(self, value, dialect):
         if value is not None:
             ts = time.mktime(value.timetuple())
-            value = datetime.fromtimestamp(ts).replace(tzinfo=pytz.UTC)
+            value = datetime.fromtimestamp(ts).replace(tzinfo=ZoneInfo("UTC"))
         return value
