@@ -19,6 +19,7 @@ from ichnaea import util
 
 
 LOGGER = logging.getLogger(__name__)
+UTC = ZoneInfo("UTC")
 
 _FIELD_NAMES = [
     "radio",
@@ -164,8 +165,8 @@ def read_stations_from_csv(session, file_handle, redis_client, cellarea_queue):
                 "radius": min(int(row[8]), CELL_MAX_RADIUS),
                 "samples": int(row[9]),
                 # row[10] is "changable", always 1 and not imported
-                "created": datetime.fromtimestamp(int(row[11]), ZoneInfo("UTC")),
-                "modified": datetime.fromtimestamp(int(row[12]), ZoneInfo("UTC")),
+                "created": datetime.fromtimestamp(int(row[11]), UTC),
+                "modified": datetime.fromtimestamp(int(row[12]), UTC),
             }
             shard = CellShard.create(_raise_invalid=True, **data)
         except (colander.Invalid, ValueError) as e:

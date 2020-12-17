@@ -18,6 +18,7 @@ from ichnaea.exceptions import GZIPDecodeError
 
 HERE = os.path.dirname(__file__)
 APP_ROOT = os.path.dirname(HERE)
+UTC = ZoneInfo("UTC")
 
 
 @contextmanager
@@ -60,7 +61,7 @@ def selfdestruct_tempdir():
 
 def utcnow():
     """Return the current time in UTC with a UTC timezone set."""
-    return datetime.utcnow().replace(microsecond=0, tzinfo=ZoneInfo("UTC"))
+    return datetime.utcnow().replace(microsecond=0, tzinfo=UTC)
 
 
 def version_info():
