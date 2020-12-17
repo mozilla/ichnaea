@@ -7,7 +7,7 @@ from unittest import mock
 
 import boto3
 import pytest
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from sqlalchemy import func
 
 from ichnaea.data.public import (
@@ -201,8 +201,8 @@ LTE,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220588,1570120328,
         assert wcdma.min_lon == wcdma.lon
         assert wcdma.radius == 0
         assert wcdma.samples == 6
-        assert wcdma.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=UTC)
-        assert wcdma.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=UTC)
+        assert wcdma.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=ZoneInfo("UTC"))
+        assert wcdma.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=ZoneInfo("UTC"))
         assert wcdma.region == "GR"
 
         # Check the counts of the other station types
@@ -244,8 +244,8 @@ LTE,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220588,1570120328,
             "max_lon": 23.5,
             "radius": 1,
             "samples": 1,
-            "created": datetime(2019, 1, 1, tzinfo=UTC),
-            "modified": datetime(2019, 1, 1, tzinfo=UTC),
+            "created": datetime(2019, 1, 1, tzinfo=ZoneInfo("UTC")),
+            "modified": datetime(2019, 1, 1, tzinfo=ZoneInfo("UTC")),
         }
         station = CellShard.create(_raise_invalid=True, **station_data)
         session.add(station)
@@ -266,8 +266,8 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
         assert wcdma.lon == 23.4123167
         assert wcdma.radius == 0
         assert wcdma.samples == 6
-        assert wcdma.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=UTC)
-        assert wcdma.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=UTC)
+        assert wcdma.created == datetime(2019, 9, 11, 16, 49, 24, tzinfo=ZoneInfo("UTC"))
+        assert wcdma.modified == datetime(2019, 10, 3, 16, 31, 56, tzinfo=ZoneInfo("UTC"))
         # Other details unchanged
         assert wcdma.max_lat == station_data["max_lat"]
         assert wcdma.min_lat == station_data["min_lat"]
@@ -296,8 +296,8 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
             "lon": 23.41,
             "radius": 1,
             "samples": 1,
-            "created": datetime(2019, 1, 1, tzinfo=UTC),
-            "modified": datetime(2019, 10, 7, tzinfo=UTC),
+            "created": datetime(2019, 1, 1, tzinfo=ZoneInfo("UTC")),
+            "modified": datetime(2019, 10, 7, tzinfo=ZoneInfo("UTC")),
         }
         station = CellShard.create(_raise_invalid=True, **station_data)
         session.add(station)
@@ -315,8 +315,8 @@ UMTS,202,1,2120,12842,,23.4123167,38.8574351,0,6,1,1568220564,1570120316,
         wcdma = session.query(CellShard.shard_model(Radio.wcdma)).one()
         assert wcdma.lat == 38.85
         assert wcdma.lon == 23.41
-        assert wcdma.created == datetime(2019, 1, 1, tzinfo=UTC)
-        assert wcdma.modified == datetime(2019, 10, 7, tzinfo=UTC)
+        assert wcdma.created == datetime(2019, 1, 1, tzinfo=ZoneInfo("UTC"))
+        assert wcdma.modified == datetime(2019, 10, 7, tzinfo=ZoneInfo("UTC"))
 
         # No CellAreas or RegionStats are generated
         assert session.query(func.count(CellArea.areaid)).scalar() == 0

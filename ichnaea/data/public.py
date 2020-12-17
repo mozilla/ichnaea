@@ -7,7 +7,7 @@ import os
 import boto3
 import colander
 from more_itertools import peekable
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from sqlalchemy.sql import text
 from sqlalchemy.orm import load_only
 

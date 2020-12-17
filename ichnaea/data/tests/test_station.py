@@ -4,7 +4,7 @@ from unittest import mock
 
 import pytest
 from pymysql.err import MySQLError
-from pytz import UTC
+from zoneinfo import ZoneInfo
 from sqlalchemy.exc import InterfaceError
 
 from geocalc import destination
@@ -89,7 +89,7 @@ class TestDatabaseErrors(BaseStationTest):
             lac=obs.lac,
             cid=obs.cid,
             samples=10,
-            created=datetime(2019, 12, 5, tzinfo=UTC),
+            created=datetime(2019, 12, 5, tzinfo=ZoneInfo("UTC")),
         )
         session.add(cell)
         session.commit()
@@ -116,7 +116,7 @@ class TestDatabaseErrors(BaseStationTest):
         # The existing cell record was updated
         cell = cells[0]
         assert cell.samples == 11
-        assert cell.created == datetime(2019, 12, 5, tzinfo=UTC)
+        assert cell.created == datetime(2019, 12, 5, tzinfo=ZoneInfo("UTC"))
         self.check_statcounter(redis, StatKey.unique_cell, 0)
 
         # Assert generated metrics are correct
