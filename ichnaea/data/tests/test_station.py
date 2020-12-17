@@ -62,6 +62,7 @@ class TestDatabaseErrors(BaseStationTest):
     queue_prefix = "update_cell_"
     shard_model = CellShard
     unique_key = "cellid"
+    UTC = ZoneInfo("UTC")
 
     @pytest.mark.parametrize(
         "errclass,errno,errmsg", list(RETRIABLES.values()), ids=list(RETRIABLES.keys())
@@ -89,9 +90,7 @@ class TestDatabaseErrors(BaseStationTest):
             lac=obs.lac,
             cid=obs.cid,
             samples=10,
-            created=datetime(
-                2019, 12, 5, tzinfo=ZoneInfo("UTC")
-            ),
+            created=datetime(2019, 12, 5, tzinfo=UTC),
         )
         session.add(cell)
         session.commit()
@@ -118,9 +117,7 @@ class TestDatabaseErrors(BaseStationTest):
         # The existing cell record was updated
         cell = cells[0]
         assert cell.samples == 11
-        assert cell.created == datetime(
-            2019, 12, 5, tzinfo=ZoneInfo("UTC")
-        )
+        assert cell.created == datetime(2019, 12, 5, tzinfo=UTC)
         self.check_statcounter(redis, StatKey.unique_cell, 0)
 
         # Assert generated metrics are correct
