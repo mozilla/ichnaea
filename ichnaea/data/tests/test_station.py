@@ -36,6 +36,7 @@ from ichnaea import util
 
 UTC = ZoneInfo("UTC")
 
+
 class BaseStationTest:
 
     queue_prefix = None
