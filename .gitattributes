@@ -1,3 +1,14 @@
 # Mark files that are generated as linguist-generated to encourage GitHub
 # to not count them and not show their diffs in PRs
 requirements.txt linguist-generated=true
+
+# Bundles are compressed versions of other files
+ichnaea/content/static/css/bundle-*.css linguist-generated=true
+ichnaea/content/static/js/bundle-*.css linguist-generated=true
+
+# Third-party libraries hidden by default
+ichnaea/content/static/css/font-awesome.css linguist-generated=true
+ichnaea/content/static/css/mapbox.uncompressed.css linguist-generated=True
+ichnaea/content/static/js/L.Control.Locate.js linguist-generated=true
+ichnaea/content/static/js/leaflet-hash.js linguist-generated=true
+ichnaea/content/static/js/mapbox.uncompressed.js linguist-generated=true
