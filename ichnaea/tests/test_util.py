@@ -19,7 +19,7 @@ class TestUtil(object):
     def test_utcnow(self):
         now = util.utcnow()
         assert isinstance(now, datetime)
-        assert now.tzinfo == UTC
+        assert now.tzinfo == ZoneInfo("UTC")
 
     def test_encode_gzip(self):
         data = util.encode_gzip(b"foo")
