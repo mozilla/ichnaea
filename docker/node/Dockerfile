@@ -23,9 +23,6 @@ RUN npm install --no-save -d /node
 RUN npm dedupe
 RUN npm shrinkwrap
 
-WORKDIR /node/node_modules/mapbox.js
-RUN npm install
-
 ENV PATH=$PATH:/node/node_modules/.bin/
 
 WORKDIR /app
