@@ -34,6 +34,7 @@ from ichnaea.tests.factories import (
 from ichnaea.tests.test_db import RETRIABLES
 from ichnaea import util
 
+UTC = ZoneInfo("UTC")
 
 class BaseStationTest:
 
@@ -62,7 +63,6 @@ class TestDatabaseErrors(BaseStationTest):
     queue_prefix = "update_cell_"
     shard_model = CellShard
     unique_key = "cellid"
-    UTC = ZoneInfo("UTC")
 
     @pytest.mark.parametrize(
         "errclass,errno,errmsg", list(RETRIABLES.values()), ids=list(RETRIABLES.keys())
