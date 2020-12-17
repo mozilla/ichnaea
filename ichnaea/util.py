@@ -9,7 +9,7 @@ import sys
 import tempfile
 import zlib
 
-from pytz import UTC
+from zoneinfo import ZoneInfo
 import six
 
 from ichnaea.exceptions import GZIPDecodeError
@@ -99,4 +99,4 @@ def selfdestruct_tempdir():
 
 def utcnow():
     """Return the current time in UTC with a UTC timezone set."""
-    return datetime.utcnow().replace(microsecond=0, tzinfo=UTC)
+    return datetime.utcnow().replace(microsecond=0, tzinfo=ZoneInfo("UTC")UTC)

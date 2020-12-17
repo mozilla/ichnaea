@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import pytest
-from pytz import UTC
+from zoneinfo import ZoneInfo
 
 from ichnaea.exceptions import GZIPDecodeError
 from ichnaea import util
