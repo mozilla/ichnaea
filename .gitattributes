@@ -8,7 +8,10 @@ ichnaea/content/static/js/bundle-*.css linguist-generated=true
 
 # Third-party libraries hidden by default
 ichnaea/content/static/css/font-awesome.css linguist-generated=true
+ichnaea/content/static/css/mapbox-gl-geocoder.css linguist-generated=true
+ichnaea/content/static/css/mapbox-gl.css linguist-generated=true
 ichnaea/content/static/css/mapbox.uncompressed.css linguist-generated=True
 ichnaea/content/static/js/L.Control.Locate.js linguist-generated=true
 ichnaea/content/static/js/leaflet-hash.js linguist-generated=true
+ichnaea/content/static/js/mapbox-gl-unminified.js linguist-generated=true
 ichnaea/content/static/js/mapbox.uncompressed.js linguist-generated=true
