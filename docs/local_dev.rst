@@ -210,15 +210,17 @@ Then you can edit the file.
 Building Static Assets (CSS/JS)
 ===============================
 
-To build CSS files::
+To build changed assets::
 
-    $ make buildcss
+    $ make assets
 
+To rebuild asset files from scratch::
 
-To build JS files::
+    $ make clean-assets assets
 
-    $ make buildjs
+To recreate the node container, applying changes in ``package.json``::
 
+    $ make build clean-assets assets
 
 .. _localdev-testing:
 

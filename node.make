@@ -1,76 +1,99 @@
 HERE = $(shell pwd)
 STATIC_ROOT = $(HERE)/ichnaea/content/static
 CSS_ROOT = $(STATIC_ROOT)/css
-FONT_ROOT = $(STATIC_ROOT)/fonts
-IMG_ROOT = $(STATIC_ROOT)/images
 JS_ROOT = $(STATIC_ROOT)/js
 NODE_ROOT = /node
 NODE_MODULES = $(NODE_ROOT)/node_modules
 
-CLEANCSS = cleancss -d
-UGLIFYJS = uglifyjs -c --timings
+# Notes from https://www.gnu.org/software/make/manual/html_node/Automatic-Variables.html
+# $@ is the target / output filename
+# $< is the first prerequisite filenames
+# $^ is all the prerequisite filenames
+# $(@D) is the directory part of the target
+# $(<D) is the directory part of the first prerequisite
 
-.PHONY: all js css shrinkwrap
+define copy-file =
+cp $< $@
+endef
 
+define run-cleancss =
+cleancss -o $@ $^
+endef
+
+define run-uglifyjs =
+uglifyjs $^ -c -o $@
+endef
+
+.PHONY: all
 all: css js
 
-shrinkwrap:
-	cp $(NODE_ROOT)/npm-shrinkwrap.json $(HERE)/docker/node/
+.PHONY: clean
+clean: cleancss cleanjs
+	rm -f $(HERE)/docker/node/npm-shrinkwrap.json
 
+.PHONY: shrinkwrap
+shrinkwrap: $(HERE)/docker/node/npm-shrinkwrap.json
+
+$(HERE)/docker/node/npm-shrinkwrap.json: $(NODE_ROOT)/npm-shrinkwrap.json ; $(copy-file)
+
+.PHONY: css
 css: shrinkwrap
-	$(CLEANCSS) \
-		-o $(CSS_ROOT)/bundle-base.css \
-		$(CSS_ROOT)/base.css
+css: $(CSS_ROOT)/bundle-base.css
+css: $(CSS_ROOT)/bundle-map.css
+css: $(CSS_ROOT)/bundle-stat-regions.css
 
-	cp $(NODE_MODULES)/datatables/media/css/jquery.dataTables.css \
-		$(CSS_ROOT)/jquery.dataTables.css
-	$(CLEANCSS) -o $(CSS_ROOT)/bundle-stat-regions.css \
-		$(CSS_ROOT)/jquery.dataTables.css
-		
-	cp $(NODE_MODULES)/font-awesome/css/font-awesome.css \
-		$(CSS_ROOT)/font-awesome.css
-	cp $(NODE_MODULES)/mapbox.js/dist/mapbox.uncompressed.css \
-		$(CSS_ROOT)/mapbox.uncompressed.css
-	$(CLEANCSS) -o $(CSS_ROOT)/bundle-map.css \
-		$(CSS_ROOT)/font-awesome.css \
-		$(CSS_ROOT)/mapbox.uncompressed.css
+.PHONY: cleancss
+cleancss:
+	rm -f \
+		$(CSS_ROOT)/bundle-base.css \
+		$(CSS_ROOT)/bundle-map.css \
+		$(CSS_ROOT)/bundle-stat-regions.css \
+		$(CSS_ROOT)/jquery.dataTables.css \
+		$(CSS_ROOT)/mapbox-gl.css \
+		$(CSS_ROOT)/mapbox-gl-geocoder.css
 
-	mkdir -p $(CSS_ROOT)/images/
-	cp $(NODE_MODULES)/mapbox.js/dist/images/*.png $(CSS_ROOT)/images/
-	cp $(NODE_MODULES)/mapbox.js/dist/images/*.svg $(CSS_ROOT)/images/
-	cp $(NODE_MODULES)/font-awesome/fonts/* $(FONT_ROOT)/
+$(CSS_ROOT)/bundle-base.css: $(CSS_ROOT)/base.css ; $(run-cleancss)
+$(CSS_ROOT)/bundle-map.css: $(CSS_ROOT)/mapbox-gl.css $(CSS_ROOT)/mapbox-gl-geocoder.css ; $(run-cleancss)
+$(CSS_ROOT)/bundle-stat-regions.css: $(CSS_ROOT)/jquery.dataTables.css ; $(run-cleancss)
 
+$(CSS_ROOT)/jquery.dataTables.css: $(NODE_MODULES)/datatables/media/css/jquery.dataTables.css ; $(copy-file)
+$(CSS_ROOT)/mapbox-gl.css: $(NODE_MODULES)/mapbox-gl/dist/mapbox-gl.css ; $(copy-file)
+$(CSS_ROOT)/mapbox-gl-geocoder.css: $(NODE_MODULES)/@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css ; $(copy-file)
+
+.PHONY: js
 js: shrinkwrap
-	$(UGLIFYJS) -o $(JS_ROOT)/bundle-privacy.js \
-		$(JS_ROOT)/privacy.js
+js: $(JS_ROOT)/bundle-base.js
+js: $(JS_ROOT)/bundle-map.js
+js: $(JS_ROOT)/bundle-privacy.js
+js: $(JS_ROOT)/bundle-stat-regions.js
+js: $(JS_ROOT)/bundle-stat.js
 
-	cp $(NODE_MODULES)/jquery/dist/jquery.js $(JS_ROOT)/jquery.js
-	$(UGLIFYJS) -o $(JS_ROOT)/bundle-base.js \
-		$(JS_ROOT)/jquery.js
-
-	cp $(NODE_MODULES)/datatables/media/js/jquery.dataTables.js \
-		$(JS_ROOT)/jquery.dataTables.js
-	$(UGLIFYJS) -o $(JS_ROOT)/bundle-stat-regions.js \
+.PHONY: cleanjs
+cleanjs:
+	rm -f \
+		$(JS_ROOT)/bundle-base.js \
+		$(JS_ROOT)/bundle-map.js \
+		$(JS_ROOT)/bundle-privacy.js \
+		$(JS_ROOT)/bundle-stat-regions.js \
+		$(JS_ROOT)/bundle-stat.js \
 		$(JS_ROOT)/jquery.dataTables.js \
-		$(JS_ROOT)/stat-regions.js
-
-	cp $(NODE_MODULES)/jquery-flot/jquery.flot.js \
-		$(JS_ROOT)/jquery.flot.js
-	cp $(NODE_MODULES)/jquery-flot/jquery.flot.time.js \
-		$(JS_ROOT)/jquery.flot.time.js
-	$(UGLIFYJS) -o $(JS_ROOT)/bundle-stat.js \
 		$(JS_ROOT)/jquery.flot.js \
 		$(JS_ROOT)/jquery.flot.time.js \
-		$(JS_ROOT)/stat.js
+		$(JS_ROOT)/jquery.js \
+		$(JS_ROOT)/mapbox-gl-geocoder.min.js \
+		$(JS_ROOT)/mapbox-gl-unminified.js \
+		$(JS_ROOT)/mapbox-gl-unminified.js.map
 
-	cp $(NODE_MODULES)/mapbox.js/dist/mapbox.uncompressed.js \
-		$(JS_ROOT)/mapbox.uncompressed.js
-	cp $(NODE_MODULES)/leaflet-hash/leaflet-hash.js \
-		$(JS_ROOT)/leaflet-hash.js
-	cp $(NODE_MODULES)/leaflet.locatecontrol/src/L.Control.Locate.js \
-		$(JS_ROOT)/L.Control.Locate.js
-	$(UGLIFYJS) -o $(JS_ROOT)/bundle-map.js \
-		$(JS_ROOT)/mapbox.uncompressed.js \
-		$(JS_ROOT)/leaflet-hash.js \
-		$(JS_ROOT)/L.Control.Locate.js \
-		$(JS_ROOT)/map.js
+$(JS_ROOT)/bundle-base.js: $(JS_ROOT)/jquery.js ; $(run-uglifyjs)
+$(JS_ROOT)/bundle-map.js: $(JS_ROOT)/mapbox-gl-unminified.js $(JS_ROOT)/mapbox-gl-geocoder.min.js $(JS_ROOT)/map.js ; $(run-uglifyjs)
+$(JS_ROOT)/bundle-privacy.js: $(JS_ROOT)/privacy.js ; $(run-uglifyjs)
+$(JS_ROOT)/bundle-stat-regions.js: $(JS_ROOT)/jquery.dataTables.js $(JS_ROOT)/stat-regions.js ; $(run-uglifyjs)
+$(JS_ROOT)/bundle-stat.js: $(JS_ROOT)/jquery.flot.js $(JS_ROOT)/jquery.flot.time.js $(JS_ROOT)/stat.js ; $(run-uglifyjs)
+
+$(JS_ROOT)/jquery.dataTables.js: $(NODE_MODULES)/datatables/media/js/jquery.dataTables.js ; $(copy-file)
+$(JS_ROOT)/jquery.flot.js: $(NODE_MODULES)/jquery-flot/jquery.flot.js ; $(copy-file)
+$(JS_ROOT)/jquery.flot.time.js: $(NODE_MODULES)/jquery-flot/jquery.flot.time.js ; $(copy-file)
+$(JS_ROOT)/jquery.js: $(NODE_MODULES)/jquery/dist/jquery.js ; $(copy-file)
+$(JS_ROOT)/mapbox-gl-geocoder.min.js: $(NODE_MODULES)/@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.min.js ; $(copy-file)
+$(JS_ROOT)/mapbox-gl-unminified.js.map: $(NODE_MODULES)/mapbox-gl/dist/mapbox-gl-unminified.js.map ; $(copy-file)
+$(JS_ROOT)/mapbox-gl-unminified.js: $(NODE_MODULES)/mapbox-gl/dist/mapbox-gl-unminified.js ; $(copy-file)

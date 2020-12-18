@@ -20,11 +20,8 @@ CMD ["bash"]
 
 COPY --chown=node:node ./package.json ./npm-shrinkwrap.json /node/
 RUN npm install --no-save -d /node
-RUN npm dedupe
+# RUN npm dedupe # Broken with npm 7.0.15, see #1467
 RUN npm shrinkwrap
-
-WORKDIR /node/node_modules/mapbox.js
-RUN npm install
 
 ENV PATH=$PATH:/node/node_modules/.bin/
 

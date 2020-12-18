@@ -42,8 +42,8 @@ default:
 	@echo "  testcoverage     - run unit tests with coverage report"
 	@echo "  testshell        - open a shell in the test environment"
 	@echo "  docs             - generate Sphinx HTML documentation, including API docs"
-	@echo "  buildjs          - generate js static assets"
-	@echo "  buildcss         - generate css static assets"
+	@echo "  assets           - build all generated static assets"
+	@echo "  clean-assets     - remove generated static assets"
 	@echo "  update-vendored  - re-download vendor source and test data"
 	@echo "  update-reqs      - regenerate Python requirements"
 	@echo ""
@@ -102,13 +102,13 @@ testshell: my.env .docker-build
 docs: my.env .docker-build
 	${DC} run --rm --no-deps app shell ./docker/run_build_docs.sh
 
-.PHONY: buildjs
-buildjs: my.env .docker-build
-	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make js
+.PHONY: assets
+assets: my.env .docker-build
+	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make
 
-.PHONY: buildcss
-buildcss: my.env .docker-build
-	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make css
+.PHONY: clean-assets
+clean-assets: my.env .docker-build
+	${DC} run --rm --user ${ICHNAEA_UID} node make -f node.make clean
 
 .PHONY: lint
 lint: my.env .docker-build
