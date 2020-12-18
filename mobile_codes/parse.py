@@ -45,6 +45,8 @@ def parse_wikipedia(source_dir):
                     "table", class_="wikitable", attrs={"width": "100%"}
                 ):
                     hs = table.find_previous_sibling("h4")
+					if hs is None:
+						hs = table.find_previous_sibling("h3")
                     iso = ""
                     if hs is not None:
                         hs = hs.find("span", class_="mw-headline")
@@ -63,6 +65,8 @@ def parse_wikipedia(source_dir):
                             )
                             if iso == "GE-AB":
                                 iso = "GE"
+							if iso == "British Indian Ocean Territory":
+								iso = "IO"
                             if "-" in iso:
                                 print(
                                     "Another iso with region code, please check !: "
