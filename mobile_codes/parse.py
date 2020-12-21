@@ -95,6 +95,21 @@ def parse_wikipedia(source_dir):
                                 )
                             if iso_ not in iso:
                                 iso += "/" + iso_
+                        if "IT" in iso:
+                            iso_ = "VA"
+                            if iso_ not in iso:
+                                iso += "/" + iso_
+                            iso_ = "SM"
+                            if iso_ not in iso:
+                                iso += "/" + iso_
+                        if "FI" in iso:
+                            iso_ = "AX"
+                            if iso_ not in iso:
+                                iso += "/" + iso_
+                        if "MA" in iso:
+                            iso_ = "EH"
+                            if iso_ not in iso:
+                                iso += "/" + iso_
                     for row in table.find_all("tr"):
                         mcc, mnc, brand, operator = row.find_all_next("td", limit=4)
                         if mcc.text in ["MCC", ""]:
