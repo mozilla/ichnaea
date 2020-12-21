@@ -80,9 +80,7 @@ def parse_wikipedia(source_dir):
                             iso_ = re.sub(
                                 r".* – ",
                                 "",
-                                li.text.strip()
-                                .strip("\n")
-                                .replace("\n", ""),
+                                li.text.strip().strip("\n").replace("\n", ""),
                             )
                             if iso_ == "GE-AB":
                                 iso_ = "GE"
