@@ -26,6 +26,8 @@ class TestCountries:
     def test_mcc_multiple_countries(self):
         countries = mobile_codes.mcc("505")
         assert len(countries) == 4
+        actual = {country.alpha2: country.mcc for country in countries}
+        assert actual == {"AU": "505", "CX": "505", "CC": "505", "NF": "505"}
 
     def test_mcc_fail(self):
         countries = mobile_codes.mcc("000")
@@ -72,9 +74,6 @@ class TestCountries:
 
         # Exclude international operators
         operator_mccs -= {"901", "902", "991"}
-
-        # Exclude FonePlus in British Indian Ocean Territory
-        # operator_mccs.remove("995")
 
         countries = mobile_codes._countries()
         countries_mccs = []
