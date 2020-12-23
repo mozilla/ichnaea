@@ -242,7 +242,7 @@
     ["Venezuela, Bolivarian Republic of", "VE", "VEN", "862", "734"],
     ["Viet Nam", "VN", "VNM", "704", "452"],
     ["Virgin Islands, British", "VG", "VGB", "092", "348"],
-    ["Virgin Islands, U.S.", "VI", "VIR", "850", null],
+    ["Virgin Islands, U.S.", "VI", "VIR", "850", ["310", "311"]],
     ["Wallis and Futuna", "WF", "WLF", "876", "543"],
     ["Western Sahara", "EH", "ESH", "732", "604"],
     ["Yemen", "YE", "YEM", "887", "421"],
