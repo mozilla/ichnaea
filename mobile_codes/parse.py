@@ -125,7 +125,12 @@ def parse_wikipedia(source_dir):
                         if mnc.span is not None:
                             i_tag = mnc.span
                             i_tag.decompose()
-                        mnc = mnc.text.strip().strip("\n").replace("\n", "")
+                        mnc = (
+                            mnc.text.strip()
+                            .strip("\n")
+                            .replace("\n", "")
+                            .replace(" ", "")
+                        )
                         if operator.div is not None:
                             i_tag = operator.div
                             i_tag.decompose()
@@ -140,15 +145,55 @@ def parse_wikipedia(source_dir):
                             i_tag = brand.span
                             i_tag.decompose()
                         brand = brand.text.strip().strip("\n").replace("\n", "")
-                        operators.append(
-                            MNCOperatorISO(
-                                mcc=mcc,
-                                mnc=mnc,
-                                brand=brand,
-                                operator=operator,
-                                iso=iso,
+                        if "-" in mnc:
+                            mncb = mnc.split("-")[0]
+                            mncb_len = len(mncb)
+                            mnce = mnc.split("-")[1]
+                            mnce_len = len(mnce)
+                            if mncb_len == mnce_len:
+                                for mnc_ in range(int(mncb), int(mnce)):
+                                    mnc = "%0*d" % (mncb_len, mnc_)
+                                    operators.append(
+                                        MNCOperatorISO(
+                                            mcc=mcc,
+                                            mnc=mnc,
+                                            brand=brand,
+                                            operator=operator,
+                                            iso=iso,
+                                        )
+                                    )
+                                # because range does not include the stop element, we add it here
+                                operators.append(
+                                    MNCOperatorISO(
+                                        mcc=mcc,
+                                        mnc=mnce,
+                                        brand=brand,
+                                        operator=operator,
+                                        iso=iso,
+                                    )
+                                )
+                            else:
+                                print("don't know how to deal with this range: " + mnc)
+                                operators.append(
+                                    MNCOperatorISO(
+                                        mcc=mcc,
+                                        mnc=mnc,
+                                        brand=brand,
+                                        operator=operator,
+                                        iso=iso,
+                                    )
+                                )
+                        else:
+                            operators.append(
+                                MNCOperatorISO(
+                                    mcc=mcc,
+                                    mnc=mnc,
+                                    brand=brand,
+                                    operator=operator,
+                                    iso=iso,
+                                )
                             )
-                        )
+
         else:
             break
         i += 1
