@@ -33,7 +33,7 @@ Metric Name                      App      Type    Tags
 `data.station.dberror`_          task     counter type, errno
 `data.station.new`_              task     counter type
 `datamaps`_                      datamaps timer   func, count
-`datamaps.dberror`_              datamaps counter errno
+`datamaps.dberror`_              task     counter errno
 `locate.fallback.cache`_         web      counter fallback_name, status
 `locate.fallback.lookup`_        web      counter fallback_name, status
 `locate.fallback.lookup.timing`_ web      timer   fallback_name, status
@@ -772,6 +772,15 @@ Tags:
 
 * ``type``: The :term:`station` type, one of ``blue``, ``cell``, or ``wifi``
 
+datamaps.dberror
+^^^^^^^^^^^^^^^^
+``datamaps.dberror`` is a counter of the number of retryable database errors
+when updating the ``datamaps`` tables.
+
+Tags:
+
+* ``errno``: The error number, same as `data.station.dberror`_
+
 Backend Monitoring Metrics
 --------------------------
 
@@ -907,14 +916,6 @@ Tags:
   ``merge``, ``main``, ``render``, or ``upload``
 * ``count``: The item counts, recorded as a timer, such as ``csv_rows``,
   ``quadtrees``, ``tile_new``, ``tile_changed``, ``tile_deleted``, ``tile_unchanged``
-
-datamaps.dberror
-^^^^^^^^^^^^^^^^
-``datamaps.dberror`` counts the number of retryable database errors.
-
-Tags:
-
-* ``errno``: The error number, same as `data.station.dberror`_
 
 Implementation
 ==============
