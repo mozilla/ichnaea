@@ -17,6 +17,10 @@ class TestConfig(object):
         url = get_map_tiles_url("http://127.0.0.1:9/static")
         assert url == "http://127.0.0.1:9/static/tiles/{z}/{x}/{y}.png"
 
+    def test_get_map_tiles_url_blank_asset_url(self):
+        url = get_map_tiles_url("")
+        assert url == "/static/datamap/tiles/{z}/{x}/{y}.png"
+
 
 @pytest.fixture(scope="function")
 def views(redis, session):

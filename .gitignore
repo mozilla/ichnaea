@@ -4,6 +4,10 @@
 *.sublime-*
 .DS_Store
 docs/_build/
-ichnaea/content/static/tiles/
+ichnaea/content/static/datamap/csv/
+ichnaea/content/static/datamap/quadtrees/
+ichnaea/content/static/datamap/shapes/
+ichnaea/content/static/datamap/tiles/
+
 my.env
 .docker-build
