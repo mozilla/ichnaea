@@ -2,6 +2,7 @@
 **/__pycache__
 *.sublime-project
 *.sublime-workspace
+*.awscreds
 venv
 
 .circleci

@@ -271,3 +271,36 @@ source. Update ``docker.make`` for the desired versions, and run::
     $ make update-vendored build test
 
 Commit the updated source tarballs.
+
+Building Datamap Tiles
+======================
+
+To build datamap tiles for the local development environment, run::
+
+    $ make local-map
+
+If you have data in the ``datamap`` tables, this will create many files
+under ``ichnaea/content/static/datamap``. This uses
+``ichnaea/scripts/datamap.py``, which can also be run directly.
+
+To see the map locally, you will need to configure :ref:`mapbox`. A free
+developer account should be sufficient.
+
+To use an S3 bucket for tiles, you'll need to set ``ASSET_BUCKET`` and
+``ASSET_URL`` (see :ref:`map_tile_and_download_assets`).
+To upload tiles to an S3 bucket, you'll also need AWS credentials that
+can read, write, and delete objects in the ``ASSET_BUCKET``. Here are
+two ways, neither of which is ideal since it adds your AWS credentials
+in plain text:
+
+1. Add credentials as environment variables ``AWS_ACCESS_KEY_ID`` and
+   ``AWS_SECRET_ACCESS_KEY`` in ``my.env``.
+2. Add credentials to a file ``my.awscreds`` in the project folder,
+   and add ``AWS_SHARED_CREDENTIALS_FILE=/app/my.awscreds`` to ``my.env``.
+
+You can then generate and upload tiles with::
+
+    $ docker-compose run --rm app map
+
+This will generate a fresh set of tiles in a temporary directory and
+sync the S3 bucket with the changes.

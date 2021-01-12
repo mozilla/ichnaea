@@ -2,6 +2,7 @@
 *.py[co]
 *.so
 *.sublime-*
+*.awscreds
 .DS_Store
 docs/_build/
 ichnaea/content/static/datamap/csv/

@@ -46,6 +46,7 @@ default:
 	@echo "  clean-assets     - remove generated static assets"
 	@echo "  update-vendored  - re-download vendor source and test data"
 	@echo "  update-reqs      - regenerate Python requirements"
+	@echo "  local-map        - generate local map tiles"
 	@echo ""
 	@echo "  help             - see this text"
 	@echo ""
@@ -141,3 +142,7 @@ update-vendored: my.env
 .PHONY: update-reqs
 update-reqs: my.env
 	${DC} run --rm --no-deps app shell ./docker/run_update_requirements.sh
+
+.PHONY: local-map
+local-map: my.env .docker-build
+	${DC} run --rm app shell ./docker/run_local_map.sh
