@@ -58,7 +58,7 @@ def get_map_tiles_url(asset_url):
     :returns: tiles_url
 
     """
-    asset_url = asset_url if asset_url else ""
+    asset_url = asset_url if asset_url else "/static/datamap/"
     if not asset_url.endswith("/"):
         asset_url = asset_url + "/"
     return urlparse.urljoin(asset_url, "tiles/" + TILES_PATTERN)

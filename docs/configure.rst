@@ -88,6 +88,7 @@ documentation <metrics>`.
 
 All metrics are prefixed with a `location` namespace.
 
+.. _map_tile_and_download_assets:
 
 Map tile and download assets
 ----------------------------
@@ -100,12 +101,21 @@ available via a HTTPS frontend (Amazon CloudFront).
 
 Set ``ASSET_BUCKET`` and ``ASSET_URL`` accordingly.
 
+To access the ``ASSET_BUCKET``, authorized AWS credentials are needed inside
+the Docker image. See the `Boto3 credentials documentation`_ for details.
+
+.. _`Boto3 credentials documentation`: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/credentials.html
+
+The development environment defaults to serving map tiles from the web server,
+and not serving public export files for download.
+
+.. _mapbox:
 
 Mapbox
 ------
 
-The web site content uses Mapbox to generate tiles. In order to do this,
-it requires a Mapbox API token.
+The web site content uses Mapbox to display a world map. In order to do this,
+it requires a Mapbox API token. Without a token, the map is not displayed.
 
 You can create an account on their site: https://www.mapbox.com
 

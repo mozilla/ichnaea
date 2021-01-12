@@ -43,7 +43,7 @@ Data flow:
        {"api_key": key, "report": report, "source": source}
 
    "source" can be one of:
-   
+
    * ``gnss``: Global Navigation Satellite System based data
    * ``fused``: position data obtained from a combination of other sensors or
      outside service queries
@@ -134,6 +134,71 @@ Datamap data
 ============
 
 Datamap data is stored in the ``datamap_*`` (``ne``, ``nw``, ``se``, ``sw``)
-tables.
+tables. The north / south split is at 36˚N latitude, and the east / west split
+at 5˚ longitude, to attempt to split the data into four equal shards. The rows
+divide the world into boxes that are one-thousandth of a degree on each side
+(about 112 meters at the equator), and record the first and latest time that
+an observation was seen in that box. Other details, including the exact
+position of the observation, are not recorded. These tables are updated during
+the ``internal`` processing job.
 
-FIXME: data flow for datamap data?
+A periodic task runs the script ``ichnaea/scripts/datamap.py`` to convert this
+data into transparent tile images for the contribution map. Thread pools are
+used to distribute the work across available processors. The process is:
+
+1. Export the datamap tables as CSV files.
+
+   The latitude, longitude, and days since last observation are fed into a
+   randomizer that creates 0 to 13 nearby points, more for the recently
+   observed grid positions. This emulates the multiple observations that go
+   into each grid position, and hides details of observations for increased
+   privacy.
+
+2. Convert the CSV files to a quadtree_ structure.
+
+   The binary quadtree structure efficiently stores points when there are
+   large areas with no points, and is faster for determining points within
+   the bounding box of a tile.
+
+3. Merge the per-table quadtrees to a single quadtree file.
+
+   This includes removing duplicates at the boundaries of tables.
+
+4. Generate and minimize tiles for the different zoom levels.
+
+   Each zoom level potentially has four times the tiles of the previous zoom
+   level, with 1 at zoom level 0, 4 at zoom level 1, 16 at zoom level 2, up
+   to over 4 million at maximum zoom level 11. However, tiles with no
+   observations are not rendered, so the actual number of generated tiles is
+   less. The tiles are stored in a folder structure by zoom level, x position,
+   and files at the y position, to match Mapbox tile standards and to avoid
+   having too many files in a folder.
+
+   Tiles are further optimized for disk space by reducing the colorspace,
+   without reducing quality below a target.
+
+   A double-resolution tile at zoom level 0 is created for the map overview
+   on the front page on high-resolution displays.
+
+5. Upload the tiles to an S3 bucket.
+
+   There may be existing tiles in the S3 bucket from previous uploads. The
+   script collects the size and MD5 hash of existing S3 tiles, and compares
+   them to the newly generated tiles, to determine which are new, which are
+   updated, which are the same an can be ignored, and which S3 tiles should
+   be deleted.
+
+   New and updated tiles are uploaded. Uploading is I/O bound, so the
+   concurrency of uploads is doubled. The deleted tiles are deleted in
+   batches, for speed.
+
+   A file ``tiles/data.json`` is written to record when the upload completed
+   and details of the tile generation process.
+
+
+Quadtree and tile generation tools are provided by `ericfischer/datamaps`_, and
+PNG size optimization by pngquant_.
+
+.. _quadtree: https://en.wikipedia.org/wiki/Quadtree
+.. _ericfischer/datamaps: https://github.com/ericfischer/datamaps
+.. _pngquant: https://pngquant.org

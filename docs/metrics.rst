@@ -32,8 +32,7 @@ Metric Name                      App      Type    Tags
 `data.station.confirm`_          task     counter type
 `data.station.dberror`_          task     counter type, errno
 `data.station.new`_              task     counter type
-`datamaps`_                      datamaps timer   func, count
-`datamaps.dberror`_              datamaps counter errno
+`datamaps.dberror`_              task     counter errno
 `locate.fallback.cache`_         web      counter fallback_name, status
 `locate.fallback.lookup`_        web      counter fallback_name, status
 `locate.fallback.lookup.timing`_ web      timer   fallback_name, status
@@ -772,6 +771,15 @@ Tags:
 
 * ``type``: The :term:`station` type, one of ``blue``, ``cell``, or ``wifi``
 
+datamaps.dberror
+^^^^^^^^^^^^^^^^
+``datamaps.dberror`` is a counter of the number of retryable database errors
+when updating the ``datamaps`` tables.
+
+Tags:
+
+* ``errno``: The error number, same as `data.station.dberror`_
+
 Backend Monitoring Metrics
 --------------------------
 
@@ -887,34 +895,35 @@ rate_control.locate.dterm
 the derivative term of the rate controller. It is emitted when the rate
 controller is enabled.
 
-Datamaps Metrics
-================
-The datamap script generates a data map from the gathered map statistics. It has
-not been updated to work with current production infrastructure, so these metrics
-were emitted from the previous infrastructure.
+Datamaps Structured Log
+=======================
+The datamap script generates a data map from the gathered observations. It does
+not emit metrics.
 
-datamaps
---------
-``datamaps`` is a timer for functions in the datamap process. It also counts items,
-but as a timer.
+The final ``canonical-log-line`` log entry has this data:
 
-.. NOTE::
-   The item counts should be moved to a new counter metric
+* ``bucketname``: The name of the S3 bucket
+* ``concurrency``: The number of concurrent threads used
+* ``create``: True if ``--create`` was set to generate tiles
+* ``duration_s``: How long in seconds to run the script
+* ``export_duration_s``: How long in seconds to export from tables to CSV
+* ``merge_duration_s``: How long in seconds to merge the per-table quadtrees
+* ``quadtree_count``: How many per-table quadtrees were generated
+* ``quadtree_duration_s``: How long in seconds to convert CSV to quadtrees
+* ``render_duration_s``: How long in seconds to render the merged quadtree to tiles
+* ``row_count``: The number of rows across datamap tables
+* ``script_name``: The name of the script (``ichnaea.scripts.datamap``)
+* ``success``: True if the script completed without errors
+* ``sync_duration_s``: How long in seconds it took to upload tiles to S3
+* ``tile_changed``: How many existing S3 tiles were updated
+* ``tile_count``: The total number of tiles generated
+* ``tile_deleted``: How many existing S3 tiles were deleted
+* ``tile_new``: How many new tiles were uploaded to S3
+* ``tile_unchanged``: How many tiles were the same as the S3 tiles
+* ``upload``: True if ``--upload`` was set to upload / sync tiles
 
-Tags:
-
-* ``func``: The export function being timed, such as ``export``, ``encode``,
-  ``merge``, ``main``, ``render``, or ``upload``
-* ``count``: The item counts, recorded as a timer, such as ``csv_rows``,
-  ``quadtrees``, ``tile_new``, ``tile_changed``, ``tile_deleted``, ``tile_unchanged``
-
-datamaps.dberror
-^^^^^^^^^^^^^^^^
-``datamaps.dberror`` counts the number of retryable database errors.
-
-Tags:
-
-* ``errno``: The error number, same as `data.station.dberror`_
+Much of this data is also found in the file ``tiles/data.json`` in the S3
+bucket for the most recent run.
 
 Implementation
 ==============
