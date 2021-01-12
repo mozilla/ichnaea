@@ -189,10 +189,11 @@ used to distribute the work across available processors. The process is:
    be deleted.
 
    New and updated tiles are uploaded. Uploading is I/O bound, so the
-   concurrency of uploads is doubled. All the deleted tiles are deleted in
-   a single operation, for speed.
+   concurrency of uploads is doubled. The deleted tiles are deleted in
+   batches, for speed.
 
-   A file ``tiles/data.json`` is written to record when the upload completed.
+   A file ``tiles/data.json`` is written to record when the upload completed
+   and details of the tile generation process.
 
 
 Quadtree and tile generation tools are provided by `ericfischer/datamaps`_, and
