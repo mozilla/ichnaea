@@ -21,10 +21,19 @@ from ichnaea.util import version_info
 METRICS = markus.get_metrics()
 
 
-def configure_logging():
-    """Configure Python logging."""
-    local_dev_env = settings("local_dev_env")
-    logging_level = settings("logging_level")
+def configure_logging(local_dev_env=None, logging_level=None):
+    """Configure Python logging.
+
+    :param local_dev_env: If True, format logs for humans. If False,
+        use MozLog format for machines. The default is to read the
+        value from settings.
+    :param logging_level: The logging level, such as DEBUG or INFO.
+        The default is to read the value from settings.
+    """
+    if local_dev_env is None:
+        local_dev_env = settings("local_dev_env")
+    if logging_level is None:
+        logging_level = settings("logging_level")
 
     if local_dev_env:
         handlers = ["dev"]

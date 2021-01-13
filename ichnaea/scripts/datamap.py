@@ -640,6 +640,15 @@ def get_parser():
         # Fallback to the CPU count
         concurrency = os.cpu_count()
     parser = argparse.ArgumentParser(description="Generate and upload datamap tiles.")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help=(
+            "Turn on verbose logging. Equivalent to setting LOCAL_DEV_ENV=1"
+            " and LOGGING_LEVEL=debug"
+        ),
+    )
     parser.add_argument("--create", action="store_true", help="Create tiles")
     parser.add_argument("--upload", action="store_true", help="Upload tiles to S3")
     parser.add_argument(
@@ -712,11 +721,6 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
     :return: A system exit code
     :rtype: int
     """
-    # Setup basic services
-    configure_logging()
-    raven_client = configure_raven(
-        transport="sync", tags={"app": "datamap"}, _client=_raven_client
-    )
 
     # Parse the command line
     parser = get_parser()
@@ -724,6 +728,16 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
     create = args.create
     upload = args.upload
     concurrency = args.concurrency
+    verbose = args.verbose
+
+    # Setup basic services
+    if verbose:
+        configure_logging(local_dev_env=True, logging_level="DEBUG")
+    else:
+        configure_logging()
+    raven_client = configure_raven(
+        transport="sync", tags={"app": "datamap"}, _client=_raven_client
+    )
 
     # Check consistent output_dir, create, upload
     exit_early = 0
