@@ -181,10 +181,62 @@ def export_to_csvs(pool, csvdir):
         filename = os.path.join(csvdir, "map_%s.csv" % shard_id)
         jobs.append(pool.apply_async(export_to_csv, (filename, shard.__tablename__)))
 
-    for job in jobs:
-        result_rows += job.get()
+    # Run export jobs to completion
+    def on_success(job_rows):
+        nonlocal result_rows
+        result_rows += job_rows
 
+    def on_progress(tables_complete, table_percent):
+        nonlocal result_rows
+        LOG.debug(
+            f"  Exported {result_rows} row{'' if result_rows==1 else 's'}"
+            f" from {tables_complete} table{'' if tables_complete == 0 else 's'}"
+            f" ({table_percent:0.1%})"
+        )
+
+    watch_jobs(jobs, on_success=on_success, on_progress=on_progress)
     return result_rows
+
+
+def watch_jobs(
+    jobs,
+    on_success=None,
+    on_error=None,
+    on_progress=None,
+    raven_client=None,
+    progress_seconds=5.0,
+):
+    """Watch async jobs as they complete, periodically reporting progress.
+
+    :param on_success: A function to call with the job output, skip if None
+    :param on_error: A function to call with the exception, re-raises if None
+    :param on_progress: A function to call to report progress, passed jobs complete and percent of total
+    :param raven_client: The raven client to capture exceptions (optional)
+    :param progress_seconds: How often to call on_progress
+    """
+
+    with Timer() as timer:
+        last_elapsed = 0.0
+        total_jobs = len(jobs)
+        jobs_complete = 0
+        for job in jobs:
+            if timer.elapsed > (last_elapsed + progress_seconds):
+                job_percent = jobs_complete / total_jobs
+                on_progress(jobs_complete, job_percent)
+                last_elapsed = timer.elapsed
+
+            try:
+                job_resp = job.get()
+                if on_success:
+                    on_success(job_resp)
+            except Exception as e:
+                if raven_client:
+                    raven_client.captureException()
+                if on_error:
+                    on_error(e)
+                else:
+                    raise
+            jobs_complete += 1
 
 
 def csv_to_quadtrees(pool, csvdir, quadtree_dir):
@@ -194,9 +246,14 @@ def csv_to_quadtrees(pool, csvdir, quadtree_dir):
         if name.startswith("map_") and name.endswith(".csv"):
             jobs.append(pool.apply_async(csv_to_quadtree, (name, csvdir, quadtree_dir)))
 
-    for job in jobs:
-        job.get()
+    # Run conversion jobs to completion
+    def on_progress(converted, percent):
+        if converted == 1:
+            LOG.debug(f"  Converted 1 CSV to a quadtree ({percent:0.1%})")
+        else:
+            LOG.debug(f"  Converted {converted} CSVs to quadtrees ({percent:0.1%})")
 
+    watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)
 
 
@@ -212,7 +269,7 @@ def merge_quadtrees(quadtree_dir, shapes_dir):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def render_tiles(pool, shapes_dir, tiles_dir, max_zoom, progress_seconds=5.0):
+def render_tiles(pool, shapes_dir, tiles_dir, max_zoom):
     """Render the tiles at all zoom levels, and the front-page 2x tile."""
 
     # Render tiles at all zoom levels
@@ -304,7 +361,6 @@ def render_tiles_for_zoom_levels(
     tiles_dir,
     max_zoom,
     tile_type="tile",
-    progress_seconds=5.0,
     **render_keywords,
 ):
     """Render tiles concurrently across the zoom level."""
@@ -327,20 +383,14 @@ def render_tiles_for_zoom_levels(
     for params in tile_params:
         jobs.append(pool.apply_async(generate_tile, params, keywords))
 
-    # Wait until complete, report progress
-    with Timer() as timer:
-        last_elapsed = 0.0
-        rendered = 0
-        for job in jobs:
-            job.get()
-            rendered += 1
-            percent = rendered / total
-            if timer.elapsed > (last_elapsed + progress_seconds):
-                LOG.debug(
-                    f"  Rendered {rendered:,} {tile_type}{'' if total == 1 else 's'} ({percent:.1%})"
-                )
-                last_elapsed = timer.elapsed
+    # Watch render jobs to completion
+    def on_progress(rendered, percent):
+        nonlocal tile_type
+        LOG.debug(
+            f"  Rendered {rendered:,} {tile_type}{'' if rendered == 1 else 's'} ({percent:.1%})"
+        )
 
+    watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)
 
 
@@ -478,27 +528,24 @@ def sync_tiles(
         total += len(paths)
         jobs.append(pool.apply_async(delete_files, (paths, bucket_name, bucket_prefix)))
 
-    # Wait until complete, report progress
-    with Timer() as timer:
-        last_elapsed = 0.0
-        synced_count = 0
-        for job in jobs:
-            try:
-                tile_result, count = job.get()
-                result[tile_result] += count
-                synced_count += count
-            except Exception as e:
-                LOG.error(f"Exception while syncing: {e}")
-                raven_client.captureException()
-                result["tile_failed"] = result.get("tile_failed", 0) + 1
-                synced_count += 1  # Could be wrong if bulk deletion fails
-            percent = synced_count / total
-            if timer.elapsed > (last_elapsed + progress_seconds):
-                LOG.debug(
-                    f"  Synced {synced_count:,} file{'' if total == 1 else 's'} ({percent:.1%})"
-                )
-                last_elapsed = timer.elapsed
+    # Watch sync jobs until completion
+    def on_success(job_result):
+        nonlocal result
+        tile_result, count = job_result
+        result[tile_result] += count
 
+    def on_error(exception):
+        nonlocal result
+        LOG.error(f"Exception while syncing: {exception}")
+        result["tile_failed"] = result.get("tile_failed", 0) + 1
+
+    def on_progress(jobs_complete, job_total):
+        nonlocal result, total
+        count = sum(result.values())
+        percent = count / total
+        LOG.debug(f"  Synced {count:,} file{'' if count == 1 else 's'} ({percent:.1%})")
+
+    watch_jobs(jobs, on_progress=on_progress, on_success=on_success, on_error=on_error)
     return result
 
 
