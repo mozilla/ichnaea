@@ -446,13 +446,13 @@ def sync_tiles(
     LOG.debug(
         f"Completed sync plan in {action_timer.duration_s:0.1f} seconds,"
         f" {len(actions['upload']):,} new"
-        f" tile{'' if len(actions['upload']) == 1 else 0} to upload,"
+        f" tile{'' if len(actions['upload']) == 1 else 's'} to upload,"
         f" {len(actions['update']):,} changed"
-        f" tile{'' if len(actions['update']) == 1 else 0} to update,"
+        f" tile{'' if len(actions['update']) == 1 else 's'} to update,"
         f" {len(actions['delete']):,} orphaned"
-        f" tile{'' if len(actions['delete']) == 1 else 0} to delete,"
+        f" tile{'' if len(actions['delete']) == 1 else 's'} to delete,"
         f" and {len(actions['none']):,} unchanged"
-        f" tile{'' if len(actions['none']) == 1 else 0}"
+        f" tile{'' if len(actions['none']) == 1 else 's'}"
     )
     result = {
         "tile_new": 0,
