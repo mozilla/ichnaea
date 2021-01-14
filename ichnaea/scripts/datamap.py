@@ -53,7 +53,7 @@ from ichnaea.models.content import DataMap, decode_datamap_grid
 
 
 LOG = structlog.get_logger("ichnaea.scripts.datamap")
-S3_BUCKETS = None  # Will be re-initialized in each pool thread
+S3_CLIENT = None  # Will be re-initialized in each pool thread
 
 
 class Timer:
@@ -486,8 +486,8 @@ def sync_tiles(
     with Timer() as obj_timer:
         objects = get_current_objects(bucket_name, bucket_prefix)
     LOG.debug(
-        f"Found {len(objects):,} existing tiles in bucket {bucket_name}/{bucket_prefix}"
-        f" in {obj_timer.duration_s:0.1f} seconds"
+        f"Found {len(objects):,} existing tiles in bucket {bucket_name},"
+        f" /{bucket_prefix} in {obj_timer.duration_s:0.1f} seconds"
     )
 
     # Determine what actions we are taking for each
@@ -508,7 +508,7 @@ def sync_tiles(
         "tile_new": 0,
         "tile_changed": 0,
         "tile_deleted": 0,
-        "tile_unchanged": len(actions["none"]),
+        "tile_unchanged": 0,
     }
 
     # Queue the upload actions
@@ -546,43 +546,62 @@ def sync_tiles(
         LOG.debug(f"  Synced {count:,} file{'' if count == 1 else 's'} ({percent:.1%})")
 
     watch_jobs(jobs, on_progress=on_progress, on_success=on_success, on_error=on_error)
+    result["tile_unchanged"] = len(actions["none"])
     return result
 
 
 def upload_status_file(bucket_name, runtime_data, bucket_prefix="tiles/"):
     """Upload the status file to S3"""
 
-    bucket = s3_bucket(bucket_name)
-    obj = bucket.Object(bucket_prefix + "data.json")
     data = {"updated": util.utcnow().isoformat()}
     data.update(runtime_data)
-    obj.put(
+    s3_client().put_object(
         Body=dumps(data),
+        Bucket=bucket_name,
         CacheControl="max-age=3600, public",
         ContentType="application/json",
+        Key=bucket_prefix + "data.json",
     )
 
 
-def s3_bucket(bucket_name):
-    """Initialize the s3 bucket client."""
-    global S3_BUCKETS
-    if S3_BUCKETS is None:
-        S3_BUCKETS = {}
-    if bucket_name not in S3_BUCKETS:
-        S3_BUCKETS[bucket_name] = boto3.resource("s3").Bucket(bucket_name)
-    return S3_BUCKETS[bucket_name]
+def s3_client():
+    """
+    Initialize the s3 bucket client.
+
+    The S3 resource (boto3.resource("s3") has a more Pythonic API, but it also
+    appears to increase memory usage with each call.
+    """
+    global S3_CLIENT
+    if S3_CLIENT is None:
+        session = boto3.session.Session()
+        S3_CLIENT = session.client("s3")
+    return S3_CLIENT
 
 
 def get_current_objects(bucket_name, bucket_prefix):
     """Get names, sizes, and MD5 signatures of objects in the bucket."""
 
-    bucket = s3_bucket(bucket_name)
     objects = {}
-    for obj in bucket.objects.filter(Prefix=bucket_prefix):
-        if obj.key.endswith(".png"):
-            name = obj.key[len(bucket_prefix) :]
-            md5 = obj.e_tag.strip('"')
-            objects[name] = (obj.size, md5)
+    more_to_fetch = True
+    next_kwargs = {}
+    while more_to_fetch:
+        response = s3_client().list_objects_v2(
+            Bucket=bucket_name, Prefix=bucket_prefix, **next_kwargs
+        )
+        # Process the objects
+        for metadata in response["Contents"]:
+            key = metadata["Key"]
+            if key.endswith(".png"):
+                name = key[len(bucket_prefix) :]
+                md5 = metadata["ETag"].strip('"')
+                size = metadata["Size"]
+                objects[name] = (size, md5)
+
+        # Are the more results to fetch?
+        # The default is to return 1000 objects at a time
+        more_to_fetch = response["IsTruncated"]
+        if more_to_fetch:
+            next_kwargs = {"ContinuationToken": response["NextContinuationToken"]}
 
     return objects
 
@@ -637,11 +656,10 @@ def update_file(path, bucket_name, bucket_prefix, tiles_dir):
 
 def send_file(path, bucket_name, bucket_prefix, tiles_dir):
     """Send the local file to the S3 bucket."""
-
-    obj = s3_bucket(bucket_name).Object(bucket_prefix + path)
-    local_path = os.path.join(tiles_dir, path)
-    obj.upload_file(
-        local_path,
+    s3_client().upload_file(
+        Filename=os.path.join(tiles_dir, path),
+        Bucket=bucket_name,
+        Key=bucket_prefix + path,
         ExtraArgs={
             "CacheControl": "max-age=3600, public",
             "ContentType": "image/png",
@@ -655,7 +673,7 @@ def delete_files(paths, bucket_name, bucket_prefix):
         "Objects": [{"Key": bucket_prefix + path} for path in paths],
         "Quiet": True,
     }
-    resp = s3_bucket(bucket_name).delete_objects(Delete=delete_request)
+    resp = s3_client().delete_objects(Bucket=bucket_name, Delete=delete_request)
     if resp.get("Errors"):
         raise RuntimeError(f"Error deleting: {resp['Errors']}")
     return "tile_deleted", len(paths)
@@ -723,11 +741,11 @@ def check_bucket(bucket_name):
 
     Bucket existance check based on https://stackoverflow.com/a/47565719/10612
     """
-    s3 = boto3.resource("s3")
+    client = s3_client()
 
     # Test if we can see the bucket at all
     try:
-        s3.meta.client.head_bucket(Bucket=bucket_name)
+        client.head_bucket(Bucket=bucket_name)
     except botocore.exceptions.ClientError as e:
         error_code = int(e.response["Error"]["Code"])
         if error_code == 403:
@@ -748,12 +766,11 @@ def check_bucket(bucket_name):
         )
 
     # Create and delete a test file
-    bucket = s3_bucket(bucket_name)
     test_name = f"test-{uuid.uuid4()}"
-    test_obj = bucket.Object(test_name)
-    test_obj.put(Body="test for writability")
-    test_obj.wait_until_exists()
-    test_obj.delete()
+    client.put_object(Bucket=bucket_name, Body=b"write test", Key=test_name)
+    client.get_waiter("object_exists").wait(Bucket=bucket_name, Key=test_name)
+    client.delete_object(Bucket=bucket_name, Key=test_name)
+    client.get_waiter("object_not_exists").wait(Bucket=bucket_name, Key=test_name)
 
     return True, None
 
