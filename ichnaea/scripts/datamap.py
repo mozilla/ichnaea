@@ -104,6 +104,8 @@ def generate(
     tiles_dir = os.path.abspath(os.path.join(output_dir, "tiles"))
 
     if create:
+        LOG.debug("Generating tiles from datamap tables...")
+
         # Export datamap table to CSV files
         if not os.path.isdir(csv_dir):
             os.mkdir(csv_dir)
@@ -145,10 +147,12 @@ def generate(
         result["tile_count"] = tile_count
         result["render_duration_s"] = render_timer.duration_s
         LOG.debug(
-            f"Rendered {tile_count} tiles in {render_timer.duration_s:0.1f} seconds"
+            f"Rendered {tile_count:,} tiles in {render_timer.duration_s:0.1f} seconds"
         )
 
     if upload:
+        LOG.debug(f"Syncing tiles to S3 bucket {bucket_name}...")
+
         # Sync local tiles with S3 bucket
         # Double concurrency since I/O rather than CPU bound
         with Pool(processes=concurrency * 2) as pool, Timer() as sync_timer:
@@ -189,8 +193,8 @@ def export_to_csvs(pool, csvdir):
     def on_progress(tables_complete, table_percent):
         nonlocal result_rows
         LOG.debug(
-            f"  Exported {result_rows} row{'' if result_rows==1 else 's'}"
-            f" from {tables_complete} table{'' if tables_complete == 0 else 's'}"
+            f"  Exported {result_rows:,} row{'' if result_rows==1 else 's'}"
+            f" from {tables_complete:,} table{'' if tables_complete==1 else 's'}"
             f" ({table_percent:0.1%})"
         )
 
@@ -251,7 +255,7 @@ def csv_to_quadtrees(pool, csvdir, quadtree_dir):
         if converted == 1:
             LOG.debug(f"  Converted 1 CSV to a quadtree ({percent:0.1%})")
         else:
-            LOG.debug(f"  Converted {converted} CSVs to quadtrees ({percent:0.1%})")
+            LOG.debug(f"  Converted {converted:,} CSVs to quadtrees ({percent:0.1%})")
 
     watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)
