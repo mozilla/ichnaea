@@ -155,7 +155,10 @@ def generate(
 
         # Sync local tiles with S3 bucket
         # Double concurrency since I/O rather than CPU bound
-        with Pool(processes=concurrency * 2) as pool, Timer() as sync_timer:
+        # Max tasks to free accumulated memory from the S3 clients
+        with Pool(
+            processes=concurrency * 2, maxtasksperchild=1000
+        ) as pool, Timer() as sync_timer:
             sync_counts = sync_tiles(
                 pool, bucket_name, tiles_dir, max_zoom, raven_client
             )
