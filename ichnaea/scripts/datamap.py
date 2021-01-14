@@ -53,7 +53,7 @@ from ichnaea.models.content import DataMap, decode_datamap_grid
 
 
 LOG = structlog.get_logger("ichnaea.scripts.datamap")
-S3_BUCKETS = None  # Will be re-initialized in each pool thread
+S3_CLIENT = None  # Will be re-initialized in each pool thread
 
 
 class Timer:
@@ -181,10 +181,62 @@ def export_to_csvs(pool, csvdir):
         filename = os.path.join(csvdir, "map_%s.csv" % shard_id)
         jobs.append(pool.apply_async(export_to_csv, (filename, shard.__tablename__)))
 
-    for job in jobs:
-        result_rows += job.get()
+    # Run export jobs to completion
+    def on_success(job_rows):
+        nonlocal result_rows
+        result_rows += job_rows
 
+    def on_progress(tables_complete, table_percent):
+        nonlocal result_rows
+        LOG.debug(
+            f"  Exported {result_rows} row{'' if result_rows==1 else 's'}"
+            f" from {tables_complete} table{'' if tables_complete == 0 else 's'}"
+            f" ({table_percent:0.1%})"
+        )
+
+    watch_jobs(jobs, on_success=on_success, on_progress=on_progress)
     return result_rows
+
+
+def watch_jobs(
+    jobs,
+    on_success=None,
+    on_error=None,
+    on_progress=None,
+    raven_client=None,
+    progress_seconds=5.0,
+):
+    """Watch async jobs as they complete, periodically reporting progress.
+
+    :param on_success: A function to call with the job output, skip if None
+    :param on_error: A function to call with the exception, re-raises if None
+    :param on_progress: A function to call to report progress, passed jobs complete and percent of total
+    :param raven_client: The raven client to capture exceptions (optional)
+    :param progress_seconds: How often to call on_progress
+    """
+
+    with Timer() as timer:
+        last_elapsed = 0.0
+        total_jobs = len(jobs)
+        jobs_complete = 0
+        for job in jobs:
+            if timer.elapsed > (last_elapsed + progress_seconds):
+                job_percent = jobs_complete / total_jobs
+                on_progress(jobs_complete, job_percent)
+                last_elapsed = timer.elapsed
+
+            try:
+                job_resp = job.get()
+                if on_success:
+                    on_success(job_resp)
+            except Exception as e:
+                if raven_client:
+                    raven_client.captureException()
+                if on_error:
+                    on_error(e)
+                else:
+                    raise
+            jobs_complete += 1
 
 
 def csv_to_quadtrees(pool, csvdir, quadtree_dir):
@@ -194,9 +246,14 @@ def csv_to_quadtrees(pool, csvdir, quadtree_dir):
         if name.startswith("map_") and name.endswith(".csv"):
             jobs.append(pool.apply_async(csv_to_quadtree, (name, csvdir, quadtree_dir)))
 
-    for job in jobs:
-        job.get()
+    # Run conversion jobs to completion
+    def on_progress(converted, percent):
+        if converted == 1:
+            LOG.debug(f"  Converted 1 CSV to a quadtree ({percent:0.1%})")
+        else:
+            LOG.debug(f"  Converted {converted} CSVs to quadtrees ({percent:0.1%})")
 
+    watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)
 
 
@@ -212,7 +269,7 @@ def merge_quadtrees(quadtree_dir, shapes_dir):
     subprocess.run(cmd, check=True, capture_output=True)
 
 
-def render_tiles(pool, shapes_dir, tiles_dir, max_zoom, progress_seconds=5.0):
+def render_tiles(pool, shapes_dir, tiles_dir, max_zoom):
     """Render the tiles at all zoom levels, and the front-page 2x tile."""
 
     # Render tiles at all zoom levels
@@ -304,7 +361,6 @@ def render_tiles_for_zoom_levels(
     tiles_dir,
     max_zoom,
     tile_type="tile",
-    progress_seconds=5.0,
     **render_keywords,
 ):
     """Render tiles concurrently across the zoom level."""
@@ -327,20 +383,14 @@ def render_tiles_for_zoom_levels(
     for params in tile_params:
         jobs.append(pool.apply_async(generate_tile, params, keywords))
 
-    # Wait until complete, report progress
-    with Timer() as timer:
-        last_elapsed = 0.0
-        rendered = 0
-        for job in jobs:
-            job.get()
-            rendered += 1
-            percent = rendered / total
-            if timer.elapsed > (last_elapsed + progress_seconds):
-                LOG.debug(
-                    f"  Rendered {rendered:,} {tile_type}{'' if total == 1 else 's'} ({percent:.1%})"
-                )
-                last_elapsed = timer.elapsed
+    # Watch render jobs to completion
+    def on_progress(rendered, percent):
+        nonlocal tile_type
+        LOG.debug(
+            f"  Rendered {rendered:,} {tile_type}{'' if rendered == 1 else 's'} ({percent:.1%})"
+        )
 
+    watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)
 
 
@@ -436,8 +486,8 @@ def sync_tiles(
     with Timer() as obj_timer:
         objects = get_current_objects(bucket_name, bucket_prefix)
     LOG.debug(
-        f"Found {len(objects):,} existing tiles in bucket {bucket_name}/{bucket_prefix}"
-        f" in {obj_timer.duration_s:0.1f} seconds"
+        f"Found {len(objects):,} existing tiles in bucket {bucket_name},"
+        f" /{bucket_prefix} in {obj_timer.duration_s:0.1f} seconds"
     )
 
     # Determine what actions we are taking for each
@@ -446,19 +496,19 @@ def sync_tiles(
     LOG.debug(
         f"Completed sync plan in {action_timer.duration_s:0.1f} seconds,"
         f" {len(actions['upload']):,} new"
-        f" tile{'' if len(actions['upload']) == 1 else 0} to upload,"
+        f" tile{'' if len(actions['upload']) == 1 else 's'} to upload,"
         f" {len(actions['update']):,} changed"
-        f" tile{'' if len(actions['update']) == 1 else 0} to update,"
+        f" tile{'' if len(actions['update']) == 1 else 's'} to update,"
         f" {len(actions['delete']):,} orphaned"
-        f" tile{'' if len(actions['delete']) == 1 else 0} to delete,"
+        f" tile{'' if len(actions['delete']) == 1 else 's'} to delete,"
         f" and {len(actions['none']):,} unchanged"
-        f" tile{'' if len(actions['none']) == 1 else 0}"
+        f" tile{'' if len(actions['none']) == 1 else 's'}"
     )
     result = {
         "tile_new": 0,
         "tile_changed": 0,
         "tile_deleted": 0,
-        "tile_unchanged": len(actions["none"]),
+        "tile_unchanged": 0,
     }
 
     # Queue the upload actions
@@ -478,64 +528,80 @@ def sync_tiles(
         total += len(paths)
         jobs.append(pool.apply_async(delete_files, (paths, bucket_name, bucket_prefix)))
 
-    # Wait until complete, report progress
-    with Timer() as timer:
-        last_elapsed = 0.0
-        synced_count = 0
-        for job in jobs:
-            try:
-                tile_result, count = job.get()
-                result[tile_result] += count
-                synced_count += count
-            except Exception as e:
-                LOG.error(f"Exception while syncing: {e}")
-                raven_client.captureException()
-                result["tile_failed"] = result.get("tile_failed", 0) + 1
-                synced_count += 1  # Could be wrong if bulk deletion fails
-            percent = synced_count / total
-            if timer.elapsed > (last_elapsed + progress_seconds):
-                LOG.debug(
-                    f"  Synced {synced_count:,} file{'' if total == 1 else 's'} ({percent:.1%})"
-                )
-                last_elapsed = timer.elapsed
+    # Watch sync jobs until completion
+    def on_success(job_result):
+        nonlocal result
+        tile_result, count = job_result
+        result[tile_result] += count
 
+    def on_error(exception):
+        nonlocal result
+        LOG.error(f"Exception while syncing: {exception}")
+        result["tile_failed"] = result.get("tile_failed", 0) + 1
+
+    def on_progress(jobs_complete, job_total):
+        nonlocal result, total
+        count = sum(result.values())
+        percent = count / total
+        LOG.debug(f"  Synced {count:,} file{'' if count == 1 else 's'} ({percent:.1%})")
+
+    watch_jobs(jobs, on_progress=on_progress, on_success=on_success, on_error=on_error)
+    result["tile_unchanged"] = len(actions["none"])
     return result
 
 
 def upload_status_file(bucket_name, runtime_data, bucket_prefix="tiles/"):
     """Upload the status file to S3"""
 
-    bucket = s3_bucket(bucket_name)
-    obj = bucket.Object(bucket_prefix + "data.json")
     data = {"updated": util.utcnow().isoformat()}
     data.update(runtime_data)
-    obj.put(
+    s3_client().put_object(
         Body=dumps(data),
+        Bucket=bucket_name,
         CacheControl="max-age=3600, public",
         ContentType="application/json",
+        Key=bucket_prefix + "data.json",
     )
 
 
-def s3_bucket(bucket_name):
-    """Initialize the s3 bucket client."""
-    global S3_BUCKETS
-    if S3_BUCKETS is None:
-        S3_BUCKETS = {}
-    if bucket_name not in S3_BUCKETS:
-        S3_BUCKETS[bucket_name] = boto3.resource("s3").Bucket(bucket_name)
-    return S3_BUCKETS[bucket_name]
+def s3_client():
+    """
+    Initialize the s3 bucket client.
+
+    The S3 resource (boto3.resource("s3") has a more Pythonic API, but it also
+    appears to increase memory usage with each call.
+    """
+    global S3_CLIENT
+    if S3_CLIENT is None:
+        session = boto3.session.Session()
+        S3_CLIENT = session.client("s3")
+    return S3_CLIENT
 
 
 def get_current_objects(bucket_name, bucket_prefix):
     """Get names, sizes, and MD5 signatures of objects in the bucket."""
 
-    bucket = s3_bucket(bucket_name)
     objects = {}
-    for obj in bucket.objects.filter(Prefix=bucket_prefix):
-        if obj.key.endswith(".png"):
-            name = obj.key[len(bucket_prefix) :]
-            md5 = obj.e_tag.strip('"')
-            objects[name] = (obj.size, md5)
+    more_to_fetch = True
+    next_kwargs = {}
+    while more_to_fetch:
+        response = s3_client().list_objects_v2(
+            Bucket=bucket_name, Prefix=bucket_prefix, **next_kwargs
+        )
+        # Process the objects
+        for metadata in response["Contents"]:
+            key = metadata["Key"]
+            if key.endswith(".png"):
+                name = key[len(bucket_prefix) :]
+                md5 = metadata["ETag"].strip('"')
+                size = metadata["Size"]
+                objects[name] = (size, md5)
+
+        # Are the more results to fetch?
+        # The default is to return 1000 objects at a time
+        more_to_fetch = response["IsTruncated"]
+        if more_to_fetch:
+            next_kwargs = {"ContinuationToken": response["NextContinuationToken"]}
 
     return objects
 
@@ -590,11 +656,10 @@ def update_file(path, bucket_name, bucket_prefix, tiles_dir):
 
 def send_file(path, bucket_name, bucket_prefix, tiles_dir):
     """Send the local file to the S3 bucket."""
-
-    obj = s3_bucket(bucket_name).Object(bucket_prefix + path)
-    local_path = os.path.join(tiles_dir, path)
-    obj.upload_file(
-        local_path,
+    s3_client().upload_file(
+        Filename=os.path.join(tiles_dir, path),
+        Bucket=bucket_name,
+        Key=bucket_prefix + path,
         ExtraArgs={
             "CacheControl": "max-age=3600, public",
             "ContentType": "image/png",
@@ -608,7 +673,7 @@ def delete_files(paths, bucket_name, bucket_prefix):
         "Objects": [{"Key": bucket_prefix + path} for path in paths],
         "Quiet": True,
     }
-    resp = s3_bucket(bucket_name).delete_objects(Delete=delete_request)
+    resp = s3_client().delete_objects(Bucket=bucket_name, Delete=delete_request)
     if resp.get("Errors"):
         raise RuntimeError(f"Error deleting: {resp['Errors']}")
     return "tile_deleted", len(paths)
@@ -640,6 +705,15 @@ def get_parser():
         # Fallback to the CPU count
         concurrency = os.cpu_count()
     parser = argparse.ArgumentParser(description="Generate and upload datamap tiles.")
+    parser.add_argument(
+        "-v",
+        "--verbose",
+        action="store_true",
+        help=(
+            "Turn on verbose logging. Equivalent to setting LOCAL_DEV_ENV=1"
+            " and LOGGING_LEVEL=debug"
+        ),
+    )
     parser.add_argument("--create", action="store_true", help="Create tiles")
     parser.add_argument("--upload", action="store_true", help="Upload tiles to S3")
     parser.add_argument(
@@ -667,11 +741,11 @@ def check_bucket(bucket_name):
 
     Bucket existance check based on https://stackoverflow.com/a/47565719/10612
     """
-    s3 = boto3.resource("s3")
+    client = s3_client()
 
     # Test if we can see the bucket at all
     try:
-        s3.meta.client.head_bucket(Bucket=bucket_name)
+        client.head_bucket(Bucket=bucket_name)
     except botocore.exceptions.ClientError as e:
         error_code = int(e.response["Error"]["Code"])
         if error_code == 403:
@@ -692,12 +766,11 @@ def check_bucket(bucket_name):
         )
 
     # Create and delete a test file
-    bucket = s3_bucket(bucket_name)
     test_name = f"test-{uuid.uuid4()}"
-    test_obj = bucket.Object(test_name)
-    test_obj.put(Body="test for writability")
-    test_obj.wait_until_exists()
-    test_obj.delete()
+    client.put_object(Bucket=bucket_name, Body=b"write test", Key=test_name)
+    client.get_waiter("object_exists").wait(Bucket=bucket_name, Key=test_name)
+    client.delete_object(Bucket=bucket_name, Key=test_name)
+    client.get_waiter("object_not_exists").wait(Bucket=bucket_name, Key=test_name)
 
     return True, None
 
@@ -712,11 +785,6 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
     :return: A system exit code
     :rtype: int
     """
-    # Setup basic services
-    configure_logging()
-    raven_client = configure_raven(
-        transport="sync", tags={"app": "datamap"}, _client=_raven_client
-    )
 
     # Parse the command line
     parser = get_parser()
@@ -724,6 +792,16 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
     create = args.create
     upload = args.upload
     concurrency = args.concurrency
+    verbose = args.verbose
+
+    # Setup basic services
+    if verbose:
+        configure_logging(local_dev_env=True, logging_level="DEBUG")
+    else:
+        configure_logging()
+    raven_client = configure_raven(
+        transport="sync", tags={"app": "datamap"}, _client=_raven_client
+    )
 
     # Check consistent output_dir, create, upload
     exit_early = 0
