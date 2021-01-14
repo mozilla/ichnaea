@@ -233,6 +233,9 @@ def watch_jobs(
                 job_resp = job.get()
                 if on_success:
                     on_success(job_resp)
+            except KeyboardInterrupt:
+                # Skip Raven for Ctrl-C, reraise to halt execution
+                raise
             except Exception as e:
                 if raven_client:
                     raven_client.captureException()
@@ -863,6 +866,7 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
 
     # Generate and upload the tiles
     success = True
+    interrupted = False
     result = {}
     try:
         with Timer() as timer:
@@ -885,6 +889,9 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
                         upload=upload,
                         concurrency=concurrency,
                     )
+    except KeyboardInterrupt:
+        interrupted = True
+        success = False
     except Exception:
         raven_client.captureException()
         success = False
@@ -896,7 +903,9 @@ def main(_argv=None, _raven_client=None, _bucket_name=None):
             task = "generation"
         else:
             task = "upload"
-        if success:
+        if interrupted:
+            complete = "interrupted"
+        elif success:
             complete = "complete"
         else:
             complete = "failed"
