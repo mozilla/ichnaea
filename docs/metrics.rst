@@ -902,7 +902,7 @@ not emit metrics.
 
 The final ``canonical-log-line`` log entry has this data:
 
-* ``bucketname``: The name of the S3 bucket
+* ``bucket_name``: The name of the S3 bucket
 * ``concurrency``: The number of concurrent threads used
 * ``create``: True if ``--create`` was set to generate tiles
 * ``duration_s``: How long in seconds to run the script
