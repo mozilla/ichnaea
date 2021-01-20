@@ -139,9 +139,9 @@ def generate(
         result["intermediate_quadtree_count"] = intermediate
         result["quadtree_count"] = final
         LOG.debug(
-            f"Processed {csv_converted:,} CSV{'' if csv_converted == 1 else 's'}"
-            f" into {intermediate:,} intermediate quadtree{'' if intermediate == 1 else 's'}"
-            f" and {final:,} region quadtree{'' if final == 1 else 's'}"
+            f"Processed {csv_converted:,} CSV{_s(csv_converted)}"
+            f" into {intermediate:,} intermediate quadtree{_s(intermediate)}"
+            f" and {final:,} region quadtree{_s(final)}"
             f" in {quadtree_timer.duration_s:0.1f} seconds"
         )
 
@@ -160,7 +160,8 @@ def generate(
         result["tile_count"] = tile_count
         result["render_duration_s"] = render_timer.duration_s
         LOG.debug(
-            f"Rendered {tile_count:,} tiles in {render_timer.duration_s:0.1f} seconds"
+            f"Rendered {tile_count:,} tile{_s(tile_count)}"
+            f" in {render_timer.duration_s:0.1f} seconds"
         )
 
     if upload:
@@ -239,9 +240,9 @@ def export_to_csvs(pool, csv_dir):
     def on_progress(tables_complete, table_percent):
         nonlocal result_rows
         LOG.debug(
-            f"  Exported {result_rows:,} row{'' if result_rows==1 else 's'}"
-            f" from {tables_complete:,} table{'' if tables_complete==1 else 's'}"
-            f" to {result_csvs:,} CSV file{'' if result_csvs==1 else 's'}"
+            f"  Exported {result_rows:,} row{_s(result_rows)}"
+            f" from {tables_complete:,} table{_s(tables_complete)}"
+            f" to {result_csvs:,} CSV file{_s(result_csvs)}"
             f" ({table_percent:0.1%})"
         )
 
@@ -351,7 +352,7 @@ def csv_to_quadtrees(pool, csvdir, quadtree_dir):
     def on_merge_progress(merged, percent):
         LOG.debug(
             f"  Merged intermediate quadtrees to {merged:,}"
-            f" quadtree{'' if merged == 1 else 's'} ({percent:0.1%})"
+            f" quadtree{_s(merged)} ({percent:0.1%})"
         )
 
     watch_jobs(merge_jobs, on_progress=on_merge_progress)
@@ -407,13 +408,13 @@ def get_sync_plan(bucket_name, tiles_dir, bucket_prefix="tiles/"):
     LOG.debug(
         f"Completed sync actions in {action_timer.duration_s:0.1f} seconds,"
         f" {len(actions['upload']):,} new"
-        f" tile{'' if len(actions['upload']) == 1 else 's'} to upload,"
+        f" tile{_s(len(actions['upload']))} to upload,"
         f" {len(actions['update']):,} changed"
-        f" tile{'' if len(actions['update']) == 1 else 's'} to update,"
+        f" tile{_s(len(actions['update']))} to update,"
         f" {len(actions['delete']):,} orphaned"
-        f" tile{'' if len(actions['delete']) == 1 else 's'} to delete,"
+        f" tile{_s(len(actions['delete']))} to delete,"
         f" and {unchanged_count:,} unchanged"
-        f" tile{'' if unchanged_count == 1 else 's'}"
+        f" tile{_s(unchanged_count)}"
     )
 
     return actions, unchanged_count
@@ -470,7 +471,7 @@ def sync_tiles(
         nonlocal result, total
         count = sum(result.values())
         percent = count / total
-        LOG.debug(f"  Synced {count:,} file{'' if count == 1 else 's'} ({percent:.1%})")
+        LOG.debug(f"  Synced {count:,} file{_s(count)} ({percent:.1%})")
 
     watch_jobs(jobs, on_progress=on_progress, on_success=on_success, on_error=on_error)
     return result
@@ -616,7 +617,7 @@ def render_tiles_for_zoom_levels(
     tile_params = enumerate_tiles(shapes_dir, max_zoom)
 
     total = len(tile_params)
-    LOG.debug(f"Rendering {total:,} {tile_type}{'' if total == 1 else 's'}...")
+    LOG.debug(f"Rendering {total:,} {tile_type}{_s(tile_type)}...")
 
     # Create the directory structure
     create_tile_subfolders(tile_params, tiles_dir)
@@ -633,9 +634,7 @@ def render_tiles_for_zoom_levels(
     # Watch render jobs to completion
     def on_progress(rendered, percent):
         nonlocal tile_type
-        LOG.debug(
-            f"  Rendered {rendered:,} {tile_type}{'' if rendered == 1 else 's'} ({percent:.1%})"
-        )
+        LOG.debug(f"  Rendered {rendered:,} {tile_type}{_s(tile_type)} ({percent:.1%})")
 
     watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)
