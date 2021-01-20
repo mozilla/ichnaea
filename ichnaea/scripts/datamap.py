@@ -407,7 +407,7 @@ def upload_status_file(bucket_name, runtime_data, bucket_prefix="tiles/"):
     )
 
 
-def export_to_csv(filename, tablename, _session=None):
+def export_to_csv(filename, tablename):
     """Export a datamap table to a CSV file."""
     stmt = text(
         """\
@@ -431,9 +431,6 @@ LIMIT :limit
     result_rows = 0
     with open(filename, "w") as fd:
         with db_worker_session(db, commit=False) as session:
-            if _session is not None:
-                # testing hook
-                session = _session
             while True:
                 result = session.execute(stmt.bindparams(limit=limit, grid=min_grid))
                 rows = result.fetchall()
