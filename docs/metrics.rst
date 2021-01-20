@@ -905,7 +905,8 @@ The final ``canonical-log-line`` log entry has this data:
 * ``bucket_name``: The name of the S3 bucket
 * ``concurrency``: The number of concurrent threads used
 * ``create``: True if ``--create`` was set to generate tiles
-* ``csv_converted_count``: How many CSV files were exported and converted to quadtrees
+* ``csv_count``: How many CSV files were exported from the database
+* ``csv_converted_count``: How many CSV files were converted to quadtrees
 * ``duration_s``: How long in seconds to run the script
 * ``export_duration_s``: How long in seconds to export from tables to CSV
 * ``intermediate_quadtree_count``: How many partial quadtrees were created (due

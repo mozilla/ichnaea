@@ -214,6 +214,7 @@ class TestMap(object):
             max_zoom=2,
         )
         assert set(result.keys()) == {
+            "csv_count",
             "csv_converted_count",
             "export_duration_s",
             "intermediate_quadtree_count",
@@ -227,6 +228,7 @@ class TestMap(object):
         assert result["quadtree_count"] == 2
         assert result["row_count"] == 18
         assert result["tile_count"] == 6
+        assert result["csv_count"] == 2
         assert result["csv_converted_count"] == 2
         assert result["intermediate_quadtree_count"] == 0
 

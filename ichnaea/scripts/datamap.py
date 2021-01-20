@@ -113,11 +113,14 @@ def generate(
 
         row_count = None
         with Pool(processes=concurrency) as pool, Timer() as export_timer:
-            row_count = export_to_csvs(pool, csv_dir)
+            row_count, csv_count = export_to_csvs(pool, csv_dir)
         result["export_duration_s"] = export_timer.duration_s
         result["row_count"] = row_count
+        result["csv_count"] = csv_count
         LOG.debug(
-            f"Exported {row_count:,} rows in {export_timer.duration_s:0.1f} seconds"
+            f"Exported {row_count:,} row{_s(row_count)}"
+            f" to {csv_count:,} CSV{_s(csv_count)}"
+            f" in {export_timer.duration_s:0.1f} seconds"
         )
         if result["row_count"] == 0:
             LOG.debug("No rows to export, so no tiles to generate.")
@@ -193,8 +196,28 @@ def generate(
     return result
 
 
+def _s(count):
+    """Add an s, like rows, if the count is not 1."""
+    if count == 1:
+        return ""
+    else:
+        return "s"
+
+
 def export_to_csvs(pool, csv_dir):
-    """Export from database tables to CSV."""
+    """
+    Export from database tables to CSV.
+
+    For small database tables, there will be one CSV created, such as
+    "map_ne.csv" for the datamap_ne (northeast) table.
+
+    For large database tables, there will be multiple CSVs created,
+    such as "submap_ne_0001.csv".
+
+    :param pool: A multiprocessing pool
+    :csv_dir: The directory to write CSV output files
+    :return: A tuple of counts (rows, CSVs)
+    """
     jobs = []
     result_rows = 0
     result_csvs = 0
@@ -223,7 +246,7 @@ def export_to_csvs(pool, csv_dir):
         )
 
     watch_jobs(jobs, on_success=on_success, on_progress=on_progress)
-    return result_rows
+    return result_rows, result_csvs
 
 
 def watch_jobs(
