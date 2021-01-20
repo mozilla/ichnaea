@@ -11,6 +11,7 @@ from ichnaea.scripts import datamap
 from ichnaea.scripts.datamap import (
     csv_to_quadtree,
     export_to_csv,
+    generate,
     main,
     merge_quadtrees,
     render_tiles,
@@ -155,6 +156,30 @@ class TestMap(object):
         longs = [round(float(line[1]), 2) for line in lines]
         assert set(lats) == set([-10.0, 0.0, 12.35])
         assert set(longs) == set([-11.0, 12.35])
+
+    def test_generate(self, temp_dir, raven, mock_db_worker_session):
+        """generate() calls the steps for tile generation."""
+        result = generate(
+            temp_dir,
+            "bucket_name",
+            raven,
+            create=True,
+            upload=False,
+            concurrency=1,
+            max_zoom=2,
+        )
+        assert set(result.keys()) == {
+            "export_duration_s",
+            "merge_duration_s",
+            "quadtree_count",
+            "quadtree_duration_s",
+            "render_duration_s",
+            "row_count",
+            "tile_count",
+        }
+        assert result["quadtree_count"] == 2
+        assert result["row_count"] == 18
+        assert result["tile_count"] == 6
 
     def test_main(self, raven, temp_dir, mock_main_fixtures):
         """main() calls generate with passed arguments"""
