@@ -10,6 +10,7 @@ from ichnaea.models.content import DataMap, encode_datamap_grid
 from ichnaea.scripts import datamap
 from ichnaea.scripts.datamap import (
     csv_to_quadtree,
+    csv_to_quadtrees,
     export_to_csv,
     generate,
     main,
@@ -58,10 +59,10 @@ def mock_db_worker_session():
         "datamap_ne": [],
         "datamap_nw": [],
         "datamap_se": [
-            FakeQueryItem(lat=12.345, lon=12.345),
-            FakeQueryItem(lat=0, lon=12.345),
+            [FakeQueryItem(lat=12.345, lon=12.345)],
+            [FakeQueryItem(lat=0, lon=12.345)],
         ],
-        "datamap_sw": [FakeQueryItem(lat=-10.000, lon=-11.000)],
+        "datamap_sw": [[FakeQueryItem(lat=-10.000, lon=-11.000)]],
     }
 
     # The expected SQL statement, with binding placeholders
@@ -84,8 +85,11 @@ def mock_db_worker_session():
         assert match
         tablename = match.group("tablename")
         result = Mock(spec_set=("fetchall", "close"))
-        result.fetchall.return_value = test_data[tablename][:]
-        test_data[tablename] = []  # Return no results on next call
+        try:
+            data = test_data[tablename].pop(0)
+        except IndexError:
+            data = []  # No more data, end DB read loop
+        result.fetchall.return_value = data
         return result
 
     # db_worker_session() returns a context manager
@@ -113,26 +117,31 @@ class TestMap(object):
         lines = []
         rows = 0
 
+        csvdir = os.path.join(temp_dir, "csv")
+        os.mkdir(csvdir)
         quaddir = os.path.join(temp_dir, "quadtrees")
         os.mkdir(quaddir)
         shapes = os.path.join(temp_dir, "shapes")
         tiles = os.path.join(temp_dir, "tiles")
 
+        expected = {"ne": (0, 0), "nw": (0, 0), "se": (12, 1), "sw": (6, 1)}
         for shard_id, shard in DataMap.shards().items():
             filename = f"map_{shard_id}.csv"
-            filepath = os.path.join(temp_dir, filename)
-            result = export_to_csv(filepath, shard.__tablename__)
+            filepath = os.path.join(csvdir, filename)
+            row_count, file_count = export_to_csv(filename, csvdir, shard.__tablename__)
+            assert row_count == expected[shard_id][0]
+            assert file_count == expected[shard_id][1]
 
-            if not result:
+            if not row_count:
                 assert not os.path.isfile(filepath)
                 continue
 
-            rows += result
+            rows += row_count
             with open(filepath, "r") as fd:
                 written = fd.read()
             lines.extend([line.split(",") for line in written.split()])
 
-            csv_to_quadtree(filename, temp_dir, quaddir)
+            csv_to_quadtree(filename, csvdir, quaddir)
 
             quadfolder = os.path.join(quaddir, "map_" + shard_id)
             assert os.path.isdir(quadfolder)
@@ -157,6 +166,42 @@ class TestMap(object):
         assert set(lats) == set([-10.0, 0.0, 12.35])
         assert set(longs) == set([-11.0, 12.35])
 
+    def test_multiple_csv(self, temp_dir, raven, mock_db_worker_session):
+        """export_to_csv creates multiple CSVs at the file_limit."""
+
+        expected = {"ne": (0, 0), "nw": (0, 0), "se": (12, 2), "sw": (6, 1)}
+        csv_dir = os.path.join(temp_dir, "csv")
+        os.mkdir(csv_dir)
+
+        for shard_id, shard in DataMap.shards().items():
+            filename = f"map_{shard_id}.csv"
+            filepath = os.path.join(csv_dir, filename)
+            row_count, file_count = export_to_csv(
+                filename, csv_dir, shard.__tablename__, file_limit=1
+            )
+            assert row_count == expected[shard_id][0]
+            assert file_count == expected[shard_id][1]
+
+            if not row_count:
+                assert not os.path.isfile(filepath)
+            elif file_count == 1:
+                assert os.path.isfile(filepath)
+            else:
+                assert not os.path.isfile(filepath)
+                for num in range(1, file_count + 1):
+                    filename_n = f"submap_{shard_id}_{num:04}.csv"
+                    filepath_n = os.path.join(csv_dir, filename_n)
+                    assert os.path.isfile(filepath_n)
+
+        quad_dir = os.path.join(temp_dir, "quadtrees")
+        os.mkdir(quad_dir)
+        with Pool() as pool:
+            result = csv_to_quadtrees(pool, csv_dir, quad_dir)
+            csv_count, intermediate_quad_count, final_quad_count = result
+            assert csv_count == 3
+            assert intermediate_quad_count == 2
+            assert final_quad_count == 2
+
     def test_generate(self, temp_dir, raven, mock_db_worker_session):
         """generate() calls the steps for tile generation."""
         result = generate(
@@ -169,7 +214,9 @@ class TestMap(object):
             max_zoom=2,
         )
         assert set(result.keys()) == {
+            "csv_converted_count",
             "export_duration_s",
+            "intermediate_quadtree_count",
             "merge_duration_s",
             "quadtree_count",
             "quadtree_duration_s",
@@ -180,6 +227,8 @@ class TestMap(object):
         assert result["quadtree_count"] == 2
         assert result["row_count"] == 18
         assert result["tile_count"] == 6
+        assert result["csv_converted_count"] == 2
+        assert result["intermediate_quadtree_count"] == 0
 
     def test_main(self, raven, temp_dir, mock_main_fixtures):
         """main() calls generate with passed arguments"""
