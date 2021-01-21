@@ -34,6 +34,7 @@ import shutil
 import subprocess
 import sys
 import uuid
+from collections import defaultdict
 from json import dumps
 from multiprocessing import Pool
 from timeit import default_timer
@@ -112,11 +113,14 @@ def generate(
 
         row_count = None
         with Pool(processes=concurrency) as pool, Timer() as export_timer:
-            row_count = export_to_csvs(pool, csv_dir)
+            row_count, csv_count = export_to_csvs(pool, csv_dir)
         result["export_duration_s"] = export_timer.duration_s
         result["row_count"] = row_count
+        result["csv_count"] = csv_count
         LOG.debug(
-            f"Exported {row_count:,} rows in {export_timer.duration_s:0.1f} seconds"
+            f"Exported {row_count:,} row{_s(row_count)}"
+            f" to {csv_count:,} CSV{_s(csv_count)}"
+            f" in {export_timer.duration_s:0.1f} seconds"
         )
         if result["row_count"] == 0:
             LOG.debug("No rows to export, so no tiles to generate.")
@@ -128,11 +132,17 @@ def generate(
         os.mkdir(quadtree_dir)
 
         with Pool(processes=concurrency) as pool, Timer() as quadtree_timer:
-            quadtree_count = csv_to_quadtrees(pool, csv_dir, quadtree_dir)
+            quad_result = csv_to_quadtrees(pool, csv_dir, quadtree_dir)
+        csv_converted, intermediate, final = quad_result
         result["quadtree_duration_s"] = quadtree_timer.duration_s
-        result["quadtree_count"] = quadtree_count
+        result["csv_converted_count"] = csv_converted
+        result["intermediate_quadtree_count"] = intermediate
+        result["quadtree_count"] = final
         LOG.debug(
-            f"Created {quadtree_count} quadtrees in {quadtree_timer.duration_s:0.1f} seconds"
+            f"Processed {csv_converted:,} CSV{_s(csv_converted)}"
+            f" into {intermediate:,} intermediate quadtree{_s(intermediate)}"
+            f" and {final:,} region quadtree{_s(final)}"
+            f" in {quadtree_timer.duration_s:0.1f} seconds"
         )
 
         # Merge quadtrees and make points unique.
@@ -150,7 +160,8 @@ def generate(
         result["tile_count"] = tile_count
         result["render_duration_s"] = render_timer.duration_s
         LOG.debug(
-            f"Rendered {tile_count:,} tiles in {render_timer.duration_s:0.1f} seconds"
+            f"Rendered {tile_count:,} tile{_s(tile_count)}"
+            f" in {render_timer.duration_s:0.1f} seconds"
         )
 
     if upload:
@@ -171,6 +182,7 @@ def generate(
             )
 
         result["sync_duration_s"] = sync_timer.duration_s
+        result["tiles_unchanged"] = unchanged_count
         result.update(sync_counts)
         LOG.debug(
             f"Synced tiles to S3 in {sync_timer.duration_s:0.1f} seconds: "
@@ -186,31 +198,57 @@ def generate(
     return result
 
 
-def export_to_csvs(pool, csvdir):
-    """Export from database tables to CSV."""
+def _s(count):
+    """Add an s, like rows, if the count is not 1."""
+    if count == 1:
+        return ""
+    else:
+        return "s"
+
+
+def export_to_csvs(pool, csv_dir):
+    """
+    Export from database tables to CSV.
+
+    For small database tables, there will be one CSV created, such as
+    "map_ne.csv" for the datamap_ne (northeast) table.
+
+    For large database tables, there will be multiple CSVs created,
+    such as "submap_ne_0001.csv".
+
+    :param pool: A multiprocessing pool
+    :csv_dir: The directory to write CSV output files
+    :return: A tuple of counts (rows, CSVs)
+    """
     jobs = []
     result_rows = 0
+    result_csvs = 0
     for shard_id, shard in sorted(DataMap.shards().items()):
         # sorting the shards prefers the north which contains more
         # data points than the south
-        filename = os.path.join(csvdir, "map_%s.csv" % shard_id)
-        jobs.append(pool.apply_async(export_to_csv, (filename, shard.__tablename__)))
+        filename = f"map_{shard_id}.csv"
+        jobs.append(
+            pool.apply_async(export_to_csv, (filename, csv_dir, shard.__tablename__))
+        )
 
     # Run export jobs to completion
-    def on_success(job_rows):
-        nonlocal result_rows
-        result_rows += job_rows
+    def on_success(result):
+        nonlocal result_rows, result_csvs
+        rows, csvs = result
+        result_rows += rows
+        result_csvs += csvs
 
     def on_progress(tables_complete, table_percent):
         nonlocal result_rows
         LOG.debug(
-            f"  Exported {result_rows:,} row{'' if result_rows==1 else 's'}"
-            f" from {tables_complete:,} table{'' if tables_complete==1 else 's'}"
+            f"  Exported {result_rows:,} row{_s(result_rows)}"
+            f" from {tables_complete:,} table{_s(tables_complete)}"
+            f" to {result_csvs:,} CSV file{_s(result_csvs)}"
             f" ({table_percent:0.1%})"
         )
 
     watch_jobs(jobs, on_success=on_success, on_progress=on_progress)
-    return result_rows
+    return result_rows, result_csvs
 
 
 def watch_jobs(
@@ -258,11 +296,35 @@ def watch_jobs(
 
 
 def csv_to_quadtrees(pool, csvdir, quadtree_dir):
-    """Convert CSV to quadtrees."""
+    """
+    Convert CSV to quadtrees.
+
+    :param pool: A multiprocessing pool
+    :param csvdir: The directory with the input CSV files
+    :param quadtree_dir: The directory with the output quadtree files
+    :return: A tuple of counts (CSVs processed, intermediate quadtrees, final quads)
+
+    If multiple CSVs were generated for a datamap table, then per-CSV intermediate
+    quadtrees will be created in a subfolder, and then merged (allowing duplicates)
+    to a standard quadtree.
+    """
     jobs = []
+    intermediate_count = 0
+    intermediates = defaultdict(list)
+    final_count = 0
     for name in os.listdir(csvdir):
         if name.startswith("map_") and name.endswith(".csv"):
+            final_count += 1
             jobs.append(pool.apply_async(csv_to_quadtree, (name, csvdir, quadtree_dir)))
+        if name.startswith("submap_") and name.endswith(".csv"):
+            intermediate_count += 1
+            prefix, shard, suffix = name.split("_")
+            basename, suffix = name.split(".")
+            intermediates[shard].append(basename)
+            submap_dir = os.path.join(quadtree_dir, f"submap_{shard}")
+            if not os.path.isdir(submap_dir):
+                os.mkdir(submap_dir)
+            jobs.append(pool.apply_async(csv_to_quadtree, (name, csvdir, submap_dir)))
 
     # Run conversion jobs to completion
     def on_progress(converted, percent):
@@ -272,18 +334,41 @@ def csv_to_quadtrees(pool, csvdir, quadtree_dir):
             LOG.debug(f"  Converted {converted:,} CSVs to quadtrees ({percent:0.1%})")
 
     watch_jobs(jobs, on_progress=on_progress)
-    return len(jobs)
+    csv_count = len(jobs)
+
+    # Queue jobs to merge intermediates
+    merge_jobs = []
+    for shard, basenames in intermediates.items():
+        submap_dir = os.path.join(quadtree_dir, f"submap_{shard}")
+        map_dir = os.path.join(quadtree_dir, f"map_{shard}")
+        merge_jobs.append(
+            pool.apply_async(
+                merge_quadtrees,
+                (submap_dir, map_dir),
+                {"remove_duplicates": False, "pattern": "submap*"},
+            )
+        )
+        final_count += 1
+
+    def on_merge_progress(merged, percent):
+        LOG.debug(
+            f"  Merged intermediate quadtrees to {merged:,}"
+            f" quadtree{_s(merged)} ({percent:0.1%})"
+        )
+
+    watch_jobs(merge_jobs, on_progress=on_merge_progress)
+    return (csv_count, intermediate_count, final_count)
 
 
-def merge_quadtrees(quadtree_dir, shapes_dir):
+def merge_quadtrees(quadtree_dir, shapes_dir, remove_duplicates=True, pattern="map*"):
     """Merge multiple quadtree files into one, removing duplicates."""
-    quadtree_files = glob.glob(os.path.join(quadtree_dir, "map*"))
-    cmd = [
-        "merge",
-        "-u",  # Remove duplicates
-        "-o",  # Output to...
-        shapes_dir,  # shapes directory
-    ] + quadtree_files  # input files
+    quadtree_files = glob.glob(os.path.join(quadtree_dir, pattern))
+    assert quadtree_files
+    cmd = ["merge"]
+    if remove_duplicates:
+        cmd.append("-u")
+    cmd += ["-o", shapes_dir]  # Output to shapes directory
+    cmd += quadtree_files  # input files
     subprocess.run(cmd, check=True, capture_output=True)
 
 
@@ -324,13 +409,13 @@ def get_sync_plan(bucket_name, tiles_dir, bucket_prefix="tiles/"):
     LOG.debug(
         f"Completed sync actions in {action_timer.duration_s:0.1f} seconds,"
         f" {len(actions['upload']):,} new"
-        f" tile{'' if len(actions['upload']) == 1 else 's'} to upload,"
+        f" tile{_s(len(actions['upload']))} to upload,"
         f" {len(actions['update']):,} changed"
-        f" tile{'' if len(actions['update']) == 1 else 's'} to update,"
+        f" tile{_s(len(actions['update']))} to update,"
         f" {len(actions['delete']):,} orphaned"
-        f" tile{'' if len(actions['delete']) == 1 else 's'} to delete,"
+        f" tile{_s(len(actions['delete']))} to delete,"
         f" and {unchanged_count:,} unchanged"
-        f" tile{'' if unchanged_count == 1 else 's'}"
+        f" tile{_s(unchanged_count)}"
     )
 
     return actions, unchanged_count
@@ -387,7 +472,7 @@ def sync_tiles(
         nonlocal result, total
         count = sum(result.values())
         percent = count / total
-        LOG.debug(f"  Synced {count:,} file{'' if count == 1 else 's'} ({percent:.1%})")
+        LOG.debug(f"  Synced {count:,} file{_s(count)} ({percent:.1%})")
 
     watch_jobs(jobs, on_progress=on_progress, on_success=on_success, on_error=on_error)
     return result
@@ -407,8 +492,25 @@ def upload_status_file(bucket_name, runtime_data, bucket_prefix="tiles/"):
     )
 
 
-def export_to_csv(filename, tablename, _session=None):
-    """Export a datamap table to a CSV file."""
+def export_to_csv(filename, csv_dir, tablename, row_limit=None, file_limit=None):
+    """
+    Export a datamap table to a CSV file.
+
+    :param filename: An output file ending in .csv
+    :param csv_dir: The output directory
+    :param tablename: The name of the datamap table to export
+    :param row_limit: The number of rows to fetch at a time
+    :param file_limit: The number of output rows before rotating files
+    :return: A tuple (rows exported, files created)
+
+    Each database row is turned into 0 to 6 similar CSV rows by
+    random_points(), based on how recently they were recorded.
+
+    If file_limit is not reached, the output file will the filename.
+    If file_limit is reached, the output files will have a serial number and
+    be based on the filename. For example, "map.csv" will become "map_0001.csv",
+    "map_0002.csv", etc.
+    """
     stmt = text(
         """\
 SELECT
@@ -426,16 +528,23 @@ LIMIT :limit
 
     db = configure_db("ro", pool=False)
     min_grid = b""
-    limit = 200000
+    row_limit = row_limit or 200_000
+    file_limit = file_limit or 10_000_000
 
     result_rows = 0
-    with open(filename, "w") as fd:
+    file_path = os.path.join(csv_dir, filename)
+    fd = open(file_path, "w")
+    file_count = 1
+    file_rows = 0
+    orig_filename = filename
+    orig_file_path = file_path
+    assert filename.endswith(".csv")
+    try:
         with db_worker_session(db, commit=False) as session:
-            if _session is not None:
-                # testing hook
-                session = _session
             while True:
-                result = session.execute(stmt.bindparams(limit=limit, grid=min_grid))
+                result = session.execute(
+                    stmt.bindparams(limit=row_limit, grid=min_grid)
+                )
                 rows = result.fetchall()
                 result.close()
                 if not rows:
@@ -449,13 +558,35 @@ LIMIT :limit
 
                 fd.writelines(lines)
                 result_rows += len(lines)
-                min_grid = rows[-1].grid
 
-    if not result_rows:
-        os.remove(filename)
+                # Rotate the file when needed
+                file_rows += len(lines)
+                if result_rows >= file_limit:
+                    fd.close()
+                    file_count += 1
+                    file_rows = 0
+                    filename = "sub" + orig_filename.replace(
+                        ".csv", f"_{file_count:04}.csv"
+                    )
+                    file_path = os.path.join(csv_dir, filename)
+                    fd = open(file_path, "w")
+
+                min_grid = rows[-1].grid
+    finally:
+        fd.close()
+
+    if not file_rows:
+        os.remove(file_path)
+        file_count -= 1
+
+    if file_count > 1:
+        # Rename first file to serial CSV format
+        filename = "sub" + orig_filename.replace(".csv", "_0001.csv")
+        file_path = os.path.join(csv_dir, filename)
+        os.rename(orig_file_path, file_path)
 
     db.close()
-    return result_rows
+    return result_rows, file_count
 
 
 def csv_to_quadtree(name, csv_dir, quadtree_dir):
@@ -487,7 +618,7 @@ def render_tiles_for_zoom_levels(
     tile_params = enumerate_tiles(shapes_dir, max_zoom)
 
     total = len(tile_params)
-    LOG.debug(f"Rendering {total:,} {tile_type}{'' if total == 1 else 's'}...")
+    LOG.debug(f"Rendering {total:,} {tile_type}{_s(tile_type)}...")
 
     # Create the directory structure
     create_tile_subfolders(tile_params, tiles_dir)
@@ -504,9 +635,7 @@ def render_tiles_for_zoom_levels(
     # Watch render jobs to completion
     def on_progress(rendered, percent):
         nonlocal tile_type
-        LOG.debug(
-            f"  Rendered {rendered:,} {tile_type}{'' if rendered == 1 else 's'} ({percent:.1%})"
-        )
+        LOG.debug(f"  Rendered {rendered:,} {tile_type}{_s(tile_type)} ({percent:.1%})")
 
     watch_jobs(jobs, on_progress=on_progress)
     return len(jobs)

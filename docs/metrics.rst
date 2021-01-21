@@ -902,11 +902,15 @@ not emit metrics.
 
 The final ``canonical-log-line`` log entry has this data:
 
-* ``bucketname``: The name of the S3 bucket
+* ``bucket_name``: The name of the S3 bucket
 * ``concurrency``: The number of concurrent threads used
 * ``create``: True if ``--create`` was set to generate tiles
+* ``csv_converted_count``: How many CSV files were converted to quadtrees
+* ``csv_count``: How many CSV files were exported from the database
 * ``duration_s``: How long in seconds to run the script
 * ``export_duration_s``: How long in seconds to export from tables to CSV
+* ``intermediate_quadtree_count``: How many partial quadtrees were created (due
+  to multiple CSVs exported from large tables) and merged into one per-table quadtree
 * ``merge_duration_s``: How long in seconds to merge the per-table quadtrees
 * ``quadtree_count``: How many per-table quadtrees were generated
 * ``quadtree_duration_s``: How long in seconds to convert CSV to quadtrees
@@ -918,6 +922,7 @@ The final ``canonical-log-line`` log entry has this data:
 * ``tile_changed``: How many existing S3 tiles were updated
 * ``tile_count``: The total number of tiles generated
 * ``tile_deleted``: How many existing S3 tiles were deleted
+* ``tile_failed``: How many upload or deletion failures
 * ``tile_new``: How many new tiles were uploaded to S3
 * ``tile_unchanged``: How many tiles were the same as the S3 tiles
 * ``upload``: True if ``--upload`` was set to upload / sync tiles
