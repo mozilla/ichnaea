@@ -182,6 +182,7 @@ def generate(
             )
 
         result["sync_duration_s"] = sync_timer.duration_s
+        result["tiles_unchanged"] = unchanged_count
         result.update(sync_counts)
         LOG.debug(
             f"Synced tiles to S3 in {sync_timer.duration_s:0.1f} seconds: "
