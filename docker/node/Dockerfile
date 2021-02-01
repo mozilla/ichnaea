@@ -1,4 +1,4 @@
-FROM node:15-slim
+FROM node:14.15.4-slim
 
 # Note: This uses the node user (uid 1000) that comes with the image.
 
@@ -20,7 +20,7 @@ CMD ["bash"]
 
 COPY --chown=node:node ./package.json ./npm-shrinkwrap.json /node/
 RUN npm install --no-save -d /node
-# RUN npm dedupe # Broken with npm 7.0.15, see #1467
+RUN npm dedupe
 RUN npm shrinkwrap
 
 ENV PATH=$PATH:/node/node_modules/.bin/

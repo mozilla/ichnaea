@@ -17,11 +17,11 @@ cp $< $@
 endef
 
 define run-cleancss =
-cleancss -o $@ $^
+$(NODE_MODULES)/clean-css-cli/bin/cleancss -o $@ $^
 endef
 
 define run-uglifyjs =
-uglifyjs $^ -c -o $@
+$(NODE_MODULES)/uglify-js/bin/uglifyjs $^ -c -o $@
 endef
 
 .PHONY: all
