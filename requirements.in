@@ -145,7 +145,7 @@ cachetools
 # Code: https://github.com/psf/requests
 # Changes: https://github.com/psf/requests/blob/master/HISTORY.md
 # Docs: https://requests.readthedocs.io/en/master/
-requests==2.25.0
+requests==2.25.1
 
 # R-Tree spatial index for Python GIS, requires libspatialindex
 # Code: https://github.com/Toblerity/Rtree
