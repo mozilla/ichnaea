@@ -758,6 +758,24 @@ section.terms-of-service .text-uppercase-disclaimer {
     text-transform: uppercase;
 }
 
+/* Privacy notice - terms */
+section.privacy-notice dt {
+    float: left;
+    clear: left;
+    margin-right: 0.3em;
+    font-weight: bold;
+}
+
+section.privacy-notice dt::after {
+    content: ":";
+    font-weight: bold;
+}
+
+section.privacy-notice dd {
+    margin-left: 0em;
+    margin-bottom: 1em;
+}
+
 /* Mobile Layout: 320px */
 
 @media only screen and (max-width: 760px) {

@@ -2,141 +2,127 @@
            xmlns:metal="http://xml.zope.org/namespaces/metal"
            metal:use-macro="view.base_template">
 
-<tal:slot metal:fill-slot="js">
-    <script src="/static/js/bundle-privacy.js"></script>
-</tal:slot>
-
 <tal:slot metal:fill-slot="content">
-<section id="main-content">
-
-<div id="strings"
-    data-tabpanel-open-text="Learn More"
-    data-tabpanel-close-text="Show Less"
-></div>
+<section class="privacy-notice" id="main-content">
 
 <p class="italic">
-    Last updated August 30, 2019
+    Last updated February 3, 2021
 </p>
 
-<p class="text-justified">
-    When Mozilla (that’s us), receives information from you, our
-    <a href="https://www.mozilla.org/privacy">
-        Mozilla Privacy Policy
-    </a>
-    describes how we handle that information.
+<p>
+    Mozilla Location Services (MLS) is an open, crowdsourced geolocation
+    service that can estimate your device’s location. MLS works on apps,
+    websites, and services that are authorized to use MLS and that you have
+    given permission to request your device’s location.
 </p>
 
-<p class="text-justified">
-    You must be over the age of 13 or have your parent or guardian consent
-    to and supervise your participation in our crowd-sourcing project.
+<p>
+    In this Privacy Notice, we explain what data Mozilla Location Services
+    collects and shares, and why. We also adhere to the practices outlined in
+    the Mozilla
+    <a href="https://www.mozilla.org/privacy/">Privacy Policy</a>
+    for how we receive, handle and share information we collect from MLS.
 </p>
 
-<section class="highlight accordion" id="things-you-should-know">
-    <header>
-        <h2>Things you should know</h2>
-    </header>
+<h2>What Data MLS Collects</h2>
 
-    <div>
-        <p role="tab" id="approximate-location">
-            Mozilla receives your approximate location when you send us
-            crowd-sourced data or ask us to locate you.
-        </p>
-        <ul role="tabpanel">
-            <li>
-                <p class="text-justified">
-                    If you enable Mozilla Location Service on Firefox for
-                    Android, we will receive your location each time you choose
-                    to share your location with another application or website.
-                    If you install one of our Android apps, we will receive
-                    your location each time you turn on the app and have it
-                    running, even if it is running in the background.
-                </p>
-                <ul>
-                    <li class="text-justified">
-                        We receive publicly observable data about WiFi access
-                        points, Bluetooth beacons and cell towers around you,
-                        your estimated latitude and longitude, the date and
-                        information about your heading, speed and altitude.
-                        This information is stored locally on your device
-                        until an Internet connection is established. The data
-                        is then deleted from your device and sent to Mozilla.
-                    </li>
-                    <li class="text-justified">
-                        If you do not want to report crowd-sourced data to
-                        Mozilla, you should turn off our Android apps or
-                        change your Firefox preference under
-                        Tools/Options/Data Choices.
-                    </li>
-                </ul>
-            </li>
-            <li>
-                <p class="text-justified">
-                    In addition, we may receive certain temporary data such
-                    as your IP address. This data is deleted after being used
-                    as follows:
-                </p>
-                <ul>
-                    <li class="text-justified">
-                        for security purposes to protect against certain types
-                        of attack.
-                    </li>
-                    <li class="text-justified">
-                        to assist in providing you with an approximate
-                        location.
-                    </li>
-                </ul>
-            </li>
-        </ul>
+<p>
+    Mozilla estimates your location when you choose to share your location with
+    an application, or website, or service. Here’s the data MLS may receive
+    when a request is made:
+</p>
 
-        <hr />
+<dl>
+    <dt>Location data</dt>
+    <dd>
+        information about the publicly observable Wi-Fi access points, cell
+        towers and Bluetooth beacons closest to you. We may also determine your
+        location from your device’s (e.g., computer, phone, tablet) IP address.
+        You can prevent your Wi-Fi access points from being reported to Mozilla
+        - see how to disable this <a href="/optout">here</a>.
+    </dd>
 
-        <p role="tab" id="data-anonymous">
-            You can send us data anonymously or using a Firefox Account.
-        </p>
-        <ul role="tabpanel">
-            <li class="text-justified">
-                Our <a href="/map">data map</a> is updated daily with
-                aggregated location points sent to Mozilla from users
-                around the world. Location points are blurred to promote
-                anonymity.
-            </li>
-        </ul>
+    <dt>Technical data</dt>
+    <dd>
+        technical data like the time you made a location request and an
+        approximation of how close you are to a Wi-Fi access point, cell tower,
+        or Bluetooth beacon.
+    </dd>
+    <dd>
+        You can see a
+        <a href="https://ichnaea.readthedocs.io/en/latest/api/geolocate.html">complete list</a>
+        of the technical data we collect.
+    </dd>
 
-        <hr />
+    <dt>Crash reports</dt>
+    <dd>
+        If MLS crashes, we receive information about what may have caused the
+        crash. Crash reports include information about MLS at the time of a
+        crash, which may contain data that identifies you or is otherwise
+        sensitive to you. This could include your IP address, location
+        information, and the time of the crash.
+    </dd>
+</dl>
 
-        <p role="tab" id="crowd-sourced-data">
-            Crowd-sourced data is used by Mozilla and others to improve
-            location services.
-        </p>
-        <ul role="tabpanel">
-            <li class="text-justified">
-                We publish data on public cell tower locations on our
-                website for public use and benefit. You can
-                <a href="/downloads">view the reports here</a>.
-            </li>
-            <li class="text-justified">
-                We do not publicly share Bluetooth or WiFi location data,
-                which are more sensitive. This information is used by
-                Mozilla and our partners to improve and provide the
-                Mozilla Location Service.
-            </li>
-        </ul>
+<p>
+    We use the information we collect to provide the service to you, and to
+    improve the service.
+</p>
 
-        <hr />
+<h2>How Your Data is Shared</h2>
 
-        <p role="tab" id="personal-optout">
-            We try to minimize the crowd-sourced data we receive from personal
-            WiFi access points.
-        </p>
-        <ul role="tabpanel">
-            <li class="text-justified">
-                You can prevent a WiFi access point from being reported to
-                Mozilla. See <a href="/optout">our optout page</a> for
-                more information.
-            </li>
-        </ul>
-    </div>
-</section>
+<dl>
+    <dt>Cloud Storage Provider</dt>
+    <dd>
+        We use
+        <a href="https://aws.amazon.com/privacy/">Amazon Web Service</a>
+        (AWS) as our cloud storage provider to store and process MLS data.
+    </dd>
+
+    <dt>Authorized applications and websites that request your location</dt>
+    <dd>
+        If you (or a <a href="/terms">product or service</a> you’re using)
+        makes a request for your location, Mozilla will share your approximate
+        location with the product or service.
+    </dd>
+
+    <dt>Publicly</dt>
+    <dd>
+        We publish data on public cell tower locations on our website for
+        public use and benefit. We will not publicly share Bluetooth or Wi-Fi
+        location data, which can be more sensitive. You can
+        <a href="/downloads">view the reports here</a>.
+    </dd>
+</dl>
+
+<h2>Mozilla Stumbler App</h2>
+
+<p>
+    Mozilla Stumbler (Stumbler) is an open-source Android application that
+    collects GPS data to improve the 
+    <a href="https://location.services.mozilla.com">Mozilla Location Service</a>.
+    Stumbler (and authorized applications that use
+    <a href="https://ichnaea.readthedocs.io/en/latest/api/geosubmit2.html">the geosubmit API</a>)
+    <em>automatically</em> records location data when the app is open and you move
+    around. In addition to the data MLS collects, Stumbler also receives your
+    device’s GPS location and additional technical data, like your device’s
+    altitude and speed.
+</p>
+
+<p>
+    The information is stored locally on your device until an internet
+    connection is established. The data is then deleted from your device and
+    sent to Mozilla. If you do not want to report data to Mozilla, you can
+    delete the Android app or change your Firefox for Android (versions 69 and
+    earlier) preference under Settings / Privacy / Data Choices.
+</p>
+
+<p>
+    We aggregate location points sent to Mozilla from users around the world in
+    our
+    <a href="https://location.services.mozilla.com/map">data map</a>.
+    Location points are blurred to promote anonymity.
+</p>
 
 </section>
 </tal:slot>
