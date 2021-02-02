@@ -64,7 +64,6 @@ $(CSS_ROOT)/mapbox-gl-geocoder.css: $(NODE_MODULES)/@mapbox/mapbox-gl-geocoder/d
 js: shrinkwrap
 js: $(JS_ROOT)/bundle-base.js
 js: $(JS_ROOT)/bundle-map.js
-js: $(JS_ROOT)/bundle-privacy.js
 js: $(JS_ROOT)/bundle-stat-regions.js
 js: $(JS_ROOT)/bundle-stat.js
 
@@ -73,7 +72,6 @@ cleanjs:
 	rm -f \
 		$(JS_ROOT)/bundle-base.js \
 		$(JS_ROOT)/bundle-map.js \
-		$(JS_ROOT)/bundle-privacy.js \
 		$(JS_ROOT)/bundle-stat-regions.js \
 		$(JS_ROOT)/bundle-stat.js \
 		$(JS_ROOT)/jquery.dataTables.js \
@@ -86,7 +84,6 @@ cleanjs:
 
 $(JS_ROOT)/bundle-base.js: $(JS_ROOT)/jquery.js ; $(run-uglifyjs)
 $(JS_ROOT)/bundle-map.js: $(JS_ROOT)/mapbox-gl-unminified.js $(JS_ROOT)/mapbox-gl-geocoder.min.js $(JS_ROOT)/map.js ; $(run-uglifyjs)
-$(JS_ROOT)/bundle-privacy.js: $(JS_ROOT)/privacy.js ; $(run-uglifyjs)
 $(JS_ROOT)/bundle-stat-regions.js: $(JS_ROOT)/jquery.dataTables.js $(JS_ROOT)/stat-regions.js ; $(run-uglifyjs)
 $(JS_ROOT)/bundle-stat.js: $(JS_ROOT)/jquery.flot.js $(JS_ROOT)/jquery.flot.time.js $(JS_ROOT)/stat.js ; $(run-uglifyjs)
 
