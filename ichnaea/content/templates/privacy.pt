@@ -98,6 +98,15 @@
 <h2>Mozilla Stumbler App</h2>
 
 <p>
+    <em>
+    Note: The Mozilla Stumbler app was decommissioned on February 8, 2021 and
+    is no longer supported. See
+    <a href="https://discourse.mozilla.org/t/retiring-mozilla-stumbler/75206">here</a>
+    for more information.
+    </em>
+</p>
+
+<p>
     Mozilla Stumbler (Stumbler) is an open-source Android application that
     collects GPS data to improve the 
     <a href="https://location.services.mozilla.com">Mozilla Location Service</a>.
