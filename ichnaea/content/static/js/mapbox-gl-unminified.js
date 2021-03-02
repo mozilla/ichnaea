@@ -1,4 +1,4 @@
-/* Mapbox GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/mapbox/mapbox-gl-js/blob/v1.13.0/LICENSE.txt */
+/* Mapbox GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/mapbox/mapbox-gl-js/blob/v1.13.1/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -34,7 +34,7 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var version = "1.13.0";
+var version = "1.13.1";
 
 var unitbezier = UnitBezier;
 function UnitBezier(p1x, p1y, p2x, p2y) {
@@ -1347,7 +1347,9 @@ function arrayBufferToImage(data, callback, cacheControl, expires) {
         callback(null, img);
         URL.revokeObjectURL(img.src);
         img.onload = null;
-        img.src = transparentPngUrl;
+        window$1.requestAnimationFrame(function () {
+            img.src = transparentPngUrl;
+        });
     };
     img.onerror = function () {
         return callback(new Error('Could not load image. Please make sure to use a supported image type such as PNG or JPEG. Note that SVGs are not supported.'));
