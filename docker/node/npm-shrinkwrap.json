@@ -285,17 +285,6 @@
         "clean-css": "^5.1.0",
         "commander": "7.x",
         "glob": "^7.1.6"
-      },
-      "dependencies": {
-        "clean-css": {
-          "version": "5.1.0",
-          "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.1.0.tgz",
-          "integrity": "sha512-98ALLW4NOhZpvUEoSc2dJO23xE4S4SXc4mLieCVFGo8DNLTFQ3gzi7msW1lqSYJeGZSF5r5+W3KF6cEnkILnFQ==",
-          "dev": true,
-          "requires": {
-            "source-map": "~0.6.0"
-          }
-        }
       }
     },
     "clone-response": {
