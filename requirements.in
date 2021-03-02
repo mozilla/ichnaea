@@ -90,7 +90,7 @@ maxminddb==2.0.3
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.6.0
+more-itertools==8.7.0
 
 # HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
 # Code: https://github.com/cedadev/ndg_httpsclient/
