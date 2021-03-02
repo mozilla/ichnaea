@@ -16,9 +16,8 @@ def run_migrations_online():
 
     with db.engine.connect() as connection:
         context.configure(connection=connection)
-        with connection.begin() as trans:
+        with context.begin_transaction():
             context.run_migrations()
-            trans.commit()
 
 
 configure_logging()
