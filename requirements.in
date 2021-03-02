@@ -90,7 +90,7 @@ maxminddb==2.0.3
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.6.0
+more-itertools==8.7.0
 
 # HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
 # Code: https://github.com/cedadev/ndg_httpsclient/
@@ -114,7 +114,7 @@ PyMySQL==1.0.2
 # Code: https://github.com/Pylons/pyramid
 # Changes: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/whatsnew-1.10.html#
 # Docs: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/
-pyramid==1.10.5
+pyramid==2.0
 
 # Pyramid bindings for Chameleon, an HTML/XML template engine
 # Code: https://github.com/Pylons/pyramid_chameleon
@@ -157,7 +157,7 @@ Rtree==0.9.7
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.6.0
+scipy==1.6.1
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -193,7 +193,7 @@ structlog==20.2.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.2
+urllib3[secure]==1.26.3
 
 #
 # Requirements for developement
