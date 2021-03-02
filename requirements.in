@@ -114,7 +114,7 @@ PyMySQL==1.0.2
 # Code: https://github.com/Pylons/pyramid
 # Changes: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/whatsnew-1.10.html#
 # Docs: https://docs.pylonsproject.org/projects/pyramid/en/1.10-branch/
-pyramid==1.10.5
+pyramid==2.0
 
 # Pyramid bindings for Chameleon, an HTML/XML template engine
 # Code: https://github.com/Pylons/pyramid_chameleon
