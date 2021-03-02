@@ -1,4 +1,4 @@
-FROM node:14.15.4-slim
+FROM node:lts-slim@sha256:131ed4e7d493f832024ab6a67d650798bd5472980c762b0a96d45e166832d501
 
 # Note: This uses the node user (uid 1000) that comes with the image.
 
