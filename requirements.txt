@@ -970,9 +970,9 @@ sqlalchemy==1.3.23 \
     # via
     #   -r requirements.in
     #   alembic
-structlog==20.2.0 \
-    --hash=sha256:33dd6bd5f49355e52c1c61bb6a4f20d0b48ce0328cc4a45fe872d38b97a05ccd \
-    --hash=sha256:af79dfa547d104af8d60f86eac12fb54825f54a46bc998e4504ef66177103174
+structlog==21.1.0 \
+    --hash=sha256:62f06fc0ee32fb8580f0715eea66cb87271eb7efb0eaf9af6b639cba8981de47 \
+    --hash=sha256:d9d2d890532e8db83c6977a2a676fb1889922ff0c26ad4dc0ecac26f9fafbc57
     # via -r requirements.in
 text-unidecode==1.3 \
     --hash=sha256:1311f10e8b895935241623731c2ba64f4c455287888b18189350b67134a822e8 \
