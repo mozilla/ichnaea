@@ -4,6 +4,7 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    open-pull-requests-limit: 1000
     reviewers:
       - jwhitlock
   - package-ecosystem: docker
@@ -16,6 +17,7 @@ updates:
     directory: /docker/node/
     schedule:
       interval: monthly
+    open-pull-requests-limit: 1000
     reviewers:
       - jwhitlock
   - package-ecosystem: npm
