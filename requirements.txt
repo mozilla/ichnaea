@@ -894,9 +894,9 @@ soupsieve==2.0.1 \
     --hash=sha256:1634eea42ab371d3d346309b93df7870a88610f0725d47528be902a0d95ecc55 \
     --hash=sha256:a59dc181727e95d25f781f0eb4fd1825ff45590ec8ff49eadfd7f1a537cc0232
     # via beautifulsoup4
-sphinx-rtd-theme==0.5.0 \
-    --hash=sha256:22c795ba2832a169ca301cd0a083f7a434e09c538c70beb42782c073651b707d \
-    --hash=sha256:373413d0f82425aaa28fb288009bf0d0964711d347763af2f1b65cafcb028c82
+sphinx-rtd-theme==0.5.1 \
+    --hash=sha256:eda689eda0c7301a80cf122dad28b1861e5605cbf455558f3775e1e8200e83a5 \
+    --hash=sha256:fa6bebd5ab9a73da8e102509a86f3fcc36dec04a0b52ea80e5a033b2aba00113
     # via -r requirements.in
 sphinx==3.3.1 \
     --hash=sha256:1e8d592225447104d1172be415bc2972bd1357e3e12fdc76edf2261105db4300 \
