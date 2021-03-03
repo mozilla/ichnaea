@@ -502,9 +502,9 @@ markupsafe==1.1.1 \
     # via
     #   jinja2
     #   mako
-markus[datadog]==2.2.0 \
-    --hash=sha256:ed9a275aa4cbfc02e5cf0f2abbd34bc3720c43e432c1448ac7cc36c507111103 \
-    --hash=sha256:f088183e7fef11a4f563f496069ab600942e072dd82e5301b0b896e8fd8b6bcb
+markus[datadog]==3.0.0 \
+    --hash=sha256:7affb46f91c17e0cda1043a997c19e5b18131ba590c835dd7ef6311dcdd4ecdc \
+    --hash=sha256:ba511498ae28163424edb127a424e4a9fbf3f4f8d29bddb2e48cc10df62f7832
     # via -r requirements.in
 maxminddb==2.0.3 \
     --hash=sha256:47e86a084dd814fac88c99ea34ba3278a74bc9de5a25f4b815b608798747c7dc

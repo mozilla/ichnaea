@@ -508,8 +508,8 @@ class TestInternal(BaseExportTest):
         # the export.
         value_totals = {}
         for record in incr_records:
-            key = (record[1], tuple(record[3]))
-            value_totals[key] = value_totals.setdefault(key, 0) + record[2]
+            key = (record.key, tuple(record.tags))
+            value_totals[key] = value_totals.setdefault(key, 0) + record.value
 
         assert value_totals == {
             ("data.export.batch", ("key:internal",)): 1,

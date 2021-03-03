@@ -122,8 +122,7 @@ class TestRetryOnMySQLLockFail:
         raise_first_time()
         assert count == 2
         assert backoff_sleep_mock.call_count == 1
-        expected_tags = [f"errno:{errno}"]
-        assert metricsmock.get_records() == [("incr", "dberror", 1, expected_tags)]
+        metricsmock.assert_incr_once("dberror", tags=[f"errno:{errno}"])
 
     @pytest.mark.parametrize(
         "errclass,errno,errmsg", RETRIABLES.values(), ids=list(RETRIABLES.keys())
@@ -144,5 +143,4 @@ class TestRetryOnMySQLLockFail:
         raise_first_time()
         assert count == 2
         assert backoff_sleep_mock.call_count == 1
-        expected_tags = [f"errno:{errno}", "weight:heavy"]
-        assert metricsmock.get_records() == [("incr", "dberror", 1, expected_tags)]
+        metricsmock.assert_incr_once("dberror", tags=[f"errno:{errno}", "weight:heavy"])

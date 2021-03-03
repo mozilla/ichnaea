@@ -78,7 +78,7 @@ gunicorn==20.0.4
 # Code: https://github.com/willkg/markus
 # Changes: https://github.com/willkg/markus/blob/main/HISTORY.rst
 # Docs: http://markus.readthedocs.io/en/latest/
-markus[datadog]==2.2.0
+markus[datadog]==3.0.0
 
 # Python MaxMind DB reader extension
 # Code: https://github.com/maxmind/MaxMind-DB-Reader-python
