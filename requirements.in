@@ -66,7 +66,7 @@ geoip2==4.1.0
 # Code: https://github.com/gevent/gevent
 # Changes: http://www.gevent.org/changelog.html
 # Docs: http://www.gevent.org/contents.html
-gevent==20.12.1
+gevent==21.1.2
 
 # "Green Unicorn", a WSGI HTTP Server
 # Code: https://github.com/benoitc/gunicorn
