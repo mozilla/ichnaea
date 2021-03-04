@@ -18,7 +18,7 @@ backoff==1.10.0
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.16.48
+boto3==1.17.20
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -66,7 +66,7 @@ geoip2==4.1.0
 # Code: https://github.com/gevent/gevent
 # Changes: http://www.gevent.org/changelog.html
 # Docs: http://www.gevent.org/contents.html
-gevent==20.12.1
+gevent==21.1.2
 
 # "Green Unicorn", a WSGI HTTP Server
 # Code: https://github.com/benoitc/gunicorn
@@ -78,7 +78,7 @@ gunicorn==20.0.4
 # Code: https://github.com/willkg/markus
 # Changes: https://github.com/willkg/markus/blob/main/HISTORY.rst
 # Docs: http://markus.readthedocs.io/en/latest/
-markus[datadog]==2.2.0
+markus[datadog]==3.0.0
 
 # Python MaxMind DB reader extension
 # Code: https://github.com/maxmind/MaxMind-DB-Reader-python
@@ -102,7 +102,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.19.4
+numpy==1.20.1
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -163,7 +163,7 @@ scipy==1.6.1
 # Code: https://github.com/dvarrazzo/py-setproctitle
 # Changes: https://github.com/dvarrazzo/py-setproctitle/blob/master/HISTORY.rst
 # Docs: https://github.com/dvarrazzo/py-setproctitle#readme
-setproctitle==1.2.1
+setproctitle==1.2.2
 
 # Manipulate and analyze geometric objects
 # Code: https://github.com/Toblerity/Shapely
@@ -187,7 +187,7 @@ SQLAlchemy==1.3.23
 # Code: https://github.com/hynek/structlog
 # Changes: https://www.structlog.org/en/stable/changelog.html
 # Docs: https://www.structlog.org/en/stable/
-structlog==20.2.0
+structlog==21.1.0
 
 # User-friendly HTTP client
 # Code: https://github.com/urllib3/urllib3
@@ -221,7 +221,7 @@ colorama==0.4.4
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.21
+Cython==0.29.22
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
@@ -275,7 +275,7 @@ Sphinx==3.3.1
 # Code: https://github.com/readthedocs/sphinx_rtd_theme
 # Changes: https://sphinx-rtd-theme.readthedocs.io/en/stable/changelog.html
 # Docs: https://sphinx-rtd-theme.readthedocs.io/en/stable/
-sphinx-rtd-theme==0.5.0
+sphinx-rtd-theme==0.5.1
 
 # Wrap a WSGI application without starting an HTTP server
 # Code: https://github.com/Pylons/webtest
