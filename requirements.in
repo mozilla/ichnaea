@@ -245,7 +245,7 @@ iso3166
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==5.5.0
+pip-tools==6.0.1
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
