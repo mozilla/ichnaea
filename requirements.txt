@@ -875,9 +875,9 @@ shapely[vectorized]==1.7.1 \
     --hash=sha256:de618e67b64a51a0768d26a9963ecd7d338a2cf6e9e7582d2385f88ad005b3d1 \
     --hash=sha256:e3afccf0437edc108eef1e2bb9cc4c7073e7705924eb4cd0bf7715cd1ef0ce1b
     # via -r requirements.in
-simple-pid==0.2.4 \
-    --hash=sha256:25cfa3408a7b024e090dab00813866b46eca31452ecfc982a7078b4a4730686c \
-    --hash=sha256:d1192b4c42ea5b3d278bb85b565841acb6292e60af2fb31f28c56eb8e704326d
+simple-pid==1.0.1 \
+    --hash=sha256:60d6b3a7c3f19734d33bbc5938293c4924d7cfea74176def03306057b3f99524 \
+    --hash=sha256:99254d8f9a630062264ce4842ef1e90443558f336697268d16b9de52d3baec0b
     # via -r requirements.in
 six==1.15.0 \
     --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
