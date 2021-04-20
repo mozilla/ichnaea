@@ -193,7 +193,7 @@ structlog==21.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.3
+urllib3[secure]==1.26.4
 
 #
 # Requirements for developement
