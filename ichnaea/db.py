@@ -215,8 +215,14 @@ def create_db(uri=None):
 
     sa_url = make_url(uri)
     db_to_create = sa_url.database
-    sa_url.database = None
-    engine = create_engine(sa_url)
+    if hasattr(sa_url, "set"):
+        # SQLAlchemy 1.4: immutable URL object
+        sa_url_no_db = sa_url.set(database=None)
+    else:
+        # SQLAlchemy 1.3: mutate in place
+        sa_url_no_db = sa_url
+        sa_url_no_db.database = None
+    engine = create_engine(sa_url_no_db)
     engine.execute("CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create))
 
     alembic_main(["stamp", "base"])
@@ -243,8 +249,14 @@ def drop_db(uri=None):
 
     sa_url = make_url(uri)
     db_to_drop = sa_url.database
-    sa_url.database = None
-    engine = create_engine(sa_url)
+    if hasattr(sa_url, "set"):
+        # SQLAlchemy 1.4: immutable URL object
+        sa_url_no_db = sa_url.set(database=None)
+    else:
+        # SQLAlchemy 1.3: mutate in place
+        sa_url_no_db = sa_url
+        sa_url_no_db.database = None
+    engine = create_engine(sa_url_no_db)
     engine.execute("DROP DATABASE IF EXISTS {}".format(db_to_drop))
 
 

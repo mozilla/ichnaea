@@ -43,8 +43,12 @@ def get_key(session, valid_key):
         session.execute(select(fields).where(columns.valid_key == valid_key))
     ).fetchone()
     if row is not None:
-        # Create Key from sqlalchemy.engine.result.RowProxy
-        value = Key(**dict(row.items()))
+        if hasattr(row, "_mapping"):
+            # SQLAlchemy 1.4: Create Key from sqlalchemy.engine.result.Row
+            value = Key(**row._mapping)
+        else:
+            # SQLAlchemy 1.3: Create Key from sqlalchemy.engine.result.RowProxy
+            value = Key(**dict(row.items()))
     else:
         value = None
     return value
