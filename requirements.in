@@ -72,7 +72,7 @@ gevent==21.1.2
 # Code: https://github.com/benoitc/gunicorn
 # Changes: https://docs.gunicorn.org/en/stable/news.html
 # Docs: https://docs.gunicorn.org/en/stable/
-gunicorn==20.0.4
+gunicorn==20.1.0
 
 # Generates metrics with multiple backend support
 # Code: https://github.com/willkg/markus
