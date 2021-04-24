@@ -217,13 +217,14 @@ def create_db(uri=None):
     db_to_create = sa_url.database
     if hasattr(sa_url, "set"):
         # SQLAlchemy 1.4: immutable URL object
-        sa_url_no_db = sa_url.set(database=None)
+        sa_url_no_db = sa_url.set(database="")
     else:
         # SQLAlchemy 1.3: mutate in place
         sa_url_no_db = sa_url
         sa_url_no_db.database = None
     engine = create_engine(sa_url_no_db)
-    engine.execute("CREATE DATABASE {} CHARACTER SET = 'utf8'".format(db_to_create))
+    with engine.connect() as conn:
+        conn.execute(f"CREATE DATABASE {db_to_create} CHARACTER SET = 'utf8'")
 
     alembic_main(["stamp", "base"])
     alembic_main(["upgrade", "head"])
@@ -251,13 +252,14 @@ def drop_db(uri=None):
     db_to_drop = sa_url.database
     if hasattr(sa_url, "set"):
         # SQLAlchemy 1.4: immutable URL object
-        sa_url_no_db = sa_url.set(database=None)
+        sa_url_no_db = sa_url.set(database="")
     else:
         # SQLAlchemy 1.3: mutate in place
         sa_url_no_db = sa_url
         sa_url_no_db.database = None
     engine = create_engine(sa_url_no_db)
-    engine.execute("DROP DATABASE IF EXISTS {}".format(db_to_drop))
+    with engine.connect() as conn:
+        conn.execute(f"DROP DATABASE IF EXISTS {db_to_drop}")
 
 
 def retry_on_mysql_lock_fail(metric=None, metric_tags=None):
