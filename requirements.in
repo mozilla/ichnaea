@@ -275,7 +275,7 @@ Sphinx==3.3.1
 # Code: https://github.com/readthedocs/sphinx_rtd_theme
 # Changes: https://sphinx-rtd-theme.readthedocs.io/en/stable/changelog.html
 # Docs: https://sphinx-rtd-theme.readthedocs.io/en/stable/
-sphinx-rtd-theme==0.5.1
+sphinx-rtd-theme==0.5.2
 
 # Wrap a WSGI application without starting an HTTP server
 # Code: https://github.com/Pylons/webtest
