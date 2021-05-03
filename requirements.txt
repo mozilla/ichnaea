@@ -91,13 +91,13 @@ billiard==3.6.3.0 \
 black==20.8b1 \
     --hash=sha256:1c02557aa099101b9d21496f8a914e9ed2222ef70336404eeeac8edba836fbea
     # via -r requirements.in
-boto3==1.17.54 \
-    --hash=sha256:1e55df93aa47a84e2a12a639c7f145e16e6e9ef959542d69d5526d50d2e92692 \
-    --hash=sha256:eab42daaaf68cdad5b112d31dcb0684162098f6558ba7b64156be44f993525fa
+boto3==1.17.62 \
+    --hash=sha256:d856a71d74351649ca8dd59ad17c8c3e79ea57734ff4a38a97611e1e10b06863 \
+    --hash=sha256:da1b2c884dbf56cc3ece07940a7b654f41a93b9fc40ee1ed21a76da25a05989c
     # via -r requirements.in
-botocore==1.20.54 \
-    --hash=sha256:20a864fc6570ba11d52532c72c3ccabab5c71a9b4a9418601a313d56f1d2ce5b \
-    --hash=sha256:37ec76ea2df8609540ba6cb0fe360ae1c589d2e1ee91eb642fd767823f3fcedd
+botocore==1.20.62 \
+    --hash=sha256:e4f8cb923edf035c2ae5f6169c70e77e31df70b88919b92b826a6b9bd14511b1 \
+    --hash=sha256:f7c2c5c5ed5212b2628d8fb1c587b31c6e8d413ecbbd1a1cdf6f96ed6f5c8d5e
     # via
     #   boto3
     #   s3transfer
