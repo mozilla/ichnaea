@@ -72,13 +72,13 @@ unit
     For example, ``312``.
 
 lon
-    Longitude in degrees between -180.0 and 180.0 using the WSG 84 reference
+    Longitude in degrees between -180.0 and 180.0 using the WGS 84 reference
     system. This is a floating point number.
 
     For example, ``52.3456789``.
 
 lat
-    Latitude in degrees between -90.0 and 90.0 using the WSG 84 reference
+    Latitude in degrees between -90.0 and 90.0 using the WGS 84 reference
     system. This is a floating point number.
 
     For example, ``-10.034``.
