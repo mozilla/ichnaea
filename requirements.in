@@ -18,7 +18,7 @@ backoff==1.10.0
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.17.54
+boto3==1.17.79
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -157,7 +157,7 @@ Rtree==0.9.7
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.6.2
+scipy==1.6.3
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -221,7 +221,7 @@ colorama==0.4.4
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.22
+Cython==0.29.23
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
@@ -251,7 +251,7 @@ pip-tools==6.1.0
 # Code: https://github.com/pytest-dev/pytest
 # Changes: https://docs.pytest.org/en/stable/changelog.html
 # Docs: https://docs.pytest.org/en/stable/
-pytest==6.2.2
+pytest==6.2.4
 
 # Code coverage plugin for pytest
 # Code: https://github.com/pytest-dev/pytest-cov
@@ -263,7 +263,7 @@ pytest-cov==2.11.1
 # Code: https://github.com/jamielennox/requests-mock
 # Changes: https://requests-mock.readthedocs.io/en/latest/release-notes.html
 # Docs: https://requests-mock.readthedocs.io/en/latest/
-requests-mock==1.8.0
+requests-mock==1.9.2
 
 # Documentation builder
 # Code: https://github.com/sphinx-doc/sphinx/
@@ -275,7 +275,7 @@ Sphinx==3.3.1
 # Code: https://github.com/readthedocs/sphinx_rtd_theme
 # Changes: https://sphinx-rtd-theme.readthedocs.io/en/stable/changelog.html
 # Docs: https://sphinx-rtd-theme.readthedocs.io/en/stable/
-sphinx-rtd-theme==0.5.1
+sphinx-rtd-theme==0.5.2
 
 # Wrap a WSGI application without starting an HTTP server
 # Code: https://github.com/Pylons/webtest
