@@ -2,7 +2,6 @@ from random import randint, random
 
 from cachetools import cached, TTLCache
 from gevent.lock import RLock
-from sqlalchemy import select
 
 from ichnaea.models import ApiKey
 from ichnaea.models.constants import VALID_APIKEY_REGEX
@@ -14,22 +13,6 @@ API_CACHE_TIMEOUT = 300 + randint(-30, 30)
 API_CACHE = TTLCache(maxsize=500, ttl=API_CACHE_TIMEOUT)
 API_CACHE_LOCK = RLock()
 
-API_KEY_COLUMN_NAMES = (
-    "valid_key",
-    "maxreq",
-    "allow_fallback",
-    "allow_locate",
-    "allow_region",
-    "fallback_name",
-    "fallback_schema",
-    "fallback_url",
-    "fallback_ratelimit",
-    "fallback_ratelimit_interval",
-    "fallback_cache_expire",
-    "store_sample_submit",
-    "store_sample_locate",
-)
-
 
 def _cache_key(session, valid_key):
     return valid_key
@@ -37,21 +20,10 @@ def _cache_key(session, valid_key):
 
 @cached(API_CACHE, key=_cache_key, lock=API_CACHE_LOCK)
 def get_key(session, valid_key):
-    columns = ApiKey.__table__.c
-    fields = [getattr(columns, f) for f in API_KEY_COLUMN_NAMES]
-    row = (
-        session.execute(select(fields).where(columns.valid_key == valid_key))
-    ).fetchone()
-    if row is not None:
-        if hasattr(row, "_mapping"):
-            # SQLAlchemy 1.4: Create Key from sqlalchemy.engine.result.Row
-            value = Key(**row._mapping)
-        else:
-            # SQLAlchemy 1.3: Create Key from sqlalchemy.engine.result.RowProxy
-            value = Key(**dict(row.items()))
-    else:
-        value = None
-    return value
+    api_key = session.query(ApiKey).filter(ApiKey.valid_key == valid_key).one_or_none()
+    if api_key:
+        return Key.from_obj(api_key)
+    return None
 
 
 def validated_key(text):
@@ -62,7 +34,7 @@ def validated_key(text):
     return None
 
 
-class Key(object):
+class Key:
     """
     An in-memory representation of an API key, which is not tied
     to a database session.
@@ -90,6 +62,42 @@ class Key(object):
     def __init__(self, **kw):
         for key, value in kw.items():
             setattr(self, key, value)
+
+    @classmethod
+    def from_obj(cls, api_key):
+        """Load from a database object."""
+        return cls(
+            valid_key=api_key.valid_key,
+            maxreq=api_key.maxreq,
+            allow_fallback=api_key.allow_fallback,
+            allow_locate=api_key.allow_locate,
+            allow_region=api_key.allow_region,
+            fallback_name=api_key.fallback_name,
+            fallback_schema=api_key.fallback_schema,
+            fallback_url=api_key.fallback_url,
+            fallback_ratelimit=api_key.fallback_ratelimit,
+            fallback_ratelimit_interval=api_key.fallback_ratelimit_interval,
+            fallback_cache_expire=api_key.fallback_cache_expire,
+            store_sample_submit=api_key.store_sample_submit,
+            store_sample_locate=api_key.store_sample_locate,
+        )
+
+    def as_dict(self):
+        return {
+            "valid_key": self.valid_key,
+            "maxreq": self.maxreq,
+            "allow_fallback": self.allow_fallback,
+            "allow_locate": self.allow_locate,
+            "allow_region": self.allow_region,
+            "fallback_name": self.fallback_name,
+            "fallback_schema": self.fallback_schema,
+            "fallback_url": self.fallback_url,
+            "fallback_ratelimit": self.fallback_ratelimit,
+            "fallback_ratelimit_interval": self.fallback_ratelimit_interval,
+            "fallback_cache_expire": self.fallback_cache_expire,
+            "store_sample_submit": self.store_sample_submit,
+            "store_sample_locate": self.store_sample_locate,
+        }
 
     def allowed(self, api_type):
         """
