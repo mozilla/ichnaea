@@ -221,7 +221,7 @@ colorama==0.4.4
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.22
+Cython==0.29.23
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
