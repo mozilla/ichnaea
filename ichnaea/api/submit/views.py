@@ -76,7 +76,7 @@ class BaseSubmitView(BaseAPIView):
 
 
 class SubmitV0View(BaseSubmitView):
-    """"Submit version 0 view for `/v1/submit`."""
+    """Submit version 0 view for `/v1/submit`."""
 
     metric_path = "v1.submit"
     route = "/v1/submit"
@@ -85,7 +85,7 @@ class SubmitV0View(BaseSubmitView):
 
 
 class SubmitV1View(BaseSubmitView):
-    """"Submit version 1 view for `/v1/geosubmit`."""
+    """Submit version 1 view for `/v1/geosubmit`."""
 
     metric_path = "v1.geosubmit"
     route = "/v1/geosubmit"
@@ -93,7 +93,7 @@ class SubmitV1View(BaseSubmitView):
 
 
 class SubmitV2View(BaseSubmitView):
-    """"Submit version 2 view for `/v2/geosubmit`."""
+    """Submit version 2 view for `/v2/geosubmit`."""
 
     metric_path = "v2.geosubmit"
     route = "/v2/geosubmit"
