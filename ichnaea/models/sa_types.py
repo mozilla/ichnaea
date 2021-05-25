@@ -15,6 +15,7 @@ class SetColumn(TypeDecorator):
     """
 
     impl = String
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is not None:
@@ -33,6 +34,7 @@ class TinyIntEnum(TypeDecorator):
     """An IntEnum type stores enum values as tiny integers."""
 
     impl = TinyInteger
+    cache_ok = True
 
     def __init__(self, enum, *args, **kw):
         self.enum = enum
@@ -56,6 +58,7 @@ class TZDateTime(TypeDecorator):
     """
 
     impl = DateTime
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if isinstance(value, datetime) and value.tzinfo is not None:
