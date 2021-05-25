@@ -11,7 +11,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.mysql import insert
 from sqlalchemy.exc import IntegrityError
 
-from ichnaea.api.key import API_KEY_COLUMN_NAMES, Key
+from ichnaea.api.key import Key
 from ichnaea.models.api import ApiKey
 from ichnaea.db import configure_db, db_worker_session
 from ichnaea.util import print_table
@@ -85,20 +85,17 @@ def show_api_key_details(ctx, key):
     """Print api key details to stdout."""
     db = configure_db("rw")
     with db_worker_session(db) as session:
-        columns = ApiKey.__table__.columns
-        fields = [getattr(columns, f) for f in API_KEY_COLUMN_NAMES]
-        row = (
-            session.execute(select(fields).where(columns.valid_key == key))
-        ).fetchone()
-        if row is not None:
-            key = Key(**dict(row.items()))
+        row = session.query(ApiKey).filter(ApiKey.valid_key == key).one_or_none()
+        if row:
+            api_key = Key.from_obj(row)
         else:
-            key = None
-    table = []
-    for field in API_KEY_COLUMN_NAMES:
-        table.append([field, getattr(key, field, "")])
+            api_key = None
 
-    print_table(table, delimiter=" : ", stream_write=click_echo_no_nl)
+    if api_key:
+        table = [[name, value] for name, value in api_key.as_dict().items()]
+        print_table(table, delimiter=" : ", stream_write=click_echo_no_nl)
+    else:
+        click.echo(f"API key '{key}' does not exist")
 
 
 if __name__ == "__main__":
