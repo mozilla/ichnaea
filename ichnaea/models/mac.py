@@ -74,6 +74,7 @@ class MacColumn(TypeDecorator):
     """A binary type storing MAC's."""
 
     impl = BINARY
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value and len(value) == 6:
