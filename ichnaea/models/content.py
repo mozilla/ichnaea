@@ -74,6 +74,7 @@ class DataMapGridColumn(TypeDecorator):
     """A binary type storing scaled lat/lon grids."""
 
     impl = BINARY
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if isinstance(value, bytes):

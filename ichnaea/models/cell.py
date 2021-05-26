@@ -303,6 +303,7 @@ class CellAreaColumn(TypeDecorator):
     """A binary type storing Cell Area IDs."""
 
     impl = BINARY
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is None or isinstance(value, bytes):
@@ -325,6 +326,7 @@ class CellIdColumn(TypeDecorator):
     """A binary type storing Cell IDs."""
 
     impl = BINARY
+    cache_ok = True
 
     def process_bind_param(self, value, dialect):
         if value is None or isinstance(value, bytes):
