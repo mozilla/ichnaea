@@ -233,7 +233,7 @@ factory-boy==3.2.0
 # Code: https://gitlab.com/pycqa/flake8
 # Changes: https://flake8.pycqa.org/en/latest/release-notes/index.html
 # Docs: https://flake8.pycqa.org/en/latest/index.html
-flake8==3.9.1
+flake8==3.9.2
 
 # ISO 3166-1 country definitions, used in mobile-codes/parse.py
 # Code: https://github.com/deactivated/python-iso3166
