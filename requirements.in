@@ -209,7 +209,7 @@ beautifulsoup4
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
 # Docs: https://black.readthedocs.io/en/stable/
-black==21.5b1
+black==21.5b2
 
 # Cross-platform colored terminal text, used for structlog output
 # Code: https://github.com/tartley/colorama
