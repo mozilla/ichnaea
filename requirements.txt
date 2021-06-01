@@ -51,9 +51,9 @@ alembic==1.5.8 \
     --hash=sha256:8a259f0a4c8b350b03579d77ce9e810b19c65bf0af05f84efb69af13ad50801e \
     --hash=sha256:e27fd67732c97a1c370c33169ef4578cf96436fa0e7dcfaeeef4a917d0737d56
     # via -r requirements.in
-amqp==5.0.2 \
-    --hash=sha256:5b9062d5c0812335c75434bf17ce33d7a20ecfedaa0733faec7379868eb4068a \
-    --hash=sha256:fcd5b3baeeb7fc19b3486ff6d10543099d40ae1f5c9196eae695d1cde1b2f784
+amqp==5.0.6 \
+    --hash=sha256:03e16e94f2b34c31f8bf1206d8ddd3ccaa4c315f7f6a1879b7b1210d229568c2 \
+    --hash=sha256:493a2ac6788ce270a2f6a765b017299f60c1998f5a8617908ee9be082f7300fb
     # via kombu
 appdirs==1.4.4 \
     --hash=sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41 \
@@ -84,9 +84,9 @@ beautifulsoup4==4.9.3 \
     # via
     #   -r requirements.in
     #   webtest
-billiard==3.6.3.0 \
-    --hash=sha256:bff575450859a6e0fbc2f9877d9b715b0bbc07c3565bb7ed2280526a0cdf5ede \
-    --hash=sha256:d91725ce6425f33a97dfa72fb6bfef0e47d4652acd98a032bd1a7fbf06d5fa6a
+billiard==3.6.4.0 \
+    --hash=sha256:299de5a8da28a783d51b197d496bef4f1595dd023a93a4f59dde1886ae905547 \
+    --hash=sha256:87103ea78fa6ab4d5c751c4909bcff74617d985de7fa8b672cf8618afd5a875b
     # via celery
 black==21.5b2 \
     --hash=sha256:1fc0e0a2c8ae7d269dfcf0c60a89afa299664f3e811395d40b1922dff8f854b5 \
@@ -106,9 +106,9 @@ cachetools==4.2.2 \
     --hash=sha256:2cc0b89715337ab6dbba85b5b50effe2b0c74e035d83ee8ed637cf52f12ae001 \
     --hash=sha256:61b5ed1e22a0924aed1d23b478f37e8d52549ff8a961de2909c69bf950020cff
     # via -r requirements.in
-celery[redis]==5.0.5 \
-    --hash=sha256:5e8d364e058554e83bbb116e8377d90c79be254785f357cb2cec026e79febe13 \
-    --hash=sha256:f4efebe6f8629b0da2b8e529424de376494f5b7a743c321c8a2ddc2b1414921c
+celery[redis]==5.1.0 \
+    --hash=sha256:1329de1edeaf734ef859e630cb42df2c116d53e59d2f46433b13aed196e85620 \
+    --hash=sha256:65f061c04578cf189cd7352c192e1a79fdeb370b916bff792bcc769560e81184
     # via -r requirements.in
 certifi==2020.11.8 \
     --hash=sha256:1f422849db327d534e3d0c5f02a263458c3955ec0aae4ff09b95f195c59f4edd \
@@ -464,9 +464,9 @@ jmespath==0.10.0 \
     # via
     #   boto3
     #   botocore
-kombu==5.0.2 \
-    --hash=sha256:6dc509178ac4269b0e66ab4881f70a2035c33d3a622e20585f965986a5182006 \
-    --hash=sha256:f4965fba0a4718d47d470beeb5d6446e3357a62402b16c510b6a2f251e05ac3c
+kombu==5.1.0 \
+    --hash=sha256:01481d99f4606f6939cdc9b637264ed353ee9e3e4f62cfb582324142c41a572d \
+    --hash=sha256:e2dedd8a86c9077c350555153825a31e456a0dc20c15d5751f00137ec9c75f0a
     # via celery
 mako==1.1.3 \
     --hash=sha256:8195c8c1400ceb53496064314c6736719c6f25e7479cd24c77be3d9361cddc27 \
@@ -1024,6 +1024,7 @@ vine==5.0.0 \
     # via
     #   amqp
     #   celery
+    #   kombu
 waitress==1.4.4 \
     --hash=sha256:1bb436508a7487ac6cb097ae7a7fe5413aefca610550baf58f0940e51ecfb261 \
     --hash=sha256:3d633e78149eb83b60a07dfabb35579c29aac2d24bb803c18b26fb2ab1a584db
