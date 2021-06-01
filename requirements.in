@@ -6,7 +6,7 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.5.8
+alembic==1.6.5
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
@@ -18,13 +18,13 @@ backoff==1.10.0
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.17.79
+boto3==1.17.85
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
 # Changes: https://docs.celeryproject.org/en/stable/changelog.html
 # Docs: https://docs.celeryproject.org/en/stable/index.html
-celery[redis]==5.0.5
+celery[redis]==5.1.0
 
 # Command line interface toolkit
 # Code: https://github.com/pallets/click
@@ -60,7 +60,7 @@ genc==0.2
 # Code: https://github.com/maxmind/GeoIP2-python
 # Changes: https://github.com/maxmind/GeoIP2-python/blob/master/HISTORY.rst
 # Docs: https://geoip2.readthedocs.io/en/latest/
-geoip2==4.1.0
+geoip2==4.2.0
 
 # Coroutine-based concurrency library
 # Code: https://github.com/gevent/gevent
@@ -90,7 +90,7 @@ maxminddb==2.0.3
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.7.0
+more-itertools==8.8.0
 
 # HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
 # Code: https://github.com/cedadev/ndg_httpsclient/
@@ -102,7 +102,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.20.2
+numpy==1.20.3
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -193,7 +193,7 @@ structlog==21.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.4
+urllib3[secure]==1.26.5
 
 #
 # Requirements for developement
@@ -257,7 +257,7 @@ pytest==6.2.4
 # Code: https://github.com/pytest-dev/pytest-cov
 # Changes: https://pytest-cov.readthedocs.io/en/latest/changelog.html
 # Docs: https://pytest-cov.readthedocs.io/en/latest/
-pytest-cov==2.12.0
+pytest-cov==2.12.1
 
 # Mocked responses for the requests library
 # Code: https://github.com/jamielennox/requests-mock
