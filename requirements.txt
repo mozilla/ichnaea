@@ -193,7 +193,7 @@ colorama==0.4.4 \
     --hash=sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b \
     --hash=sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2
     # via -r requirements.in
-coverage==5.3 \
+coverage[toml]==5.3 \
     --hash=sha256:0203acd33d2298e19b57451ebb0bed0ab0c602e5cf5a818591b4918b1f97d516 \
     --hash=sha256:0f313707cdecd5cd3e217fc68c78a960b616604b559e9ea60cc16795c4304259 \
     --hash=sha256:1c6703094c81fa55b816f5ae542c6ffc625fec769f22b053adb42ad712d086c9 \
@@ -692,9 +692,9 @@ pyramid==2.0 \
     # via
     #   -r requirements.in
     #   pyramid-chameleon
-pytest-cov==2.11.1 \
-    --hash=sha256:359952d9d39b9f822d9d29324483e7ba04a3a17dd7d05aa6beb7ea01e359e5f7 \
-    --hash=sha256:bdb9fdb0b85a7cc825269a4c56b48ccaa5c7e365054b6038772c32ddcdc969da
+pytest-cov==2.12.0 \
+    --hash=sha256:8535764137fecce504a49c2b742288e3d34bc09eed298ad65963616cc98fd45e \
+    --hash=sha256:95d4933dcbbacfa377bb60b29801daa30d90c33981ab2a79e9ab4452c165066e
     # via -r requirements.in
 pytest==6.2.4 \
     --hash=sha256:50bcad0a0b9c5a72c8e4e7c9855a3ad496ca6a881a3641b4260605450772c54b \
@@ -992,6 +992,7 @@ toml==0.10.2 \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
     # via
     #   black
+    #   coverage
     #   pep517
     #   pytest
 translationstring==1.4 \

@@ -257,7 +257,7 @@ pytest==6.2.4
 # Code: https://github.com/pytest-dev/pytest-cov
 # Changes: https://pytest-cov.readthedocs.io/en/latest/changelog.html
 # Docs: https://pytest-cov.readthedocs.io/en/latest/
-pytest-cov==2.11.1
+pytest-cov==2.12.0
 
 # Mocked responses for the requests library
 # Code: https://github.com/jamielennox/requests-mock
