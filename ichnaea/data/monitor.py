@@ -91,46 +91,26 @@ class QueueSizeAndRateControl:
         self.rc_controller = None
 
     def __call__(self):
-        # Gather queue lengths, rate control settings from Redis
-        names = list(self.task.app.all_queues.keys())
-        with self.task.redis_client.pipeline() as pipe:
-            for name in names:
-                pipe.llen(name)
-            queue_lengths = pipe.execute()
-        self.load_rc_params()
+        """Load components, set the rate, and send metrics."""
 
-        # Emit queue metrics and calculate the station backlog
-        backlog = 0
-        for name, value in zip(names, queue_lengths):
-            tags_list = ["queue:" + name]
-            for tag_name, tag_val in self.task.app.all_queues[name].items():
-                tags_list.append(f"{tag_name}:{tag_val}")
-                if tag_name == "data_type" and tag_val in ("bluetooth", "cell", "wifi"):
-                    backlog += value
-            METRICS.gauge("queue", value, tags=tags_list)
+        # Load the rate controller from Redis
+        self.load_rate_controller()
+
+        # Get all queue sizes, some of which are observation queues
+        queue_sizes = self.get_queue_sizes()
+
+        # Emit tagged metrics for all queues
+        # The sum of certain queue sizes is the observation backlog
+        backlog = self.emit_queue_metrics_and_get_backlog(queue_sizes)
 
         # Use the rate controller to update the global rate
         if self.rc_enabled:
             self.run_rate_controller(backlog)
-            rc_state = self.freeze_controller_state()
-            with self.task.redis_client.pipeline() as pipe:
-                pipe.set("global_locate_sample_rate", self.rate)
-                pipe.set("rate_controller_state", rc_state)
-                pipe.execute()
-            METRICS.gauge("rate_control.locate.target", self.rc_target)
-            METRICS.gauge("rate_control.locate.kp", self.rc_kp)
-            METRICS.gauge("rate_control.locate.ki", self.rc_ki)
-            METRICS.gauge("rate_control.locate.kd", self.rc_kd)
-
-            p_term, i_term, d_term = self.rc_controller.components
-            METRICS.gauge("rate_control.locate.pterm", p_term)
-            METRICS.gauge("rate_control.locate.iterm", i_term)
-            METRICS.gauge("rate_control.locate.dterm", d_term)
 
         # Emit the current (controlled or manual) global rate
         METRICS.gauge("rate_control.locate", self.rate)
 
-    def load_rc_params(self):
+    def load_rate_controller(self):
         """Load rate controller parameters from Redis-stored strings."""
         with self.task.redis_client.pipeline() as pipe:
             pipe.get("global_locate_sample_rate")
@@ -234,27 +214,62 @@ class QueueSizeAndRateControl:
             # Apply limits, which may clamp integral and last output
             self.rc_controller.output_limits = (0, self.rc_target)
 
-    def run_rate_controller(self, backlog):
-        """Generate a new sample rate."""
-        if not (self.rc_enabled or self.rc_controller or self.rc_state):
-            return
+    def get_queue_sizes(self):
+        """Measure the observation queue sizes (redis llen)."""
+        names = list(self.task.app.all_queues.keys())
+        with self.task.redis_client.pipeline() as pipe:
+            for name in names:
+                pipe.llen(name)
+            queue_lengths = pipe.execute()
+        return {name: value for name, value in zip(names, queue_lengths)}
 
+    def emit_queue_metrics_and_get_backlog(self, queue_sizes):
+        """Emit metrics for queue sizes, and return the observation backlog."""
+        backlog = 0
+        for name, size in queue_sizes.items():
+            tags_list = ["queue:" + name]
+            for tag_name, tag_val in self.task.app.all_queues[name].items():
+                tags_list.append(f"{tag_name}:{tag_val}")
+                if tag_name == "data_type" and tag_val in ("bluetooth", "cell", "wifi"):
+                    backlog += size
+            METRICS.gauge("queue", size, tags=tags_list)
+        return backlog
+
+    def run_rate_controller(self, backlog):
+        """Update the rate, monitor and store controller state."""
+        self.update_rate_with_rate_controller(backlog)
+        rc_state = self.freeze_controller_state()
+        with self.task.redis_client.pipeline() as pipe:
+            pipe.set("global_locate_sample_rate", self.rate)
+            pipe.set("rate_controller_state", rc_state)
+            pipe.execute()
+        METRICS.gauge("rate_control.locate.target", self.rc_target)
+        METRICS.gauge("rate_control.locate.kp", self.rc_kp)
+        METRICS.gauge("rate_control.locate.ki", self.rc_ki)
+        METRICS.gauge("rate_control.locate.kd", self.rc_kd)
+
+        p_term, i_term, d_term = self.rc_controller.components
+        METRICS.gauge("rate_control.locate.pterm", p_term)
+        METRICS.gauge("rate_control.locate.iterm", i_term)
+        METRICS.gauge("rate_control.locate.dterm", d_term)
+
+    def update_rate_with_rate_controller(self, backlog):
+        """Generate a new sample rate."""
+        assert self.rc_controller
         output = self.rc_controller(backlog)
         self.rate = 100.0 * max(0.0, min(1.0, output / self.rc_target))
 
     def freeze_controller_state(self):
         """Convert a PID controller to a JSON encoded string."""
-        if self.rc_controller:
-            p_term, i_term, d_term = self.rc_controller.components
-            state = {
-                "state": "running",
-                "p_term": p_term,
-                "i_term": i_term,
-                "d_term": d_term,
-                "last_output": self.rc_controller._last_output,
-                "last_input": self.rc_controller._last_input,
-                "last_time": self.rc_controller._last_time,
-            }
-        else:
-            state = {"state": "new"}
+        assert self.rc_controller
+        p_term, i_term, d_term = self.rc_controller.components
+        state = {
+            "state": "running",
+            "p_term": p_term,
+            "i_term": i_term,
+            "d_term": d_term,
+            "last_output": self.rc_controller._last_output,
+            "last_input": self.rc_controller._last_input,
+            "last_time": self.rc_controller._last_time,
+        }
         return json.dumps(state)
