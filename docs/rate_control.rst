@@ -58,18 +58,21 @@ will be unable to recover in a full 24 hour cycle, leading to slower service
 and eventually data loss.
 
 It is possible to have a steady backlog that does not cause issues for Redis,
-but that strains the database resources:
+but that strains the database resources, by increasing replica lag or
+accumulating old transaction logs.
 
-* The primary database can have a large number of write operations, and the
-  replica database, used for read-only operations, can fall behind. This causes
-  a build-up of binary logs on the primary database, filling up the disk. The
-  primary database disk usage and the replica lag should be monitored to detect
-  and prevent this problem.
-* Updates from observations can cause the transaction history / undo logs
-  to grow faster than the purge process can delete them. This causes the
-  system log (``ibdata1``) to grow, and it can't be shrunk without recreating
-  the database. The primary database disk usage and transaction history length
-  should be monitored to prevent this problem.
+The primary database can have a large number of write operations, and the
+replica database, used for read-only operations, can fall behind. This causes a
+build-up of binary logs on the primary database, filling up the disk. It also
+delays changes to API keys, such as adding a key or changing requests limits,
+from being applied to the API. The primary database disk usage and the replica
+lag should be monitored to detect and prevent this problem.
+
+Updates from observations can cause the transaction history / undo logs to grow
+faster than the purge process can delete them. This causes the system log
+(``ibdata1``) to grow, and it can't be shrunk without recreating the database.
+The primary database disk usage and transaction history length should be
+monitored to prevent this problem.
 
 Ichnaea has rate controls that can be used to sample incoming data, and reduce
 the observations that need to be processed by the backend. It can also turn

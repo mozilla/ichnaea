@@ -929,10 +929,10 @@ trx_history.purging
 ^^^^^^^^^^^^^^^^^^^
 If the rate controller is enabled, then ``trx_history.purging`` is a gauge that
 becomes ``1`` when the transaction history exceeds the maximum level.
-Observation processing is paused by setting the :ref:`global locate sample rate
-<global-rate-control>` to 0%, which allow the MySQL purge process to reduce the
-transaction history. When it returns to below a safe minimum level, the rate is
-allowed to rise again.
+Observation processing is paused by setting the
+:ref:`global locate sample rate <global-rate-control>` to 0%, which allow the
+MySQL purge process to reduce the transaction history. When it drops below a
+safe minimum level, the rate is allowed to rise again.
 
 If the rate controller is not enabled, then purging mode is not used, and this
 metric is not emitted.
