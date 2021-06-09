@@ -5,6 +5,7 @@ import logging
 
 import markus
 from simple_pid import PID
+from sqlalchemy.exc import OperationalError
 
 from ichnaea import util
 
@@ -77,6 +78,12 @@ class QueueSizeAndRateControl:
     The station data queues represent the backlog, and the rate controller,
     if enabled, attempts to keep the backlog size near a target size by
     adjusting the global locate sample rate.
+
+    Observation processing requires transactions, and the rate of new
+    transactions can exceed the MySQL purge rate. If allowed, monitor
+    this as well, and pause observation processing if it gets too high.
+    Monitoring the transaction history length requires the MySQL user to have
+    the PROCESS permission.
     """
 
     def __init__(self, task):
@@ -89,48 +96,37 @@ class QueueSizeAndRateControl:
         self.rc_kd = None
         self.rc_state = None
         self.rc_controller = None
+        self.trx_history_purging = None
+        self.trx_history_min = None
+        self.trx_history_max = None
 
     def __call__(self):
-        # Gather queue lengths, rate control settings from Redis
-        names = list(self.task.app.all_queues.keys())
-        with self.task.redis_client.pipeline() as pipe:
-            for name in names:
-                pipe.llen(name)
-            queue_lengths = pipe.execute()
-        self.load_rc_params()
+        """Load components, set the rate, and send metrics."""
 
-        # Emit queue metrics and calculate the station backlog
-        backlog = 0
-        for name, value in zip(names, queue_lengths):
-            tags_list = ["queue:" + name]
-            for tag_name, tag_val in self.task.app.all_queues[name].items():
-                tags_list.append(f"{tag_name}:{tag_val}")
-                if tag_name == "data_type" and tag_val in ("bluetooth", "cell", "wifi"):
-                    backlog += value
-            METRICS.gauge("queue", value, tags=tags_list)
+        # Load the rate controller from Redis
+        self.load_rate_controller()
+
+        # Get all queue sizes, some of which are observation queues
+        queue_sizes = self.get_queue_sizes()
+
+        # Emit tagged metrics for all queues
+        # The sum of certain queue sizes is the observation backlog
+        backlog = self.emit_queue_metrics_and_get_backlog(queue_sizes)
+
+        # Read the MySQL InnoDB transaction history length
+        # Observation processing can cause history to grow faster than purged
+        trx_history_length = self.query_transaction_history_length()
 
         # Use the rate controller to update the global rate
+        # Set the rate to 0% while transaction history is too high
+        # Otherwise, attempt to find a rate that maintains a steady backlog
         if self.rc_enabled:
-            self.run_rate_controller(backlog)
-            rc_state = self.freeze_controller_state()
-            with self.task.redis_client.pipeline() as pipe:
-                pipe.set("global_locate_sample_rate", self.rate)
-                pipe.set("rate_controller_state", rc_state)
-                pipe.execute()
-            METRICS.gauge("rate_control.locate.target", self.rc_target)
-            METRICS.gauge("rate_control.locate.kp", self.rc_kp)
-            METRICS.gauge("rate_control.locate.ki", self.rc_ki)
-            METRICS.gauge("rate_control.locate.kd", self.rc_kd)
-
-            p_term, i_term, d_term = self.rc_controller.components
-            METRICS.gauge("rate_control.locate.pterm", p_term)
-            METRICS.gauge("rate_control.locate.iterm", i_term)
-            METRICS.gauge("rate_control.locate.dterm", d_term)
+            self.run_rate_controller(backlog, trx_history_length)
 
         # Emit the current (controlled or manual) global rate
         METRICS.gauge("rate_control.locate", self.rate)
 
-    def load_rc_params(self):
+    def load_rate_controller(self):
         """Load rate controller parameters from Redis-stored strings."""
         with self.task.redis_client.pipeline() as pipe:
             pipe.get("global_locate_sample_rate")
@@ -140,7 +136,21 @@ class QueueSizeAndRateControl:
             pipe.get("rate_controller_ki")
             pipe.get("rate_controller_kd")
             pipe.get("rate_controller_state")
-            rate, rc_enabled, rc_target, rc_kp, rc_ki, rc_kd, rc_state = pipe.execute()
+            pipe.get("rate_controller_trx_purging")
+            pipe.get("rate_controller_trx_min")
+            pipe.get("rate_controller_trx_max")
+            (
+                rate,
+                rc_enabled,
+                rc_target,
+                rc_kp,
+                rc_ki,
+                rc_kd,
+                rc_state,
+                rc_trx_purging,
+                rc_trx_min,
+                rc_trx_max,
+            ) = pipe.execute()
 
         try:
             self.rate = float(rate)
@@ -178,7 +188,7 @@ class QueueSizeAndRateControl:
             return
 
         # Validate simple PID parameters, exit if any are invalid
-        valid = [True] * 4
+        valid = [True] * 7
         self.rc_target, valid[0] = load_param(
             int, "rate_controller_target", rc_target, lambda x: x >= 0
         )
@@ -191,6 +201,20 @@ class QueueSizeAndRateControl:
         self.rc_kd, valid[3] = load_param(
             float, "rate_controller_kd", rc_kd, lambda x: x >= 0, 0
         )
+        self.trx_history_purging, valid[4] = load_param(
+            int, "rate_controller_trx_purging", rc_trx_purging, lambda x: x in {0, 1}, 0
+        )
+        self.trx_history_min, valid[5] = load_param(
+            int, "rate_controller_trx_min", rc_trx_min, lambda x: x > 0, 1000
+        )
+        self.trx_history_max, valid[5] = load_param(
+            int,
+            "rate_controller_trx_max",
+            rc_trx_max,
+            lambda x: x > self.trx_history_min,
+            1000000,
+        )
+
         if not all(valid):
             self.task.redis_client.set("rate_controller_enabled", 0)
             self.task.redis_client.set("rate_controller_state", "{}")
@@ -234,27 +258,116 @@ class QueueSizeAndRateControl:
             # Apply limits, which may clamp integral and last output
             self.rc_controller.output_limits = (0, self.rc_target)
 
-    def run_rate_controller(self, backlog):
-        """Generate a new sample rate."""
-        if not (self.rc_enabled or self.rc_controller or self.rc_state):
-            return
+    def get_queue_sizes(self):
+        """Measure the observation queue sizes (redis llen)."""
+        names = list(self.task.app.all_queues.keys())
+        with self.task.redis_client.pipeline() as pipe:
+            for name in names:
+                pipe.llen(name)
+            queue_lengths = pipe.execute()
+        return {name: value for name, value in zip(names, queue_lengths)}
 
+    def emit_queue_metrics_and_get_backlog(self, queue_sizes):
+        """Emit metrics for queue sizes, and return the observation backlog."""
+        backlog = 0
+        for name, size in queue_sizes.items():
+            tags_list = ["queue:" + name]
+            for tag_name, tag_val in self.task.app.all_queues[name].items():
+                tags_list.append(f"{tag_name}:{tag_val}")
+                if tag_name == "data_type" and tag_val in ("bluetooth", "cell", "wifi"):
+                    backlog += size
+            METRICS.gauge("queue", size, tags=tags_list)
+        return backlog
+
+    def query_transaction_history_length(self):
+        """Get the MySQL InnoDB transaction history length, if allowed."""
+        sql = (
+            "SELECT count FROM information_schema.innodb_metrics"
+            " WHERE name = 'trx_rseg_history_len';"
+        )
+        length = None
+        with self.task.db_session() as session:
+            try:
+                length = session.scalar(sql)
+            except OperationalError as err:
+                # Ignore 1227, 'Access denied; you need (at least one of) the PROCESS privilege(s) for this operation')"
+                if err.orig.args[0] != 1227:
+                    raise
+            else:
+                METRICS.gauge("trx_history.length", length)
+        return length
+
+    def run_rate_controller(self, backlog, trx_history_length):
+        """Update the rate, monitor and store controller state."""
+        trx_purging_mode = self.trx_history_purging_mode(trx_history_length)
+        if trx_purging_mode:
+            self.rate = 0.0
+            rc_state = None
+        else:
+            self.update_rate_with_rate_controller(backlog)
+            rc_state = self.freeze_controller_state()
+
+        with self.task.redis_client.pipeline() as pipe:
+            pipe.set("global_locate_sample_rate", self.rate)
+            pipe.set(
+                "rate_controller_trx_purging", 1 if self.trx_history_purging else 0
+            )
+            if rc_state is not None:
+                pipe.set("rate_controller_state", rc_state)
+            pipe.execute()
+
+        if trx_history_length is not None:
+            METRICS.gauge("trx_history.min", self.trx_history_min)
+            METRICS.gauge("trx_history.max", self.trx_history_max)
+            METRICS.gauge("trx_history.purging", 1 if self.trx_history_purging else 0)
+
+        METRICS.gauge("rate_control.locate.target", self.rc_target)
+        METRICS.gauge("rate_control.locate.kp", self.rc_kp)
+        METRICS.gauge("rate_control.locate.ki", self.rc_ki)
+        METRICS.gauge("rate_control.locate.kd", self.rc_kd)
+
+        p_term, i_term, d_term = self.rc_controller.components
+        METRICS.gauge("rate_control.locate.pterm", p_term)
+        METRICS.gauge("rate_control.locate.iterm", i_term)
+        METRICS.gauge("rate_control.locate.dterm", d_term)
+
+    def trx_history_purging_mode(self, trx_history_length):
+        """If transaction history is high, enter purging mode until back to minimum."""
+        if (
+            trx_history_length is None
+            or self.trx_history_purging is None
+            or self.trx_history_min is None
+            or self.trx_history_max is None
+        ):
+            return None
+
+        if trx_history_length > self.trx_history_max:
+            self.trx_history_purging = True
+            return True
+        elif self.trx_history_purging:
+            if trx_history_length < self.trx_history_min:
+                self.trx_history_purging = False
+                return False
+            return True
+        return False
+
+    def update_rate_with_rate_controller(self, backlog):
+        """Generate a new sample rate."""
+        assert self.rc_controller
         output = self.rc_controller(backlog)
         self.rate = 100.0 * max(0.0, min(1.0, output / self.rc_target))
 
     def freeze_controller_state(self):
         """Convert a PID controller to a JSON encoded string."""
-        if self.rc_controller:
-            p_term, i_term, d_term = self.rc_controller.components
-            state = {
-                "state": "running",
-                "p_term": p_term,
-                "i_term": i_term,
-                "d_term": d_term,
-                "last_output": self.rc_controller._last_output,
-                "last_input": self.rc_controller._last_input,
-                "last_time": self.rc_controller._last_time,
-            }
-        else:
-            state = {"state": "new"}
+        assert self.rc_controller
+        p_term, i_term, d_term = self.rc_controller.components
+        state = {
+            "state": "running",
+            "p_term": p_term,
+            "i_term": i_term,
+            "d_term": d_term,
+            "last_output": self.rc_controller._last_output,
+            "last_input": self.rc_controller._last_input,
+            "last_time": self.rc_controller._last_time,
+        }
         return json.dumps(state)

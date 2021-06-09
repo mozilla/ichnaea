@@ -2,8 +2,10 @@ from datetime import timedelta
 import json
 import random
 import time
+from unittest import mock
 
 import pytest
+from sqlalchemy.exc import OperationalError
 
 from ichnaea.data.tasks import (
     monitor_api_key_limits,
@@ -129,6 +131,36 @@ class TestMonitorAPIUsers:
         assert not redis.exists("apiuser:submit:test:" + days_7)
 
 
+@pytest.fixture
+def monitor_session():
+    """Mock the database session for MonitorQueueSizeAndRateControl"""
+    mock_session = mock.Mock(spec_set=("scalar",))
+    mock_session.scalar.return_value = 123
+    mock_transaction = mock.Mock(spec_set=("__enter__", "__exit__"))
+    mock_transaction.__enter__ = mock.Mock(return_value=mock_session)
+    mock_transaction.__exit__ = mock.Mock(return_value=False)
+    with mock.patch.object(
+        monitor_queue_size_and_rate_control, "db_session", return_value=mock_transaction
+    ):
+        yield mock_session
+
+
+@pytest.fixture
+def monitor_redis(redis):
+    """Setup the rate controller for MonitorQueueSizeAndRateControl"""
+    with redis.pipeline() as pipe:
+        pipe.set("rate_controller_kp", 1.0)
+        pipe.set("rate_controller_ki", 0.002)
+        pipe.set("rate_controller_kd", 0.2)
+        pipe.set("rate_controller_target", 1000)
+        pipe.set("rate_controller_enabled", 1)
+        pipe.set("rate_controller_trx_purging", 0)
+        pipe.set("rate_controller_trx_min", 1000)
+        pipe.set("rate_controller_trx_max", 1000000)
+        pipe.execute()
+    return redis
+
+
 class TestMonitorQueueSizeAndRateControl:
     expected_queues = {
         "celery_blue": ["task"],
@@ -183,6 +215,7 @@ class TestMonitorQueueSizeAndRateControl:
     }
 
     def test_empty_queues(self, celery, redis, metricsmock):
+        """Empty queues emit metrics and have a rate of 100%"""
         monitor_queue_size_and_rate_control.delay().get()
         for name in celery.all_queues:
             spec = self.expected_queues[name]
@@ -193,6 +226,7 @@ class TestMonitorQueueSizeAndRateControl:
         metricsmock.assert_gauge_once("rate_control.locate", value=100.0)
 
     def test_nonempty(self, celery, redis, metricsmock):
+        """Non-empty but low queues emit metrics, have a rate of 100%"""
         data = {}
         for name in celery.all_queues:
             data[name] = random.randint(1, 10)
@@ -209,16 +243,13 @@ class TestMonitorQueueSizeAndRateControl:
             metricsmock.assert_gauge_once("queue", value=val, tags=expected_tags)
         metricsmock.assert_gauge_once("rate_control.locate", value=100.0)
 
-    def test_rate_control(self, celery, redis, metricsmock):
-        redis.set("rate_controller_kp", 1.0)
-        redis.set("rate_controller_ki", 0.002)
-        redis.set("rate_controller_kd", 0.2)
-        redis.set("rate_controller_target", 1000)
-        redis.set("rate_controller_enabled", 1)
-
+    def test_rate_control(self, celery, monitor_redis, monitor_session, metricsmock):
+        """Rate controller runs and emits metrics when enabled."""
+        redis = monitor_redis
         monitor_queue_size_and_rate_control.delay().get()
 
         assert int(redis.get("rate_controller_enabled")) == 1
+        assert int(redis.get("rate_controller_trx_purging")) == 0
         assert float(redis.get("global_locate_sample_rate")) == 100.0
 
         raw_state = redis.get("rate_controller_state")
@@ -246,6 +277,10 @@ class TestMonitorQueueSizeAndRateControl:
             "rate_control.locate.dterm", value=state["d_term"]
         )
         metricsmock.assert_gauge_once("rate_control.locate", value=100.0)
+        metricsmock.assert_gauge_once("trx_history.length", value=123)
+        metricsmock.assert_gauge_once("trx_history.min", value=1000)
+        metricsmock.assert_gauge_once("trx_history.max", value=1000000)
+        metricsmock.assert_gauge_once("trx_history.purging", value=0)
 
     @pytest.mark.parametrize(
         "key",
@@ -436,6 +471,120 @@ class TestMonitorQueueSizeAndRateControl:
             "last_time": state["last_time"],
         }
         assert state["i_term"] != old_state["i_term"]
+
+    def test_trx_history_metric(self, metricsmock, monitor_session, monitor_redis):
+        """The MySQL transaxtion history length is converted to a metric."""
+        monitor_queue_size_and_rate_control.delay().get()
+
+        monitor_session.scalar.assert_called_once_with(
+            "SELECT count FROM information_schema.innodb_metrics"
+            " WHERE name = 'trx_rseg_history_len';"
+        )
+        metricsmock.assert_gauge_once("trx_history.length", value=123)
+        metricsmock.assert_gauge_once("trx_history.min", 1000)
+        metricsmock.assert_gauge_once("trx_history.max", 1000000)
+        metricsmock.assert_gauge_once("trx_history.purging", 0)
+
+    def test_trx_history_not_allowed(self, metricsmock, monitor_redis, monitor_session):
+        """If MySQL connection does not have PROCESS privilege, then do not send metric."""
+        monitor_session.scalar.side_effect = OperationalError(
+            statement="SELECT count FROM information_schema...",
+            params=[],
+            orig=Exception(1227),
+        )
+        monitor_queue_size_and_rate_control.delay().get()
+
+        monitor_session.scalar.assert_called_once()
+        metricsmock.assert_not_gauge("trx_history.length")
+        metricsmock.assert_not_gauge("trx_history.min")
+        metricsmock.assert_not_gauge("trx_history.max")
+        metricsmock.assert_not_gauge("trx_history.purging")
+
+    def test_trx_history_other_error_raised(
+        self, metricsmock, monitor_session, raven_client
+    ):
+        """If a different error is raised, the task raises the exception."""
+        monitor_session.scalar.side_effect = OperationalError(
+            statement="SELECT count FROM information_schema...",
+            params=[],
+            orig=Exception(1234),
+        )
+        with pytest.raises(OperationalError):
+            monitor_queue_size_and_rate_control.delay().get()
+
+        monitor_session.scalar.assert_called_once()
+        metricsmock.assert_not_gauge("trx_history.length", value=123)
+        assert len(raven_client.msgs) == 1
+        raven_client._clear()
+
+    def test_trx_history_override(
+        self, celery, monitor_redis, monitor_session, metricsmock
+    ):
+        """The rate controller enters purging mode above max transaction history."""
+        monitor_redis.set("rate_controller_trx_min", 10)
+        monitor_redis.set("rate_controller_trx_max", 100)
+        monitor_redis.set("rate_controller_trx_purging", 0)
+        monitor_redis.set("global_locate_sample_rate", 100)
+
+        monitor_queue_size_and_rate_control.delay().get()
+
+        assert float(monitor_redis.get("global_locate_sample_rate")) == 0.0
+        assert int(monitor_redis.get("rate_controller_trx_purging")) == 1
+        metricsmock.assert_gauge_once("trx_history.length", value=123)
+        metricsmock.assert_gauge_once("trx_history.min", value=10)
+        metricsmock.assert_gauge_once("trx_history.max", value=100)
+        metricsmock.assert_gauge_once("trx_history.purging", value=1)
+
+    def test_trx_history_purging(
+        self, celery, monitor_redis, monitor_session, metricsmock
+    ):
+        """The rate controller remains in purging mode above min transaction history."""
+        monitor_redis.set("rate_controller_trx_min", 10)
+        monitor_redis.set("rate_controller_trx_max", 200)
+        monitor_redis.set("rate_controller_trx_purging", 1)
+        monitor_redis.set("global_locate_sample_rate", 1)
+
+        monitor_queue_size_and_rate_control.delay().get()
+
+        assert float(monitor_redis.get("global_locate_sample_rate")) == 0.0
+        assert int(monitor_redis.get("rate_controller_trx_purging")) == 1
+        metricsmock.assert_gauge_once("trx_history.length", value=123)
+        metricsmock.assert_gauge_once("trx_history.min", value=10)
+        metricsmock.assert_gauge_once("trx_history.max", value=200)
+        metricsmock.assert_gauge_once("trx_history.purging", value=1)
+
+    def test_trx_history_complete(
+        self, celery, monitor_redis, monitor_session, metricsmock
+    ):
+        """The rate controller exits purging mode below min transaction history."""
+        monitor_redis.set("rate_controller_trx_min", 124)
+        monitor_redis.set("rate_controller_trx_max", 200)
+        monitor_redis.set("rate_controller_trx_purging", 1)
+        monitor_redis.set("global_locate_sample_rate", 0)
+
+        monitor_queue_size_and_rate_control.delay().get()
+
+        assert float(monitor_redis.get("global_locate_sample_rate")) == 100.0
+        assert int(monitor_redis.get("rate_controller_trx_purging")) == 0
+        metricsmock.assert_gauge_once("trx_history.length", value=123)
+        metricsmock.assert_gauge_once("trx_history.min", value=124)
+        metricsmock.assert_gauge_once("trx_history.max", value=200)
+        metricsmock.assert_gauge_once("trx_history.purging", value=0)
+
+    def test_emit_metrics_rc_disabled(
+        self, celery, monitor_redis, monitor_session, metricsmock
+    ):
+        """Metrics are emitted even when the rate controller is disabled."""
+        monitor_redis.set("rate_controller_enabled", 0)
+        monitor_redis.set("global_locate_sample_rate", "56.4")
+
+        monitor_queue_size_and_rate_control.delay().get()
+
+        assert monitor_redis.get("global_locate_sample_rate") == b"56.4"
+        metricsmock.assert_gauge_once("trx_history.length", value=123)
+        metricsmock.assert_gauge_once("rate_control.locate", value=56.4)
+        metricsmock.assert_not_gauge("trx_history.purging")
+        metricsmock.assert_not_gauge("rate_control.locate.target")
 
 
 class TestSentryTest:

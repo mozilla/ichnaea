@@ -57,8 +57,27 @@ If traffic is steadily increasing over weeks and months, eventually the backend
 will be unable to recover in a full 24 hour cycle, leading to slower service
 and eventually data loss.
 
+It is possible to have a steady backlog that does not cause issues for Redis,
+but that strains the database resources, by increasing replica lag or
+accumulating old transaction logs.
+
+The primary database can have a large number of write operations, and the
+replica database, used for read-only operations, can fall behind. This causes a
+build-up of binary logs on the primary database, filling up the disk. It also
+delays changes to API keys, such as adding a key or changing requests limits,
+from being applied to the API. The primary database disk usage and the replica
+lag should be monitored to detect and prevent this problem.
+
+Updates from observations can cause the transaction history / undo logs to grow
+faster than the purge process can delete them. This causes the system log
+(``ibdata1``) to grow, and it can't be shrunk without recreating the database.
+The primary database disk usage and transaction history length should be
+monitored to prevent this problem.
+
 Ichnaea has rate controls that can be used to sample incoming data, and reduce
-the observations that need to be processed by the backend.
+the observations that need to be processed by the backend. It can also turn
+off processing if the InnoDB transaction history becomes too large. There are
+currently no automated controls for replica lag.
 
 Rate Control by API Key
 =======================
@@ -93,8 +112,8 @@ There is no global rate control for submissions.
 
 .. _auto-rate-controller:
 
-Automated Rate Control (Beta)
-=============================
+Automated Rate Control
+======================
 Optionally, an automated rate controller can set the global locate sample rate.
 The rate controller is given a target of the maximum data queue backlog, and
 periodically compares this to the backlog. It lowers the rate while the backlog
@@ -173,3 +192,46 @@ The rate controller emits several :ref:`metrics <rate-control-metrics>`.
 An administrator can use these metrics to monitor the rate controller, and to
 determine if backend resources should be increased or decreased based on
 long-term traffic trends.
+
+.. _transaction-history-monitoring:
+
+Transaction History Monitoring
+==============================
+Observation processing can cause the InnoDB transaction history or undo logs
+to grow faster than the purge process can delete them. This can cause disk
+usage to grow in a way that can't be reduced without recreating the
+database.
+
+The size of the transaction history can be monitored, if the celery worker
+database connection ("read-write") has the `PROCESS`_ privilege.  To turn on
+transaction history monitoring, ensure this connection can execute the SQL:
+
+.. code-block:: sql
+
+    SELECT count FROM information_schema.innodb_metrics WHERE name = 'trx_rseg_history_len';
+
+.. _`PROCESS`: https://dev.mysql.com/doc/refman/5.7/en/privileges-provided.html#priv_process
+
+The transaction history length will be checked at the same time as the queue
+sizes, and will emit a metric :ref:`trx_history.length <trx-history-length>`.
+An administrator can use these metrics to monitor the transaction history
+length, and tune aspects of the MySQL transaction system or backend processing.
+
+Additionally, the automated rate controller can be used to pause processing
+of locate samples and reduce the creation of new transactions. When the
+transaction history length exceeds a maximum size, the global locate sample
+rate is set to 0%. When the MySQL purge process reduces the transaction history
+to a safe level, the rate is allowed to rise again.
+:ref:`Additional metrics <transaction-history-metrics>` are emitted to track
+the process.
+
+To use the rate controller to pause processing:
+
+* Tune the Redis key ``rate_controller_trx_max`` to the maximum history length,
+  such as ``1000000``. This should be set to a number that takes less than a
+  day to clear.
+* Tune the Redis key ``rate_controller_trx_min`` to the minimum history length,
+  such as ``1000``. This should be set to a number that is between 0 and the
+  maximum rate.
+* Set the Redis key ``rate_controller_target`` and ``rate_controller_enabled``
+  as described in :ref:`Automated Rate Control <auto-rate-controller>`.

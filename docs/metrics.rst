@@ -58,6 +58,10 @@ Metric Name                      App      Type    Tags
 `submit.request`_                web      counter key, path
 `submit.user`_                   task     gauge   key, interval
 `task`_                          task     timer   task
+`trx_history.length`_            task     gauge
+`trx_history.max`_               task     gauge
+`trx_history.min`_               task     gauge
+`trx_history.purging`_           task     gauge
 ================================ ======== ======= =======================================================
 
 Web Application Metrics
@@ -854,7 +858,8 @@ rate_control.locate
 ^^^^^^^^^^^^^^^^^^^
 ``rate_control.locate`` is a gauge that reports the current setting of the
 :ref:`global locate sample rate <global-rate-control>`, which may be unset
-(100.0), manually set, or set by the rate controller.
+(100.0), manually set, set by the rate controller, or set to 0 by the
+:ref:`transaction history monitor <transaction-history-monitoring>`.
 
 rate_control.locate.target
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -894,6 +899,59 @@ rate_control.locate.dterm
 ``rate_control.locate.dterm`` is a gauge that reports the current value of of
 the derivative term of the rate controller. It is emitted when the rate
 controller is enabled.
+
+.. _transaction-history-metrics:
+
+Transaction History Metrics
+---------------------------
+
+Processing the data queues can cause the MySQL InnoDB transaction history to
+grow faster than it can be purged. The transaction history length can be
+monitored, and when it exceeds a maximum, it can turn off observation
+processing until it is reduced. See
+:ref:`transaction history monitoring <transaction-history-monitoring>`
+for details.
+
+Monitoring the transaction history length requires that the celery worker
+database connection ("read-write") has the ``PROCESS`` privilege. If the
+connection does not have this privilege, then no related metrics are emitted.
+If the connection has this privilege, then one or more metrics are emitted to
+monitor this process:
+
+.. _trx-history-length:
+
+trx_history.length
+^^^^^^^^^^^^^^^^^^
+``trx_history.length`` is a gauge that reports the current length of the
+InnoDB transaction history.
+
+trx_history.purging
+^^^^^^^^^^^^^^^^^^^
+If the rate controller is enabled, then ``trx_history.purging`` is a gauge that
+becomes ``1`` when the transaction history exceeds the maximum level.
+Observation processing is paused by setting the
+:ref:`global locate sample rate <global-rate-control>` to 0%, which allow the
+MySQL purge process to reduce the transaction history. When it drops below a
+safe minimum level, the rate is allowed to rise again.
+
+If the rate controller is not enabled, then purging mode is not used, and this
+metric is not emitted.
+
+trx_history.max
+^^^^^^^^^^^^^^^
+``trx_history.max`` is a gauge that report the current maximum value for the
+transaction history length before the system switches to purging mode.
+
+If the rate controller is not enabled, then purging mode is not used, and this
+metric is not emitted.
+
+trx_history.min
+^^^^^^^^^^^^^^^
+``trx_history.min`` is a gauge that report the current minimum value for the
+transaction history length before the system switches out of purging mode.
+
+If the rate controller is not enabled, then purging mode is not used, and this
+metric is not emitted.
 
 Datamaps Structured Log
 =======================
