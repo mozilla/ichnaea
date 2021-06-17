@@ -91,14 +91,21 @@ class StatCleaner(object):
 
 
 class StatRegion(object):
+    """Populate the region_stat table, displayed at /stats/regions"""
+
     def __init__(self, task):
         self.task = task
 
     def __call__(self):
-        with self.task.db_session() as session:
-            self._update_stats(session)
+        with self.task.db_session(isolation_level="READ COMMITTED") as session:
+            counts = self._gather_counts(session)
+        if counts:
+            with self.task.db_session() as session:
+                self._update_stats(counts, session)
+                self._clear_cache()
 
-    def _update_stats(self, session):
+    def _gather_counts(self, session):
+        """Count radio sources by region"""
         columns = CellArea.__table__.c
         cells = session.execute(
             select([columns.region, columns.radio, func.sum(columns.num_cells)])
@@ -107,11 +114,11 @@ class StatRegion(object):
         ).fetchall()
 
         default = {"gsm": 0, "wcdma": 0, "lte": 0, "blue": 0, "wifi": 0}
-        stats = {}
+        counts = {}
         for region, radio, num in cells:
-            if region not in stats:
-                stats[region] = default.copy()
-            stats[region][radio.name] = int(num)
+            if region not in counts:
+                counts[region] = default.copy()
+            counts[region][radio.name] = int(num)
 
         for name, shard_model in (("blue", BlueShard), ("wifi", WifiShard)):
             for shard in shard_model.shards().values():
@@ -123,16 +130,18 @@ class StatRegion(object):
                 ).fetchall()
 
                 for region, num in stations:
-                    if region not in stats:
-                        stats[region] = default.copy()
-                    stats[region][name] += int(num)
+                    if region not in counts:
+                        counts[region] = default.copy()
+                    counts[region][name] += int(num)
 
-        if not stats:
-            return
+        return counts
+
+    def _update_stats(self, counts, session):
+        """Update counts-by-region tables"""
 
         region_stats = dict(session.query(RegionStat.region, RegionStat).all())
 
-        for region, values in stats.items():
+        for region, values in counts.items():
             row = region_stats.pop(region, None)
             is_new = row is None
             if is_new:
@@ -154,3 +163,7 @@ class StatRegion(object):
                     RegionStat.__table__.c.region.in_(obsolete_regions)
                 )
             )
+
+    def _clear_cache(self):
+        cache_key = self.task.redis_client.cache_keys["stats_regions"]
+        self.task.redis_client.delete(cache_key)

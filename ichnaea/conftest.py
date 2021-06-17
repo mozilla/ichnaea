@@ -173,7 +173,7 @@ class TestDatabase(Database):
         if shared:
             self.has_session_fixture = False  # Set at session fixture setup
 
-    def session(self, bind=None):
+    def session(self, bind=None, isolation_level=None):
         """Return a thread-local session for this database.
 
         :param bind: Bind the session to a connection, such as a transaction.
@@ -183,7 +183,15 @@ class TestDatabase(Database):
         """
         if self.shared and not self.has_session_fixture:
             raise Exception("Tests must include session fixture to use .session()")
-        return super().session(bind=bind)
+        session = super().session(bind=bind)
+        if isolation_level:
+            session.fake_isolation_level = isolation_level
+        return session
+
+    def engine_with_isolation_level(self, isolation_level):
+        raise Exception(
+            "engine_with_isolation_level should not be called by test code."
+        )
 
 
 @pytest.fixture(scope="session")

@@ -108,14 +108,17 @@ class BaseTask(Task):
         """
         self.apply_async(countdown=self._countdown, args=args, kwargs=kwargs)
 
-    def db_session(self, commit=True):
+    def db_session(self, commit=True, isolation_level=None):
         """
         Returns a database session usable as a context manager.
 
         :param commit: Should the session be committed or aborted at the end?
         :type commit: bool
+        :param isolation_level: Set a new transaction isolation level for this session
         """
-        return db_worker_session(self.app.db, commit=commit)
+        return db_worker_session(
+            self.app.db, commit=commit, isolation_level=isolation_level
+        )
 
     def redis_pipeline(self, execute=True):
         """

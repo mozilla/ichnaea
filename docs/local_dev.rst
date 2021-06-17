@@ -304,3 +304,37 @@ You can then generate and upload tiles with::
 
 This will generate a fresh set of tiles in a temporary directory and
 sync the S3 bucket with the changes.
+
+Running Tasks
+=============
+
+To run worker tasks in the development environment, run::
+
+    $ make runcelery
+
+This will run the ``scheduler``, which will schedule periodic tasks, as well as the
+``worker``, which runs the tasks. If you see this error::
+
+    scheduler_1  | ERROR: Pidfile (/var/run/location/celerybeat.pid) already exists.
+
+then stop the ``make runcelery`` process (Ctrl-C) and re-create the ``scheduler``::
+
+    $ docker rm -f scheduler
+    $ make runcelery
+
+To manually run a task, call it from a shell::
+
+    $ make shell
+    $ celery -A ichnaea.taskapp.app:celery_app call ichnaea.data.tasks.update_statregion
+
+This will add the task ``update_statregion`` to the Redis queue. The ``worker`` task
+will read the queue and execute it.
+
+The commands will also run if you start a shell with ``make testshell``, but the task
+will not execute. A different Redis URI is setup for the test environment, and
+the worker running with ``make runcelery`` will not read that Redis queue, and will
+not see the request.
+
+There are other commands available, such as this one to display registered tasks::
+
+    $ celery -A ichnaea.taskapp.app:celery_app inspect registered
