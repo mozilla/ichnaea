@@ -79,23 +79,27 @@ def db_session(request):
 
 
 @contextmanager
-def db_worker_session(database, commit=True):
+def db_worker_session(database, commit=True, isolation_level=None):
     """
     Return a database session usable as a context manager.
 
     :param commit: Should the session be committed or aborted at the end?
     :type commit: bool
+    :param isolation_level: A new isolation level for this session
     """
+    session = None
     try:
-        session = database.session()
+        session = database.session(isolation_level=isolation_level)
         yield session
         if commit:
             session.commit()
     except Exception:
-        session.rollback()
+        if session:
+            session.rollback()
         raise
     finally:
-        database.release_session(session)
+        if session:
+            database.release_session(session)
 
 
 def db_tween_factory(handler, registry):
@@ -169,15 +173,24 @@ class Database:
             self.session_factory.remove()
         self.engine.pool.dispose()
 
-    def session(self, bind=None):
+    def session(self, bind=None, isolation_level=None):
         """Return a session for this database.
 
         :param bind: Bind the session to a connection, such as a transaction.
+        :param isolation_level: Set a new isolation level for this session
         """
         kwargs = {}
         if bind is not None:
             kwargs["bind"] = bind
+        elif isolation_level is not None:
+            isolation_engine = self.engine_with_isolation_level(isolation_level)
+            kwargs["bind"] = isolation_engine
+
         return self.session_factory(**kwargs)
+
+    def engine_with_isolation_level(self, isolation_level):
+        """Copy engine with a new isolation level."""
+        return self.engine.execution_options(isolation_level=isolation_level)
 
     def release_session(self, session):
         """Release a session for this database."""
