@@ -102,6 +102,7 @@ class StatRegion(object):
         if counts:
             with self.task.db_session() as session:
                 self._update_stats(counts, session)
+                self._clear_cache()
 
     def _gather_counts(self, session):
         """Count radio sources by region"""
@@ -162,3 +163,7 @@ class StatRegion(object):
                     RegionStat.__table__.c.region.in_(obsolete_regions)
                 )
             )
+
+    def _clear_cache(self):
+        cache_key = self.task.redis_client.cache_keys["stats_regions"]
+        self.task.redis_client.delete(cache_key)
