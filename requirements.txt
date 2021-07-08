@@ -627,9 +627,9 @@ pep517==0.10.0 \
     --hash=sha256:ac59f3f6b9726a49e15a649474539442cf76e0697e39df4869d25e68e880931b \
     --hash=sha256:eba39d201ef937584ad3343df3581069085bacc95454c80188291d5b3ac7a249
     # via pip-tools
-pip-tools==6.1.0 \
-    --hash=sha256:197e3f8839095ccec3ad1ef410e0804c07d9f17dff1c340fb417ca2b63feacc9 \
-    --hash=sha256:400bf77e29cca48c31abc210042932bb52dcc138ef4ea4d52c5db429aa8ae6ee
+pip-tools==6.2.0 \
+    --hash=sha256:77727ef7457d1865e61fe34c2b1439f9b971b570cc232616a22ce82ab89d357d \
+    --hash=sha256:9ed38c73da4993e531694ea151f77048b4dbf2ba7b94c4a569daa39568cc6564
     # via -r requirements.in
 plaster==1.0 \
     --hash=sha256:215c921a438b5349931fd7df9a5a11a3572947f20f4bc6dd622ac08f1c3ba249 \
@@ -1047,6 +1047,10 @@ webtest==2.0.35 \
     --hash=sha256:44ddfe99b5eca4cf07675e7222c81dd624d22f9a26035d2b93dc8862dc1153c6 \
     --hash=sha256:aac168b5b2b4f200af4e35867cf316712210e3d5db81c1cbdff38722647bb087
     # via -r requirements.in
+wheel==0.36.2 \
+    --hash=sha256:78b5b185f0e5763c26ca1e324373aadd49182ca90e825f7853f4b2509215dc0e \
+    --hash=sha256:e11eefd162658ea59a60a0f6c7d493a7190ea4b9a85e335b33489d9f17e0245e
+    # via pip-tools
 yarl==1.6.3 \
     --hash=sha256:00d7ad91b6583602eb9c1d085a2cf281ada267e9a197e8b7cae487dadbfa293e \
     --hash=sha256:0355a701b3998dcd832d0dc47cc5dedf3874f966ac7f870e0f3a6788d802d434 \
