@@ -24,7 +24,7 @@ boto3==1.17.85
 # Code: https://github.com/celery/celery
 # Changes: https://docs.celeryproject.org/en/stable/changelog.html
 # Docs: https://docs.celeryproject.org/en/stable/index.html
-celery[redis]==5.1.0
+celery[redis]==5.1.2
 
 # Command line interface toolkit
 # Code: https://github.com/pallets/click
