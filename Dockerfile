@@ -23,15 +23,6 @@ path-exclude=/usr/share/man/*\n\
 path-exclude=/usr/share/locale/*\n\
 " > /etc/dpkg/dpkg.cfg.d/apt-no-docs
 
-# Install GNUPG.
-RUN apt-get update && apt-get -y install gnupg
-
-# Add MySQL apt repo & GPG key.
-COPY ./docker/mysql_pubkey.asc /tmp/mysql_pubkey.asc
-RUN apt-key add /tmp/mysql_pubkey.asc && \
-    echo 'deb http://repo.mysql.com/apt/debian/ buster mysql-5.7' > \
-    /etc/apt/sources.list.d/mysql.list
-
 # Install apt-installable dependencies.
 RUN apt-get update && \
     apt-get -y install --no-install-recommends \
@@ -43,13 +34,14 @@ RUN apt-get update && \
     libffi-dev \
     libgeos-dev \
     liblapack-dev \
-    libmysqlclient-dev \
+    libmariadb-dev \
+    libmariadb-dev-compat \
     libpng-dev \
     libprotobuf-dev \
     libspatialindex-dev \
     libssl-dev \
     make \
-    mysql-client \
+    mariadb-client \
     pkg-config \
     pngquant \
     protobuf-compiler \
