@@ -18,13 +18,13 @@ backoff==1.10.0
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.17.85
+boto3==1.17.108
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
 # Changes: https://docs.celeryproject.org/en/stable/changelog.html
 # Docs: https://docs.celeryproject.org/en/stable/index.html
-celery[redis]==5.1.0
+celery[redis]==5.1.2
 
 # Command line interface toolkit
 # Code: https://github.com/pallets/click
@@ -157,7 +157,7 @@ Rtree==0.9.7
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.6.3
+scipy==1.7.0
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -193,7 +193,7 @@ structlog==21.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.5
+urllib3[secure]==1.26.6
 
 #
 # Requirements for developement
@@ -209,7 +209,7 @@ beautifulsoup4
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
 # Docs: https://black.readthedocs.io/en/stable/
-black==21.5b2
+black==21.6b0
 
 # Cross-platform colored terminal text, used for structlog output
 # Code: https://github.com/tartley/colorama
@@ -245,7 +245,7 @@ iso3166
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==6.1.0
+pip-tools==6.2.0
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
