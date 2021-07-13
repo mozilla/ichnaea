@@ -23,7 +23,7 @@ TESTIMAGE="local/ichnaea_app"
 
 # Start services in background (this is idempotent)
 echo "Starting services needed by tests in the background..."
-${DC} up -d mysql redis
+${DC} up -d db redis
 
 # If we're running a shell, then we start up a test container with . mounted
 # to /app.
@@ -36,7 +36,7 @@ if [ "$1" == "--shell" ]; then
         --volume "$(pwd)":/app \
         --workdir /app \
         --network ichnaea_default \
-        --link ichnaea_mysql_1 \
+        --link ichnaea_db_1 \
         --link ichnaea_redis_1 \
         --env-file ./docker/config/local_dev.env \
         --env-file ./docker/config/test.env \
@@ -87,7 +87,7 @@ docker run \
     --volumes-from ichnaea-repo \
     --workdir /app \
     --network ichnaea_default \
-    --link ichnaea_mysql_1 \
+    --link ichnaea_db_1 \
     --link ichnaea_redis_1 \
     --env-file ./docker/config/local_dev.env \
     --env-file ./docker/config/test.env \

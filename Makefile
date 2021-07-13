@@ -30,11 +30,11 @@ default:
 	@echo "  setup            - drop and recreate service state"
 	@echo "  run              - run webapp"
 	@echo "  runcelery        - run scheduler and worker"
-	@echo "  runservices      - run service containers (mysql, redis, etc)"
+	@echo "  runservices      - run service containers (database and redis)"
 	@echo "  stop             - stop all service containers"
 	@echo ""
 	@echo "  shell            - open a shell in the app container"
-	@echo "  mysql            - open mysql prompt"
+	@echo "  dbshell          - open a database shell in the database container"
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
 	@echo "  lintfix          - reformat code"
@@ -82,10 +82,10 @@ setup: my.env
 shell: my.env .docker-build
 	${DC} run --rm app shell
 
-.PHONY: mysql
-mysql: my.env .docker-build
-	${DC} up -d mysql
-	${DC} exec mysql mysql --user root --password=location location
+.PHONY: dbshell
+dbshell: my.env .docker-build
+	${DC} up -d db
+	${DC} exec db mysql --user root --password=location location
 
 .PHONY: test
 test: my.env .docker-build
@@ -129,7 +129,7 @@ runcelery: my.env .docker-build
 
 .PHONY: runservices
 runservices: my.env .docker-build
-	${DC} up -d redis mysql
+	${DC} up -d redis db
 
 .PHONY: stop
 stop: my.env

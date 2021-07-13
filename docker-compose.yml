@@ -17,7 +17,7 @@ services:
       - docker/config/local_dev.env
       - my.env
     depends_on:
-      - mysql
+      - db
       - redis
     volumes:
       - .:/app
@@ -43,7 +43,7 @@ services:
       - my.env
     depends_on:
       - redis
-      - mysql
+      - db
     volumes:
       - .:/app
     command: ["worker"]
@@ -56,7 +56,7 @@ services:
     volumes:
       - .:/app
 
-  mysql:
+  db:
     build:
       context: ./docker/mysql/
       dockerfile: Dockerfile
