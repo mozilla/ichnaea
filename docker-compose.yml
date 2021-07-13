@@ -58,7 +58,7 @@ services:
 
   db:
     build:
-      context: ./docker/mysql/
+      context: ./docker/${ICHNAEA_DOCKER_DB_ENGINE:-mysql_5_7}/
       dockerfile: Dockerfile
     expose:
       - "3306"

@@ -8,6 +8,7 @@ export
 # in the container doesn't match the user on your host.
 ICHNAEA_UID ?= 10001
 ICHNAEA_GID ?= 10001
+ICHNAEA_DOCKER_DB_ENGINE ?= mysql_5_7
 
 # Set this in the environment to force --no-cache docker builds.
 DOCKER_BUILD_OPTS :=
