@@ -18,7 +18,7 @@ ICHNAEA_GID=${ICHNAEA_GID:-"10001"}
 
 # Use the same image we use for building docker images because it's cached.
 # Otherwise this doesn't make any difference.
-BASEIMAGENAME="python:3.6.9-slim"
+BASEIMAGENAME="python:3.9.6-slim"
 TESTIMAGE="local/ichnaea_app"
 
 # Start services in background (this is idempotent)
