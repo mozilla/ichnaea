@@ -88,9 +88,9 @@ billiard==3.6.4.0 \
     --hash=sha256:299de5a8da28a783d51b197d496bef4f1595dd023a93a4f59dde1886ae905547 \
     --hash=sha256:87103ea78fa6ab4d5c751c4909bcff74617d985de7fa8b672cf8618afd5a875b
     # via celery
-black==21.6b0 \
-    --hash=sha256:dc132348a88d103016726fe360cb9ede02cecf99b76e3660ce6c596be132ce04 \
-    --hash=sha256:dfb8c5a069012b2ab1e972e7b908f5fb42b6bbabcba0a788b86dc05067c7d9c7
+black==21.7b0 \
+    --hash=sha256:1c7aa6ada8ee864db745b22790a32f94b2795c253a75d6d9b5e439ff10d23116 \
+    --hash=sha256:c8373c6491de9362e39271630b65b964607bc5c79c83783547d76c839b3aa219
     # via -r requirements.in
 boto3==1.17.108 \
     --hash=sha256:10122ff0f942d7400b18b726edaead20600178f8246cb21b40420073350613b5 \
@@ -995,10 +995,13 @@ toml==0.10.2 \
     --hash=sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b \
     --hash=sha256:b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
     # via
-    #   black
     #   pep517
     #   pytest
     #   pytest-cov
+tomli==1.2.1 \
+    --hash=sha256:8dd0e9524d6f386271a36b41dbf6c57d8e32fd96fd22b6584679dc569d20899f \
+    --hash=sha256:a5b75cb6f3968abb47af1b40c1819dc519ea82bcc065776a866e8d74c5ca9442
+    # via black
 translationstring==1.4 \
     --hash=sha256:5f4dc4d939573db851c8d840551e1a0fb27b946afe3b95aafc22577eed2d6262 \
     --hash=sha256:bf947538d76e69ba12ab17283b10355a9ecfbc078e6123443f43f2107f6376f3
