@@ -42,7 +42,7 @@ colander==1.8.3
 # Code: https://github.com/mozilla-services/python-dockerflow
 # Changes: https://python-dockerflow.readthedocs.io/en/latest/changelog.html
 # Docs: https://python-dockerflow.readthedocs.io/en/latest/
-dockerflow==2020.10.0
+dockerflow==2021.7.0
 
 # Python configuration library
 # Code: https://github.com/willkg/everett
