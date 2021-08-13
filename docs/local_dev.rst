@@ -15,7 +15,7 @@ development environment.
 Setup Quickstart
 ================
 
-1. Install required software: Docker, docker-compose (1.10+), make, and git.
+1. Install required software: Docker, docker-compose (1.27+), make, and git.
 
    **Linux**:
 
@@ -35,7 +35,7 @@ Setup Quickstart
       Install `Docker <https://docs.docker.com/engine/installation/>`_.
 
       Install `docker-compose <https://docs.docker.com/compose/install/>`_. You need
-      1.10 or higher.
+      1.27.4 or higher.
 
       Install `make <https://www.gnu.org/software/make/>`_.
 
