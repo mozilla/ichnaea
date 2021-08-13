@@ -8,6 +8,7 @@ export
 # in the container doesn't match the user on your host.
 ICHNAEA_UID ?= 10001
 ICHNAEA_GID ?= 10001
+ICHNAEA_DOCKER_DB_ENGINE ?= mysql_5_7
 
 # Set this in the environment to force --no-cache docker builds.
 DOCKER_BUILD_OPTS :=
@@ -30,11 +31,11 @@ default:
 	@echo "  setup            - drop and recreate service state"
 	@echo "  run              - run webapp"
 	@echo "  runcelery        - run scheduler and worker"
-	@echo "  runservices      - run service containers (mysql, redis, etc)"
+	@echo "  runservices      - run service containers (database and redis)"
 	@echo "  stop             - stop all service containers"
 	@echo ""
 	@echo "  shell            - open a shell in the app container"
-	@echo "  mysql            - open mysql prompt"
+	@echo "  dbshell          - open a database shell in the database container"
 	@echo "  clean            - remove all build, test, coverage and Python artifacts"
 	@echo "  lint             - lint code"
 	@echo "  lintfix          - reformat code"
@@ -63,16 +64,17 @@ my.env:
 	cp docker/config/my.env.dist my.env; \
 	fi
 
-.docker-build:
-	make build
-
-.PHONY: build
-build: my.env
+.docker-build: my.env
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
 	    node app
+	${DC} build ${DOCKER_BUILD_OPTS} \
+	    redis db
 	touch .docker-build
+
+.PHONY: build
+build: .docker-build
 
 .PHONY: setup
 setup: my.env
@@ -82,10 +84,10 @@ setup: my.env
 shell: my.env .docker-build
 	${DC} run --rm app shell
 
-.PHONY: mysql
-mysql: my.env .docker-build
-	${DC} up -d mysql
-	${DC} exec mysql mysql --user root --password=location location
+.PHONY: dbshell
+dbshell: my.env .docker-build
+	${DC} up -d db
+	${DC} exec db mysql --user root --password=location location
 
 .PHONY: test
 test: my.env .docker-build
@@ -129,7 +131,7 @@ runcelery: my.env .docker-build
 
 .PHONY: runservices
 runservices: my.env .docker-build
-	${DC} up -d redis mysql
+	${DC} up -d redis db
 
 .PHONY: stop
 stop: my.env

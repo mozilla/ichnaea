@@ -15,13 +15,13 @@ development environment.
 Setup Quickstart
 ================
 
-1. Install required software: Docker, docker-compose (1.10+), make, and git.
+1. Install required software: Docker, docker-compose (1.27+), make, and git.
 
    **Linux**:
 
       Use your package manager.
 
-   **OSX**:
+   **macOS**:
 
       Install `Docker for Mac <https://docs.docker.com/docker-for-mac/>`_ which
       will install Docker and docker-compose.
@@ -35,7 +35,7 @@ Setup Quickstart
       Install `Docker <https://docs.docker.com/engine/installation/>`_.
 
       Install `docker-compose <https://docs.docker.com/compose/install/>`_. You need
-      1.10 or higher.
+      1.27.4 or higher.
 
       Install `make <https://www.gnu.org/software/make/>`_.
 
@@ -46,19 +46,25 @@ Setup Quickstart
    Instructions for cloning are `on the Ichnaea page in GitHub
    <https://github.com/mozilla/ichnaea>`_.
 
-3. (*Optional/Advanced*) Set UID and GID for Docker container user.
+3. Set environment options.
 
-   If you're on Linux, you will need to set the UID/GID of the app user that
-   runs in the Docker containers to match your UID/GID.  Run::
+   To create the environment options file ``my.env`` ::
 
        $ make my.env
 
-   Then run ``id`` to get your UID/GID.  edit the file and set the
-   ``ICHNAEA_UID`` and ``ICHNAEA_GID`` variables. These will get used when
-   creating the app user in the base image.
+   If you're on **Linux**, you will need to set the UID/GID of the app user that
+   runs in the Docker containers to match your UID/GID.  Run ``id`` to get your
+   UID/GID. Edit ``my.env`` and set the ``ICHNAEA_UID`` and ``ICHNAEA_GID``
+   variables. These will get used when creating the app user in the base image.
+
+   If you are using **macOS** on a computer with Apple Silicon (such as M1 Macs
+   released in 2020 or later), you'll need to select a different database engine,
+   since Docker images are not available for the arm64 platform. Edit ``my.env``
+   and set ``ICHNAEA_DOCKER_DB_ENGINE`` to ``mariadb_10_5``. This will be used
+   when creating and running the database.
 
    If you ever want different values, change them in ``my.env`` and re-run
-   ``make build``.
+   the setup steps below (``make setup``, ``make runservices``, etc.).
 
 4. Build Docker images for Ichnaea services.
 
@@ -75,6 +81,17 @@ Setup Quickstart
        $ make runservices
 
    This starts service containers. Then run::
+
+       # docker-compose ps
+
+   If the state of the database container is ``Up (health: starting)``, wait a
+   minute and try ``docker-compose ps``.  When the state is ``Up (healthy)``,
+   then the database is initialized and ready for connections.
+
+   If the state is just ``Up``, then the container doesn't provide health
+   checks. Wait a couple of minutes before trying the next step.
+
+   Then run::
 
        $ make setup
 

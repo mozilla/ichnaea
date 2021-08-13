@@ -17,7 +17,7 @@ services:
       - docker/config/local_dev.env
       - my.env
     depends_on:
-      - mysql
+      - db
       - redis
     volumes:
       - .:/app
@@ -43,7 +43,7 @@ services:
       - my.env
     depends_on:
       - redis
-      - mysql
+      - db
     volumes:
       - .:/app
     command: ["worker"]
@@ -56,9 +56,9 @@ services:
     volumes:
       - .:/app
 
-  mysql:
+  db:
     build:
-      context: ./docker/mysql/
+      context: ./docker/${ICHNAEA_DOCKER_DB_ENGINE:-mysql_5_7}/
       dockerfile: Dockerfile
     expose:
       - "3306"

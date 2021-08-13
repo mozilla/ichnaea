@@ -15,15 +15,16 @@ PS4="+ (test_env.sh): "
 DC="$(which docker-compose)"
 ICHNAEA_UID=${ICHNAEA_UID:-"10001"}
 ICHNAEA_GID=${ICHNAEA_GID:-"10001"}
+ICHNAEA_DOCKER_DB_ENGINE=${ICHNAEA_DOCKER_DB_ENGINE:-"mysql_5_7"}
 
 # Use the same image we use for building docker images because it's cached.
 # Otherwise this doesn't make any difference.
-BASEIMAGENAME="python:3.6.9-slim"
+BASEIMAGENAME="python:3.9.6-slim"
 TESTIMAGE="local/ichnaea_app"
 
 # Start services in background (this is idempotent)
 echo "Starting services needed by tests in the background..."
-${DC} up -d mysql redis
+${DC} up -d db redis
 
 # If we're running a shell, then we start up a test container with . mounted
 # to /app.
@@ -36,7 +37,7 @@ if [ "$1" == "--shell" ]; then
         --volume "$(pwd)":/app \
         --workdir /app \
         --network ichnaea_default \
-        --link ichnaea_mysql_1 \
+        --link ichnaea_db_1 \
         --link ichnaea_redis_1 \
         --env-file ./docker/config/local_dev.env \
         --env-file ./docker/config/test.env \
@@ -87,7 +88,7 @@ docker run \
     --volumes-from ichnaea-repo \
     --workdir /app \
     --network ichnaea_default \
-    --link ichnaea_mysql_1 \
+    --link ichnaea_db_1 \
     --link ichnaea_redis_1 \
     --env-file ./docker/config/local_dev.env \
     --env-file ./docker/config/test.env \
