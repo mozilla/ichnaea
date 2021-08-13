@@ -48,7 +48,7 @@ dockerflow==2021.7.0
 # Code: https://github.com/willkg/everett
 # Changes: https://github.com/willkg/everett/blob/main/HISTORY.rst
 # Docs: https://everett.readthedocs.io
-everett==1.0.3
+everett==2.0.0
 
 # Geopolitical Entities, Names, and Codes (GENC)
 # Code: https://github.com/hannosch/genc
