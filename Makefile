@@ -69,6 +69,10 @@ my.env:
 
 .PHONY: build
 build: my.env
+	@if [ ! -f docker/node/npm-shrinkwrap.json ]; \
+	then \
+	echo "{}" > docker/node/npm-shrinkwrap.json; \
+	fi
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
