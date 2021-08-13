@@ -64,7 +64,15 @@ my.env:
 	cp docker/config/my.env.dist my.env; \
 	fi
 
-.docker-build: my.env
+.docker-build:
+	make build
+
+.PHONY: build
+build: my.env
+	@if [ ! -f docker/node/npm-shrinkwrap.json ]; \
+	then \
+	echo "{}" > docker/node/npm-shrinkwrap.json; \
+	fi
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    --build-arg userid=${ICHNAEA_UID} \
 	    --build-arg groupid=${ICHNAEA_GID} \
@@ -72,9 +80,6 @@ my.env:
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    redis db
 	touch .docker-build
-
-.PHONY: build
-build: .docker-build
 
 .PHONY: setup
 setup: my.env
