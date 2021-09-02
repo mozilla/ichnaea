@@ -251,7 +251,7 @@ pip-tools==6.2.0
 # Code: https://github.com/pytest-dev/pytest
 # Changes: https://docs.pytest.org/en/stable/changelog.html
 # Docs: https://docs.pytest.org/en/stable/
-pytest==6.2.4
+pytest==6.2.5
 
 # Code coverage plugin for pytest
 # Code: https://github.com/pytest-dev/pytest-cov
