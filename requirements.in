@@ -281,4 +281,4 @@ sphinx-rtd-theme==0.5.2
 # Code: https://github.com/Pylons/webtest
 # Changes: https://github.com/Pylons/webtest/blob/master/CHANGELOG.rst
 # Docs: https://docs.pylonsproject.org/projects/webtest/en/latest/
-WebTest==2.0.35
+WebTest==3.0.0
