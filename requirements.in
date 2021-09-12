@@ -6,7 +6,7 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.6.5
+alembic==1.7.1
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
@@ -18,7 +18,7 @@ backoff==1.11.1
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.18.21
+boto3==1.18.35
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -48,7 +48,7 @@ dockerflow==2021.7.0
 # Code: https://github.com/willkg/everett
 # Changes: https://github.com/willkg/everett/blob/main/HISTORY.rst
 # Docs: https://everett.readthedocs.io
-everett==2.0.0
+everett==2.0.1
 
 # Geopolitical Entities, Names, and Codes (GENC)
 # Code: https://github.com/hannosch/genc
@@ -66,7 +66,7 @@ geoip2==4.2.0
 # Code: https://github.com/gevent/gevent
 # Changes: http://www.gevent.org/changelog.html
 # Docs: http://www.gevent.org/contents.html
-gevent==21.1.2
+gevent==21.8.0
 
 # "Green Unicorn", a WSGI HTTP Server
 # Code: https://github.com/benoitc/gunicorn
@@ -102,7 +102,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.21.1
+numpy==1.21.2
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -157,7 +157,7 @@ Rtree==0.9.7
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.7.0
+scipy==1.7.1
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -209,7 +209,7 @@ beautifulsoup4
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
 # Docs: https://black.readthedocs.io/en/stable/
-black==21.7b0
+black==21.8b0
 
 # Cross-platform colored terminal text, used for structlog output
 # Code: https://github.com/tartley/colorama
@@ -251,7 +251,7 @@ pip-tools==6.2.0
 # Code: https://github.com/pytest-dev/pytest
 # Changes: https://docs.pytest.org/en/stable/changelog.html
 # Docs: https://docs.pytest.org/en/stable/
-pytest==6.2.4
+pytest==6.2.5
 
 # Code coverage plugin for pytest
 # Code: https://github.com/pytest-dev/pytest-cov
@@ -281,4 +281,4 @@ sphinx-rtd-theme==0.5.2
 # Code: https://github.com/Pylons/webtest
 # Changes: https://github.com/Pylons/webtest/blob/master/CHANGELOG.rst
 # Docs: https://docs.pylonsproject.org/projects/webtest/en/latest/
-WebTest==2.0.35
+WebTest==3.0.0
