@@ -181,7 +181,7 @@ simple-pid
 # Code: https://github.com/sqlalchemy/sqlalchemy
 # Changes: https://docs.sqlalchemy.org/en/13/changelog/index.html
 # Docs: https://docs.sqlalchemy.org/en/13/
-SQLAlchemy==1.3.24
+SQLAlchemy==1.4.23
 
 # Structured logging
 # Code: https://github.com/hynek/structlog
