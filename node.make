@@ -29,6 +29,8 @@ all: css js
 
 .PHONY: clean
 clean: cleancss cleanjs
+
+.PHONY: rm-shrinkwrap
 	rm -f $(HERE)/docker/node/npm-shrinkwrap.json
 
 .PHONY: shrinkwrap
