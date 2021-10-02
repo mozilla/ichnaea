@@ -332,14 +332,25 @@
       }
     },
     "clean-css-cli": {
-      "version": "5.3.3",
-      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.3.3.tgz",
-      "integrity": "sha512-Reo/w25/3J2uRL4EFHvo92Tv97uhefyHranTpxXNqQ7iIRB8oxRNVlXC+Xcq8RWO2LjSyOofrb7AU6I6oXpPpA==",
+      "version": "5.4.1",
+      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.4.1.tgz",
+      "integrity": "sha512-LQLY8HKQP2d/M0FVbNfpoVbHMHh/ARIET2r80odAKuTN0RUOp8J8pU9eDlqMa1yezuUH3ipQxTVM/+vpunAhnA==",
       "dev": true,
       "requires": {
-        "clean-css": "^5.1.5",
+        "clean-css": "^5.2.1",
         "commander": "7.x",
         "glob": "^7.1.6"
+      },
+      "dependencies": {
+        "clean-css": {
+          "version": "5.2.1",
+          "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.2.1.tgz",
+          "integrity": "sha512-ooQCa1/70oRfVdUUGjKpbHuxgMgm8BsDT5EBqBGvPxMoRoGXf4PNx5mMnkjzJ9Ptx4vvmDdha0QVh86QtYIk1g==",
+          "dev": true,
+          "requires": {
+            "source-map": "~0.6.0"
+          }
+        }
       }
     },
     "clone-response": {
@@ -558,9 +569,9 @@
       "dev": true
     },
     "glob": {
-      "version": "7.1.7",
-      "resolved": "https://registry.npmjs.org/glob/-/glob-7.1.7.tgz",
-      "integrity": "sha512-OvD9ENzPLbegENnYP5UUfJIirTg4+XwMWGaQfQTY0JenxNvvIKP3U3/tAQSPIu/lHxXYSZmpXlUHeqAIdKzBLQ==",
+      "version": "7.2.0",
+      "resolved": "https://registry.npmjs.org/glob/-/glob-7.2.0.tgz",
+      "integrity": "sha512-lmLf6gtyrPq8tTjSmrO94wBeQbFR3HbLHbuyD69wuyQkImp2hWqMGB47OX65FBkPffO641IP9jWa1z4ivqG26Q==",
       "dev": true,
       "requires": {
         "fs.realpath": "^1.0.0",
