@@ -323,9 +323,9 @@
       }
     },
     "clean-css": {
-      "version": "5.1.5",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.1.5.tgz",
-      "integrity": "sha512-9dr/cU/LjMpU57PXlSvDkVRh0rPxJBXiBtD0+SgYt8ahTCsXtfKjCkNYgIoTC6mBg8CFr5EKhW3DKCaGMUbUfQ==",
+      "version": "5.2.1",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.2.1.tgz",
+      "integrity": "sha512-ooQCa1/70oRfVdUUGjKpbHuxgMgm8BsDT5EBqBGvPxMoRoGXf4PNx5mMnkjzJ9Ptx4vvmDdha0QVh86QtYIk1g==",
       "dev": true,
       "requires": {
         "source-map": "~0.6.0"
