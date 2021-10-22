@@ -477,9 +477,9 @@ iniconfig==1.1.1 \
     --hash=sha256:011e24c64b7f47f6ebd835bb12a743f2fbe9a26d4cecaa7f53bc4f35ee9da8b3 \
     --hash=sha256:bc3af051d7d14b2ee5ef9969666def0cd1a000e121eaea580d4a313df4b37f32
     # via pytest
-iso3166==1.0.1 \
-    --hash=sha256:b07208703bd881a4f974e39fa013c4498dddd64913ada15f24be75d02ae68a44 \
-    --hash=sha256:b1e58dbcf50fbb2c9c418ec7a6057f0cdb30b8f822ac852f72e71ba769dae8c5
+iso3166==2.0.2 \
+    --hash=sha256:04d02cfcfc18a6f8a9a4edb4d0a55e2e4fc575626c29d702f750de415e88d372 \
+    --hash=sha256:55e93c8a7587cae9479ad68c823390e33493d17d95b457271032594e5f1f7aae
     # via -r requirements.in
 iso8601==0.1.13 \
     --hash=sha256:694be0743e9f1535ea873bfc7bd6fb62380c62b75822761859428073a17fd39c \
