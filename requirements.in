@@ -84,7 +84,7 @@ markus[datadog]==3.0.0
 # Code: https://github.com/maxmind/MaxMind-DB-Reader-python
 # Changes: https://github.com/maxmind/MaxMind-DB-Reader-python/blob/master/HISTORY.rst
 # Docs: https://maxminddb.readthedocs.io/en/latest/
-maxminddb==2.0.3
+maxminddb==2.2.0
 
 # More algorithms like Python's itertools
 # Code: https://github.com/more-itertools/more-itertools
