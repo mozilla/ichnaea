@@ -545,8 +545,8 @@ markus[datadog]==3.0.0 \
     --hash=sha256:7affb46f91c17e0cda1043a997c19e5b18131ba590c835dd7ef6311dcdd4ecdc \
     --hash=sha256:ba511498ae28163424edb127a424e4a9fbf3f4f8d29bddb2e48cc10df62f7832
     # via -r requirements.in
-maxminddb==2.0.3 \
-    --hash=sha256:47e86a084dd814fac88c99ea34ba3278a74bc9de5a25f4b815b608798747c7dc
+maxminddb==2.2.0 \
+    --hash=sha256:e37707ec4fab115804670e0fb7aedb4b57075a8b6f80052bdc648d3c005184e5
     # via
     #   -r requirements.in
     #   geoip2
