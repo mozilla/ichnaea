@@ -8,9 +8,9 @@
   },
   "license": "Apache-2.0",
   "devDependencies": {
-    "@mapbox/mapbox-gl-geocoder": "~4.7.3",
-    "clean-css": "~5.1",
-    "clean-css-cli": "~5.3",
+    "@mapbox/mapbox-gl-geocoder": "~4.7.4",
+    "clean-css": "~5.2",
+    "clean-css-cli": "~5.4",
     "datatables": "~1.10",
     "jquery": "~3.6.0",
     "jquery-flot": "~0.8",

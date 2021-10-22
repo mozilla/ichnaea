@@ -418,7 +418,10 @@ class FallbackCache(object):
                 radius = max(radius, p_dist)
 
             return ExternalResult(
-                lat=lat, lon=lon, accuracy=float(radius), fallback=results[0].fallback
+                lat=lat,
+                lon=lon,
+                accuracy=round(radius, 3),
+                fallback=results[0].fallback,
             )
 
         # inconsistent results

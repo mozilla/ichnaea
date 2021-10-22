@@ -6,7 +6,7 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.7.1
+alembic==1.7.4
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
@@ -18,7 +18,7 @@ backoff==1.11.1
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.18.40
+boto3==1.19.2
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -84,13 +84,13 @@ markus[datadog]==3.0.0
 # Code: https://github.com/maxmind/MaxMind-DB-Reader-python
 # Changes: https://github.com/maxmind/MaxMind-DB-Reader-python/blob/master/HISTORY.rst
 # Docs: https://maxminddb.readthedocs.io/en/latest/
-maxminddb==2.0.3
+maxminddb==2.2.0
 
 # More algorithms like Python's itertools
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.8.0
+more-itertools==8.10.0
 
 # HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
 # Code: https://github.com/cedadev/ndg_httpsclient/
@@ -193,7 +193,7 @@ structlog==21.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.6
+urllib3[secure]==1.26.7
 
 #
 # Requirements for developement
@@ -209,7 +209,7 @@ beautifulsoup4
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
 # Docs: https://black.readthedocs.io/en/stable/
-black==21.8b0
+black==21.9b0
 
 # Cross-platform colored terminal text, used for structlog output
 # Code: https://github.com/tartley/colorama
@@ -245,7 +245,7 @@ iso3166
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==6.2.0
+pip-tools==6.4.0
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
@@ -275,7 +275,7 @@ Sphinx==3.3.1
 # Code: https://github.com/readthedocs/sphinx_rtd_theme
 # Changes: https://sphinx-rtd-theme.readthedocs.io/en/stable/changelog.html
 # Docs: https://sphinx-rtd-theme.readthedocs.io/en/stable/
-sphinx-rtd-theme==0.5.2
+sphinx-rtd-theme==1.0.0
 
 # Wrap a WSGI application without starting an HTTP server
 # Code: https://github.com/Pylons/webtest
