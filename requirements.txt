@@ -554,9 +554,9 @@ mccabe==0.6.1 \
     --hash=sha256:ab8a6258860da4b6677da4bd2fe5dc2c659cff31b3ee4f7f5d64e79735b80d42 \
     --hash=sha256:dd8d182285a0fe56bace7f45b5e7d1a6ebcbf524e8f3bd87eb0f125271b8831f
     # via flake8
-more-itertools==8.8.0 \
-    --hash=sha256:2cf89ec599962f2ddc4d568a05defc40e0a587fbc10d5989713638864c36be4d \
-    --hash=sha256:83f0308e05477c68f56ea3a888172c78ed5d5b3c282addb67508e7ba6c8f813a
+more-itertools==8.10.0 \
+    --hash=sha256:1debcabeb1df793814859d64a81ad7cb10504c24349368ccf214c664c474f41f \
+    --hash=sha256:56ddac45541718ba332db05f464bebfb0768110111affd27f66e0051f276fa43
     # via -r requirements.in
 multidict==5.1.0 \
     --hash=sha256:018132dbd8688c7a69ad89c4a3f39ea2f9f33302ebe567a879da8f4ca73f0d0a \
