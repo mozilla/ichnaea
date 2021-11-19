@@ -1,4 +1,4 @@
-/* Mapbox GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/mapbox/mapbox-gl-js/blob/v1.13.1/LICENSE.txt */
+/* Mapbox GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/mapbox/mapbox-gl-js/blob/v1.13.2/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -34,7 +34,7 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var version = "1.13.1";
+var version = "1.13.2";
 
 var unitbezier = UnitBezier;
 function UnitBezier(p1x, p1y, p2x, p2y) {
@@ -37733,6 +37733,9 @@ BoxZoomHandler.prototype.keydown = function keydown(e) {
         this._fireEvent('boxzoomcancel', e);
     }
 };
+BoxZoomHandler.prototype.blur = function blur() {
+    this.reset();
+};
 BoxZoomHandler.prototype.reset = function reset() {
     this._active = false;
     this._container.classList.remove('mapboxgl-crosshair');
@@ -37941,6 +37944,9 @@ function buttonStillPressed(e, button) {
 var MouseHandler = function MouseHandler(options) {
     this.reset();
     this._clickTolerance = options.clickTolerance || 1;
+};
+MouseHandler.prototype.blur = function blur() {
+    this.reset();
 };
 MouseHandler.prototype.reset = function reset() {
     this._active = false;
@@ -38395,6 +38401,9 @@ var KeyboardHandler = function KeyboardHandler() {
     this._pitchStep = stepOptions.pitchStep;
     this._rotationDisabled = false;
 };
+KeyboardHandler.prototype.blur = function blur() {
+    this.reset();
+};
 KeyboardHandler.prototype.reset = function reset() {
     this._active = false;
 };
@@ -38682,6 +38691,9 @@ ScrollZoomHandler.prototype._smoothOutEasing = function _smoothOutEasing(duratio
     };
     return easing;
 };
+ScrollZoomHandler.prototype.blur = function blur() {
+    this.reset();
+};
 ScrollZoomHandler.prototype.reset = function reset() {
     this._active = false;
 };
@@ -38710,6 +38722,9 @@ var ClickZoomHandler = function ClickZoomHandler() {
 };
 ClickZoomHandler.prototype.reset = function reset() {
     this._active = false;
+};
+ClickZoomHandler.prototype.blur = function blur() {
+    this.reset();
 };
 ClickZoomHandler.prototype.dblclick = function dblclick(e, point) {
     e.preventDefault();
@@ -39161,10 +39176,6 @@ HandlerManager.prototype._getMapTouches = function _getMapTouches(touches) {
     return mapTouches;
 };
 HandlerManager.prototype.handleEvent = function handleEvent(e, eventName) {
-    if (e.type === 'blur') {
-        this.stop(true);
-        return;
-    }
     this._updatingCamera = true;
     var inputEvent = e.type === 'renderFrame' ? undefined : e;
     var mergedHandlerResult = { needsRenderFrame: false };
@@ -40392,15 +40403,17 @@ var Map = function (Camera) {
         return this._controls.indexOf(control) > -1;
     };
     Map.prototype.resize = function resize(eventData) {
-        var dimensions = this._containerDimensions();
-        var width = dimensions[0];
-        var height = dimensions[1];
+        var ref = this._containerDimensions();
+        var width = ref[0];
+        var height = ref[1];
+        if (width === this.transform.width && height === this.transform.height) {
+            return this;
+        }
         this._resizeCanvas(width, height);
         this.transform.resize(width, height);
         this.painter.resize(width, height);
         var fireMoving = !this._moving;
         if (fireMoving) {
-            this.stop();
             this.fire(new performance.Event('movestart', eventData)).fire(new performance.Event('move', eventData));
         }
         this.fire(new performance.Event('resize', eventData));
