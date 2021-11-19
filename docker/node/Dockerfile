@@ -1,4 +1,4 @@
-FROM node:16.13.0-slim
+FROM node:17.1.0-slim
 
 # Note: This uses the node user (uid 1000) that comes with the image.
 
