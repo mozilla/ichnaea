@@ -37,15 +37,15 @@
 
     <p>
         If you want to raise a formal legal question, our address is:
-
-        <pre>
-    Mozilla Corporation
-    Attn: Legal Notices
-    331 E. Evelyn Ave.
-    Mountain View, CA 94041
-    Phone: +1-650-903-0800
-        </pre>
     </p>
+
+    <pre>
+Mozilla Corporation
+Attn: Legal Notices
+2 Harrison St., # 175,
+San Francisco, CA 94105
+USA
+    </pre>
 
 </section>
 </tal:slot>
