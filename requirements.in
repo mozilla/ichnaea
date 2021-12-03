@@ -227,7 +227,7 @@ Cython==0.29.24
 # Code: https://github.com/FactoryBoy/factory_boy/
 # Changes: https://factoryboy.readthedocs.io/en/stable/changelog.html
 # Docs: https://factoryboy.readthedocs.io/en/stable/
-factory-boy==3.2.0
+factory-boy==3.2.1
 
 # Run a collection of style and quality tools
 # Code: https://gitlab.com/pycqa/flake8
