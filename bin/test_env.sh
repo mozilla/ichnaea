@@ -19,7 +19,7 @@ ICHNAEA_DOCKER_DB_ENGINE=${ICHNAEA_DOCKER_DB_ENGINE:-"mysql_5_7"}
 
 # Use the same image we use for building docker images because it's cached.
 # Otherwise this doesn't make any difference.
-BASEIMAGENAME="python:3.9.6-slim"
+BASEIMAGENAME="python:3.9.9-slim"
 TESTIMAGE="local/ichnaea_app"
 
 # Start services in background (this is idempotent)
