@@ -646,11 +646,12 @@ numpy==1.21.4 \
     #   -r requirements.in
     #   scipy
     #   shapely
-packaging==20.7 \
-    --hash=sha256:05af3bb85d320377db281cf254ab050e1a7ebcbf5410685a9a407e18a1f81236 \
-    --hash=sha256:eb41423378682dadb7166144a4926e443093863024de508ca5c9737d6bc08376
+packaging==21.3 \
+    --hash=sha256:dd47c42927d89ab911e606518907cc2d3a1f38bbd026385970643f9c5b8ecfeb \
+    --hash=sha256:ef103e05f519cdc783ae24ea4e2e0f508a9c99b2d4969652eed6a2e1ea5bd522
     # via
     #   pytest
+    #   redis
     #   sphinx
 pastedeploy==2.1.1 \
     --hash=sha256:14923cfd6ad4281b570693afc278bab5076fbdd4cd15aa9d99b042d694aa4217 \
@@ -763,9 +764,9 @@ raven==6.10.0 \
     --hash=sha256:3fa6de6efa2493a7c827472e984ce9b020797d0da16f1db67197bcc23c8fae54 \
     --hash=sha256:44a13f87670836e153951af9a3c80405d36b43097db869a36e92809673692ce4
     # via -r requirements.in
-redis[hiredis]==4.0.2 \
-    --hash=sha256:c8481cf414474e3497ec7971a1ba9b998c8efad0f0d289a009a5bbef040894f9 \
-    --hash=sha256:ccf692811f2c1fc7a92b466aa2599e4a6d2d73d5f736a2c70be600657c0da34a
+redis[hiredis]==4.1.0 \
+    --hash=sha256:21f0a23bce707909076e6ba2ce076cba59bff60d2ab22972e0647fdf620ffe47 \
+    --hash=sha256:e13fad67c098a33141bacde872786960e86a5c97a4255009bcd43c795fa1cc77
     # via
     #   -r requirements.in
     #   celery
