@@ -22,6 +22,8 @@ commands:
             docker-compose --version | tee -a << parameters.info_path >>
             echo "*** docker compose --version ***" | tee -a << parameters.info_path >>
             docker compose --version | tee -a << parameters.info_path >>
+            echo "*** docker buildx inspect --bootstrap ***" | tee -a << parameters.info_path >>
+            docker buildx inspect --bootstrap | tee -a << parameters.info_path >>
       - store_artifacts:
           path: << parameters.info_path >>
           destination: << parameters.artifact_path >>
@@ -104,6 +106,9 @@ jobs:
       image: ubuntu-2004:202111-02
     environment:
       BUILDKIT_PROGRESS: plain
+      DOCKER_BUILDKIT: 1
+      BUILDX_PLATFORMS: linux/amd64,linux/arm64
+      BUILDX_VERSION: v0.7.1
 
     steps:
         - run:
@@ -113,6 +118,24 @@ jobs:
                 echo "Skipping Docker push for forked PRs."
                 circleci step halt
               fi
+        - run:
+            name: Install buildx
+            working_directory: /tmp
+            command: |
+              BUILDX_BINARY_URL="https://github.com/docker/buildx/releases/download/${BUILDX_VERSION}/buildx-${BUILDX_VERSION}.linux-amd64"
+              echo "Downloading from ${BUILDX_BINARY_URL}..."
+              curl --output docker-buildx \
+                --no-progress-meter --show-error --location --fail --retry 3 \
+                "$BUILDX_BINARY_URL"
+
+              mkdir -p ~/.docker/cli-plugins
+
+              mv docker-buildx ~/.docker/cli-plugins/
+              chmod a+x ~/.docker/cli-plugins/docker-buildx
+
+              docker buildx install
+              # Run binfmt to install platform builders
+              docker run --rm --privileged tonistiigi/binfmt:latest --install "$BUILDX_PLATFORMS"
         - run:
             name: Setup checkout directory
             command: |
@@ -127,12 +150,7 @@ jobs:
             artifact_path: /tmp/build_info.txt
         - login_to_dockerhub
         - run:
-            name: Build Docker images
-            working_directory: /ichnaea
-            command: |
-              make build
-        - run:
-            name: Push to Dockerhub
+            name: Build cross-platform images and Push to Dockerhub
             working_directory: /ichnaea
             command: |
               function retry {
@@ -140,15 +158,15 @@ jobs:
                 local n=0
                 local max=3
                 while true; do
-                "$@" && break || {
-                  if [[ $n -lt $max ]]; then
-                    ((n++))
-                    echo "Command failed. Attempt $n/$max:"
-                  else
-                    echo "Failed after $n attempts."
-                    exit 1
-                  fi
-                }
+                  "$@" && break || {
+                    if [[ $n -lt $max ]]; then
+                      ((n++))
+                      echo "Command failed. Attempt $n/$max:"
+                    else
+                      echo "Failed after $n attempts."
+                      exit 1
+                    fi
+                  }
                 done
                 set -e
               }
@@ -159,13 +177,15 @@ jobs:
                 export DOCKER_TAG="${CIRCLE_SHA1}"
               fi
 
-              docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
-              retry docker push "mozilla/location:${DOCKER_TAG}"
+              # Cross-build the tagged version
+              export BUILDX_PLATFORMS=${BUILDX_PLATFORMS}
+              export CROSS_BUILD_ARGS="--tag \"mozilla/location:${DOCKER_TAG}\" --push"
+              retry make cross-build
 
-              # push `latest` on main only
+              # Cross-build and push `latest` on main only
               if [ "${CIRCLE_BRANCH}" == "main" ]; then
-                docker tag "local/ichnaea_app" "mozilla/location:latest"
-                retry docker push "mozilla/location:latest"
+                export CROSS_BUILD_ARGS="--tag \"mozilla/location:latest\" --push"
+                retry make cross-build
               fi
 
 workflows:

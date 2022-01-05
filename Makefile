@@ -16,7 +16,12 @@ ifeq (1, ${NOCACHE})
 DOCKER_BUILD_OPTS := --no-cache
 endif
 
+# Set this to override the cross-build paramters
+BUILDX_PLATFORMS?=linux/amd64,linux/arm64
+CROSS_BUILD_ARGS?=
+
 DC := $(shell which docker-compose)
+DOCKER := $(shell which docker)
 
 .PHONY: help
 help: default
@@ -48,6 +53,7 @@ default:
 	@echo "  update-vendored  - re-download vendor source and test data"
 	@echo "  update-reqs      - regenerate Python requirements"
 	@echo "  local-map        - generate local map tiles"
+	@echo "  cross-build      - build cross-platform docker containers"
 	@echo ""
 	@echo "  help             - see this text"
 	@echo ""
@@ -80,6 +86,16 @@ build: my.env
 	${DC} build ${DOCKER_BUILD_OPTS} \
 	    redis db
 	touch .docker-build
+
+.PHONY: cross-build
+cross-build: my.env
+	${DOCKER} buildx create --node ichnaea-cross-build --use
+	${DOCKER} buildx build \
+	    --platform ${BUILDX_PLATFORMS} \
+	    --build-arg userid=${ICHNAEA_UID} \
+	    --build-arg groupid=${ICHNAEA_GID} \
+	    ${CROSS_BUILD_ARGS} \
+	    .
 
 .PHONY: setup
 setup: my.env
