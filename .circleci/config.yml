@@ -1,85 +1,136 @@
 version: 2.1
+
+commands:
+  capture_host_info:
+    description: "Capture Host information"
+    parameters:
+      info_path:
+        type: string
+        default: "/tmp/info.txt"
+      artifact_path:
+        type: string
+        default: "/tmp/info.txt"
+    steps:
+      - run:
+          name: "Get Host Information"
+          command: |
+            echo "*** uname -v ***" | tee << parameters.info_path >>
+            uname -v | tee -a << parameters.info_path >>
+            echo "*** docker info ***" | tee -a << parameters.info_path >>
+            docker info | tee -a << parameters.info_path >>
+            echo "*** docker-compose --version ***" | tee -a << parameters.info_path >>
+            docker-compose --version | tee -a << parameters.info_path >>
+            echo "*** docker compose --version ***" | tee -a << parameters.info_path >>
+            docker compose --version | tee -a << parameters.info_path >>
+      - store_artifacts:
+          path: << parameters.info_path >>
+          destination: << parameters.artifact_path >>
+  create_version_json:
+    description: "Create version.json for Dockerflow"
+    parameters:
+      path:
+        type: string
+        default: "/ichnaea/version.json"
+    steps:
+      - run:
+          name: Create version.json
+          command: |
+            # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
+            printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
+            "$CIRCLE_SHA1" \
+            "$CIRCLE_TAG" \
+            "$CIRCLE_PROJECT_USERNAME" \
+            "$CIRCLE_PROJECT_REPONAME" \
+            "$CIRCLE_BUILD_URL" > << parameters.path >>
+      - store_artifacts:
+          path: << parameters.path >>
+  login_to_dockerhub:
+    description: "Login to Dockerhub, to avoid rate limits"
+    steps:
+      - run:
+          name: Login to Dockerhub
+          command: |
+            if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+              echo "Skipping Login to Dockerhub, credentials not available."
+            else
+              echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
+            fi
+
 jobs:
-  build:
+  test:
     docker:
       - image: mozilla/cidockerbases:docker-latest
         auth:
           username: $DOCKER_USER
           password: $DOCKER_PASS
     working_directory: /
+    environment:
+      BUILDKIT_PROGRESS: plain
 
     steps:
-        - run:
-            name: Host info
-            command: uname -v
-
-        - run:
-            name: Install essential packages
-            command: |
-                apt-get update
-
         - checkout:
             path: /ichnaea
-
-        - run:
-            name: Create version.json
-            working_directory: /ichnaea
-            command: |
-                # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
-                printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
-                "$CIRCLE_SHA1" \
-                "$CIRCLE_TAG" \
-                "$CIRCLE_PROJECT_USERNAME" \
-                "$CIRCLE_PROJECT_REPONAME" \
-                "$CIRCLE_BUILD_URL" > /ichnaea/version.json
-
-        - store_artifacts:
+        - create_version_json:
             path: /ichnaea/version.json
-
         - run:
             name: Install Docker Compose
             command: |
-                set +x
-                curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-                chmod +x /usr/local/bin/docker-compose
-
+              set +x
+              curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
+              chmod +x /usr/local/bin/docker-compose
         - setup_remote_docker:
-            version: 20.10.6
-
-        - run:
-            name: Get Info
-            command: |
-               docker info
-               which docker-compose
-               docker-compose --version
-
-        - run:
-            name: Login to Dockerhub
-            command: |
-                if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
-                  echo "Skipping Login to Dockerhub, credentials not available."
-                else
-                  echo "${DOCKER_PASS}" | docker login -u="${DOCKER_USER}" --password-stdin
-                fi
-
+            version: 20.10.11
+        - capture_host_info:
+            info_path: /tmp/test_info.txt
+            artifact_path: /tmp/test_info.txt
+        - login_to_dockerhub
         - run:
             name: Build Docker images
             working_directory: /ichnaea
             command: |
-                make build
-
+              make build
         - run:
             name: Run linting
             working_directory: /ichnaea
             command: |
-                docker run local/ichnaea_app shell ./docker/run_lint.sh
-
+              docker run local/ichnaea_app shell ./docker/run_lint.sh
         - run:
             name: Run tests
             working_directory: /ichnaea
             command: |
-                make test
+              make test
+  build-push:
+    machine:
+      image: ubuntu-2004:202111-02
+    environment:
+      BUILDKIT_PROGRESS: plain
 
+    steps:
+        - run:
+            name: Stop if build is for pull request from a fork.
+            command: |
+              if [ -n "$CIRCLE_PR_NUMBER" ]; then
+                echo "Skipping Docker push for forked PRs."
+                circleci step halt
+              fi
+        - run:
+            name: Setup checkout directory
+            command: |
+              sudo mkdir -p /ichnaea
+              sudo chmod a+rwx /ichnaea
+        - checkout:
+            path: /ichnaea
+        - create_version_json:
+            path: /ichnaea/version.json
+        - capture_host_info:
+            info_path: /tmp/build_info.txt
+            artifact_path: /tmp/build_info.txt
+        - login_to_dockerhub
+        - run:
+            name: Build Docker images
+            working_directory: /ichnaea
+            command: |
+              make build
         - run:
             name: Push to Dockerhub
             working_directory: /ichnaea
@@ -102,22 +153,19 @@ jobs:
                 set -e
               }
 
-              export DOCKER_TAG="${CIRCLE_SHA1}"
               if [ -n "${CIRCLE_TAG}" ]; then
                 export DOCKER_TAG="${CIRCLE_TAG}"
-              fi
-              # push on main or git tag
-              if [ "${CIRCLE_BRANCH}" == "main" ] || [ -n "${CIRCLE_TAG}" ]; then
-                docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
-                retry docker push "mozilla/location:${DOCKER_TAG}"
-
-                # push `latest` on main only
-                if [ "${CIRCLE_BRANCH}" == "main" ]; then
-                  docker tag "local/ichnaea_app" "mozilla/location:latest"
-                  retry docker push "mozilla/location:latest"
-                fi
               else
-                echo "Skipping Push to Dockerhub, not main or tag."
+                export DOCKER_TAG="${CIRCLE_SHA1}"
+              fi
+
+              docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
+              retry docker push "mozilla/location:${DOCKER_TAG}"
+
+              # push `latest` on main only
+              if [ "${CIRCLE_BRANCH}" == "main" ]; then
+                docker tag "local/ichnaea_app" "mozilla/location:latest"
+                retry docker push "mozilla/location:latest"
               fi
 
 workflows:
@@ -125,9 +173,17 @@ workflows:
   #
   # workflow jobs are _not_ run in tag builds by default, so we have to enable that.
   # see: https://circleci.com/docs/2.0/workflows/#executing-workflows-for-a-git-tag
-  build-test-push:
+  test-build-push:
     jobs:
-      - build:
+      - test:
           filters:
             tags:
               only: /.*/
+      - build-push:
+          requires:
+            - test
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              only: main
