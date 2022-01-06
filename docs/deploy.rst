@@ -4,30 +4,58 @@
 Deployment
 ==========
 
-.. Note:: 2019-08-16: This needs to be updated.
+.. Note:: 2022-01-06: In the process of being updated.
 
-We deploy Ichnaea in an Amazon AWS environment, and there are some
+Mozilla deploys Ichnaea in an Amazon AWS environment, and there are some
 optional dependencies on specific AWS services like Amazon S3. The
-documentation assumes you are also using a AWS environment, but Ichnaea
-can be run in non-AWS environments as well.
+documentation assumes you are also using a AWS environment, but Ichnaea can be
+run in non-AWS environments as well.
 
-Diagram
-=======
+Mozilla's Production Deployment
+===============================
 
-A full deployment of the application in an AWS environment can include all
-of the parts shown in the diagram, but various of these parts are optional:
+Mozilla's deployment of Ichnaea looks something like this:
+
+.. Source document:
+.. https://docs.google.com/drawings/d/1v0Db941NtZQoaKYETHXNYMK9MvZx7FlIw5QzQiiI2fI/edit?usp=sharing
 
 .. image:: deploy.png
-   :height: 1860px
-   :width: 1440px
-   :scale: 50%
+   :height: 417px
+   :width: 921px
+   :scale: 75%
+   :align: center
    :alt: Deployment Diagram
 
-Specifically Amazon CloudFront and S3 are only used for backup and serving
-image tiles and public data downloads for the public website.
-Using Combain, Datadog, OpenCellID and Sentry is also optional.
-Finally there doesn't have to be a `admin` EC2 box, but it can be helpful
-for debug access and running database migrations.
+The required parts are:
+
+* One or more WebApp workers running the user-facing web page and APIs. Mozilla
+  uses 20 EC2 instances in an Auto Scaling Group (ASG), behind an Elastic Load
+  Balancer (ELB).
+* One or more Async workers that run Celery tasks that process observations,
+  update the station database, create map tiles, export data, and other tasks.
+  Mozilla uses 5 EC2 instances in an ASG.
+* A Celery Scheduler to schedule periodic tasks. Mozilla uses an EC2 instance.
+* A MySQL or compatible database, to store station data. Mozilla uses Amazon's
+  Relational Database Service (RDS), MySQL 5.7, in Multi-AZ mode. The
+  user-facing website does not write to a database, and reads from a read-only
+  replica.
+* A Redis cache server, for cached data, Celery tasks queues, and observation
+  data pipelines. Mozilla uses Amazon's ElastiCache Redis, in Multi-AZ mode.
+
+The optional parts are:
+
+* An S3 asset bucket to store map tiles and public data like cell exports.
+  Mozilla uses Cloudfront as a CDN in front of the asset bucket.
+* An S3 backup bucket to store observation samples.
+* An admin node, to provide interactive access to the cluster and to run
+  database migration. Mozilla uses an EC2 instance.
+* DNS to publish on the Internet. Mozilla uses AWS's Route 53.
+
+Optional parts not shown on the diagram:
+
+* A statsd-compatible metrics server. Mozilla uses InfluxDB.
+* A log aggregator. Mozilla uses Google Cloud Logging.
+* Sentry, for aggregating captured exceptions.
 
 
 MySQL / Amazon RDS
