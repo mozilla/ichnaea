@@ -7,17 +7,11 @@ jobs:
           username: $DOCKER_USER
           password: $DOCKER_PASS
     working_directory: /
+    environment:
+        DOCKER_BUILDKIT: 1  # Buildkit is not in Ubuntu 20.04 default, but getting ready
+        BUILDKIT_PROGRESS: plain  # auto / tty is over-verbose in CircleCI
 
     steps:
-        - run:
-            name: Host info
-            command: uname -v
-
-        - run:
-            name: Install essential packages
-            command: |
-                apt-get update
-
         - checkout:
             path: /ichnaea
 
@@ -37,6 +31,7 @@ jobs:
             path: /ichnaea/version.json
 
         - run:
+            # Ubuntu 20.04 default is 1.22.0, which doesn't support interpolation format used for the db service
             name: Install Docker Compose
             command: |
                 set +x
@@ -44,14 +39,24 @@ jobs:
                 chmod +x /usr/local/bin/docker-compose
 
         - setup_remote_docker:
-            version: 20.10.6
+            version: 20.10.11
 
         - run:
-            name: Get Info
+            name: Get build info
             command: |
-               docker info
-               which docker-compose
-               docker-compose --version
+               export OUT_FILE="/tmp/build_info.txt"
+               touch $OUT_FILE
+               function log_info {
+                 echo "*** $@ ***" | tee -a $OUT_FILE
+                 "$@" | tee -a $OUT_FILE
+               }
+               log_info uname -v
+               log_info docker info
+               log_info which docker-compose
+               log_info docker-compose --version
+
+        - store_artifacts:
+            path: /tmp/build_info.txt
 
         - run:
             name: Login to Dockerhub
@@ -81,6 +86,18 @@ jobs:
                 make test
 
         - run:
+            name: Check if pushing images to Dockerhub
+            command: |
+              if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+                echo "Skipping Push to Dockerhub, credentials not available."
+                circleci step halt
+              fi
+              if [ "${CIRCLE_BRANCH}" != "main" ] && [ -z "${CIRCLE_TAG}" ]; then
+                echo "Skipping Push to Dockerhub, not main branch or a tag."
+                circleci step halt
+              fi
+
+        - run:
             name: Push to Dockerhub
             working_directory: /ichnaea
             command: |
@@ -105,19 +122,16 @@ jobs:
               export DOCKER_TAG="${CIRCLE_SHA1}"
               if [ -n "${CIRCLE_TAG}" ]; then
                 export DOCKER_TAG="${CIRCLE_TAG}"
-              fi
-              # push on main or git tag
-              if [ "${CIRCLE_BRANCH}" == "main" ] || [ -n "${CIRCLE_TAG}" ]; then
-                docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
-                retry docker push "mozilla/location:${DOCKER_TAG}"
-
-                # push `latest` on main only
-                if [ "${CIRCLE_BRANCH}" == "main" ]; then
-                  docker tag "local/ichnaea_app" "mozilla/location:latest"
-                  retry docker push "mozilla/location:latest"
-                fi
               else
-                echo "Skipping Push to Dockerhub, not main or tag."
+                export DOCKER_TAG="${CIRCLE_SHA1}"
+              fi
+
+              docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
+              retry docker push "mozilla/location:${DOCKER_TAG}"
+
+              if [ "${CIRCLE_BRANCH}" == "main" ]; then
+                docker tag "local/ichnaea_app" "mozilla/location:latest"
+                retry docker push "mozilla/location:latest"
               fi
 
 workflows:
