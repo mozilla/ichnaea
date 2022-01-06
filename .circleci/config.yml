@@ -41,7 +41,7 @@ jobs:
                 chmod +x /usr/local/bin/docker-compose
 
         - setup_remote_docker:
-            version: 20.10.6
+            version: 20.10.11
 
         - run:
             name: Get build info
