@@ -9,11 +9,6 @@ jobs:
     working_directory: /
 
     steps:
-        - run:
-            name: Install essential packages
-            command: |
-                apt-get update
-
         - checkout:
             path: /ichnaea
 
