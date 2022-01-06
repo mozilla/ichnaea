@@ -10,10 +10,6 @@ jobs:
 
     steps:
         - run:
-            name: Host info
-            command: uname -v
-
-        - run:
             name: Install essential packages
             command: |
                 apt-get update
@@ -47,11 +43,21 @@ jobs:
             version: 20.10.6
 
         - run:
-            name: Get Info
+            name: Get build info
             command: |
-               docker info
-               which docker-compose
-               docker-compose --version
+               export OUT_FILE="/tmp/build_info.txt"
+               touch $OUT_FILE
+               function log_info {
+                 echo "*** $@ ***" | tee -a $OUT_FILE
+                 "$@" | tee -a $OUT_FILE
+               }
+               log_info uname -v
+               log_info docker info
+               log_info which docker-compose
+               log_info docker-compose --version
+
+        - store_artifacts:
+            path: /tmp/build_info.txt
 
         - run:
             name: Login to Dockerhub
