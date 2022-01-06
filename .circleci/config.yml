@@ -83,6 +83,18 @@ jobs:
                 make test
 
         - run:
+            name: Check if pushing images to Dockerhub
+            command: |
+              if [ "${DOCKER_USER}" == "" ] || [ "${DOCKER_PASS}" == "" ]; then
+                echo "Skipping Push to Dockerhub, credentials not available."
+                circleci step halt
+              fi
+              if [ "${CIRCLE_BRANCH}" != "main" ] && [ -z "${CIRCLE_TAG}" ]; then
+                echo "Skipping Push to Dockerhub, not main branch or a tag."
+                circleci step halt
+              fi
+
+        - run:
             name: Push to Dockerhub
             working_directory: /ichnaea
             command: |
@@ -107,19 +119,16 @@ jobs:
               export DOCKER_TAG="${CIRCLE_SHA1}"
               if [ -n "${CIRCLE_TAG}" ]; then
                 export DOCKER_TAG="${CIRCLE_TAG}"
-              fi
-              # push on main or git tag
-              if [ "${CIRCLE_BRANCH}" == "main" ] || [ -n "${CIRCLE_TAG}" ]; then
-                docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
-                retry docker push "mozilla/location:${DOCKER_TAG}"
-
-                # push `latest` on main only
-                if [ "${CIRCLE_BRANCH}" == "main" ]; then
-                  docker tag "local/ichnaea_app" "mozilla/location:latest"
-                  retry docker push "mozilla/location:latest"
-                fi
               else
-                echo "Skipping Push to Dockerhub, not main or tag."
+                export DOCKER_TAG="${CIRCLE_SHA1}"
+              fi
+
+              docker tag "local/ichnaea_app" "mozilla/location:${DOCKER_TAG}"
+              retry docker push "mozilla/location:${DOCKER_TAG}"
+
+              if [ "${CIRCLE_BRANCH}" == "main" ]; then
+                docker tag "local/ichnaea_app" "mozilla/location:latest"
+                retry docker push "mozilla/location:latest"
               fi
 
 workflows:
