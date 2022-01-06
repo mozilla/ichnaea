@@ -33,6 +33,7 @@ jobs:
             path: /ichnaea/version.json
 
         - run:
+            # Ubuntu 20.04 default is 1.22.0, which doesn't support interpolation format used for the db service
             name: Install Docker Compose
             command: |
                 set +x
