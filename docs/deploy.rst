@@ -28,44 +28,44 @@ Mozilla's deployment of Ichnaea looks something like this:
 
 The required parts are:
 
-* One or more WebApp workers running the user-facing web page and APIs. Mozilla
-  uses 20 EC2 instances in an Auto Scaling Group (ASG), behind an Elastic Load
-  Balancer (ELB).
-* One or more Async workers that run Celery tasks that process observations,
-  update the station database, create map tiles, export data, and other tasks.
-  Mozilla uses 5 EC2 instances in an ASG.
-* A Celery Scheduler to schedule periodic tasks. Mozilla uses an EC2 instance.
-* A MySQL or compatible database, to store station data. Mozilla uses Amazon's
+* One or more **WebApp workers** running the user-facing web page and APIs.
+  Mozilla uses 20 EC2 instances in an Auto Scaling Group (ASG), behind an
+  Elastic Load Balancer (ELB).
+* One or more **Async workers** that run Celery tasks that process
+  observations, update the station database, create map tiles, export data, and
+  other tasks.  Mozilla uses 5 EC2 instances in an ASG.
+* A **Celery scheduler** to schedule periodic tasks. Mozilla uses an EC2 instance.
+* A **MySQL or compatible database**, to store station data. Mozilla uses Amazon's
   Relational Database Service (RDS), MySQL 5.7, in Multi-AZ mode. The
   user-facing website does not write to a database, and reads from a read-only
   replica.
-* A Redis cache server, for cached data, Celery tasks queues, and observation
+* A **Redis cache server**, for cached data, Celery tasks queues, and observation
   data pipelines. Mozilla uses Amazon's ElastiCache Redis, in Multi-AZ mode.
 
 The optional parts are:
 
-* An S3 asset bucket to store map tiles and public data like cell exports.
+* An **S3 asset bucket** to store map tiles and public data like cell exports.
   Mozilla uses Cloudfront as a CDN in front of the asset bucket.
-* An S3 backup bucket to store observation samples.
-* An admin node, to provide interactive access to the cluster and to run
+* An **S3 backup bucket** to store observation samples.
+* An **Admin node**, to provide interactive access to the cluster and to run
   database migration. Mozilla uses an EC2 instance.
-* DNS to publish on the Internet. Mozilla uses AWS's Route 53.
+* **DNS entries** to publish on the Internet. Mozilla uses AWS's Route 53.
 
 Optional parts not shown on the diagram:
 
-* A statsd-compatible metrics server. Mozilla uses InfluxDB.
-* A log aggregator. Mozilla uses Google Cloud Logging.
-* Sentry, for aggregating captured exceptions.
-
+* A **statsd-compatible metrics server**. Mozilla uses InfluxDB.
+* A **log aggregator**. Mozilla uses Google Cloud Logging.
+* **Sentry**, for aggregating captured exceptions.
 
 MySQL / Amazon RDS
 ==================
 
 The application is written and tested against MySQL 5.7.x or Amazon RDS
-of the same versions. The default configuration works for the most part.
-There are just a couple of changes you need to do.
+of the same versions. MariaDB 10.5 has also been tested in the development
+environment.
 
-For example via the my.cnf:
+The default configuration works for the most part, but ensure you are using
+UTF-8 to store strings. For example in ``my.cnf``:
 
 .. code-block:: ini
 
@@ -74,13 +74,18 @@ For example via the my.cnf:
     collation-server = utf8_general_ci
     init-connect='SET NAMES utf8'
 
-The web frontend role only needs access to a read-only version of
-the database, for example a read-replica. The worker backend role
-needs access to the read-write primary database.
+The WebApp frontend role only needs access to a read-only version of the
+database, for example a read-replica. The Async Worker backend role needs
+access to the read-write primary database.
 
 You need to create a database called `location` and a user with DDL
 privileges for that database.
 
+Mozilla's MLS deployment processes 500 milliom to 1,000 milliom observations
+a day. We've had issues in the past with replica lag and transaction log sizes
+(used disk space), and both should be monitored. We reduced replica lag to 2
+seconds or less by increasing ``innodb_log_file_size`` from 125 MB to 2 GB.
+See :doc:`/rate_control` for more information.
 
 Redis / Amazon ElastiCache
 ==========================

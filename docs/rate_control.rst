@@ -66,7 +66,9 @@ replica database, used for read-only operations, can fall behind. This causes a
 build-up of binary logs on the primary database, filling up the disk. It also
 delays changes to API keys, such as adding a key or changing requests limits,
 from being applied to the API. The primary database disk usage and the replica
-lag should be monitored to detect and prevent this problem.
+lag should be monitored to detect and prevent this problem. Mozilla was able to
+decrease replica lag to seconds by setting a larger ``innodb_log_file_size``
+(125 MB to 2 GB).
 
 Updates from observations can cause the transaction history / undo logs to grow
 faster than the purge process can delete them. This causes the system log
