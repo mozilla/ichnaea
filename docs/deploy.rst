@@ -356,16 +356,14 @@ web role, via:
 This should produce output like::
 
     HTTP/1.1 200 OK
-    Content-Length: 196
     Content-Type: application/json
-    Date: Mon, 10 Jan 2022 22:15:05 GMT
-    Server: waitress
-    Strict-Transport-Security: max-age=31536000; includeSubDomains
-    X-Content-Type-Options: nosniff
+    Date: Mon, 10 Jan 2022 23:34:25 GMT
+    Content-Length: 193
+    Connection: keep-alive
 
-    {"database": {"up": true, "time": 15, "alembic_version": "3be4004781bc"},
-     "geoip": {"up": true, "time": 0, "age_in_days": 553, "version": "2020-07-06T20:03:26Z"},
-     "redis": {"up": true, "time": 0}}⏎ 
+    {"database": {"up": true, "time": 2, "alembic_version": "3be4004781bc"},
+     "geoip": {"up": true, "time": 0, "age_in_days": 4, "version": "2022-01-06T16:20:21Z"},
+     "redis": {"up": true, "time": 1}}
 
 The ``__lbheartbeat__`` endpoint has simpler output and doesn't check
 the database / Redis backend connections. The application is designed
