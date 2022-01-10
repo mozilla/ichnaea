@@ -12,6 +12,8 @@ inside database tables.
    :local:
 
 
+.. _environment-variables:
+
 Environment variables
 =====================
 

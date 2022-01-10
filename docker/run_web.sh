@@ -9,8 +9,7 @@ set -e
 # Port for gunicorn to listen on
 GUNICORN_PORT=${GUNICORN_PORT:-"8000"}
 
-# Number of gunicorn workers to spin off--should be one per
-# cpu
+# Number of gunicorn workers to spin off--should be one per cpu
 GUNICORN_WORKERS=${GUNICORN_WORKERS:-"1"}
 
 # Gunicorn worker class--use our gevent worker
