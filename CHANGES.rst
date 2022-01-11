@@ -2,9 +2,13 @@
 Changelog
 =========
 
-After August, 2017, see `releases page
-<https://github.com/mozilla/ichnaea/releases>`_ for releases and notes.
+See the
+`tags page <https://github.com/mozilla/ichnaea/tags>`_
+for releases after November 2019.
 
+See the
+`releases page <https://github.com/mozilla/ichnaea/releases>`_
+for releases from August 2017 to August 2019.
 
 2.2.0 (2017-08-23)
 ==================
