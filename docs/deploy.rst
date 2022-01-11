@@ -46,14 +46,15 @@ The optional parts are:
   Mozilla uses Cloudfront as a CDN in front of the asset bucket.
 * An **S3 backup bucket** to store observation samples.
 * An **Admin node**, to provide interactive access to the cluster and to run
-  database migration. Mozilla uses an EC2 instance.
+  database migrations. Mozilla uses an EC2 instance.
 * **DNS entries** to publish on the Internet. Mozilla uses AWS's Route 53.
 
 Optional parts not shown on the diagram:
 
-* A **statsd-compatible metrics server**. Mozilla uses InfluxDB.
+* A **statsd-compatible metrics server**. Mozilla uses InfluxDB Cloud.
 * A **log aggregator**. Mozilla uses Google Cloud Logging.
-* **Sentry**, for aggregating captured exceptions.
+* **Sentry**, for aggregating captured exceptions. Mozilla uses a self-hosted
+  instance.
 
 MySQL / Amazon RDS
 ==================
@@ -79,11 +80,14 @@ access to the read-write primary database.
 You need to create a database called ``location`` and a user with DDL
 privileges for that database.
 
-Mozilla's MLS deployment processes 500 million to 1,000 million observations
-a day. We have had issues in the past with replica lag and transaction log
-sizes (used disk space), and both should be monitored. We reduced replica lag
-to 2 seconds or less by increasing ``innodb_log_file_size`` from 125 MB to
-2 GB.  See :doc:`/rate_control` for more information.
+Mozilla's deployment processes 500 to 1000 million observations a day. We have
+had issues in the past with replica lag, related binary log sizes, and
+transaction log sizes. The replica lag and disk usage should be monitored, for
+example with AWS RDS metrics. The transaction history length can be monitored
+via the metric `trx_history.length`.  Mozilla reduced replica lag to 2 seconds
+or less by increasing ``innodb_log_file_size`` from 125 MB to 2 GB, and
+control observation throughput dynamically. See :doc:`/rate_control` for more
+information.
 
 Redis / Amazon ElastiCache
 ==========================
@@ -92,8 +96,8 @@ The application uses Redis:
 
 * As the Celery backend and broker for the Async backend workers,
 * As queues for observation data,
-* As an API key cache
-* As storage for API key rate limits and usage
+* As an API key cache, and
+* As storage for API key rate limits and usage.
 
 You can install a standard Redis or use Amazon ElastiCache (Redis).
 The application is tested against Redis 3.2.
@@ -156,8 +160,9 @@ of installing and setting up the code from Git.
 
 Docker images are published to https://hub.docker.com/r/mozilla/location.
 When the ``main`` branch is updated (such as when a pull request is merged),
-an image is uploaded with a label matching the commit hash, as well as the
-``latest`` tag. This is deployed to the
+an image is uploaded with a label matching the commit hash, such as
+``082156a5a8714a0db0b78f7b405ced2153184c1b``, as well as the ``latest`` tag.
+This is deployed to the
 `stage deployment <https://location.stage.mozaws.net/>`_, and the deployed
 commit can be viewed at
 `/__version__ on stage <https://location.stage.mozaws.net/__version__>`_.
@@ -353,7 +358,9 @@ web role, via:
 
     curl -i http://localhost:8000/__heartbeat__
 
-This should produce output like::
+This should produce output like:
+
+.. code-block:: text
 
     HTTP/1.1 200 OK
     Content-Type: application/json
