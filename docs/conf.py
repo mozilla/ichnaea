@@ -15,12 +15,12 @@ sys.modules["shapely"] = mock.MagicMock()
 
 
 project = "Ichnaea"
-copyright = "2013-2020, Mozilla"
+copyright = "2013-2022, Mozilla"
 
 # The short X.Y version.
-version = "2.0"
+version = "2.3"
 # The full version, including alpha/beta/rc tags.
-release = "2.0"
+release = "2.3"
 
 autoclass_content = "class"
 exclude_patterns = ["_build", ".DS_Store", "Thumbs.db"]
