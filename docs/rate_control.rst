@@ -66,7 +66,9 @@ replica database, used for read-only operations, can fall behind. This causes a
 build-up of binary logs on the primary database, filling up the disk. It also
 delays changes to API keys, such as adding a key or changing requests limits,
 from being applied to the API. The primary database disk usage and the replica
-lag should be monitored to detect and prevent this problem.
+lag should be monitored to detect and prevent this problem. Mozilla was able to
+decrease replica lag to seconds by setting a larger ``innodb_log_file_size``
+(125 MB to 2 GB).
 
 Updates from observations can cause the transaction history / undo logs to grow
 faster than the purge process can delete them. This causes the system log
@@ -148,7 +150,7 @@ In our simulation, the controller picked a sample rate between 90% and 100%
 during peak traffic, which was sufficient to keep the queue sizes slightly
 above the target. This means that most observations will be processed, even
 during busy periods. It quickly responded to traffic spikes during peak
-periods by dropping the sample rate to 60%.
+periods by dropping the sample rate to 60% or lower.
 
 .. Source document:
 .. https://docs.google.com/spreadsheets/d/1FQMB6tof7atdrWY_hqwL5t-PBjVklktjF56u8ZJ1lZw/edit?usp=sharing

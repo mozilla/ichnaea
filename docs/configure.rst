@@ -12,10 +12,12 @@ inside database tables.
    :local:
 
 
+.. _environment-variables:
+
 Environment variables
 =====================
 
-.. autocomponent:: ichnaea.conf.AppConfig
+.. autocomponent:: ichnaea.conf.AppComponent
    :hide-classname:
    :case: upper
 

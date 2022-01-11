@@ -50,9 +50,6 @@ To apply the new requirements, rebuild your Docker image:
 Automated Updates
 =================
 
-.. note::
-   Dependabot is currently broken, see `issue #1428 <https://github.com/mozilla/ichnaea/issues/1428>`_
-
 Dependabot_ opens PRs for updates around the first of the month.
 It also opens PRs for security updates when they are available.
 It seems to have some support for ``pip-tools``, but it may be
@@ -69,7 +66,7 @@ time.
 Manually upgrading requirements.txt
 ===================================
 
-To upgrade all the requirements, run `make shell` to enter the Docker
+To upgrade all the requirements, run ``make shell`` to enter the Docker
 environment, and run
 
 .. code-block:: shell
@@ -91,9 +88,4 @@ Other tools
 pipdeptree_ displays the requirements tree, which can be useful to determine
 which package required an unknown package.
 
-hashin_ is useful for generating a list of hashes. We used it exclusively
-before ``pip-compile``, and it may be handy if you need to manually update a
-``.txt`` file.
-
 .. _pipdeptree: https://github.com/naiquevin/pipdeptree
-.. _hashin: https://github.com/peterbe/hashin
