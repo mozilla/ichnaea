@@ -304,9 +304,9 @@ deprecated==1.2.13 \
     --hash=sha256:43ac5335da90c31c24ba028af536a91d41d53f9e6901ddb021bcc572ce44e38d \
     --hash=sha256:64756e3e14c8c5eea9795d93c524551432a0be75629f8f29e67ab8caf076c76d
     # via redis
-dockerflow==2021.7.0 \
-    --hash=sha256:9f309fdf72a897290878f97cc30fd4bb3609b13cf74bfce4268f5e368e466070 \
-    --hash=sha256:e47bbca06c261a5c3d97e5e0990aa71dafed41b723d0e0009c32e1d2f9b92db4
+dockerflow==2022.1.0 \
+    --hash=sha256:ec723cedb853043a0c7cada32f46f8f7eadfaf6bd7dee718e9a373b6b577d249 \
+    --hash=sha256:f40bad2d465533b1949261e5cd3ffa23fd1dd0c12f32f4e4608040ec6ad502a5
     # via -r requirements.in
 docutils==0.16 \
     --hash=sha256:0c5b78adfbf7762415433f5515cd5c9e762339e23369dbe8000d84a4bf4ab3af \
