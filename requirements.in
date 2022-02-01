@@ -18,7 +18,7 @@ backoff==1.11.1
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.20.28
+boto3==1.20.46
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
