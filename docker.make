@@ -77,7 +77,7 @@ build_geocalc:
 
 build_check:
 	@which encode enumerate merge render pngquant
-	$(PYTHON) -c "import sys; from shapely import speedups; sys.exit(not speedups.available)"
+	$(PYTHON) -c "import sys; from shapely import speedups, __version__; print(f'{speedups.available=}, {__version__=}'); sys.exit(not (speedups.available or __version__=='1.8.0'))"
 	$(PYTHON) -c "import geocalc"
 	$(PYTHON) -c "import sys; from ichnaea.geoip import GeoIPWrapper; sys.exit(not GeoIPWrapper('ichnaea/tests/data/GeoIP2-City-Test.mmdb').check_extension())"
 	$(PYTHON) -c "import sys; from ichnaea.geocode import GEOCODER; sys.exit(not GEOCODER.region(51.5, -0.1) == 'GB')"
