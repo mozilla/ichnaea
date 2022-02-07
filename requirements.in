@@ -18,7 +18,7 @@ backoff==1.11.1
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.20.46
+boto3==1.20.50
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -102,7 +102,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.22.1
+numpy==1.22.2
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
