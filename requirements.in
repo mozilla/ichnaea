@@ -18,7 +18,7 @@ backoff==1.11.1
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.20.28
+boto3==1.20.46
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -42,7 +42,7 @@ colander==1.8.3
 # Code: https://github.com/mozilla-services/python-dockerflow
 # Changes: https://python-dockerflow.readthedocs.io/en/latest/changelog.html
 # Docs: https://python-dockerflow.readthedocs.io/en/latest/
-dockerflow==2021.7.0
+dockerflow==2022.1.0
 
 # Python configuration library
 # Code: https://github.com/willkg/everett
@@ -102,7 +102,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.22.0
+numpy==1.22.1
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -133,7 +133,7 @@ raven==6.10.0
 # Code: https://github.com/andymccurdy/redis-py
 # Changes: https://github.com/andymccurdy/redis-py/blob/master/CHANGES
 # Docs: https://github.com/andymccurdy/redis-py#readme
-redis[hiredis]==4.1.0
+redis[hiredis]==4.1.2
 
 # Various memoizing collections and decorators, such as TTLCache
 # Code: https://github.com/tkem/cachetools
@@ -145,7 +145,7 @@ cachetools
 # Code: https://github.com/psf/requests
 # Changes: https://github.com/psf/requests/blob/master/HISTORY.md
 # Docs: https://requests.readthedocs.io/en/master/
-requests==2.26.0
+requests==2.27.1
 
 # R-Tree spatial index for Python GIS, requires libspatialindex
 # Code: https://github.com/Toblerity/Rtree
@@ -193,7 +193,7 @@ structlog==21.5.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.7
+urllib3[secure]==1.26.8
 
 #
 # Requirements for developement
@@ -221,7 +221,7 @@ colorama==0.4.4
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.26
+Cython==0.29.27
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
