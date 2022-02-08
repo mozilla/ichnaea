@@ -138,7 +138,8 @@ def check_config():
     # These values should be non-empty and non-default
     should_be_set = {"secret_key"}
     for name in should_be_set:
-        default = settings.config.options[name][0].default
+        option = getattr(AppComponent.Config, name)
+        default = option.default
         value = settings(name)
         if value == default:
             issues.append(f"{name} has the default value '{value}'")
