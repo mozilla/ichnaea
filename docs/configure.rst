@@ -17,9 +17,9 @@ inside database tables.
 Environment variables
 =====================
 
-.. autocomponent:: ichnaea.conf.AppComponent
-   :hide-classname:
+.. autocomponentconfig:: ichnaea.conf.AppComponent
    :case: upper
+   :show-table:
 
 
 Alembic requires an additional item in the environment:
