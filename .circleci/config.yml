@@ -6,7 +6,6 @@ jobs:
         auth:
           username: $DOCKER_USER
           password: $DOCKER_PASS
-    working_directory: /
     environment:
         DOCKER_BUILDKIT: 1  # Buildkit is not in Ubuntu 20.04 default, but getting ready
         BUILDKIT_PROGRESS: plain  # auto / tty is over-verbose in CircleCI
