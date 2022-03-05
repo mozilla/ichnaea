@@ -263,7 +263,7 @@ requests-mock==1.9.3
 # Code: https://github.com/sphinx-doc/sphinx/
 # Changes: https://www.sphinx-doc.org/en/master/changes.html
 # Docs: https://www.sphinx-doc.org/en/master/
-Sphinx==3.3.1
+Sphinx==4.4.0
 
 # ReadTheDocs theme for Sphinx
 # Code: https://github.com/readthedocs/sphinx_rtd_theme
