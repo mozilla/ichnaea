@@ -757,9 +757,9 @@ raven==6.10.0 \
     --hash=sha256:3fa6de6efa2493a7c827472e984ce9b020797d0da16f1db67197bcc23c8fae54 \
     --hash=sha256:44a13f87670836e153951af9a3c80405d36b43097db869a36e92809673692ce4
     # via -r requirements.in
-redis[hiredis]==4.1.2 \
-    --hash=sha256:bf86397be532fc0a888d5976a5313a3a70d8f912d52bc0c09bffda4b8425a1d4 \
-    --hash=sha256:f13eea4254e302485add677cadedaf1305c1b3a4e07535e23b7b239798ce9301
+redis[hiredis]==4.1.4 \
+    --hash=sha256:04629f8e42be942c4f7d1812f2094568f04c612865ad19ad3ace3005da70631a \
+    --hash=sha256:1d9a0cdf89fdd93f84261733e24f55a7bbd413a9b219fdaf56e3e728ca9a2306
     # via
     #   -r requirements.in
     #   celery
