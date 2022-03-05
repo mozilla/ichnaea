@@ -15,5 +15,5 @@ IFS=$'\n\t'
 
 export CUSTOM_COMPILE_COMMAND="make update-reqs"
 cd /app
-echo ">>> pip-compile --quiet --generate-hashes requirements.in"
-pip-compile --quiet --generate-hashes requirements.in
+echo ">>> pip-compile --quiet --generate-hashes --allow-unsafe requirements.in"
+pip-compile --quiet --generate-hashes --allow-unsafe requirements.in
