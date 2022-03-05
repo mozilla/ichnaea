@@ -27,14 +27,6 @@ jobs:
         - store_artifacts:
             path: ./version.json
 
-        - run:
-            # Ubuntu 20.04 default is 1.22.0, which doesn't support interpolation format used for the db service
-            name: Install Docker Compose
-            command: |
-                set +x
-                echo curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-                echo chmod +x /usr/local/bin/docker-compose
-
         - setup_remote_docker:
             version: 20.10.11
 
