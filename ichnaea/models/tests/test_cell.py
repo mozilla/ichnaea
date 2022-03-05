@@ -61,8 +61,8 @@ class TestCellCodec(object):
         assert value == b"\x02\x016\x00\x01\x00\x0c\x00\x00\x00\x00"
 
     def test_max(self):
-        bit16 = 2 ** 16 - 1
-        bit32 = 2 ** 32 - 1
+        bit16 = 2**16 - 1
+        bit32 = 2**32 - 1
 
         value = encode_cellarea(Radio.wcdma, bit16, bit16, bit16, codec="base64")
         assert value == b"Av///////w=="

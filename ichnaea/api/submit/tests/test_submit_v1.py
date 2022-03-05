@@ -21,26 +21,26 @@ class TestSubmitSchema(object):
             {
                 "items": [
                     {
-                        "timestamp": 146 * 10 ** 10,
+                        "timestamp": 146 * 10**10,
                         "wifiAccessPoints": [{"macAddress": wifi.mac}],
                     }
                 ]
             }
         )
-        assert data["items"][0]["timestamp"] == 146 * 10 ** 10
+        assert data["items"][0]["timestamp"] == 146 * 10**10
 
         data = SUBMIT_V1_SCHEMA.deserialize(
             {
                 "items": [
                     {
-                        "timestamp": 146 * 10 ** 9,
+                        "timestamp": 146 * 10**9,
                         "wifiAccessPoints": [{"macAddress": wifi.mac}],
                     }
                 ]
             }
         )
         # value was discarded and replaced by 'now'
-        assert data["items"][0]["timestamp"] > 10 ** 12
+        assert data["items"][0]["timestamp"] > 10**12
 
 
 class TestView(BaseSubmitTest):

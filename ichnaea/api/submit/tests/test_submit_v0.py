@@ -90,13 +90,13 @@ class TestSubmitSchema(object):
         data = SUBMIT_V0_SCHEMA.deserialize(
             {"items": [{"time": "2016-04-07T03:33:20", "wifi": [{"key": wifi.mac}]}]}
         )
-        assert data["items"][0]["timestamp"] == 146 * 10 ** 10
+        assert data["items"][0]["timestamp"] == 146 * 10**10
 
         data = SUBMIT_V0_SCHEMA.deserialize(
             {"items": [{"time": "1710-02-28", "wifi": [{"key": wifi.mac}]}]}
         )
         # 1710 was discarded and replaced by 'now'
-        assert data["items"][0]["timestamp"] > 10 ** 12
+        assert data["items"][0]["timestamp"] > 10**12
 
 
 class TestView(BaseSubmitTest):
