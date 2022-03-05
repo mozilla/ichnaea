@@ -29,7 +29,6 @@ modindex_common_prefix = ["ichnaea."]
 pygments_style = "sphinx"
 source_suffix = ".rst"
 templates_path = ["_templates"]
-root_doc = "index"
 
 # Use default theme if we are in ReadTheDocs
 on_rtd = os.environ.get("READTHEDOCS") == "True"
