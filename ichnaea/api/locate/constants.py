@@ -1,6 +1,6 @@
 from enum import Enum
 
-_MAX_INT = 2 ** 32 - 1
+_MAX_INT = 2**32 - 1
 
 # Approximate circumference of the Earth in meters.
 EARTH_CIRCUMFERENCE = 40000000.0

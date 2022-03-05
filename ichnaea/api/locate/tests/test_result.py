@@ -60,7 +60,7 @@ class TestPosition(object):
         check(0.0, DataAccuracy.high)
         check(100, DataAccuracy.high)
         check(20000.0, DataAccuracy.medium)
-        check(10 ** 6, DataAccuracy.low)
+        check(10**6, DataAccuracy.low)
 
 
 class TestRegion(object):

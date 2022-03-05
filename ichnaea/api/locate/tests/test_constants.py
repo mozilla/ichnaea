@@ -37,8 +37,8 @@ class TestDataAccuracy(object):
         assert DataAccuracy.from_number(-0.1) == DataAccuracy.high
         assert DataAccuracy.from_number(500) == DataAccuracy.high
         assert DataAccuracy.from_number(500.1) == DataAccuracy.medium
-        assert DataAccuracy.from_number(10 ** 5) == DataAccuracy.low
-        assert DataAccuracy.from_number(10 ** 9) == DataAccuracy.none
+        assert DataAccuracy.from_number(10**5) == DataAccuracy.low
+        assert DataAccuracy.from_number(10**9) == DataAccuracy.none
         with pytest.raises(TypeError):
             DataAccuracy.from_number(None)
         with pytest.raises(ValueError):

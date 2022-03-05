@@ -131,7 +131,7 @@ class ReportExporter(object):
                 success = True
             except self._retriable:
                 success = False
-                time.sleep(self._retry_wait * (i ** 2 + 1))
+                time.sleep(self._retry_wait * (i**2 + 1))
 
             if success:
                 METRICS.incr("data.export.batch", tags=self.stats_tags)
