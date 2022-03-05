@@ -6,7 +6,7 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.7.5
+alembic==1.7.6
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
@@ -18,7 +18,7 @@ backoff==1.11.1
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.20.50
+boto3==1.21.13
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
@@ -133,7 +133,7 @@ raven==6.10.0
 # Code: https://github.com/andymccurdy/redis-py
 # Changes: https://github.com/andymccurdy/redis-py/blob/master/CHANGES
 # Docs: https://github.com/andymccurdy/redis-py#readme
-redis[hiredis]==4.1.2
+redis[hiredis]==4.1.4
 
 # Various memoizing collections and decorators, such as TTLCache
 # Code: https://github.com/tkem/cachetools
@@ -157,7 +157,7 @@ Rtree==0.9.7
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.7.3
+scipy==1.8.0
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -169,7 +169,7 @@ setproctitle==1.2.2
 # Code: https://github.com/Toblerity/Shapely
 # Changes: https://github.com/Toblerity/Shapely/blob/master/CHANGES.txt
 # Docs: https://shapely.readthedocs.io/en/latest/
-Shapely[vectorized]==1.8.1
+Shapely[vectorized]==1.8.1.post1
 
 # Implementation of a PID controller
 # Code: https://github.com/m-lundberg/simple-pid
@@ -221,7 +221,7 @@ colorama==0.4.4
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.27
+Cython==0.29.28
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
@@ -245,13 +245,13 @@ iso3166
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==6.4.0
+pip-tools==6.5.1
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
 # Changes: https://docs.pytest.org/en/stable/changelog.html
 # Docs: https://docs.pytest.org/en/stable/
-pytest==6.2.5
+pytest==7.0.1
 
 # Code coverage plugin for pytest
 # Code: https://github.com/pytest-dev/pytest-cov
