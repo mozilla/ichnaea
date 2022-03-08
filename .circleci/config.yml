@@ -2,22 +2,20 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: mozilla/cidockerbases:docker-latest
+      - image: cimg/base:stable-20.04
         auth:
           username: $DOCKER_USER
           password: $DOCKER_PASS
-    working_directory: /
     environment:
         DOCKER_BUILDKIT: 1  # Buildkit is not in Ubuntu 20.04 default, but getting ready
         BUILDKIT_PROGRESS: plain  # auto / tty is over-verbose in CircleCI
+        COMPOSE_PROJECT_NAME: ichnaea  # Used to determine network name, etc.
 
     steps:
-        - checkout:
-            path: /ichnaea
+        - checkout
 
         - run:
             name: Create version.json
-            working_directory: /ichnaea
             command: |
                 # create a version.json per https://github.com/mozilla-services/Dockerflow/blob/master/docs/version_object.md
                 printf '{"commit":"%s","version":"%s","source":"https://github.com/%s/%s","build":"%s"}\n' \
@@ -25,18 +23,10 @@ jobs:
                 "$CIRCLE_TAG" \
                 "$CIRCLE_PROJECT_USERNAME" \
                 "$CIRCLE_PROJECT_REPONAME" \
-                "$CIRCLE_BUILD_URL" > /ichnaea/version.json
+                "$CIRCLE_BUILD_URL" > ./version.json
 
         - store_artifacts:
-            path: /ichnaea/version.json
-
-        - run:
-            # Ubuntu 20.04 default is 1.22.0, which doesn't support interpolation format used for the db service
-            name: Install Docker Compose
-            command: |
-                set +x
-                curl -L https://github.com/docker/compose/releases/download/1.27.4/docker-compose-`uname -s`-`uname -m` > /usr/local/bin/docker-compose
-                chmod +x /usr/local/bin/docker-compose
+            path: ./version.json
 
         - setup_remote_docker:
             version: 20.10.11
@@ -69,19 +59,16 @@ jobs:
 
         - run:
             name: Build Docker images
-            working_directory: /ichnaea
             command: |
                 make build
 
         - run:
             name: Run linting
-            working_directory: /ichnaea
             command: |
                 docker run local/ichnaea_app shell ./docker/run_lint.sh
 
         - run:
             name: Run tests
-            working_directory: /ichnaea
             command: |
                 make test
 
@@ -99,7 +86,6 @@ jobs:
 
         - run:
             name: Push to Dockerhub
-            working_directory: /ichnaea
             command: |
               function retry {
                 set +e
