@@ -6,7 +6,7 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.7.6
+alembic==1.7.7
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
