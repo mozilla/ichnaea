@@ -1744,9 +1744,9 @@
       }
     },
     "node_modules/uglify-js": {
-      "version": "3.15.2",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.15.2.tgz",
-      "integrity": "sha512-peeoTk3hSwYdoc9nrdiEJk+gx1ALCtTjdYuKSXMTDqq7n1W7dHPqWDdSi+BPL0ni2YMeHD7hKUSdbj3TZauY2A==",
+      "version": "3.15.4",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.15.4.tgz",
+      "integrity": "sha512-vMOPGDuvXecPs34V74qDKk4iJ/SN4vL3Ow/23ixafENYvtrNvtbcgUeugTcUGRGsOF/5fU8/NYSL5Hyb3l1OJA==",
       "dev": true,
       "bin": {
         "uglifyjs": "bin/uglifyjs"
@@ -3169,9 +3169,9 @@
       "dev": true
     },
     "uglify-js": {
-      "version": "3.15.2",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.15.2.tgz",
-      "integrity": "sha512-peeoTk3hSwYdoc9nrdiEJk+gx1ALCtTjdYuKSXMTDqq7n1W7dHPqWDdSi+BPL0ni2YMeHD7hKUSdbj3TZauY2A==",
+      "version": "3.15.4",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.15.4.tgz",
+      "integrity": "sha512-vMOPGDuvXecPs34V74qDKk4iJ/SN4vL3Ow/23ixafENYvtrNvtbcgUeugTcUGRGsOF/5fU8/NYSL5Hyb3l1OJA==",
       "dev": true
     },
     "validate-npm-package-license": {
