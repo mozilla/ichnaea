@@ -1,4 +1,4 @@
-FROM python:3.10.2-slim
+FROM python:3.10.4-slim
 
 # Set up user and group.
 ARG groupid=10001
