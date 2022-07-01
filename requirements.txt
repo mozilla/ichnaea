@@ -108,13 +108,13 @@ black==22.1.0 \
     --hash=sha256:f5660feab44c2e3cb24b2419b998846cbb01c23c7fe645fee45087efa3da2d61 \
     --hash=sha256:fdb8754b453fb15fad3f72cd9cad3e16776f0964d67cf30ebcbf10327a3777a3
     # via -r requirements.in
-boto3==1.21.13 \
-    --hash=sha256:16fae86d0c4993fd5112128bb4622a879f02363bccd045153cc0bbd7722cc9a5 \
-    --hash=sha256:e17d994d222162dac02ec32fde6ae910d819ebf239a94dddcee47def2c82b9c9
+boto3==1.24.21 \
+    --hash=sha256:551e902b70ccf9f6a58e28bb409718a0403b021b17ff6d63ab0b9af5a122386e \
+    --hash=sha256:abe5b44010e3f50c5e0243aa4fc2338f10e5a868413faa0d6ae79131d6b507b8
     # via -r requirements.in
-botocore==1.24.13 \
-    --hash=sha256:46e51f56f1c5784e4245e036503635fa71b722775657b6e1acf21ec5b906974c \
-    --hash=sha256:7b166096f9413b41caf7cc6f4edfd5b3c3ab9d7c61eb120a649e69485c98131a
+botocore==1.27.21 \
+    --hash=sha256:3bafa8e773d207c0ce02c63790a8820562e22d2e892abaf1eb90c343e995218a \
+    --hash=sha256:b685ffc0ac170bf7de5fde931504eccd939f8545a9c9d10259245ca4c91101e5
     # via
     #   boto3
     #   s3transfer
@@ -825,9 +825,9 @@ rtree==0.9.7 \
     --hash=sha256:ebe884fdf20d83b2eabd293ea28fbcbf84353eb0c6f6f3521fa66f1245b3d8e8 \
     --hash=sha256:fe06b208488c11a311570c9a37ec52116a41107ad265cf53b1ffdeaa09f2d37b
     # via -r requirements.in
-s3transfer==0.5.0 \
-    --hash=sha256:50ed823e1dc5868ad40c8dc92072f757aa0e653a192845c94a3b676f4a62da4c \
-    --hash=sha256:9c1dc369814391a6bda20ebbf4b70a0f34630592c9aa520856bf384916af2803
+s3transfer==0.6.0 \
+    --hash=sha256:06176b74f3a15f61f1b4f25a1fc29a4429040b7647133a463da8fa5bd28d5ecd \
+    --hash=sha256:2ed07d3866f523cc561bf4a00fc5535827981b117dd7876f036b0c1aca42c947
     # via boto3
 scipy==1.8.0 \
     --hash=sha256:011d4386b53b933142f58a652aa0f149c9b9242abd4f900b9f4ea5fbafc86b89 \
