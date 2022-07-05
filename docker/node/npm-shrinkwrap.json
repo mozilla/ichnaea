@@ -11,7 +11,7 @@
       "devDependencies": {
         "@mapbox/mapbox-gl-geocoder": "~4.7.4",
         "clean-css": "~5.2",
-        "clean-css-cli": "~5.5",
+        "clean-css-cli": "~5.6",
         "datatables": "~1.10",
         "jquery": "~3.6.0",
         "jquery-flot": "~0.8",
@@ -478,13 +478,13 @@
       }
     },
     "node_modules/clean-css-cli": {
-      "version": "5.5.2",
-      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.5.2.tgz",
-      "integrity": "sha512-4y5FD+ayRz7IWqZRCCMvFxNUhluc1Yv8mNPmrHbrm2NjKsv9uaQZedZKN4L+QMkTqANL1RfOwhpe22neDEgEMA==",
+      "version": "5.6.0",
+      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.6.0.tgz",
+      "integrity": "sha512-68vorNEG808D1QzeerO9AlwQVTuaR8YSK4aqwIsjJq0wDSyPH11ApHY0O+EQrdEGUZcN+d72v+Nn/gpxjAFewQ==",
       "dev": true,
       "dependencies": {
         "chokidar": "^3.5.2",
-        "clean-css": "^5.2.4",
+        "clean-css": "^5.3.0",
         "commander": "7.x",
         "glob": "^7.1.6"
       },
@@ -493,6 +493,18 @@
       },
       "engines": {
         "node": ">= 10.12.0"
+      }
+    },
+    "node_modules/clean-css-cli/node_modules/clean-css": {
+      "version": "5.3.0",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.0.tgz",
+      "integrity": "sha512-YYuuxv4H/iNb1Z/5IbMRoxgrzjWGhOEFfd+groZ5dMCVkpENiMZmwspdrzBo9286JjM1gZJPAyL7ZIdzuvu2AQ==",
+      "dev": true,
+      "dependencies": {
+        "source-map": "~0.6.0"
+      },
+      "engines": {
+        "node": ">= 10.0"
       }
     },
     "node_modules/clone-response": {
@@ -2176,15 +2188,26 @@
       }
     },
     "clean-css-cli": {
-      "version": "5.5.2",
-      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.5.2.tgz",
-      "integrity": "sha512-4y5FD+ayRz7IWqZRCCMvFxNUhluc1Yv8mNPmrHbrm2NjKsv9uaQZedZKN4L+QMkTqANL1RfOwhpe22neDEgEMA==",
+      "version": "5.6.0",
+      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.6.0.tgz",
+      "integrity": "sha512-68vorNEG808D1QzeerO9AlwQVTuaR8YSK4aqwIsjJq0wDSyPH11ApHY0O+EQrdEGUZcN+d72v+Nn/gpxjAFewQ==",
       "dev": true,
       "requires": {
         "chokidar": "^3.5.2",
-        "clean-css": "^5.2.4",
+        "clean-css": "^5.3.0",
         "commander": "7.x",
         "glob": "^7.1.6"
+      },
+      "dependencies": {
+        "clean-css": {
+          "version": "5.3.0",
+          "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.0.tgz",
+          "integrity": "sha512-YYuuxv4H/iNb1Z/5IbMRoxgrzjWGhOEFfd+groZ5dMCVkpENiMZmwspdrzBo9286JjM1gZJPAyL7ZIdzuvu2AQ==",
+          "dev": true,
+          "requires": {
+            "source-map": "~0.6.0"
+          }
+        }
       }
     },
     "clone-response": {
