@@ -139,7 +139,7 @@ cachetools
 # Code: https://github.com/psf/requests
 # Changes: https://github.com/psf/requests/blob/master/HISTORY.md
 # Docs: https://requests.readthedocs.io/en/master/
-requests==2.27.1
+requests==2.28.1
 
 # R-Tree spatial index for Python GIS, requires libspatialindex
 # Code: https://github.com/Toblerity/Rtree
