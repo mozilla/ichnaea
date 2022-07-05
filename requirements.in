@@ -12,7 +12,7 @@ alembic==1.8.0
 # Code: https://github.com/litl/backoff
 # Changes: https://github.com/litl/backoff/blob/master/CHANGELOG.md
 # Docs: https://github.com/litl/backoff#readme
-backoff==1.11.1
+backoff==2.1.2
 
 # Amazon Web Services SDK, requires the matching release of botocore
 # Code: https://github.com/boto/boto3
