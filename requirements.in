@@ -209,7 +209,7 @@ black==22.6.0
 # Code: https://github.com/tartley/colorama
 # Changes: https://github.com/tartley/colorama/blob/master/CHANGELOG.rst
 # Docs: https://github.com/tartley/colorama#readme
-colorama==0.4.4
+colorama==0.4.5
 
 # Compiler for writing C extensions for Python
 # Code: https://github.com/cython/cython
