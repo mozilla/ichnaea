@@ -351,9 +351,9 @@ flake8==4.0.1 \
 genc==0.2 \
     --hash=sha256:bf568548cd9c30e2a059110eeb33cecc7fb74875cf10e5c897caf6bc762b6221
     # via -r requirements.in
-geoip2==4.5.0 \
-    --hash=sha256:2aed03b45f8037b9e16f02567bcf3623801d6d20689c5fc5676d7c08ed067334 \
-    --hash=sha256:b542252e87eb40adc3a2fc0f4e84b514c4c5e04ed46923a3a74d509f25f3103a
+geoip2==4.6.0 \
+    --hash=sha256:745e2d7a665072690056f9566774727da89216c7858793f89804f6945f969714 \
+    --hash=sha256:f0e80bce80b06bb38bd08bf4877d5a84e354e932095e6ccfb4d27bb598fa4f83
     # via -r requirements.in
 gevent==21.12.0 \
     --hash=sha256:0082d8a5d23c35812ce0e716a91ede597f6dd2c5ff508a02a998f73598c59397 \
