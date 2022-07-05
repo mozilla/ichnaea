@@ -145,7 +145,7 @@ requests==2.27.1
 # Code: https://github.com/Toblerity/Rtree
 # Changes: https://rtree.readthedocs.io/en/latest/changes.html
 # Docs: https://rtree.readthedocs.io/en/latest/
-Rtree==0.9.7
+Rtree==1.0.0
 
 # Toolkit for mathematics, science, and engineering
 # Code: https://github.com/scipy/scipy
