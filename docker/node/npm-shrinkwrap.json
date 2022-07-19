@@ -495,18 +495,6 @@
         "node": ">= 10.12.0"
       }
     },
-    "node_modules/clean-css-cli/node_modules/clean-css": {
-      "version": "5.3.1",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.1.tgz",
-      "integrity": "sha512-lCr8OHhiWCTw4v8POJovCoh4T7I9U11yVsPjMWWnnMmp9ZowCxyad1Pathle/9HjaDp+fdQKjO9fQydE6RHTZg==",
-      "dev": true,
-      "dependencies": {
-        "source-map": "~0.6.0"
-      },
-      "engines": {
-        "node": ">= 10.0"
-      }
-    },
     "node_modules/clone-response": {
       "version": "1.0.2",
       "resolved": "https://registry.npmjs.org/clone-response/-/clone-response-1.0.2.tgz",
@@ -2197,17 +2185,6 @@
         "clean-css": "^5.3.1",
         "commander": "7.x",
         "glob": "^7.1.6"
-      },
-      "dependencies": {
-        "clean-css": {
-          "version": "5.3.1",
-          "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.1.tgz",
-          "integrity": "sha512-lCr8OHhiWCTw4v8POJovCoh4T7I9U11yVsPjMWWnnMmp9ZowCxyad1Pathle/9HjaDp+fdQKjO9fQydE6RHTZg==",
-          "dev": true,
-          "requires": {
-            "source-map": "~0.6.0"
-          }
-        }
       }
     },
     "clone-response": {
