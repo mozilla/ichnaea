@@ -6,7 +6,7 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.8.0
+alembic==1.8.1
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
@@ -96,7 +96,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.23.0
+numpy==1.23.1
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -187,7 +187,7 @@ structlog==21.5.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.9
+urllib3[secure]==1.26.10
 
 #
 # Requirements for developement
