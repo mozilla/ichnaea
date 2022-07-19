@@ -595,7 +595,7 @@
     "node_modules/decamelize-keys/node_modules/map-obj": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/map-obj/-/map-obj-1.0.1.tgz",
-      "integrity": "sha1-2TPOuSBdgr3PSIb2dCvcK03qFG0=",
+      "integrity": "sha512-7N/q3lyZ+LVCp7PzuxrJr4KMbBE2hW7BT7YNia330OFxIf4d3r5zVpicP2650l7CPN6RM9zOJRl3NGpqSiw3Eg==",
       "dev": true,
       "engines": {
         "node": ">=0.10.0"
@@ -2274,7 +2274,7 @@
         "map-obj": {
           "version": "1.0.1",
           "resolved": "https://registry.npmjs.org/map-obj/-/map-obj-1.0.1.tgz",
-          "integrity": "sha1-2TPOuSBdgr3PSIb2dCvcK03qFG0=",
+          "integrity": "sha512-7N/q3lyZ+LVCp7PzuxrJr4KMbBE2hW7BT7YNia330OFxIf4d3r5zVpicP2650l7CPN6RM9zOJRl3NGpqSiw3Eg==",
           "dev": true
         }
       }
