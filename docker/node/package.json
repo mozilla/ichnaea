@@ -10,7 +10,7 @@
   "devDependencies": {
     "@mapbox/mapbox-gl-geocoder": "~4.7.4",
     "clean-css": "~5.3",
-    "clean-css-cli": "~5.5",
+    "clean-css-cli": "~5.6",
     "datatables": "~1.10",
     "jquery": "~3.6.0",
     "jquery-flot": "~0.8",
