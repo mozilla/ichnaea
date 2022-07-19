@@ -10,13 +10,13 @@
       "license": "Apache-2.0",
       "devDependencies": {
         "@mapbox/mapbox-gl-geocoder": "~4.7.4",
-        "clean-css": "~5.2",
-        "clean-css-cli": "~5.5",
+        "clean-css": "~5.3",
+        "clean-css-cli": "~5.6",
         "datatables": "~1.10",
         "jquery": "~3.6.0",
         "jquery-flot": "~0.8",
         "mapbox-gl": "~1.13.2",
-        "uglify-js": "~3.15"
+        "uglify-js": "~3.16"
       }
     },
     "node_modules/@babel/code-frame": {
@@ -466,9 +466,9 @@
       }
     },
     "node_modules/clean-css": {
-      "version": "5.2.4",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.2.4.tgz",
-      "integrity": "sha512-nKseG8wCzEuji/4yrgM/5cthL9oTDc5UOQyFMvW/Q53oP6gLH690o1NbuTh6Y18nujr7BxlsFuS7gXLnLzKJGg==",
+      "version": "5.3.1",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.1.tgz",
+      "integrity": "sha512-lCr8OHhiWCTw4v8POJovCoh4T7I9U11yVsPjMWWnnMmp9ZowCxyad1Pathle/9HjaDp+fdQKjO9fQydE6RHTZg==",
       "dev": true,
       "dependencies": {
         "source-map": "~0.6.0"
@@ -478,13 +478,13 @@
       }
     },
     "node_modules/clean-css-cli": {
-      "version": "5.5.2",
-      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.5.2.tgz",
-      "integrity": "sha512-4y5FD+ayRz7IWqZRCCMvFxNUhluc1Yv8mNPmrHbrm2NjKsv9uaQZedZKN4L+QMkTqANL1RfOwhpe22neDEgEMA==",
+      "version": "5.6.1",
+      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.6.1.tgz",
+      "integrity": "sha512-/StJu1YODZY6cOwkBx5FMhSoc9YmvEJXtwNN+udGg1GIKrr4PkdsCdUqC26GfdPdt5IuZnu+5y9/3mrdIJa40Q==",
       "dev": true,
       "dependencies": {
         "chokidar": "^3.5.2",
-        "clean-css": "^5.2.4",
+        "clean-css": "^5.3.1",
         "commander": "7.x",
         "glob": "^7.1.6"
       },
@@ -595,7 +595,7 @@
     "node_modules/decamelize-keys/node_modules/map-obj": {
       "version": "1.0.1",
       "resolved": "https://registry.npmjs.org/map-obj/-/map-obj-1.0.1.tgz",
-      "integrity": "sha1-2TPOuSBdgr3PSIb2dCvcK03qFG0=",
+      "integrity": "sha512-7N/q3lyZ+LVCp7PzuxrJr4KMbBE2hW7BT7YNia330OFxIf4d3r5zVpicP2650l7CPN6RM9zOJRl3NGpqSiw3Eg==",
       "dev": true,
       "engines": {
         "node": ">=0.10.0"
@@ -1744,9 +1744,9 @@
       }
     },
     "node_modules/uglify-js": {
-      "version": "3.15.2",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.15.2.tgz",
-      "integrity": "sha512-peeoTk3hSwYdoc9nrdiEJk+gx1ALCtTjdYuKSXMTDqq7n1W7dHPqWDdSi+BPL0ni2YMeHD7hKUSdbj3TZauY2A==",
+      "version": "3.16.2",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.16.2.tgz",
+      "integrity": "sha512-AaQNokTNgExWrkEYA24BTNMSjyqEXPSfhqoS0AxmHkCJ4U+Dyy5AvbGV/sqxuxficEfGGoX3zWw9R7QpLFfEsg==",
       "dev": true,
       "bin": {
         "uglifyjs": "bin/uglifyjs"
@@ -2167,22 +2167,22 @@
       }
     },
     "clean-css": {
-      "version": "5.2.4",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.2.4.tgz",
-      "integrity": "sha512-nKseG8wCzEuji/4yrgM/5cthL9oTDc5UOQyFMvW/Q53oP6gLH690o1NbuTh6Y18nujr7BxlsFuS7gXLnLzKJGg==",
+      "version": "5.3.1",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.1.tgz",
+      "integrity": "sha512-lCr8OHhiWCTw4v8POJovCoh4T7I9U11yVsPjMWWnnMmp9ZowCxyad1Pathle/9HjaDp+fdQKjO9fQydE6RHTZg==",
       "dev": true,
       "requires": {
         "source-map": "~0.6.0"
       }
     },
     "clean-css-cli": {
-      "version": "5.5.2",
-      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.5.2.tgz",
-      "integrity": "sha512-4y5FD+ayRz7IWqZRCCMvFxNUhluc1Yv8mNPmrHbrm2NjKsv9uaQZedZKN4L+QMkTqANL1RfOwhpe22neDEgEMA==",
+      "version": "5.6.1",
+      "resolved": "https://registry.npmjs.org/clean-css-cli/-/clean-css-cli-5.6.1.tgz",
+      "integrity": "sha512-/StJu1YODZY6cOwkBx5FMhSoc9YmvEJXtwNN+udGg1GIKrr4PkdsCdUqC26GfdPdt5IuZnu+5y9/3mrdIJa40Q==",
       "dev": true,
       "requires": {
         "chokidar": "^3.5.2",
-        "clean-css": "^5.2.4",
+        "clean-css": "^5.3.1",
         "commander": "7.x",
         "glob": "^7.1.6"
       }
@@ -2274,7 +2274,7 @@
         "map-obj": {
           "version": "1.0.1",
           "resolved": "https://registry.npmjs.org/map-obj/-/map-obj-1.0.1.tgz",
-          "integrity": "sha1-2TPOuSBdgr3PSIb2dCvcK03qFG0=",
+          "integrity": "sha512-7N/q3lyZ+LVCp7PzuxrJr4KMbBE2hW7BT7YNia330OFxIf4d3r5zVpicP2650l7CPN6RM9zOJRl3NGpqSiw3Eg==",
           "dev": true
         }
       }
@@ -3169,9 +3169,9 @@
       "dev": true
     },
     "uglify-js": {
-      "version": "3.15.2",
-      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.15.2.tgz",
-      "integrity": "sha512-peeoTk3hSwYdoc9nrdiEJk+gx1ALCtTjdYuKSXMTDqq7n1W7dHPqWDdSi+BPL0ni2YMeHD7hKUSdbj3TZauY2A==",
+      "version": "3.16.2",
+      "resolved": "https://registry.npmjs.org/uglify-js/-/uglify-js-3.16.2.tgz",
+      "integrity": "sha512-AaQNokTNgExWrkEYA24BTNMSjyqEXPSfhqoS0AxmHkCJ4U+Dyy5AvbGV/sqxuxficEfGGoX3zWw9R7QpLFfEsg==",
       "dev": true
     },
     "validate-npm-package-license": {
