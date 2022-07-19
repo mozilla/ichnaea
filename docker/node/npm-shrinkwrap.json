@@ -10,7 +10,7 @@
       "license": "Apache-2.0",
       "devDependencies": {
         "@mapbox/mapbox-gl-geocoder": "~4.7.4",
-        "clean-css": "~5.2",
+        "clean-css": "~5.3",
         "clean-css-cli": "~5.5",
         "datatables": "~1.10",
         "jquery": "~3.6.0",
@@ -466,9 +466,9 @@
       }
     },
     "node_modules/clean-css": {
-      "version": "5.2.4",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.2.4.tgz",
-      "integrity": "sha512-nKseG8wCzEuji/4yrgM/5cthL9oTDc5UOQyFMvW/Q53oP6gLH690o1NbuTh6Y18nujr7BxlsFuS7gXLnLzKJGg==",
+      "version": "5.3.1",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.1.tgz",
+      "integrity": "sha512-lCr8OHhiWCTw4v8POJovCoh4T7I9U11yVsPjMWWnnMmp9ZowCxyad1Pathle/9HjaDp+fdQKjO9fQydE6RHTZg==",
       "dev": true,
       "dependencies": {
         "source-map": "~0.6.0"
@@ -2167,9 +2167,9 @@
       }
     },
     "clean-css": {
-      "version": "5.2.4",
-      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.2.4.tgz",
-      "integrity": "sha512-nKseG8wCzEuji/4yrgM/5cthL9oTDc5UOQyFMvW/Q53oP6gLH690o1NbuTh6Y18nujr7BxlsFuS7gXLnLzKJGg==",
+      "version": "5.3.1",
+      "resolved": "https://registry.npmjs.org/clean-css/-/clean-css-5.3.1.tgz",
+      "integrity": "sha512-lCr8OHhiWCTw4v8POJovCoh4T7I9U11yVsPjMWWnnMmp9ZowCxyad1Pathle/9HjaDp+fdQKjO9fQydE6RHTZg==",
       "dev": true,
       "requires": {
         "source-map": "~0.6.0"
