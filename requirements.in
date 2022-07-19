@@ -6,25 +6,25 @@
 # Code: https://github.com/sqlalchemy/alembic
 # Changes: https://alembic.sqlalchemy.org/en/latest/changelog.html
 # Docs: https://alembic.sqlalchemy.org/
-alembic==1.7.6
+alembic==1.8.0
 
 # Configurable backoff and retry algorithms
 # Code: https://github.com/litl/backoff
 # Changes: https://github.com/litl/backoff/blob/master/CHANGELOG.md
 # Docs: https://github.com/litl/backoff#readme
-backoff==1.11.1
+backoff==2.1.2
 
 # Amazon Web Services SDK, requires the matching release of botocore
 # Code: https://github.com/boto/boto3
 # Changes: https://github.com/boto/boto3/blob/develop/CHANGELOG.rst
 # Docs: https://aws.amazon.com/sdk-for-python/
-boto3==1.21.13
+boto3==1.24.22
 
 # Distributed Task Queue
 # Code: https://github.com/celery/celery
 # Changes: https://docs.celeryproject.org/en/stable/changelog.html
 # Docs: https://docs.celeryproject.org/en/stable/index.html
-celery[redis]==5.2.3
+celery[redis]==5.2.7
 
 # Schema-based serialization and deserialization library
 # Code: https://github.com/Pylons/colander
@@ -54,7 +54,7 @@ genc==0.2
 # Code: https://github.com/maxmind/GeoIP2-python
 # Changes: https://github.com/maxmind/GeoIP2-python/blob/master/HISTORY.rst
 # Docs: https://geoip2.readthedocs.io/en/latest/
-geoip2==4.5.0
+geoip2==4.6.0
 
 # Coroutine-based concurrency library
 # Code: https://github.com/gevent/gevent
@@ -72,7 +72,7 @@ gunicorn==20.1.0
 # Code: https://github.com/willkg/markus
 # Changes: https://github.com/willkg/markus/blob/main/HISTORY.rst
 # Docs: http://markus.readthedocs.io/en/latest/
-markus[datadog]==4.0.0
+markus[datadog]==4.0.1
 
 # Python MaxMind DB reader extension
 # Code: https://github.com/maxmind/MaxMind-DB-Reader-python
@@ -84,7 +84,7 @@ maxminddb==2.2.0
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.12.0
+more-itertools==8.13.0
 
 # HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
 # Code: https://github.com/cedadev/ndg_httpsclient/
@@ -96,7 +96,7 @@ ndg-httpsclient==0.5.1
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.22.2
+numpy==1.23.0
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -139,31 +139,31 @@ cachetools
 # Code: https://github.com/psf/requests
 # Changes: https://github.com/psf/requests/blob/master/HISTORY.md
 # Docs: https://requests.readthedocs.io/en/master/
-requests==2.27.1
+requests==2.28.1
 
 # R-Tree spatial index for Python GIS, requires libspatialindex
 # Code: https://github.com/Toblerity/Rtree
 # Changes: https://rtree.readthedocs.io/en/latest/changes.html
 # Docs: https://rtree.readthedocs.io/en/latest/
-Rtree==0.9.7
+Rtree==1.0.0
 
 # Toolkit for mathematics, science, and engineering
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.8.0
+scipy==1.8.1
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
 # Changes: https://github.com/dvarrazzo/py-setproctitle/blob/master/HISTORY.rst
 # Docs: https://github.com/dvarrazzo/py-setproctitle#readme
-setproctitle==1.2.2
+setproctitle==1.2.3
 
 # Manipulate and analyze geometric objects
 # Code: https://github.com/Toblerity/Shapely
 # Changes: https://github.com/Toblerity/Shapely/blob/master/CHANGES.txt
 # Docs: https://shapely.readthedocs.io/en/latest/
-Shapely[vectorized]==1.8.1.post1
+Shapely[vectorized]==1.8.2
 
 # Implementation of a PID controller
 # Code: https://github.com/m-lundberg/simple-pid
@@ -187,7 +187,7 @@ structlog==21.5.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.8
+urllib3[secure]==1.26.9
 
 #
 # Requirements for developement
@@ -203,19 +203,19 @@ beautifulsoup4
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
 # Docs: https://black.readthedocs.io/en/stable/
-black==22.1.0
+black==22.6.0
 
 # Cross-platform colored terminal text, used for structlog output
 # Code: https://github.com/tartley/colorama
 # Changes: https://github.com/tartley/colorama/blob/master/CHANGELOG.rst
 # Docs: https://github.com/tartley/colorama#readme
-colorama==0.4.4
+colorama==0.4.5
 
 # Compiler for writing C extensions for Python
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.28
+Cython==0.29.30
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
@@ -239,13 +239,13 @@ iso3166
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==6.5.1
+pip-tools==6.8.0
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
 # Changes: https://docs.pytest.org/en/stable/changelog.html
 # Docs: https://docs.pytest.org/en/stable/
-pytest==7.0.1
+pytest==7.1.2
 
 # Code coverage plugin for pytest
 # Code: https://github.com/pytest-dev/pytest-cov
