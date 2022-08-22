@@ -86,12 +86,6 @@ maxminddb==2.2.0
 # Docs: https://more-itertools.readthedocs.io/en/stable/
 more-itertools==8.13.0
 
-# HTTPS client implementation for httplib and urllib2 based on PyOpenSSL
-# Code: https://github.com/cedadev/ndg_httpsclient/
-# Changes: https://github.com/cedadev/ndg_httpsclient/#releases
-# Docs: https://github.com/cedadev/ndg_httpsclient/#readme
-ndg-httpsclient==0.5.1
-
 # Scientific computing with Python
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
@@ -187,7 +181,7 @@ structlog==22.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.12
+urllib3==1.26.12
 
 #
 # Requirements for developement
