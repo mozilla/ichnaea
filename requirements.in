@@ -181,7 +181,7 @@ SQLAlchemy==1.3.24
 # Code: https://github.com/hynek/structlog
 # Changes: https://www.structlog.org/en/stable/changelog.html
 # Docs: https://www.structlog.org/en/stable/
-structlog==21.5.0
+structlog==22.1.0
 
 # User-friendly HTTP client
 # Code: https://github.com/urllib3/urllib3
