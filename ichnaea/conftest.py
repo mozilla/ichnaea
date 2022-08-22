@@ -11,7 +11,7 @@ from sqlalchemy import event, inspect, text
 from sqlalchemy.exc import ProgrammingError
 import structlog
 from structlog.testing import LogCapture
-from structlog.threadlocal import merge_threadlocal
+from structlog.contextvars import merge_contextvars
 import webtest
 
 from ichnaea.api.key import API_CACHE, API_CACHE_LOCK
@@ -551,5 +551,5 @@ class SingleLogCapture(LogCapture):
 def logs():
     """Capture list of logs in logs.entries."""
     captured_logs = SingleLogCapture()
-    structlog.configure(processors=[merge_threadlocal, captured_logs])
+    structlog.configure(processors=[merge_contextvars, captured_logs])
     yield captured_logs

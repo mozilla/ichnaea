@@ -4,7 +4,7 @@ Implementation of locate specific HTTP service views.
 
 import json
 
-from structlog.threadlocal import bind_threadlocal
+from structlog.contextvars import bind_contextvars
 
 from ichnaea.api.exceptions import LocationNotFound
 from ichnaea.api.locate.schema_v1 import LOCATE_V1_SCHEMA
@@ -84,7 +84,7 @@ class LocateV1View(BasePositionView):
             self.request.client_addr,
             self.request.url,  # Includes the API, API key
         )
-        bind_threadlocal(api_response_sig=response_sig[:16])
+        bind_contextvars(api_response_sig=response_sig[:16])
 
         return response
 

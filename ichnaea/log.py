@@ -111,7 +111,7 @@ def configure_logging(local_dev_env=None, logging_level=None):
     logging.config.dictConfig(logging_config)
 
     structlog_processors = (
-        [structlog.threadlocal.merge_threadlocal, structlog.stdlib.filter_by_level]
+        [structlog.contextvars.merge_contextvars, structlog.stdlib.filter_by_level]
         + structlog_dev_processors
         + [
             structlog.stdlib.PositionalArgumentsFormatter(),
@@ -122,7 +122,6 @@ def configure_logging(local_dev_env=None, logging_level=None):
         ]
     )
     structlog.configure(
-        context_class=structlog.threadlocal.wrap_dict(dict),
         processors=structlog_processors,
         logger_factory=structlog.stdlib.LoggerFactory(
             ignore_frame_names=["venusian", "pyramid.config"]
@@ -203,8 +202,8 @@ def log_tween_factory(handler, registry):
     def log_tween(request):
         """Time a request, emit metrics and log results, with exception handling."""
         start = time.time()
-        structlog.threadlocal.clear_threadlocal()
-        structlog.threadlocal.bind_threadlocal(
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
             http_method=request.method, http_path=request.path
         )
         # Skip detailed logging and capturing for static assets, either in

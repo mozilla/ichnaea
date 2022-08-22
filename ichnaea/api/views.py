@@ -10,7 +10,7 @@ import markus
 from pymysql.err import DatabaseError
 from redis import RedisError
 from sqlalchemy.exc import DBAPIError
-from structlog.threadlocal import bind_threadlocal
+from structlog.contextvars import bind_contextvars
 
 from ichnaea.api.exceptions import DailyLimitExceeded, InvalidAPIKey, ParseError
 from ichnaea.api.key import get_key, Key, validated_key
@@ -47,7 +47,7 @@ class BaseAPIView(BaseView):
             # Validate key and potentially return None
             valid_key = validated_key(api_key_text)
             if valid_key is None:
-                bind_threadlocal(invalid_api_key=api_key_text)
+                bind_contextvars(invalid_api_key=api_key_text)
             return valid_key
         return None
 
@@ -56,7 +56,7 @@ class BaseAPIView(BaseView):
             self.view_type + ".request",
             tags=["path:" + self.metric_path, "key:" + valid_key],
         )
-        bind_threadlocal(
+        bind_contextvars(
             api_key=valid_key, api_path=self.metric_path, api_type=self.view_type
         )
 
@@ -97,7 +97,7 @@ class BaseAPIView(BaseView):
                 log_params["rate_quota"] = maxreq
                 log_params["rate_remaining"] = max(0, maxreq - limit_count)
                 log_params["rate_allowed"] = not should_limit
-            bind_threadlocal(**log_params)
+            bind_contextvars(**log_params)
         except RedisError:
             self.raven_client.captureException()
 
@@ -156,7 +156,7 @@ class BaseAPIView(BaseView):
                 # if we cannot connect to backend DB, skip api key check
                 skip_check = True
                 self.raven_client.captureException()
-                bind_threadlocal(
+                bind_contextvars(
                     api_key=api_key_text,
                     api_path=self.metric_path,
                     api_type=self.view_type,
@@ -175,7 +175,7 @@ class BaseAPIView(BaseView):
             else:
                 self.log_count("invalid")
                 # Switch "invalid" with real key, add "api_key_allowed"
-                bind_threadlocal(api_key=valid_key, api_key_allowed=False)
+                bind_contextvars(api_key=valid_key, api_key_allowed=False)
 
                 if self.error_on_invalidkey:
                     raise self.prepare_exception(InvalidAPIKey())
@@ -185,7 +185,7 @@ class BaseAPIView(BaseView):
         else:
             if api_key_text is not None:
                 self.log_count("invalid")
-                bind_threadlocal(invalid_api_key=api_key_text)
+                bind_contextvars(invalid_api_key=api_key_text)
             if self.error_on_invalidkey:
                 raise self.prepare_exception(InvalidAPIKey())
 
