@@ -157,10 +157,17 @@ def configure_raven(transport=None, tags=None, _client=None):
         raise ValueError("No valid raven transport was configured.")
 
     dsn = settings("sentry_dsn")
+    environment = settings("sentry_environment")
     klass = DebugRavenClient if not dsn else RavenClient
     info = version_info()
     release = info.get("version") or info.get("commit") or "unknown"
-    client = klass(dsn=dsn, transport=transport, release=release, tags=tags or {})
+    client = klass(
+        dsn=dsn,
+        transport=transport,
+        release=release,
+        environment=environment or None,
+        tags=tags or {},
+    )
     return client
 
 

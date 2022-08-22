@@ -76,6 +76,7 @@ class AppComponent:
             doc="Sentry DSN; leave blank to disable Sentry error reporting",
             default="",
         )
+        sentry_environment = Option(doc="Sentry environment", default="")
         statsd_host = Option(doc="StatsD host; blank to disable StatsD", default="")
         statsd_port = Option(default="8125", parser=int, doc="StatsD port")
         redis_uri = Option(doc="uri for Redis; ``redis://HOST:PORT/DB``")
