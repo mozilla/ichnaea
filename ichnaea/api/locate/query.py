@@ -2,7 +2,7 @@
 
 from ipaddress import ip_address
 import markus
-from structlog.threadlocal import bind_threadlocal
+from structlog.contextvars import bind_contextvars
 
 from ichnaea.api.locate.constants import (
     DataAccuracy,
@@ -92,7 +92,7 @@ class Query(object):
             raise ValueError("Invalid api_type.")
         self.api_type = api_type
 
-        bind_threadlocal(
+        bind_contextvars(
             region=self.region,
             blue=len(blue or []),
             blue_valid=len(self.blue),
@@ -399,7 +399,7 @@ class Query(object):
         if status == "hit" and source:
             tags.append("source:%s" % source.name)
         self._emit_stat("result", tags)
-        bind_threadlocal(
+        bind_contextvars(
             fallback_allowed=allow_fallback,
             accuracy=data_accuracy.name,
             accuracy_min=self.expected_accuracy.name,
@@ -432,4 +432,4 @@ class Query(object):
             bind_prefix + "_accuracy_min": self.expected_accuracy.name,
             bind_prefix + "_status": status,
         }
-        bind_threadlocal(**bind_stats)
+        bind_contextvars(**bind_stats)
