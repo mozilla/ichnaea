@@ -36,7 +36,7 @@ colander==1.8.3
 # Code: https://github.com/mozilla-services/python-dockerflow
 # Changes: https://python-dockerflow.readthedocs.io/en/latest/changelog.html
 # Docs: https://python-dockerflow.readthedocs.io/en/latest/
-dockerflow==2022.1.0
+dockerflow==2022.7.0
 
 # Python configuration library
 # Code: https://github.com/willkg/everett
@@ -151,13 +151,13 @@ Rtree==1.0.0
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.8.1
+scipy==1.9.0
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
 # Changes: https://github.com/dvarrazzo/py-setproctitle/blob/master/HISTORY.rst
 # Docs: https://github.com/dvarrazzo/py-setproctitle#readme
-setproctitle==1.2.3
+setproctitle==1.3.0
 
 # Manipulate and analyze geometric objects
 # Code: https://github.com/Toblerity/Shapely
@@ -187,7 +187,7 @@ structlog==21.5.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3[secure]==1.26.10
+urllib3[secure]==1.26.11
 
 #
 # Requirements for developement
@@ -215,7 +215,7 @@ colorama==0.4.5
 # Code: https://github.com/cython/cython
 # Changes: https://github.com/cython/cython/blob/master/CHANGES.rst
 # Docs: https://cython.readthedocs.io/en/latest/
-Cython==0.29.30
+Cython==0.29.32
 
 # Generate test fixtures
 # Code: https://github.com/FactoryBoy/factory_boy/
