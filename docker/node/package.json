@@ -12,7 +12,7 @@
     "clean-css": "~5.3",
     "clean-css-cli": "~5.6",
     "datatables": "~1.10",
-    "jquery": "~3.6.0",
+    "jquery": "~3.6.1",
     "jquery-flot": "~0.8",
     "mapbox-gl": "~1.13.2",
     "uglify-js": "~3.17"
