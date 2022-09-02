@@ -84,13 +84,13 @@ maxminddb==2.2.0
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==8.13.0
+more-itertools==8.14.0
 
 # Scientific computing with Python
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.23.1
+numpy==1.23.2
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
@@ -145,7 +145,7 @@ Rtree==1.0.0
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.9.0
+scipy==1.9.1
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -157,7 +157,7 @@ setproctitle==1.3.2
 # Code: https://github.com/Toblerity/Shapely
 # Changes: https://github.com/Toblerity/Shapely/blob/master/CHANGES.txt
 # Docs: https://shapely.readthedocs.io/en/latest/
-Shapely[vectorized]==1.8.2
+Shapely[vectorized]==1.8.4
 
 # Implementation of a PID controller
 # Code: https://github.com/m-lundberg/simple-pid
@@ -197,7 +197,7 @@ beautifulsoup4
 # Code: https://github.com/psf/black
 # Changes: https://github.com/psf/black/blob/master/CHANGES.md
 # Docs: https://black.readthedocs.io/en/stable/
-black==22.6.0
+black==22.8.0
 
 # Cross-platform colored terminal text, used for structlog output
 # Code: https://github.com/tartley/colorama
@@ -251,7 +251,7 @@ pytest-cov==3.0.0
 # Code: https://github.com/jamielennox/requests-mock
 # Changes: https://requests-mock.readthedocs.io/en/latest/release-notes.html
 # Docs: https://requests-mock.readthedocs.io/en/latest/
-requests-mock==1.9.3
+requests-mock==1.10.0
 
 # Documentation builder
 # Code: https://github.com/sphinx-doc/sphinx/
