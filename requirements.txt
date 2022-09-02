@@ -732,9 +732,9 @@ requests==2.28.1 \
     #   geoip2
     #   requests-mock
     #   sphinx
-requests-mock==1.9.3 \
-    --hash=sha256:0a2d38a117c08bb78939ec163522976ad59a6b7fdd82b709e23bb98004a44970 \
-    --hash=sha256:8d72abe54546c1fc9696fa1516672f1031d72a55a1d66c85184f972a24ba0eba
+requests-mock==1.10.0 \
+    --hash=sha256:2fdbb637ad17ee15c06f33d31169e71bf9fe2bdb7bc9da26185be0dd8d842699 \
+    --hash=sha256:59c9c32419a9fb1ae83ec242d98e889c45bd7d7a65d48375cc243ec08441658b
     # via -r requirements.in
 rtree==1.0.0 \
     --hash=sha256:0475b2e7fe813c427ceb21e57c22f8b4b7fee6e5966db8a200688163d4853f14 \
