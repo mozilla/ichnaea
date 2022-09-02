@@ -251,7 +251,7 @@ pytest-cov==3.0.0
 # Code: https://github.com/jamielennox/requests-mock
 # Changes: https://requests-mock.readthedocs.io/en/latest/release-notes.html
 # Docs: https://requests-mock.readthedocs.io/en/latest/
-requests-mock==1.9.3
+requests-mock==1.10.0
 
 # Documentation builder
 # Code: https://github.com/sphinx-doc/sphinx/
