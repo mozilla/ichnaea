@@ -90,7 +90,7 @@ more-itertools==8.14.0
 # Code: https://github.com/numpy/numpy
 # Changes: https://numpy.org/devdocs/release.html
 # Docs: https://numpy.org/doc/stable/
-numpy==1.23.2
+numpy==1.23.3
 
 # Pure Python MySQL Client
 # Code: https://github.com/PyMySQL/PyMySQL
