@@ -276,6 +276,10 @@ everett==3.1.0 \
     --hash=sha256:46175da5bcb06c193aa129e59714bca981344ff067c3a8bc2e625bc0b3dc01f6 \
     --hash=sha256:db13891b849e45e54faea93ee79881d12458c5378f5b9b7f806eeff03ce1de3c
     # via -r requirements.in
+exceptiongroup==1.0.0 \
+    --hash=sha256:2ac84b496be68464a2da60da518af3785fff8b7ec0d090a581604bc870bdee41 \
+    --hash=sha256:affbabf13fb6e98988c38d9c5650e701569fe3c1de3233cfb61c5f33774690ad
+    # via pytest
 factory-boy==3.2.1 \
     --hash=sha256:a98d277b0c047c75eb6e4ab8508a7f81fb03d2cb21986f627913546ef7a2a55e \
     --hash=sha256:eb02a7dd1b577ef606b75a253b9818e6f9eaf996d94449c9d5ebb124f90dc795
@@ -656,10 +660,6 @@ prompt-toolkit==3.0.8 \
     --hash=sha256:25c95d2ac813909f813c93fde734b6e44406d1477a9faef7c915ff37d39c0a8c \
     --hash=sha256:7debb9a521e0b1ee7d2fe96ee4bd60ef03c6492784de0547337ca4433e46aa63
     # via click-repl
-py==1.10.0 \
-    --hash=sha256:21b81bda15b66ef5e1a777a21c4dcd9c20ad3efd0b3f817e7a809035269e1bd3 \
-    --hash=sha256:3b80836aa6d1feeaa108e046da6423ab8f6ceda6468545ae8d02d9d58d18818a
-    # via pytest
 pycodestyle==2.8.0 \
     --hash=sha256:720f8b39dde8b293825e7ff02c475f3077124006db4f440dcbc9a20b76548a20 \
     --hash=sha256:eddd5847ef438ea1c7870ca7eb78a9d47ce0cdb4851a5523949f2601d0cbbe7f
@@ -689,9 +689,9 @@ pyramid==2.0 \
 pyramid-chameleon==0.3 \
     --hash=sha256:d176792a50eb015d7865b44bd9b24a7bd0489fa9a5cebbd17b9e05048cef9017
     # via -r requirements.in
-pytest==7.1.2 \
-    --hash=sha256:13d0e3ccfc2b6e26be000cb6568c832ba67ba32e719443bfe725814d3c42433c \
-    --hash=sha256:a06a0425453864a270bc45e71f783330a7428defb4230fb5e6a731fde06ecd45
+pytest==7.2.0 \
+    --hash=sha256:892f933d339f068883b6fd5a459f03d85bfcb355e4981e146d2c7616c21fef71 \
+    --hash=sha256:c4014eb40e10f11f355ad4e3c2fb2c6c6d1919c73f3b5a433de4708202cade59
     # via
     #   -r requirements.in
     #   pytest-cov
