@@ -272,9 +272,9 @@ docutils==0.16 \
     # via
     #   sphinx
     #   sphinx-rtd-theme
-everett==3.0.0 \
-    --hash=sha256:43c208e09ef53adb8e8739ad96999893a2c0a27753e33f89be346e916e71efb0 \
-    --hash=sha256:80ce592168ce50643711eceff3ec94fdeec755f228de746f20b1bfc94ea20682
+everett==3.1.0 \
+    --hash=sha256:46175da5bcb06c193aa129e59714bca981344ff067c3a8bc2e625bc0b3dc01f6 \
+    --hash=sha256:db13891b849e45e54faea93ee79881d12458c5378f5b9b7f806eeff03ce1de3c
     # via -r requirements.in
 factory-boy==3.2.1 \
     --hash=sha256:a98d277b0c047c75eb6e4ab8508a7f81fb03d2cb21986f627913546ef7a2a55e \
