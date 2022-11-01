@@ -139,7 +139,7 @@ requests==2.28.1
 # Code: https://github.com/Toblerity/Rtree
 # Changes: https://rtree.readthedocs.io/en/latest/changes.html
 # Docs: https://rtree.readthedocs.io/en/latest/
-Rtree==1.0.0
+Rtree==1.0.1
 
 # Toolkit for mathematics, science, and engineering
 # Code: https://github.com/scipy/scipy
