@@ -18,6 +18,8 @@ Geosubmit requests are submitted using an HTTP POST request to the URL::
 
     https://location.services.mozilla.com/v2/geosubmit?key=<API_KEY>
 
+Note : You can anonymously submit data to the service without an API key via any of the submission APIs, meaning '?key' parameter is optional
+
 There is an earlier :ref:`api_geosubmit` v1 API, with a slightly different and
 less extensive field list.
 
