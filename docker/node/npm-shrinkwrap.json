@@ -13,7 +13,7 @@
         "clean-css": "~5.3",
         "clean-css-cli": "~5.6",
         "datatables": "~1.10",
-        "jquery": "~3.6.3",
+        "jquery": "~3.6.4",
         "jquery-flot": "~0.8",
         "mapbox-gl": "~1.13.3",
         "uglify-js": "~3.17"
@@ -1033,9 +1033,9 @@
       }
     },
     "node_modules/jquery": {
-      "version": "3.6.3",
-      "resolved": "https://registry.npmjs.org/jquery/-/jquery-3.6.3.tgz",
-      "integrity": "sha512-bZ5Sy3YzKo9Fyc8wH2iIQK4JImJ6R0GWI9kL1/k7Z91ZBNgkRXE6U0JfHIizZbort8ZunhSI3jw9I6253ahKfg==",
+      "version": "3.6.4",
+      "resolved": "https://registry.npmjs.org/jquery/-/jquery-3.6.4.tgz",
+      "integrity": "sha512-v28EW9DWDFpzcD9O5iyJXg3R3+q+mET5JhnjJzQUZMHOv67bpSIHq81GEYpPNZHG+XXHsfSme3nxp/hndKEcsQ==",
       "dev": true
     },
     "node_modules/jquery-flot": {
@@ -2666,9 +2666,9 @@
       "dev": true
     },
     "jquery": {
-      "version": "3.6.3",
-      "resolved": "https://registry.npmjs.org/jquery/-/jquery-3.6.3.tgz",
-      "integrity": "sha512-bZ5Sy3YzKo9Fyc8wH2iIQK4JImJ6R0GWI9kL1/k7Z91ZBNgkRXE6U0JfHIizZbort8ZunhSI3jw9I6253ahKfg==",
+      "version": "3.6.4",
+      "resolved": "https://registry.npmjs.org/jquery/-/jquery-3.6.4.tgz",
+      "integrity": "sha512-v28EW9DWDFpzcD9O5iyJXg3R3+q+mET5JhnjJzQUZMHOv67bpSIHq81GEYpPNZHG+XXHsfSme3nxp/hndKEcsQ==",
       "dev": true
     },
     "jquery-flot": {
