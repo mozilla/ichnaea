@@ -275,6 +275,15 @@ def drop_db(uri=None):
         conn.execute(f"DROP DATABASE IF EXISTS {db_to_drop}")
 
 
+def database_is_ready():
+    """Raises OperationalError if database fails."""
+    uri = get_sqlalchemy_url()
+    db = create_engine(uri)
+    db.connect()
+    db.execute("SELECT 1;")
+    return True
+
+
 def retry_on_mysql_lock_fail(metric=None, metric_tags=None):
     """Function decorator to backoff and retry on MySQL lock failures.
 
