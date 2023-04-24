@@ -19,7 +19,7 @@ ICHNAEA_DOCKER_DB_ENGINE=${ICHNAEA_DOCKER_DB_ENGINE:-"mysql_5_7"}
 
 # Use the same image we use for building docker images because it's cached.
 # Otherwise this doesn't make any difference.
-BASEIMAGENAME="python:3.10.2-slim"
+BASEIMAGENAME="python:3.11.3-slim"
 TESTIMAGE="local/ichnaea_app"
 
 # Start services in background (this is idempotent)
@@ -80,7 +80,22 @@ docker run \
        --entrypoint="" \
        "${TESTIMAGE}" chown -R "${ICHNAEA_UID}:${ICHNAEA_GID}" /app
 
-# Run cmd in that environment and then remove the container
+# Check that database server is ready for tests
+docker run \
+    --rm \
+    --user "${ICHNAEA_UID}" \
+    --volumes-from ichnaea-repo \
+    --workdir /app \
+    --network ichnaea_default \
+    --link ichnaea_db_1 \
+    --link ichnaea_redis_1 \
+    --env-file ./docker/config/local_dev.env \
+    --tty \
+    --interactive \
+    --entrypoint= \
+    "${TESTIMAGE}" /app/docker/run_check_db.sh
+
+# Run tests in that environment and then remove the container
 echo "Running tests..."
 docker run \
     --rm \

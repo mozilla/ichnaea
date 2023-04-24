@@ -8,9 +8,9 @@ Use this only in a local dev environment.
 import argparse
 import sys
 
-from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
-from ichnaea.db import drop_db, create_db, get_sqlalchemy_url
+from ichnaea.db import create_db, database_is_ready, drop_db, get_sqlalchemy_url
 
 
 def create_database():
@@ -33,12 +33,25 @@ def drop_database():
     print("Done.")
 
 
+def check_database():
+    """Check if the database is ready for connections."""
+    try:
+        database_is_ready()
+    except OperationalError as e:
+        print(f"Database is not ready: {e}")
+        return 1
+    else:
+        print("Database is ready.")
+        return 0
+
+
 def main(argv):
-    parser = argparse.ArgumentParser(description="Create and delete databases.")
+    parser = argparse.ArgumentParser(description="Work with databases.")
     subparsers = parser.add_subparsers(dest="cmd")
     subparsers.required = True
     subparsers.add_parser("drop", help="drop existing database")
     subparsers.add_parser("create", help="create database")
+    subparsers.add_parser("check", help="check if database is accepting connections")
 
     args = parser.parse_args(argv[1:])
 
@@ -46,6 +59,8 @@ def main(argv):
         return drop_database()
     elif args.cmd == "create":
         return create_database()
+    elif args.cmd == "check":
+        return check_database()
 
 
 if __name__ == "__main__":

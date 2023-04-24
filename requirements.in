@@ -60,7 +60,7 @@ geoip2==4.6.0
 # Code: https://github.com/gevent/gevent
 # Changes: http://www.gevent.org/changelog.html
 # Docs: http://www.gevent.org/contents.html
-gevent==21.12.0
+gevent==22.10.2
 
 # "Green Unicorn", a WSGI HTTP Server
 # Code: https://github.com/benoitc/gunicorn
@@ -121,7 +121,7 @@ raven==6.10.0
 # Code: https://github.com/andymccurdy/redis-py
 # Changes: https://github.com/andymccurdy/redis-py/blob/master/CHANGES
 # Docs: https://github.com/andymccurdy/redis-py#readme
-redis[hiredis]==4.1.4
+redis[hiredis]==4.5.4
 
 # Various memoizing collections and decorators, such as TTLCache
 # Code: https://github.com/tkem/cachetools
@@ -145,7 +145,7 @@ Rtree==1.0.1
 # Code: https://github.com/scipy/scipy
 # Changes: https://docs.scipy.org/doc/scipy/reference/release.html
 # Docs: https://docs.scipy.org/doc/scipy/reference/
-scipy==1.9.1
+scipy==1.10.1
 
 # Customize the process title, used by gunicorn
 # Code: https://github.com/dvarrazzo/py-setproctitle
@@ -233,7 +233,7 @@ iso3166
 # Code: https://github.com/jazzband/pip-tools/
 # Changes: https://github.com/jazzband/pip-tools/blob/master/CHANGELOG.md
 # Docs: https://github.com/jazzband/pip-tools#readme
-pip-tools==6.9.0
+pip-tools==6.13.0
 
 # Test framework
 # Code: https://github.com/pytest-dev/pytest
