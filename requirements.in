@@ -84,7 +84,7 @@ maxminddb==2.2.0
 # Code: https://github.com/more-itertools/more-itertools
 # Changes: https://more-itertools.readthedocs.io/en/stable/versions.html
 # Docs: https://more-itertools.readthedocs.io/en/stable/
-more-itertools==9.0.0
+more-itertools==9.1.0
 
 # Scientific computing with Python
 # Code: https://github.com/numpy/numpy
