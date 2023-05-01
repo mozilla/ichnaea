@@ -157,7 +157,7 @@ setproctitle==1.3.2
 # Code: https://github.com/Toblerity/Shapely
 # Changes: https://github.com/Toblerity/Shapely/blob/master/CHANGES.txt
 # Docs: https://shapely.readthedocs.io/en/latest/
-Shapely[vectorized]==1.8.5.post1
+Shapely[vectorized]==2.0.1
 
 # Implementation of a PID controller
 # Code: https://github.com/m-lundberg/simple-pid
