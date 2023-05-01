@@ -1274,9 +1274,9 @@ sqlalchemy==1.3.24 \
     # via
     #   -r requirements.in
     #   alembic
-structlog==22.1.0 \
-    --hash=sha256:760d37b8839bd4fe1747bed7b80f7f4de160078405f4b6a1db9270ccbfce6c30 \
-    --hash=sha256:94b29b1d62b2659db154f67a9379ec1770183933d6115d21f21aa25cfc9a7393
+structlog==23.1.0 \
+    --hash=sha256:270d681dd7d163c11ba500bc914b2472d2b50a8ef00faa999ded5ff83a2f906b \
+    --hash=sha256:79b9e68e48b54e373441e130fa447944e6f87a05b35de23138e475c05d0f7e0e
     # via -r requirements.in
 translationstring==1.4 \
     --hash=sha256:5f4dc4d939573db851c8d840551e1a0fb27b946afe3b95aafc22577eed2d6262 \
