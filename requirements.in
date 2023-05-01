@@ -181,7 +181,7 @@ structlog==22.1.0
 # Code: https://github.com/urllib3/urllib3
 # Changes: https://github.com/urllib3/urllib3/blob/master/CHANGES.rst
 # Docs: https://urllib3.readthedocs.io/en/latest/
-urllib3==1.26.12
+urllib3==1.26.15
 
 #
 # Requirements for developement
