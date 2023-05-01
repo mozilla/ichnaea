@@ -30,7 +30,7 @@ celery[redis]==5.2.7
 # Code: https://github.com/Pylons/colander
 # Changes: https://docs.pylonsproject.org/projects/colander/en/latest/changes.html
 # Docs: https://docs.pylonsproject.org/projects/colander/en/latest/
-colander==1.8.3
+colander==2.0
 
 # Mozilla's Dockerflow pattern implementor
 # Code: https://github.com/mozilla-services/python-dockerflow
