@@ -1183,9 +1183,9 @@ shapely[vectorized]==1.8.5.post1 \
     --hash=sha256:ec14ceca36f67cb48b34d02d7f65a9acae15cd72b48e303531893ba4a960f3ea \
     --hash=sha256:ef3be705c3eac282a28058e6c6e5503419b250f482320df2172abcbea642c831
     # via -r requirements.in
-simple-pid==1.0.1 \
-    --hash=sha256:60d6b3a7c3f19734d33bbc5938293c4924d7cfea74176def03306057b3f99524 \
-    --hash=sha256:99254d8f9a630062264ce4842ef1e90443558f336697268d16b9de52d3baec0b
+simple-pid==2.0.0 \
+    --hash=sha256:0745411c3b67c78f02850b539753802701fe2b9d9461e137b5045950bb153e49 \
+    --hash=sha256:b7649cb8912435ef4f2f4f997b10f2b85757bc9ee79d94c4fab33f9d3b84dd5b
     # via -r requirements.in
 six==1.16.0 \
     --hash=sha256:1e61c37477a1626458e36f7b1d82aa5c9b094fa4802892072e49de9c60c4c926 \
