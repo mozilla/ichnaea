@@ -24,7 +24,7 @@ boto3==1.24.22
 # Code: https://github.com/celery/celery
 # Changes: https://docs.celeryproject.org/en/stable/changelog.html
 # Docs: https://docs.celeryproject.org/en/stable/index.html
-celery[redis]==5.2.7
+celery[redis]==5.3.1
 
 # Schema-based serialization and deserialization library
 # Code: https://github.com/Pylons/colander
