@@ -14,7 +14,7 @@
     "datatables": "~1.10",
     "jquery": "~3.6.4",
     "jquery-flot": "~0.8",
-    "mapbox-gl": "~1.13.3",
+    "mapbox-gl": "~2.15.0",
     "uglify-js": "~3.17"
   }
 }
