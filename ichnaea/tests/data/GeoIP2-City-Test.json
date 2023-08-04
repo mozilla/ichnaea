@@ -104,6 +104,153 @@
       }
    },
    {
+      "::214.0.0.0/120" : {
+         "city" : {
+            "geoname_id" : 1880252,
+            "names" : {
+               "de" : "Singapur",
+               "en" : "Singapore",
+               "es" : "Singapur",
+               "fr" : "Singapour",
+               "ja" : "シンガポール",
+               "pt-BR" : "Singapura",
+               "ru" : "Сингапур",
+               "zh-CN" : "新加坡"
+            }
+         },
+         "continent" : {
+            "code" : "AS",
+            "geoname_id" : 6255147,
+            "names" : {
+               "de" : "Asien",
+               "en" : "Asia",
+               "es" : "Asia",
+               "fr" : "Asie",
+               "ja" : "アジア",
+               "pt-BR" : "Ásia",
+               "ru" : "Азия",
+               "zh-CN" : "亚洲"
+            }
+         },
+         "country" : {
+            "geoname_id" : 1880251,
+            "iso_code" : "SG",
+            "names" : {
+               "de" : "Singapur",
+               "en" : "Singapore",
+               "es" : "Singapur",
+               "fr" : "Singapour",
+               "ja" : "シンガポール",
+               "pt-BR" : "Singapura",
+               "ru" : "Сингапур",
+               "zh-CN" : "新加坡"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 10,
+            "latitude" : 1.336,
+            "longitude" : 103.7716,
+            "time_zone" : "Asia/Singapore"
+         },
+         "postal" : {
+            "code" : "59"
+         },
+         "registered_country" : {
+            "geoname_id" : 1880251,
+            "iso_code" : "SG",
+            "names" : {
+               "de" : "Singapur",
+               "en" : "Singapore",
+               "es" : "Singapur",
+               "fr" : "Singapour",
+               "ja" : "シンガポール",
+               "pt-BR" : "Singapura",
+               "ru" : "Сингапур",
+               "zh-CN" : "新加坡"
+            }
+         }
+      }
+   },
+   {
+      "::214.0.1.0/120" : {
+         "city" : {
+            "geoname_id" : 2158177,
+            "names" : {
+               "de" : "Melbourne",
+               "en" : "Melbourne",
+               "es" : "Melbourne",
+               "fr" : "Melbourne",
+               "ja" : "メルボルン",
+               "pt-BR" : "Melbourne",
+               "ru" : "Мельбурн",
+               "zh-CN" : "墨尔本"
+            }
+         },
+         "continent" : {
+            "code" : "OC",
+            "geoname_id" : 6255151,
+            "names" : {
+               "de" : "Ozeanien",
+               "en" : "Oceania",
+               "es" : "Oceanía",
+               "fr" : "Océanie",
+               "ja" : "オセアニア",
+               "pt-BR" : "Oceania",
+               "ru" : "Океания",
+               "zh-CN" : "大洋洲"
+            }
+         },
+         "country" : {
+            "geoname_id" : 2077456,
+            "iso_code" : "AU",
+            "names" : {
+               "de" : "Australien",
+               "en" : "Australia",
+               "es" : "Australia",
+               "fr" : "Australie",
+               "ja" : "オーストラリア",
+               "pt-BR" : "Austrália",
+               "ru" : "Австралия",
+               "zh-CN" : "澳大利亚"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 20,
+            "latitude" : -37.8159,
+            "longitude" : 144.9669,
+            "time_zone" : "Australia/Melbourne"
+         },
+         "postal" : {
+            "code" : "3000"
+         },
+         "registered_country" : {
+            "geoname_id" : 2077456,
+            "iso_code" : "AU",
+            "names" : {
+               "de" : "Australien",
+               "en" : "Australia",
+               "es" : "Australia",
+               "fr" : "Australie",
+               "ja" : "オーストラリア",
+               "pt-BR" : "Austrália",
+               "ru" : "Австралия",
+               "zh-CN" : "澳大利亚"
+            }
+         },
+         "subdivisions" : [
+            {
+               "geoname_id" : 2145234,
+               "iso_code" : "VIC",
+               "names" : {
+                  "en" : "Victoria",
+                  "pt-BR" : "Vitória",
+                  "ru" : "Виктория"
+               }
+            }
+         ]
+      }
+   },
+   {
       "2001:230::/32" : {
          "continent" : {
             "code" : "AS",
@@ -2471,7 +2618,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2492,7 +2638,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2819,7 +2964,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -2840,7 +2984,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3088,7 +3231,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3109,7 +3251,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3936,7 +4077,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -3957,7 +4097,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -4562,7 +4701,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -4583,7 +4721,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5031,7 +5168,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5052,7 +5188,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5349,7 +5484,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5370,7 +5504,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5457,7 +5590,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -5478,7 +5610,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7363,7 +7494,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7384,7 +7514,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7576,7 +7705,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -7597,7 +7725,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8698,7 +8825,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8719,7 +8845,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8804,7 +8929,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -8825,7 +8949,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9334,7 +9457,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9355,7 +9477,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9494,7 +9615,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9515,7 +9635,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9704,7 +9823,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -9725,7 +9843,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10658,7 +10775,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10679,7 +10795,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10712,7 +10827,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -10733,7 +10847,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11032,7 +11145,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11053,7 +11165,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11354,7 +11465,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11375,7 +11485,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11678,7 +11787,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11699,7 +11807,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11786,7 +11893,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -11807,7 +11913,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12033,6 +12138,34 @@
       }
    },
    {
+      "::2.2.3.0/120" : {
+         "city" : {
+            "geoname_id" : 2655045,
+            "names" : {
+               "en" : "Boxford"
+            }
+         }
+      }
+   },
+   {
+      "::2.3.3.0/120" : {
+         "continent" : {
+            "code" : "EU",
+            "geoname_id" : 6255148,
+            "names" : {
+               "de" : "Europa",
+               "en" : "Europe",
+               "es" : "Europa",
+               "fr" : "Europe",
+               "ja" : "ヨーロッパ",
+               "pt-BR" : "Europa",
+               "ru" : "Европа",
+               "zh-CN" : "欧洲"
+            }
+         }
+      }
+   },
+   {
       "::2.125.160.216/125" : {
          "city" : {
             "geoname_id" : 2655045,
@@ -12056,7 +12189,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12146,7 +12278,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12223,7 +12354,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12300,7 +12430,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12377,7 +12506,6 @@
          },
          "country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12422,6 +12550,59 @@
                }
             }
          ]
+      }
+   },
+   {
+      "::149.101.100.0/124" : {
+         "continent" : {
+            "code" : "NA",
+            "geoname_id" : 6255149,
+            "names" : {
+               "de" : "Nordamerika",
+               "en" : "North America",
+               "es" : "América del Norte",
+               "fr" : "Amérique du Nord",
+               "ja" : "北アメリカ",
+               "pt-BR" : "América do Norte",
+               "ru" : "Северная Америка",
+               "zh-CN" : "北美洲"
+            }
+         },
+         "country" : {
+            "confidence" : 99,
+            "geoname_id" : 6252001,
+            "iso_code" : "US",
+            "names" : {
+               "de" : "USA",
+               "en" : "United States",
+               "es" : "Estados Unidos",
+               "fr" : "États-Unis",
+               "ja" : "アメリカ合衆国",
+               "pt-BR" : "Estados Unidos",
+               "ru" : "США",
+               "zh-CN" : "美国"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 1000,
+            "latitude" : 37.751,
+            "longitude" : -97.822,
+            "time_zone" : "America/Chicago"
+         },
+         "registered_country" : {
+            "geoname_id" : 2635167,
+            "iso_code" : "GB",
+            "names" : {
+               "de" : "Vereinigtes Königreich",
+               "en" : "United Kingdom",
+               "es" : "Reino Unido",
+               "fr" : "Royaume-Uni",
+               "ja" : "イギリス",
+               "pt-BR" : "Reino Unido",
+               "ru" : "Великобритания",
+               "zh-CN" : "英国"
+            }
+         }
       }
    },
    {
@@ -12473,7 +12654,6 @@
          },
          "registered_country" : {
             "geoname_id" : 2635167,
-            "is_in_european_union" : true,
             "iso_code" : "GB",
             "names" : {
                "de" : "Vereinigtes Königreich",
@@ -12844,6 +13024,174 @@
                "names" : {
                   "en" : "Jilin Sheng",
                   "zh-CN" : "吉林"
+               }
+            }
+         ]
+      }
+   },
+   {
+      "214.78.120.0/22" : {
+         "city" : {
+            "geoname_id" : 5391811,
+            "names" : {
+               "de" : "San Diego",
+               "en" : "San Diego",
+               "es" : "San Diego",
+               "fr" : "San Diego",
+               "ja" : "サンディエゴ",
+               "pt-BR" : "San Diego",
+               "ru" : "Сан-Диего"
+            }
+         },
+         "continent" : {
+            "code" : "NA",
+            "geoname_id" : 6255149,
+            "names" : {
+               "de" : "Nordamerika",
+               "en" : "North America",
+               "es" : "Norteamérica",
+               "fr" : "Amérique du Nord",
+               "ja" : "北アメリカ",
+               "pt-BR" : "América do Norte",
+               "ru" : "Северная Америка",
+               "zh-CN" : "北美洲"
+            }
+         },
+         "country" : {
+            "geoname_id" : 6252001,
+            "iso_code" : "US",
+            "names" : {
+               "de" : "Vereinigte Staaten",
+               "en" : "United States",
+               "es" : "Estados Unidos",
+               "fr" : "États Unis",
+               "ja" : "アメリカ",
+               "pt-BR" : "EUA",
+               "ru" : "США",
+               "zh-CN" : "美国"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 100,
+            "latitude" : 32.7405,
+            "longitude" : -117.0935,
+            "metro_code" : 825,
+            "time_zone" : "America/Los_Angeles"
+         },
+         "postal" : {
+            "code" : "92105"
+         },
+         "registered_country" : {
+            "geoname_id" : 6252001,
+            "iso_code" : "US",
+            "names" : {
+               "de" : "Vereinigte Staaten",
+               "en" : "United States",
+               "es" : "Estados Unidos",
+               "fr" : "États Unis",
+               "ja" : "アメリカ",
+               "pt-BR" : "EUA",
+               "ru" : "США",
+               "zh-CN" : "美国"
+            }
+         },
+         "subdivisions" : [
+            {
+               "geoname_id" : 5332921,
+               "iso_code" : "CA",
+               "names" : {
+                  "de" : "Kalifornien",
+                  "en" : "California",
+                  "es" : "California",
+                  "fr" : "Californie",
+                  "ja" : "カリフォルニア州",
+                  "pt-BR" : "Califórnia",
+                  "ru" : "Калифорния",
+                  "zh-CN" : "加州"
+               }
+            }
+         ]
+      }
+   },
+   {
+      "2001:480:10::/48" : {
+         "city" : {
+            "geoname_id" : 5391811,
+            "names" : {
+               "de" : "San Diego",
+               "en" : "San Diego",
+               "es" : "San Diego",
+               "fr" : "San Diego",
+               "ja" : "サンディエゴ",
+               "pt-BR" : "San Diego",
+               "ru" : "Сан-Диего"
+            }
+         },
+         "continent" : {
+            "code" : "NA",
+            "geoname_id" : 6255149,
+            "names" : {
+               "de" : "Nordamerika",
+               "en" : "North America",
+               "es" : "Norteamérica",
+               "fr" : "Amérique du Nord",
+               "ja" : "北アメリカ",
+               "pt-BR" : "América do Norte",
+               "ru" : "Северная Америка",
+               "zh-CN" : "北美洲"
+            }
+         },
+         "country" : {
+            "geoname_id" : 6252001,
+            "iso_code" : "US",
+            "names" : {
+               "de" : "Vereinigte Staaten",
+               "en" : "United States",
+               "es" : "Estados Unidos",
+               "fr" : "États Unis",
+               "ja" : "アメリカ",
+               "pt-BR" : "EUA",
+               "ru" : "США",
+               "zh-CN" : "美国"
+            }
+         },
+         "location" : {
+            "accuracy_radius" : 20,
+            "latitude" : 32.7203,
+            "longitude" : -117.1552,
+            "metro_code" : 825,
+            "time_zone" : "America/Los_Angeles"
+         },
+         "postal" : {
+            "code" : "92101"
+         },
+         "registered_country" : {
+            "geoname_id" : 6252001,
+            "iso_code" : "US",
+            "names" : {
+               "de" : "Vereinigte Staaten",
+               "en" : "United States",
+               "es" : "Estados Unidos",
+               "fr" : "États Unis",
+               "ja" : "アメリカ",
+               "pt-BR" : "EUA",
+               "ru" : "США",
+               "zh-CN" : "美国"
+            }
+         },
+         "subdivisions" : [
+            {
+               "geoname_id" : 5332921,
+               "iso_code" : "CA",
+               "names" : {
+                  "de" : "Kalifornien",
+                  "en" : "California",
+                  "es" : "California",
+                  "fr" : "Californie",
+                  "ja" : "カリフォルニア州",
+                  "pt-BR" : "Califórnia",
+                  "ru" : "Калифорния",
+                  "zh-CN" : "加州"
                }
             }
          ]

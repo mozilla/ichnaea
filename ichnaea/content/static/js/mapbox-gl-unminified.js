@@ -1,4 +1,4 @@
-/* Mapbox GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/mapbox/mapbox-gl-js/blob/v1.13.2/LICENSE.txt */
+/* Mapbox GL JS is licensed under the 3-Clause BSD License. Full text of license: https://github.com/mapbox/mapbox-gl-js/blob/v1.13.3/LICENSE.txt */
 (function (global, factory) {
 typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
 typeof define === 'function' && define.amd ? define(factory) :
@@ -34,7 +34,7 @@ function createCommonjsModule(fn, module) {
 	return module = { exports: {} }, fn(module, module.exports), module.exports;
 }
 
-var version = "1.13.2";
+var version = "1.13.3";
 
 var unitbezier = UnitBezier;
 function UnitBezier(p1x, p1y, p2x, p2y) {
@@ -933,9 +933,11 @@ var MapLoadEvent = function (TelemetryEvent) {
     MapLoadEvent.prototype.constructor = MapLoadEvent;
     MapLoadEvent.prototype.postMapLoadEvent = function postMapLoadEvent(tileUrls, mapId, skuToken, customAccessToken) {
         this.skuToken = skuToken;
-        if (config.EVENTS_URL && customAccessToken || config.ACCESS_TOKEN && Array.isArray(tileUrls) && tileUrls.some(function (url) {
-                return isMapboxURL(url) || isMapboxHTTPURL(url);
-            })) {
+        var accessTokenIsSet = !!(customAccessToken || config.ACCESS_TOKEN);
+        var usesMapboxTiles = Array.isArray(tileUrls) && tileUrls.some(function (url) {
+            return isMapboxURL(url) || isMapboxHTTPURL(url);
+        });
+        if (config.EVENTS_URL && accessTokenIsSet && usesMapboxTiles) {
             this.queueRequest({
                 id: mapId,
                 timestamp: Date.now()
@@ -24012,11 +24014,14 @@ function rewindRings(rings, outer) {
     }
 }
 function rewindRing(ring, dir) {
-    var area = 0;
+    var area = 0, err = 0;
     for (var i = 0, len = ring.length, j = len - 1; i < len; j = i++) {
-        area += (ring[i][0] - ring[j][0]) * (ring[j][1] + ring[i][1]);
+        var k = (ring[i][0] - ring[j][0]) * (ring[j][1] + ring[i][1]);
+        var m = area + k;
+        err += Math.abs(area) >= Math.abs(k) ? area - m + k : k - m + area;
+        area = m;
     }
-    if (area >= 0 !== !!dir) {
+    if (area + err >= 0 !== !!dir) {
         ring.reverse();
     }
 }
@@ -27983,6 +27988,7 @@ var VideoSource = function (ImageSource) {
             } else if (video) {
                 this$1.video = video;
                 this$1.video.loop = true;
+                this$1.video.setAttribute('playsinline', '');
                 this$1.video.addEventListener('playing', function () {
                     this$1.map.triggerRepaint();
                 });

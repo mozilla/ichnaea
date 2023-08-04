@@ -98,13 +98,13 @@ update_libmaxmind:
 update_test_data:
 	cd $(TEST_DATA) && wget -q \
 	    -O GeoIP2-City-Test.json \
-	    https://raw.githubusercontent.com/maxmind/MaxMind-DB/master/source-data/GeoIP2-City-Test.json && \
+	    https://raw.githubusercontent.com/maxmind/MaxMind-DB/main/source-data/GeoIP2-City-Test.json && \
 	wget -q \
 	    -O GeoIP2-City-Test.mmdb \
-	    https://github.com/maxmind/MaxMind-DB/raw/master/test-data/GeoIP2-City-Test.mmdb && \
+	    https://github.com/maxmind/MaxMind-DB/raw/main/test-data/GeoIP2-City-Test.mmdb && \
 	wget -q \
 	    -O GeoIP2-Connection-Type-Test.mmdb \
-	    https://github.com/maxmind/MaxMind-DB/raw/master/test-data/GeoIP2-Connection-Type-Test.mmdb
+	    https://github.com/maxmind/MaxMind-DB/raw/main/test-data/GeoIP2-Connection-Type-Test.mmdb
 
 .PHONY: update_vendored
 update_vendored: update_datamaps update_libmaxmind update_test_data
