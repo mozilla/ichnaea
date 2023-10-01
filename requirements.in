@@ -121,7 +121,7 @@ raven==6.10.0
 # Code: https://github.com/andymccurdy/redis-py
 # Changes: https://github.com/andymccurdy/redis-py/blob/master/CHANGES
 # Docs: https://github.com/andymccurdy/redis-py#readme
-redis[hiredis]==4.5.4
+redis[hiredis]==5.0.1
 
 # Various memoizing collections and decorators, such as TTLCache
 # Code: https://github.com/tkem/cachetools
