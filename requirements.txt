@@ -162,13 +162,13 @@ black==22.10.0 \
     --hash=sha256:f513588da599943e0cde4e32cc9879e825d58720d6557062d1098c5ad80080e1 \
     --hash=sha256:fba8a281e570adafb79f7755ac8721b6cf1bbf691186a287e990c7929c7692ff
     # via -r requirements.in
-boto3==1.28.19 \
-    --hash=sha256:1bae3e6222c7272af44ab4dc456fc4cb7d2d7044489b7a4a08f9cd0fbad6d213 \
-    --hash=sha256:8630c2c38c3130e31e1a4182943aee8bc7dd1a1ad9729092b46fdbc8ac045a77
+boto3==1.28.75 \
+    --hash=sha256:63d772a784e8e35ee51974eb1c20dff5faa51b007d22c5647783f18966bf4042 \
+    --hash=sha256:b959decd588982bc919bfcbebc7916926b05003a0093e7f2845362da4f5dd9fc
     # via -r requirements.in
-botocore==1.31.19 \
-    --hash=sha256:15f269945f319b0263cde9a61a25f2c9a83f6074b62cddae71edafec4a61e637 \
-    --hash=sha256:724f9a1a91f88291f5adc6347705a31e52312c88cddd56e38709215b161e025a
+botocore==1.31.75 \
+    --hash=sha256:d704ea9867b2227de0350bc2a5ca2543349e164ecb5d15edbfacbb05f2056482 \
+    --hash=sha256:fa078c4aa9a5777b3ede756540e62fec551e13d39cf7abf9a37bb81981496d68
     # via
     #   boto3
     #   s3transfer
@@ -183,7 +183,9 @@ cachetools==5.3.0 \
 celery[redis]==5.2.7 \
     --hash=sha256:138420c020cd58d6707e6257b6beda91fd39af7afde5d36c6334d175302c0e14 \
     --hash=sha256:fafbd82934d30f8a004f81e8f7a062e31413a23d444be8ee3326553915958c6d
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   celery
 certifi==2022.12.7 \
     --hash=sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3 \
     --hash=sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18
@@ -279,7 +281,9 @@ coverage[toml]==7.2.3 \
     --hash=sha256:fa546d66639d69aa967bf08156eb8c9d0cd6f6de84be9e8c9819f52ad499c910 \
     --hash=sha256:fd214917cabdd6f673a29d708574e9fbdb892cb77eb426d0eae3490d95ca7859 \
     --hash=sha256:fff5aaa6becf2c6a1699ae6a39e2e6fb0672c2d42eca8eb0cafa91cf2e9bd312
-    # via pytest-cov
+    # via
+    #   coverage
+    #   pytest-cov
 cython==0.29.32 \
     --hash=sha256:061e25151c38f2361bc790d3bcf7f9d9828a0b6a4d5afa56fbed3bd33fb2373a \
     --hash=sha256:06be83490c906b6429b4389e13487a26254ccaad2eef6f3d4ee21d8d3a4aaa2b \
@@ -749,7 +753,9 @@ markupsafe==2.1.2 \
 markus[datadog]==4.0.1 \
     --hash=sha256:0b1492d896defe2ebaaa3fbe384b0b14c9d2d7ed28d579b655b9146d7451f069 \
     --hash=sha256:89d27d8948b771bfd475a0324c29b907f10551050b0673ca9b3439c3af943d57
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   markus
 maxminddb==2.2.0 \
     --hash=sha256:e37707ec4fab115804670e0fb7aedb4b57075a8b6f80052bdc648d3c005184e5
     # via
@@ -978,6 +984,7 @@ redis[hiredis]==4.5.4 \
     # via
     #   -r requirements.in
     #   celery
+    #   redis
 requests==2.28.1 \
     --hash=sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983 \
     --hash=sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349
@@ -1038,9 +1045,9 @@ rtree==1.0.1 \
     --hash=sha256:e898d7409ab645c25e06d4e058f99271182601d70b2887aba3351bf08e09a0c6 \
     --hash=sha256:f5120da3a1b96f3a7a17dd6af0afdd4e6f3cc9baa87e9ee0a272882f01f980bb
     # via -r requirements.in
-s3transfer==0.6.0 \
-    --hash=sha256:06176b74f3a15f61f1b4f25a1fc29a4429040b7647133a463da8fa5bd28d5ecd \
-    --hash=sha256:2ed07d3866f523cc561bf4a00fc5535827981b117dd7876f036b0c1aca42c947
+s3transfer==0.7.0 \
+    --hash=sha256:10d6923c6359175f264811ef4bf6161a3156ce8e350e705396a7557d6293c33a \
+    --hash=sha256:fd3889a66f5fe17299fe75b82eae6cf722554edca744ca5d5fe308b104883d2e
     # via boto3
 scipy==1.10.1 \
     --hash=sha256:049a8bbf0ad95277ffba9b3b7d23e5369cc39e66406d60422c8cfef40ccc8415 \
@@ -1182,7 +1189,9 @@ shapely[vectorized]==1.8.5.post1 \
     --hash=sha256:e9c30b311de2513555ab02464ebb76115d242842b29c412f5a9aa0cac57be9f6 \
     --hash=sha256:ec14ceca36f67cb48b34d02d7f65a9acae15cd72b48e303531893ba4a960f3ea \
     --hash=sha256:ef3be705c3eac282a28058e6c6e5503419b250f482320df2172abcbea642c831
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   shapely
 simple-pid==1.0.1 \
     --hash=sha256:60d6b3a7c3f19734d33bbc5938293c4924d7cfea74176def03306057b3f99524 \
     --hash=sha256:99254d8f9a630062264ce4842ef1e90443558f336697268d16b9de52d3baec0b
