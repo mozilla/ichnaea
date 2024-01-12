@@ -99,9 +99,7 @@ def update_incoming(self):
     export.IncomingQueue(self)(export_reports)
 
 
-@celery_app.task(
-    base=BaseTask, bind=True, queue="celery_export", expires=300
-)
+@celery_app.task(base=BaseTask, bind=True, queue="celery_export", expires=300)
 def export_reports(self, name, queue_key):
     export.ReportExporter.export(self, name, queue_key)
 
