@@ -12,3 +12,4 @@ ichnaea/content/static/datamap/tiles/
 
 my.env
 .docker-build
+.vscode/
