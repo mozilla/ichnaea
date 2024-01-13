@@ -750,8 +750,8 @@ markus[datadog]==4.0.1 \
     --hash=sha256:0b1492d896defe2ebaaa3fbe384b0b14c9d2d7ed28d579b655b9146d7451f069 \
     --hash=sha256:89d27d8948b771bfd475a0324c29b907f10551050b0673ca9b3439c3af943d57
     # via -r requirements.in
-maxminddb==2.2.0 \
-    --hash=sha256:e37707ec4fab115804670e0fb7aedb4b57075a8b6f80052bdc648d3c005184e5
+maxminddb==2.4.0 \
+    --hash=sha256:81e54e53408bd502650e5969ccba16780af659ec1db1c44b2c997e4330a5ed96
     # via
     #   -r requirements.in
     #   geoip2
