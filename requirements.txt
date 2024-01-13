@@ -139,28 +139,25 @@ billiard==3.6.4.0 \
     --hash=sha256:299de5a8da28a783d51b197d496bef4f1595dd023a93a4f59dde1886ae905547 \
     --hash=sha256:87103ea78fa6ab4d5c751c4909bcff74617d985de7fa8b672cf8618afd5a875b
     # via celery
-black==22.10.0 \
-    --hash=sha256:14ff67aec0a47c424bc99b71005202045dc09270da44a27848d534600ac64fc7 \
-    --hash=sha256:197df8509263b0b8614e1df1756b1dd41be6738eed2ba9e9769f3880c2b9d7b6 \
-    --hash=sha256:1e464456d24e23d11fced2bc8c47ef66d471f845c7b7a42f3bd77bf3d1789650 \
-    --hash=sha256:2039230db3c6c639bd84efe3292ec7b06e9214a2992cd9beb293d639c6402edb \
-    --hash=sha256:21199526696b8f09c3997e2b4db8d0b108d801a348414264d2eb8eb2532e540d \
-    --hash=sha256:2644b5d63633702bc2c5f3754b1b475378fbbfb481f62319388235d0cd104c2d \
-    --hash=sha256:432247333090c8c5366e69627ccb363bc58514ae3e63f7fc75c54b1ea80fa7de \
-    --hash=sha256:444ebfb4e441254e87bad00c661fe32df9969b2bf224373a448d8aca2132b395 \
-    --hash=sha256:5b9b29da4f564ba8787c119f37d174f2b69cdfdf9015b7d8c5c16121ddc054ae \
-    --hash=sha256:5cc42ca67989e9c3cf859e84c2bf014f6633db63d1cbdf8fdb666dcd9e77e3fa \
-    --hash=sha256:5d8f74030e67087b219b032aa33a919fae8806d49c867846bfacde57f43972ef \
-    --hash=sha256:72ef3925f30e12a184889aac03d77d031056860ccae8a1e519f6cbb742736383 \
-    --hash=sha256:819dc789f4498ecc91438a7de64427c73b45035e2e3680c92e18795a839ebb66 \
-    --hash=sha256:915ace4ff03fdfff953962fa672d44be269deb2eaf88499a0f8805221bc68c87 \
-    --hash=sha256:9311e99228ae10023300ecac05be5a296f60d2fd10fff31cf5c1fa4ca4b1988d \
-    --hash=sha256:974308c58d057a651d182208a484ce80a26dac0caef2895836a92dd6ebd725e0 \
-    --hash=sha256:b8b49776299fece66bffaafe357d929ca9451450f5466e997a7285ab0fe28e3b \
-    --hash=sha256:c957b2b4ea88587b46cf49d1dc17681c1e672864fd7af32fc1e9664d572b3458 \
-    --hash=sha256:e41a86c6c650bcecc6633ee3180d80a025db041a8e2398dcc059b3afa8382cd4 \
-    --hash=sha256:f513588da599943e0cde4e32cc9879e825d58720d6557062d1098c5ad80080e1 \
-    --hash=sha256:fba8a281e570adafb79f7755ac8721b6cf1bbf691186a287e990c7929c7692ff
+black==23.10.1 \
+    --hash=sha256:037e9b4664cafda5f025a1728c50a9e9aedb99a759c89f760bd83730e76ba884 \
+    --hash=sha256:1b917a2aa020ca600483a7b340c165970b26e9029067f019e3755b56e8dd5916 \
+    --hash=sha256:1f8ce316753428ff68749c65a5f7844631aa18c8679dfd3ca9dc1a289979c258 \
+    --hash=sha256:33d40f5b06be80c1bbce17b173cda17994fbad096ce60eb22054da021bf933d1 \
+    --hash=sha256:3f157a8945a7b2d424da3335f7ace89c14a3b0625e6593d21139c2d8214d55ce \
+    --hash=sha256:5ed45ac9a613fb52dad3b61c8dea2ec9510bf3108d4db88422bacc7d1ba1243d \
+    --hash=sha256:6d23d7822140e3fef190734216cefb262521789367fbdc0b3f22af6744058982 \
+    --hash=sha256:7670242e90dc129c539e9ca17665e39a146a761e681805c54fbd86015c7c84f7 \
+    --hash=sha256:7b4d10b0f016616a0d93d24a448100adf1699712fb7a4efd0e2c32bbb219b173 \
+    --hash=sha256:7cb5936e686e782fddb1c73f8aa6f459e1ad38a6a7b0e54b403f1f05a1507ee9 \
+    --hash=sha256:7d56124b7a61d092cb52cce34182a5280e160e6aff3137172a68c2c2c4b76bcb \
+    --hash=sha256:840015166dbdfbc47992871325799fd2dc0dcf9395e401ada6d88fe11498abad \
+    --hash=sha256:9c74de4c77b849e6359c6f01987e94873c707098322b91490d24296f66d067dc \
+    --hash=sha256:b15b75fc53a2fbcac8a87d3e20f69874d161beef13954747e053bca7a1ce53a0 \
+    --hash=sha256:cfcce6f0a384d0da692119f2d72d79ed07c7159879d0bb1bb32d2e443382bf3a \
+    --hash=sha256:d431e6739f727bb2e0495df64a6c7a5310758e87505f5f8cde9ff6c0f2d7e4fe \
+    --hash=sha256:e293e4c2f4a992b980032bbd62df07c1bcff82d6964d6c9496f2cd726e246ace \
+    --hash=sha256:ec3f8e6234c4e46ff9e16d9ae96f4ef69fa328bb4ad08198c8cee45bb1f08c69
     # via -r requirements.in
 boto3==1.28.19 \
     --hash=sha256:1bae3e6222c7272af44ab4dc456fc4cb7d2d7044489b7a4a08f9cd0fbad6d213 \
@@ -183,7 +180,9 @@ cachetools==5.3.0 \
 celery[redis]==5.2.7 \
     --hash=sha256:138420c020cd58d6707e6257b6beda91fd39af7afde5d36c6334d175302c0e14 \
     --hash=sha256:fafbd82934d30f8a004f81e8f7a062e31413a23d444be8ee3326553915958c6d
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   celery
 certifi==2022.12.7 \
     --hash=sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3 \
     --hash=sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18
@@ -279,7 +278,9 @@ coverage[toml]==7.2.3 \
     --hash=sha256:fa546d66639d69aa967bf08156eb8c9d0cd6f6de84be9e8c9819f52ad499c910 \
     --hash=sha256:fd214917cabdd6f673a29d708574e9fbdb892cb77eb426d0eae3490d95ca7859 \
     --hash=sha256:fff5aaa6becf2c6a1699ae6a39e2e6fb0672c2d42eca8eb0cafa91cf2e9bd312
-    # via pytest-cov
+    # via
+    #   coverage
+    #   pytest-cov
 cython==0.29.32 \
     --hash=sha256:061e25151c38f2361bc790d3bcf7f9d9828a0b6a4d5afa56fbed3bd33fb2373a \
     --hash=sha256:06be83490c906b6429b4389e13487a26254ccaad2eef6f3d4ee21d8d3a4aaa2b \
@@ -749,7 +750,9 @@ markupsafe==2.1.2 \
 markus[datadog]==4.0.1 \
     --hash=sha256:0b1492d896defe2ebaaa3fbe384b0b14c9d2d7ed28d579b655b9146d7451f069 \
     --hash=sha256:89d27d8948b771bfd475a0324c29b907f10551050b0673ca9b3439c3af943d57
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   markus
 maxminddb==2.2.0 \
     --hash=sha256:e37707ec4fab115804670e0fb7aedb4b57075a8b6f80052bdc648d3c005184e5
     # via
@@ -882,6 +885,7 @@ packaging==23.1 \
     --hash=sha256:994793af429502c4ea2ebf6bf664629d07c1a9fe974af92966e4b8d2df7edc61 \
     --hash=sha256:a392980d2b6cffa644431898be54b0045151319d1e7ec34f0cfed48767dd334f
     # via
+    #   black
     #   build
     #   pytest
     #   sphinx
@@ -978,6 +982,7 @@ redis[hiredis]==4.5.4 \
     # via
     #   -r requirements.in
     #   celery
+    #   redis
 requests==2.28.1 \
     --hash=sha256:7c5599b102feddaa661c826c56ab4fee28bfd17f5abca1ebbe3e7f19d7c97983 \
     --hash=sha256:8fefa2a1a1365bf5520aac41836fbee479da67864514bdb821f31ce07ce65349
@@ -1182,7 +1187,9 @@ shapely[vectorized]==1.8.5.post1 \
     --hash=sha256:e9c30b311de2513555ab02464ebb76115d242842b29c412f5a9aa0cac57be9f6 \
     --hash=sha256:ec14ceca36f67cb48b34d02d7f65a9acae15cd72b48e303531893ba4a960f3ea \
     --hash=sha256:ef3be705c3eac282a28058e6c6e5503419b250f482320df2172abcbea642c831
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   shapely
 simple-pid==1.0.1 \
     --hash=sha256:60d6b3a7c3f19734d33bbc5938293c4924d7cfea74176def03306057b3f99524 \
     --hash=sha256:99254d8f9a630062264ce4842ef1e90443558f336697268d16b9de52d3baec0b
