@@ -219,9 +219,9 @@ click-repl==0.2.0 \
     --hash=sha256:94b3fbbc9406a236f176e0506524b2937e4b23b6f4c0c0b2a0a83f8a64e9194b \
     --hash=sha256:cd12f68d745bf6151210790540b4cb064c7b13e571bc64b6957d98d120dacfd8
     # via celery
-colander==1.8.3 \
-    --hash=sha256:259592a0d6a89cbe63c0c5771f9c0c2522387415af8d715f599583eac659f7d4 \
-    --hash=sha256:27a94e96899d2e21d7d1685eca8e44f57e772f48cdf39d3dbca8686c24867335
+colander==2.0 \
+    --hash=sha256:419cd68178d2ee6ee4cae5d5cb1830725634b0a2840917156e89eb2592237ef3 \
+    --hash=sha256:cb6b929fd0e79cdd3d310d3229e8f7884bd4fddd5cbf1d882063a6fb283b272b
     # via -r requirements.in
 colorama==0.4.6 \
     --hash=sha256:08695f5cb7ed6e0531a20572697297273c47b8cae5a63ffc6d6ed5c201be6e44 \
@@ -1453,7 +1453,6 @@ setuptools==67.6.1 \
     --hash=sha256:257de92a9d50a60b8e22abfcbb771571fde0dbf3ec234463212027a4eeecbe9a \
     --hash=sha256:e728ca814a823bf7bf60162daf9db95b93d532948c4c0bea762ce62f60189078
     # via
-    #   colander
     #   gevent
     #   gunicorn
     #   pip-tools
