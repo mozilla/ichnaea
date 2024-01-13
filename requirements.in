@@ -96,7 +96,7 @@ numpy==1.23.4
 # Code: https://github.com/PyMySQL/PyMySQL
 # Changes: https://github.com/PyMySQL/PyMySQL/blob/master/CHANGELOG.md
 # Docs: https://pymysql.readthedocs.io/en/latest/
-PyMySQL==1.0.2
+PyMySQL==1.1.0
 
 # A Python web framework
 # Code: https://github.com/Pylons/pyramid
