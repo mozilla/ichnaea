@@ -18,4 +18,4 @@ to report issues.
 License
 =======
 
-``ichnaea`` is offered under the Apache License 2.0.
+``ichnaea`` is offered under the Apache License 2.0...
