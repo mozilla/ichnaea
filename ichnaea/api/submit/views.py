@@ -10,6 +10,7 @@ from ichnaea.api.exceptions import (
     ServiceUnavailable,
     UploadSuccess,
     UploadSuccessV0,
+    Unauthorized
 )
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
@@ -39,29 +40,30 @@ class BaseSubmitView(BaseAPIView):
         METRICS.incr("data.batch.upload", tags=tags)
 
     def submit(self, api_key):
-        request_data = self.preprocess_request()
+        raise self.prepare_exception(Unauthorized())
+        # request_data = self.preprocess_request()
 
-        if not request_data:
-            # don't allow completely empty request
-            raise self.prepare_exception(ParseError())
+        # if not request_data:
+        #     # don't allow completely empty request
+        #     raise self.prepare_exception(ParseError())
 
-        if not api_key.store_sample("submit"):
-            # only store some percentage of the requests
-            return
+        # if not api_key.store_sample("submit"):
+        #     # only store some percentage of the requests
+        #     return
 
-        valid_key = api_key.valid_key
-        data = []
-        for report in request_data["items"]:
-            source = "gnss"
-            if report is not None:
-                position = report.get("position")
-                if position is not None:
-                    source = position.get("source", "gnss")
+        # valid_key = api_key.valid_key
+        # data = []
+        # for report in request_data["items"]:
+        #     source = "gnss"
+        #     if report is not None:
+        #         position = report.get("position")
+        #         if position is not None:
+        #             source = position.get("source", "gnss")
 
-            data.append({"api_key": valid_key, "report": report, "source": source})
+        #     data.append({"api_key": valid_key, "report": report, "source": source})
 
-        self.queue.enqueue(data)
-        self.emit_upload_metrics(len(data), api_key)
+        # self.queue.enqueue(data)
+        # self.emit_upload_metrics(len(data), api_key)
 
     def view(self, api_key):
         """
