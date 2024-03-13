@@ -1,10 +1,6 @@
-from datetime import datetime
-from zoneinfo import ZoneInfo
-
 import colander
 import pytest
 
-from ichnaea.api.exceptions import ParseError
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.tests.base import BaseSubmitTest
 from ichnaea.models import Radio
@@ -121,7 +117,7 @@ class TestView(BaseSubmitTest):
 
     def test_blue(self, app, celery):
         blue = BlueShardFactory.build()
-        res = self._post(
+        self._post(
             app,
             [
                 {
@@ -155,7 +151,7 @@ class TestView(BaseSubmitTest):
         now = util.utcnow()
         today = now.replace(hour=0, minute=0, second=0)
         cell = CellShardFactory.build(radio=Radio.wcdma)
-        res = self._post(
+        self._post(
             app,
             [
                 {
@@ -281,15 +277,15 @@ class TestView(BaseSubmitTest):
 
     def test_error_not_dict(self, app, celery, raven):
         wifi = WifiShardFactory.build()
-        res = app.post_json(
+        app.post_json(
             "/v1/submit", [{"lat": wifi.lat, "lon": wifi.lon, "cell": []}], status=401
         )
-        detail = {
-            "": (
-                "\"[{'lat': 51.5, 'lon': -0.1, 'cell': []}]\" is not a mapping"
-                " type: Does not implement dict-like functionality."
-            )
-        }
+        # detail = {
+        #     "": (
+        #         "\"[{'lat': 51.5, 'lon': -0.1, 'cell': []}]\" is not a mapping"
+        #         " type: Does not implement dict-like functionality."
+        #     )
+        # }
         # assert res.json == ParseError({"validation": detail}).json_body()
 
     def test_error_missing_latlon(self, app, celery):

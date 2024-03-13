@@ -5,7 +5,6 @@ from unittest import mock
 from redis import RedisError
 import pytest
 
-from ichnaea.api.exceptions import ParseError, ServiceUnavailable
 from ichnaea.conftest import GEOIP_DATA
 from ichnaea.models import Radio
 from ichnaea.tests.factories import ApiKeyFactory
@@ -44,7 +43,7 @@ class BaseSubmitTest(object):
         data = {"items": [query]}
         body = util.encode_gzip(dumps(data).encode())
         headers = {"Content-Encoding": "gzip"}
-        res = app.post(
+        app.post(
             self.url,
             body,
             headers=headers,
@@ -91,25 +90,25 @@ class BaseSubmitTest(object):
         # assert self.queue(celery).size() == 0
 
     def test_error_get(self, app, raven):
-        res = app.get(self.url, status=401)
+        app.get(self.url, status=401)
         # assert res.json == ParseError().json_body()
 
     def test_error_empty_body(self, app, raven):
-        res = app.post(self.url, "", status=401)
+        app.post(self.url, "", status=401)
         # assert res.json == ParseError().json_body()
 
     def test_error_empty_json(self, app, raven):
-        res = app.post_json(self.url, {}, status=401)
+        app.post_json(self.url, {}, status=401)
         # detail = {"items": "Required"}
         # assert res.json == ParseError({"validation": detail}).json_body()
 
     def test_error_no_json(self, app, raven):
-        res = app.post(self.url, "\xae", status=401)
+        app.post(self.url, "\xae", status=401)
         # detail = "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
         # assert res.json == ParseError({"decode": detail}).json_body()
 
     def test_error_no_mapping(self, app, raven):
-        res = app.post_json(self.url, [1], status=401)
+        app.post_json(self.url, [1], status=401)
         # detail = {
         #     "": (
         #         '"[1]" is not a mapping type: Does not implement dict-like'
@@ -123,7 +122,7 @@ class BaseSubmitTest(object):
         mock_queue.side_effect = RedisError()
 
         with mock.patch("ichnaea.queue.DataQueue.enqueue", mock_queue):
-            res = self._post_one_cell(app, status=401)
+            self._post_one_cell(app, status=401)
             # assert res.json == ServiceUnavailable().json_body()
 
         # assert mock_queue.called

@@ -6,11 +6,10 @@ import markus
 from redis import RedisError
 
 from ichnaea.api.exceptions import (
-    ParseError,
     ServiceUnavailable,
     UploadSuccess,
     UploadSuccessV0,
-    Unauthorized
+    Unauthorized,
 )
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA

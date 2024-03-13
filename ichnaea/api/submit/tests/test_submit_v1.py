@@ -109,7 +109,7 @@ class TestView(BaseSubmitTest):
     def test_cell(self, app, celery):
         now_ms = int(time.time() * 1000)
         cell = CellShardFactory.build(radio=Radio.wcdma)
-        response = self._post(
+        self._post(
             app,
             [
                 {
