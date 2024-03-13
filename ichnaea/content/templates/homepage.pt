@@ -33,38 +33,8 @@
         <p class="map-callout-caption">Detailed data map</p>
     </div>
 
-    <h3 class="separator">Get involved!</h3>
-
-    <ul class="text-justified half-left">
-        <li>
-            As an individual you can use
-            <a href="https://wiki.mozilla.org/CloudServices/Location/Software">
-                one of the client applications</a>
-            and start mapping the wireless networks in your neighborhood.
-        </li>
-
-        <li>
-            As a developer you can <a href="/api">directly use the service</a>
-            or <a href="https://ichnaea.readthedocs.io/">
-            contribute to the development of the service</a> itself.
-        </li>
-    </ul>
-
-    <ul class="text-justified half-right">
-
-        <li>
-            As an organization you can <a href="/contact">contact us</a>
-            to find out more about collaboration opportunities.
-        </li>
-
-        <li>
-            As the owner of a WiFi access point you can
-            <a href="/optout">learn more about opting out</a>
-            of this service and the privacy protections we built into
-            the service.
-        </li>
-    </ul>
-
+    <h3 class="separator">Sunset Announcement</h3>
+    On March 13th 2024 it was announced that Mozilla Location Service will be sunset. Details can be found in the <a href="https://github.com/mozilla/ichnaea/issues/2065">announcment here</a>.
 </section>
 </tal:slot>
 

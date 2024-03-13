@@ -4,6 +4,10 @@
 
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
+    <p class="text-justified">
+        <h3>Downloads willl be disabled on April 10th 2024</h3>
+        On March 13th 2024 it was announced that Mozilla Location Service will be sunset. Details can be found in the <a href="https://github.com/mozilla/ichnaea/issues/2065">announcment here</a>.
+    </p>
 
     <p class="text-justified">
         This page lists all the raw data files available for download.

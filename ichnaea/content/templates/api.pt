@@ -51,32 +51,9 @@
     </p></div>
 
     <h3>API Keys</h3>
-
     <p class="text-justified">
-        In order to use the service API you need to obtain an API key.
-        We require these API keys as one way to prevent abuse of the
-        service.
-    </p>
-
-    <p class="text-justified">
-        If you are a Mozilla employee, to obtain an API key, please
-        <a href="https://bugzilla.mozilla.org/enter_bug.cgi?bug_type=task&amp;component=API%20Key&amp;groups=mozilla-employee-confidential&amp;op_sys=Unspecified&amp;product=Location&amp;rep_platform=Unspecified">
-            file an API key request bug in Bugzilla</a>.
-    </p>
-
-    <p class="text-justified">
-        If you are not a Mozilla employee, to obtain an API key, please
-        <a href="https://docs.google.com/forms/d/e/1FAIpQLSf2JaJm8V1l8TS_OiyjodkpYsagOhM1LNo_SmPDDAVKdmQg8A/viewform">
-            fill out this form</a>. When filling out the form,
-        please make sure to describe your use-case and intended use of
-        the service. Our
-        <a href="/terms">
-            Developer Terms of Service</a> govern the use of MLS API keys.
-    </p>
-
-    <p class="text-justified">
-        We'll try to get back to you within a few days, but depending
-        on vacation times it might take longer.
+        API keys are no longer being issued as the project is being sunset. 
+        Please see the <a href="https://github.com/mozilla/ichnaea/issues/2065">sunset announcment</a> for details.
     </p>
 </section>
 </tal:slot>
