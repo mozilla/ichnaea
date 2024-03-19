@@ -51,6 +51,14 @@
         confirmed in the last 12 months.
     </p>
 
+    <h4>Final Cell Export</h4>
+    <p class="text-justified">
+        Due to service sunset, we are providing a final cell data export. This 
+        is a full export and includes <strong>all</strong> cell tower data, 
+        including data that has not been confirmed in the last 12 months. 
+        <a href="https://d2koia3g127518.cloudfront.net/final_export/MLS-full-cell-export-final.csv.gz">MLS-full-cell-export-final.csv.gz</a> (1.6GB)
+    </p>
+
     <h4>Full Cell Exports</h4>
 
     <ul tal:condition="files.full">
