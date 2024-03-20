@@ -213,11 +213,7 @@ class ContentViews(object):
 
     @view_config(renderer="templates/downloads.pt", name="downloads", http_cache=3600)
     def downloads_view(self):
-        data = self._get_cache("downloads")
-        if data is None:
-            data = s3_list_downloads(self.request.registry.raven_client)
-            self._set_cache("downloads", data, ex=1800)
-        return {"page_title": "Downloads", "files": data}
+        return {"page_title": "Downloads"}
 
     @view_config(renderer="templates/optout.pt", name="optout", http_cache=3600)
     def optout_view(self):

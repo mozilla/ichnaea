@@ -5,50 +5,8 @@
 <tal:slot metal:fill-slot="content">
 <section id="main-content">
     <p class="text-justified">
-        <h3>Downloads willl be disabled on April 10th 2024</h3>
+        <h3>Downloads were be disabled on April 10th 2024</h3>
         On March 13th 2024 it was announced that Mozilla Location Service will be sunset. Details can be found in the <a href="https://github.com/mozilla/ichnaea/issues/2065">announcment here</a>.
-    </p>
-
-    <p class="text-justified">
-        This page lists all the raw data files available for download.
-        Please see the
-        <a href="https://ichnaea.readthedocs.io/en/latest/import_export.html">
-            file format documentation</a> for the structure of these files.
-        The file format was developed in cooperation with the
-        <a href="https://opencellid.org">OpenCellID project</a>.
-    </p>
-
-    <div class="callout-license">
-        <h4>License Note</h4>
-
-        <p xmlns:dct="http://purl.org/dc/terms/"
-           xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
-           class="text-justified highlight">
-            <a rel="license"
-               href="https://creativecommons.org/publicdomain/zero/1.0/">
-                <img src="/static/images/publicdomain.png"
-                     width="88" height="31"
-                     title="CC0" />
-            </a>
-            <br />
-            To the extent possible under law,
-            <a rel="dct:publisher"
-               href="https://location.services.mozilla.com/">
-                <span property="dct:title">Mozilla Corporation</span></a>
-            has waived all copyright and related or neighboring rights to
-            <i><span property="dct:title">MLS Cell Network Export Data</span></i>.
-            This work is published from the United States.
-        </p>
-    </div>
-
-    <h3>Cell Networks</h3>
-
-    <p class="text-justified">
-        We export both a daily snapshot of the entire cell network collection
-        as well as hourly differential updates. File names contain either the
-        word <i>diff</i> or <i>full</i> to specify their type. The full cell
-        export is limited to those cell networks whose position has been
-        confirmed in the last 12 months.
     </p>
 
     <h4>Final Cell Export</h4>
@@ -58,70 +16,6 @@
         including data that has not been confirmed in the last 12 months. 
         <a href="https://d2koia3g127518.cloudfront.net/final_export/MLS-full-cell-export-final.csv.gz">MLS-full-cell-export-final.csv.gz</a> (1.6GB)
     </p>
-
-    <h4>Full Cell Exports</h4>
-
-    <ul tal:condition="files.full">
-        <li tal:repeat="file files.full">
-            <a href="${file.path}">${file.name}</a> (${file.size}kB)
-        </li>
-    </ul>
-
-    <h4>Differential Cell Exports</h4>
-
-    <div class="half-left" tal:condition="files.diff1">
-        <ul>
-            <li tal:repeat="file files.diff1">
-                <a href="${file.path}">${file.name}</a> (${file.size}kB)
-            </li>
-        </ul>
-    </div>
-
-    <div class="half-right" tal:condition="files.diff2">
-        <ul>
-            <li tal:repeat="file files.diff2">
-                <a href="${file.path}">${file.name}</a> (${file.size}kB)
-            </li>
-        </ul>
-    </div>
-
-    <div class="separator"></div>
-
-    <h3>WiFi Networks</h3>
-
-    <p class="text-justified">
-        The combination of a MAC address and a location is considered
-        personal data in some jurisdictions, as it contains data about
-        the owner of a WiFi network. The collection of this data is
-        legal as long as an effective <a href="/optout">opt-out</a>
-        mechanism like the one we follow is provided. Lookups of individual
-        WiFi records are prevented by the service by requiring a combination
-        of two matching nearby WiFi networks in queries.
-    </p>
-
-    <p class="text-justified">
-        We do not share data about WiFi networks. Sharing such data could
-        expose personal data and make it possible to track the movements
-        of WiFi networks over time.
-    </p>
-
-    <h3>Observations</h3>
-
-    <p class="text-justified">
-        In addition to the aggregate network data, the service also gathers
-        the raw observation data these aggregates are based on.
-        While we do not store any individual user token with the
-        observation data, the data itself contains plenty of unique
-        characteristics, locations and timestamps that would allow someone
-        to track the movements of the people contributing observations
-        to this service.
-    </p>
-
-    <p class="text-justified">
-        We have therefor chosen to use a conservative approach and do not
-        make the raw observation data public.
-    </p>
-
 </section>
 </tal:slot>
 

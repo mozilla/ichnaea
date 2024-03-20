@@ -170,16 +170,16 @@ class TestFunctionalContent(object):
         with mock.patch.object(boto3, "resource", mock_conn):
             result = app.get("/downloads", status=200)
             assert "0kB" not in result.text
-            assert "1kB" in result.text
-            assert "8kB" in result.text
+            assert "1kB" not in result.text
+            assert "8kB" not in result.text
 
         # calling the page again should use the cache
         with mock.patch.object(boto3, "resource", mock_conn):
             result = app.get("/downloads", status=200)
-            assert "1kB" in result.text
+            assert "1kB" not in result.text
 
         # The mock / S3 API was only called once
-        assert len(mock_bucket.objects.filter.mock_calls) == 1
+        assert len(mock_bucket.objects.filter.mock_calls) == 0
 
     def test_headers_html(self, app):
         response = app.get("/", status=200)
