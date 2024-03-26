@@ -9,7 +9,7 @@ from ichnaea.api.exceptions import (
     ServiceUnavailable,
     UploadSuccess,
     UploadSuccessV0,
-    Unauthorized,
+    Forbidden,
 )
 from ichnaea.api.submit.schema_v0 import SUBMIT_V0_SCHEMA
 from ichnaea.api.submit.schema_v1 import SUBMIT_V1_SCHEMA
@@ -39,7 +39,7 @@ class BaseSubmitView(BaseAPIView):
         METRICS.incr("data.batch.upload", tags=tags)
 
     def submit(self, api_key):
-        raise self.prepare_exception(Unauthorized())
+        raise self.prepare_exception(Forbidden())
         # request_data = self.preprocess_request()
 
         # if not request_data:

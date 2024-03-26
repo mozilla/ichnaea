@@ -261,7 +261,7 @@ class TestView(BaseSubmitTest):
                     "wifiAccessPoints": [{"macAddress": 10}],
                 }
             ],
-            status=401,
+            status=403,
         )
         # assert self.queue(celery).size() == 0
 

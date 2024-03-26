@@ -30,13 +30,13 @@ class BaseSubmitTest(object):
             url += "?key=%s" % api_key
         extra = {"HTTP_X_FORWARDED_FOR": GEOIP_DATA["London"]["ip"]}
         result = app.post_json(
-            url, {"items": items}, status=401, extra_environ=extra, **kw
+            url, {"items": items}, status=403, extra_environ=extra, **kw
         )
         return result
 
     def _post_one_cell(self, app, api_key=None, status=status):
         cell, query = self._one_cell_query()
-        return self._post(app, [query], api_key=api_key, status=401)
+        return self._post(app, [query], api_key=api_key, status=403)
 
     def test_gzip(self, app, celery):
         cell, query = self._one_cell_query()
@@ -48,7 +48,7 @@ class BaseSubmitTest(object):
             body,
             headers=headers,
             content_type="application/json",
-            status=401,
+            status=403,
         )
         # assert res.headers["Access-Control-Allow-Origin"] == "*"
         # assert res.headers["Access-Control-Max-Age"] == "2592000"
@@ -61,7 +61,7 @@ class BaseSubmitTest(object):
             "invalid",
             headers=headers,
             content_type="application/json",
-            status=401,
+            status=403,
         )
         # assert self.queue(celery).size() == 0
 
@@ -69,7 +69,7 @@ class BaseSubmitTest(object):
         headers = {"Content-Encoding": "gzip"}
         body = util.encode_gzip(b'{"items": []}')[:-2]
         app.post(
-            self.url, body, headers=headers, content_type="application/json", status=401
+            self.url, body, headers=headers, content_type="application/json", status=403
         )
         # assert self.queue(celery).size() == 0
 
@@ -79,36 +79,36 @@ class BaseSubmitTest(object):
         with pytest.raises(UnicodeDecodeError):
             body.decode("utf-8")
         app.post(
-            self.url, body, content_type="application/json; charset=utf-8", status=401
+            self.url, body, content_type="application/json; charset=utf-8", status=403
         )
         # assert self.queue(celery).size() == 0
 
     def test_store_sample(self, app, celery, session):
         api_key = ApiKeyFactory(store_sample_submit=0)
         session.flush()
-        self._post_one_cell(app, api_key=api_key.valid_key, status=401)
+        self._post_one_cell(app, api_key=api_key.valid_key, status=403)
         # assert self.queue(celery).size() == 0
 
     def test_error_get(self, app, raven):
-        app.get(self.url, status=401)
+        app.get(self.url, status=403)
         # assert res.json == ParseError().json_body()
 
     def test_error_empty_body(self, app, raven):
-        app.post(self.url, "", status=401)
+        app.post(self.url, "", status=403)
         # assert res.json == ParseError().json_body()
 
     def test_error_empty_json(self, app, raven):
-        app.post_json(self.url, {}, status=401)
+        app.post_json(self.url, {}, status=403)
         # detail = {"items": "Required"}
         # assert res.json == ParseError({"validation": detail}).json_body()
 
     def test_error_no_json(self, app, raven):
-        app.post(self.url, "\xae", status=401)
+        app.post(self.url, "\xae", status=403)
         # detail = "JSONDecodeError('Expecting value: line 1 column 1 (char 0)')"
         # assert res.json == ParseError({"decode": detail}).json_body()
 
     def test_error_no_mapping(self, app, raven):
-        app.post_json(self.url, [1], status=401)
+        app.post_json(self.url, [1], status=403)
         # detail = {
         #     "": (
         #         '"[1]" is not a mapping type: Does not implement dict-like'
@@ -122,7 +122,7 @@ class BaseSubmitTest(object):
         mock_queue.side_effect = RedisError()
 
         with mock.patch("ichnaea.queue.DataQueue.enqueue", mock_queue):
-            self._post_one_cell(app, status=401)
+            self._post_one_cell(app, status=403)
             # assert res.json == ServiceUnavailable().json_body()
 
         # assert mock_queue.called
@@ -134,7 +134,7 @@ class BaseSubmitTest(object):
 
     def test_log_api_key_none(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
-        self._post(app, [query], api_key=None, status=401)
+        self._post(app, [query], api_key=None, status=403)
         # metricsmock.assert_incr_once(
         #     self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         # )
@@ -143,7 +143,7 @@ class BaseSubmitTest(object):
 
     def test_log_api_key_invalid(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
-        self._post(app, [query], api_key="invalid_key", status=401)
+        self._post(app, [query], api_key="invalid_key", status=403)
         # metricsmock.assert_incr_once(
         #     self.metric_type + ".request", tags=[self.metric_path, "key:none"]
         # )
@@ -153,7 +153,7 @@ class BaseSubmitTest(object):
 
     def test_log_api_key_unknown(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
-        self._post(app, [query], api_key="abcdefg", status=401)
+        self._post(app, [query], api_key="abcdefg", status=403)
         # metricsmock.assert_incr_once(
         #     self.metric_type + ".request", tags=[self.metric_path, "key:invalid"]
         # )
@@ -163,7 +163,7 @@ class BaseSubmitTest(object):
 
     def test_log_stats(self, app, redis, metricsmock, logs):
         cell, query = self._one_cell_query()
-        self._post(app, [query], api_key="test", status=401)
+        self._post(app, [query], api_key="test", status=403)
         # metricsmock.assert_incr_once("data.batch.upload", tags=["key:test"])
         # metricsmock.assert_incr_once(
         #     "request", tags=[self.metric_path, "method:post", "status:%s" % self.status]
@@ -201,7 +201,7 @@ class BaseSubmitTest(object):
         cell, query = self._one_cell_query(radio=False)
         query[self.radio_id] = Radio.gsm.name
         query[self.cells_id][0][self.radio_id] = Radio.lte.name
-        self._post(app, [query], status=401)
+        self._post(app, [query], status=403)
         # item = self.queue(celery).dequeue()[0]
         # cells = item["report"]["cellTowers"]
         # assert cells[0]["radioType"] == Radio.lte.name
@@ -209,27 +209,27 @@ class BaseSubmitTest(object):
     def test_radio_invalid(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
         query[self.cells_id][0][self.radio_id] = "18"
-        self._post(app, [query], status=401)
+        self._post(app, [query], status=403)
         # item = self.queue(celery).dequeue()[0]
         # assert "radioType" not in item["report"]["cellTowers"][0]
 
     def test_radio_missing(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
-        self._post(app, [query], status=401)
+        self._post(app, [query], status=403)
         # item = self.queue(celery).dequeue()[0]
         # assert "radioType" not in item["report"]["cellTowers"]
 
     def test_radio_missing_in_observation(self, app, celery):
         cell, query = self._one_cell_query(radio=False)
         query[self.radio_id] = cell.radio.name
-        self._post(app, [query], status=401)
+        self._post(app, [query], status=403)
         # item = self.queue(celery).dequeue()[0]
         # cells = item["report"]["cellTowers"]
         # assert cells[0]["radioType"] == cell.radio.name
 
     def test_radio_missing_top_level(self, app, celery):
         cell, query = self._one_cell_query()
-        self._post(app, [query], status=401)
+        self._post(app, [query], status=403)
         # item = self.queue(celery).dequeue()[0]
         # cells = item["report"]["cellTowers"]
         # assert cells[0]["radioType"] == cell.radio.name
