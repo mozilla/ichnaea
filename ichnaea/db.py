@@ -19,7 +19,7 @@ from sqlalchemy.sql import func, select
 from ichnaea.conf import settings
 
 
-DB_TYPE = {"ro": settings("db_readonly_uri"), "rw": settings("db_readwrite_uri")}
+DB_TYPE = {"ro": settings("db_readwrite_uri"), "rw": settings("db_readwrite_uri")}
 METRICS = markus.get_metrics()
 
 
