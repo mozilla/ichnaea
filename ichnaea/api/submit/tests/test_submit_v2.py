@@ -263,7 +263,7 @@ class TestView(BaseSubmitTest):
                     "wifiAccessPoints": [{"macAddress": 10}],
                 }
             ],
-            status=401,
+            status=403,
         )
         # assert response.json["details"]["validation"] == {
         #     "items.0.wifiAccessPoints.0.macAddress": (

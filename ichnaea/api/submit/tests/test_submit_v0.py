@@ -278,7 +278,7 @@ class TestView(BaseSubmitTest):
     def test_error_not_dict(self, app, celery, raven):
         wifi = WifiShardFactory.build()
         app.post_json(
-            "/v1/submit", [{"lat": wifi.lat, "lon": wifi.lon, "cell": []}], status=401
+            "/v1/submit", [{"lat": wifi.lat, "lon": wifi.lon, "cell": []}], status=403
         )
         # detail = {
         #     "": (

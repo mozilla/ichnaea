@@ -107,15 +107,15 @@ class BaseAPIServiceError(BaseAPIError, BaseServiceError):
     message = "Internal Error"
 
 
-class Unauthorized(BaseAPIClientError):
+class Forbidden(BaseAPIClientError):
     """
     Static response for 401 status codes
     """
 
-    code = 401
+    code = 403
     domain = "global"
-    reason = "Unauthorized"
-    message = "Unauthorized"
+    reason = "Forbidden"
+    message = "Forbidden"
 
 
 class DailyLimitExceeded(BaseAPIClientError):
